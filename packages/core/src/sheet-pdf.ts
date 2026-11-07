@@ -1,4 +1,16 @@
-import { PDFDocument, type PDFImage } from 'pdf-lib';
+import {
+  PDFDocument,
+  appendBezierCurve,
+  clip,
+  closePath,
+  endPath,
+  lineTo,
+  moveTo,
+  popGraphicsState,
+  pushGraphicsState,
+  type PDFImage,
+  type PDFOperator,
+} from 'pdf-lib';
 import type { Sheet, SheetOptions } from './types.ts';
 
 export const defaultSheetOptions: SheetOptions = { pageFormat: 'A4', imageQuality: 'large' };
@@ -94,16 +106,52 @@ export async function generateSheetPdf(
         y: page.height - top - (row + 1) * CARD_MM.height,
         ...CARD_MM,
       };
-      const box = containBox(slotBox, image.width / image.height);
+      const box = coverBox(slotBox, image.width / image.height);
+      pdfPage.pushOperators(pushGraphicsState(), ...cardOutline(slotBox), clip(), endPath());
       pdfPage.drawImage(image, {
         x: box.x * PT_PER_MM,
         y: box.y * PT_PER_MM,
         width: box.width * PT_PER_MM,
         height: box.height * PT_PER_MM,
       });
+      pdfPage.pushOperators(popGraphicsState());
     }
   }
   return doc.save();
+}
+
+/** Corner radius of a real card, measured on Scryfall's images (about 2.9 mm). */
+const CARD_CORNER_RADIUS_MM = 3;
+/** How far a cubic Bézier's control points sit along the tangents to draw a quarter circle. */
+const QUARTER_CIRCLE_KAPPA = 0.5522847498;
+
+/**
+ * The outline a card is cut and sleeved along: `slot` with rounded corners, in points.
+ * Scryfall's JPGs paint the corners outside that curve, white or black depending on the
+ * print, so clipping to it lets the paper show there instead (ADR 0004).
+ */
+function cardOutline(slot: Box): PDFOperator[] {
+  const [x, y, width, height, r] = [
+    slot.x,
+    slot.y,
+    slot.width,
+    slot.height,
+    CARD_CORNER_RADIUS_MM,
+  ].map((mm) => mm * PT_PER_MM) as [number, number, number, number, number];
+  const k = r * QUARTER_CIRCLE_KAPPA;
+  const [right, top] = [x + width, y + height];
+  return [
+    moveTo(x + r, y),
+    lineTo(right - r, y),
+    appendBezierCurve(right - r + k, y, right, y + r - k, right, y + r),
+    lineTo(right, top - r),
+    appendBezierCurve(right, top - r + k, right - r + k, top, right - r, top),
+    lineTo(x + r, top),
+    appendBezierCurve(x + r - k, top, x, top - r + k, x, top - r),
+    lineTo(x, y + r),
+    appendBezierCurve(x, y + r - k, x + r - k, y, x + r, y),
+    closePath(),
+  ];
 }
 
 interface Box {
@@ -114,11 +162,12 @@ interface Box {
 }
 
 /**
- * The largest box with the image's aspect ratio that fits in `slot`, centred: images are
- * scaled uniformly, never cropped or stretched (ADR 0004).
+ * The smallest box with the image's aspect ratio that covers `slot`, centred. The image is
+ * scaled uniformly, never stretched, and the slot clips what overflows: with Scryfall's
+ * images only a sliver of outer border, never the copyright or the artist (ADR 0004).
  */
-function containBox(slot: Box, imageRatio: number): Box {
-  const width = Math.min(slot.width, slot.height * imageRatio);
+function coverBox(slot: Box, imageRatio: number): Box {
+  const width = Math.max(slot.width, slot.height * imageRatio);
   const height = width / imageRatio;
   return {
     x: slot.x + (slot.width - width) / 2,

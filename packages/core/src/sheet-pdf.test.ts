@@ -21,9 +21,14 @@ interface Box {
   readonly height: number;
 }
 
+/** An image as the reader sees it: `x`, `y`, `width`, `height` are its visible, clipped box. */
 interface PlacedImage extends Box {
   /** The label given to the JPEG by `jpegOfSize`: tells which image is drawn here. */
   readonly label: string;
+  /** The whole image as drawn, before clipping: tells whether it was stretched. */
+  readonly drawn: Box;
+  /** Radius of the corners of the clipping path around it, in mm: 0 for square corners. */
+  readonly cornerRadius: number;
 }
 
 interface PdfPage {
@@ -53,16 +58,38 @@ async function readPdf(bytes: Uint8Array): Promise<PdfPage[]> {
     return {
       widthMm: width * MM_PER_PT,
       heightMm: height * MM_PER_PT,
-      imagesMm: drawnImages(text).map((box) => ({
-        label: labelOf(box.name),
-        x: box.x * MM_PER_PT,
-        y: box.y * MM_PER_PT,
-        width: box.width * MM_PER_PT,
-        height: box.height * MM_PER_PT,
+      imagesMm: drawnImages(text).map(({ name, drawn, visible, cornerRadius }) => ({
+        label: labelOf(name),
+        ...toMm(visible),
+        drawn: toMm(drawn),
+        cornerRadius: cornerRadius * MM_PER_PT,
       })),
     };
   });
 }
+
+function toMm(box: Box): Box {
+  return {
+    x: box.x * MM_PER_PT,
+    y: box.y * MM_PER_PT,
+    width: box.width * MM_PER_PT,
+    height: box.height * MM_PER_PT,
+  };
+}
+
+function intersect(a: Box, b: Box): Box {
+  const x = Math.max(a.x, b.x);
+  const y = Math.max(a.y, b.y);
+  return {
+    x,
+    y,
+    width: Math.min(a.x + a.width, b.x + b.width) - x,
+    height: Math.min(a.y + a.height, b.y + b.height) - y,
+  };
+}
+
+/** No clipping yet: a box far larger than any page. */
+const UNCLIPPED: Box = { x: -1e6, y: -1e6, width: 2e6, height: 2e6 };
 
 type Matrix = readonly [number, number, number, number, number, number];
 const IDENTITY: Matrix = [1, 0, 0, 1, 0, 0];
@@ -78,11 +105,57 @@ function multiply(m: Matrix, n: Matrix): Matrix {
   ];
 }
 
-/** Boxes of the images (`/Name Do`) in a content stream, in points. Assumes no rotation. */
-function drawnImages(content: string): (Box & { name: string })[] {
-  const boxes: (Box & { name: string })[] = [];
-  const stack: Matrix[] = [];
+interface DrawnImage {
+  readonly name: string;
+  readonly drawn: Box;
+  readonly visible: Box;
+  readonly cornerRadius: number;
+}
+
+interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+
+interface Clip {
+  readonly box: Box;
+  readonly cornerRadius: number;
+}
+
+/**
+ * A clipping path read as a box with rounded corners, from its on-curve points: the
+ * bounding box, and how far along the bottom edge the first point sits from the corner.
+ */
+function clipOf(points: readonly Point[]): Clip {
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
+  const box = {
+    x: Math.min(...xs),
+    y: Math.min(...ys),
+    width: Math.max(...xs) - Math.min(...xs),
+    height: Math.max(...ys) - Math.min(...ys),
+  };
+  const onBottomEdge = points.filter((point) => Math.abs(point.y - box.y) < 1e-6);
+  const cornerRadius = Math.min(...onBottomEdge.map((point) => point.x)) - box.x;
+  return { box, cornerRadius };
+}
+
+/**
+ * The images (`/Name Do`) in a content stream, in points: the box each is drawn in, the part
+ * of it left visible by the clipping path (`W`), and that path's corner radius. Clipping paths
+ * are read from their on-curve points (`re`, `m`, `l`, `c`). Assumes no rotation.
+ */
+function drawnImages(content: string): DrawnImage[] {
+  const images: DrawnImage[] = [];
+  const stack: { ctm: Matrix; clip: Clip }[] = [];
+  const unclipped: Clip = { box: UNCLIPPED, cornerRadius: 0 };
   let ctm = IDENTITY;
+  let clip = unclipped;
+  let path: Point[] = [];
+  const toPage = (x: number, y: number): Point => ({
+    x: ctm[0] * x + ctm[4],
+    y: ctm[3] * y + ctm[5],
+  });
   let operands: number[] = [];
   let name = '';
   for (const token of content.split(/\s+/).filter(Boolean)) {
@@ -95,13 +168,35 @@ function drawnImages(content: string): (Box & { name: string })[] {
       name = token.slice(1);
       continue;
     }
-    if (token === 'q') stack.push(ctm);
-    if (token === 'Q') ctm = stack.pop() ?? IDENTITY;
+    if (token === 'q') stack.push({ ctm, clip });
+    if (token === 'Q') ({ ctm, clip } = stack.pop() ?? { ctm: IDENTITY, clip: unclipped });
     if (token === 'cm') ctm = multiply(operands as unknown as Matrix, ctm);
-    if (token === 'Do') boxes.push({ name, x: ctm[4], y: ctm[5], width: ctm[0], height: ctm[3] });
+    if (token === 're') {
+      const [x = 0, y = 0, width = 0, height = 0] = operands;
+      path.push(toPage(x, y), toPage(x + width, y), toPage(x, y + height));
+      path.push(toPage(x + width, y + height));
+    }
+    if (token === 'm' || token === 'l' || token === 'c') {
+      const [x = 0, y = 0] = operands.slice(-2);
+      path.push(toPage(x, y));
+    }
+    if ((token === 'W' || token === 'W*') && path.length > 0) {
+      const next = clipOf(path);
+      clip = { box: intersect(clip.box, next.box), cornerRadius: next.cornerRadius };
+    }
+    if (token === 'n') path = [];
+    if (token === 'Do') {
+      const drawn = { x: ctm[4], y: ctm[5], width: ctm[0], height: ctm[3] };
+      images.push({
+        name,
+        drawn,
+        visible: intersect(drawn, clip.box),
+        cornerRadius: clip.cornerRadius,
+      });
+    }
     operands = [];
   }
-  return boxes;
+  return images;
 }
 
 const JPEG_COMMENT = [0xff, 0xfe];
@@ -195,15 +290,33 @@ describe('generateSheetPdf', () => {
     expect(page?.imagesMm.map(rounded)).toEqual(expected);
   });
 
-  it('scales a Scryfall "large" image uniformly to fit its slot, centred, never stretched', async () => {
-    // 672×936 px is slightly wider than a card: 63 mm wide gives 87.75 mm high (ADR 0004).
+  it('fills the slot with a Scryfall "large" image, scaled uniformly, trimming only the side edges', async () => {
+    // 672×936 px is slightly wider than a card. 88 mm high gives 63.18 mm wide, centred
+    // on the slot: 0.09 mm of outer border is clipped on each side, nothing is stretched (ADR 0004).
     const scryfallImage = new Map([[largeUrl, jpegOfSize(672, 936)]]);
 
     const [page] = await readPdf(
       await generateSheetPdf(sheetOf(resolvedLine(1, print)), scryfallImage),
     );
 
-    expect(page?.imagesMm.map(rounded)).toEqual([{ x: 10.5, y: 192.63, width: 63, height: 87.75 }]);
+    expect(page?.imagesMm.map(rounded)).toEqual([{ x: 10.5, y: 192.5, width: 63, height: 88 }]);
+    expect(page?.imagesMm.map((image) => rounded(image.drawn))).toEqual([
+      { x: 10.41, y: 192.5, width: 63.18, height: 88 },
+    ]);
+  });
+
+  it('cuts every card to the shape of a real card: 63×88 mm with 3 mm rounded corners', async () => {
+    // Scryfall's JPGs paint the corners outside the card's curve, white or black depending on
+    // the print: the curve is what is cut and sleeved, so the paper shows outside it.
+    const scryfallImage = new Map([[largeUrl, jpegOfSize(672, 936)]]);
+
+    const [page] = await readPdf(
+      await generateSheetPdf(sheetOf(resolvedLine(2, print)), scryfallImage),
+    );
+
+    expect(page?.imagesMm.map((image) => Number(image.cornerRadius.toFixed(MM_DIGITS)))).toEqual([
+      3, 3,
+    ]);
   });
 
   it('continues on a new page after nine cards', async () => {
