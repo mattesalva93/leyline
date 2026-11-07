@@ -92,4 +92,9 @@ describe('POST /api/decklists/resolve', () => {
 
     expect(status).toBe(400);
   });
+
+  it('rejects a decklist longer than 50,000 characters', async () => {
+    expect((await resolve('1 Sol Ring\n'.repeat(4_546))).status).toBe(400);
+    expect((await resolve('1 Sol Ring\n'.repeat(4_545))).status).toBe(200);
+  });
 });

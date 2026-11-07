@@ -2,6 +2,7 @@
 //   pnpm import:catalog                          download today's file and import it
 //   pnpm import:catalog --file cards.jsonl.gz    import a file downloaded earlier
 import { createReadStream } from 'node:fs';
+import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { createGunzip } from 'node:zlib';
 import { connect, migrate } from './db.ts';
@@ -16,8 +17,10 @@ try {
   await migrate(sql);
   let bulk;
   if (values.file) {
-    console.log(`Importing ${values.file}`);
-    bulk = createReadStream(values.file).compose(createGunzip());
+    // pnpm runs the script in packages/api; INIT_CWD is where `pnpm` was typed.
+    const file = resolve(process.env.INIT_CWD ?? process.cwd(), values.file);
+    console.log(`Importing ${file}`);
+    bulk = createReadStream(file).compose(createGunzip());
   } else {
     const url = await allCardsBulkUrl();
     console.log(`Downloading and importing ${url}`);

@@ -88,5 +88,6 @@ function download(bytes: Uint8Array, fileName: string) {
   link.href = url;
   link.download = fileName;
   link.click();
-  URL.revokeObjectURL(url);
+  // Revoking right after click() can cancel the download in Firefox and Safari.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
