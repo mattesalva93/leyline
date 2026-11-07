@@ -22,7 +22,8 @@
     "dev": "pnpm --recursive --parallel run dev",
     "dev:debug": "pnpm --recursive --parallel run dev:debug",
     "import:catalog": "pnpm --filter @mtg-suite/api run import:catalog",
-    "import:debug": "pnpm --filter @mtg-suite/api run import:debug"
+    "import:debug": "pnpm --filter @mtg-suite/api run import:debug",
+    "sheet:preview": "pnpm --filter @mtg-suite/api run sheet:preview"
   },
   "lint-staged": {
     "*.{ts,tsx,js,mjs,cjs}": [

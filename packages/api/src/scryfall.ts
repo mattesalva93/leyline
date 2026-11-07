@@ -39,3 +39,14 @@ export async function downloadBulk(url: string): Promise<Readable> {
   if (!response.body) throw new Error(`GET ${url} has no body`);
   return Readable.fromWeb(response.body as NodeReadableStream<Uint8Array>).compose(createGunzip());
 }
+
+/** Downloads card images from cards.scryfall.io, keyed by URL, as the browser does for the PDF. */
+export async function downloadImages(urls: readonly string[]): Promise<Map<string, Uint8Array>> {
+  const entries = await Promise.all(
+    urls.map(async (url) => {
+      const response = await get(url, 'image/*');
+      return [url, new Uint8Array(await response.arrayBuffer())] as const;
+    }),
+  );
+  return new Map(entries);
+}

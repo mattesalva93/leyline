@@ -17,6 +17,7 @@ pnpm import:catalog   # download Scryfall's all_cards bulk (~400 MB) and fill th
 pnpm dev              # api on 127.0.0.1:3000, web on http://127.0.0.1:5173
 pnpm check            # typecheck, lint, format check, tests (what CI runs; needs db:up)
 pnpm build            # production build of web and api
+pnpm sheet:preview    # render a sample sheet to .preview/sheet-*.png (needs pdftoppm: brew install poppler)
 ```
 
 `pnpm import:catalog --file all-cards.jsonl.gz` imports a bulk file downloaded earlier.

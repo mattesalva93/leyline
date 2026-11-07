@@ -19,6 +19,7 @@
     "import:catalog": "node --conditions=source --env-file-if-exists=../../.env src/import.ts",
     "import:debug": "node --conditions=source --env-file-if-exists=../../.env --inspect-wait=127.0.0.1:9229 src/import.ts",
     "build": "tsc -b",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "sheet:preview": "node --conditions=source --env-file-if-exists=../../.env src/sheet-preview.ts"
   }
 }
