@@ -30,6 +30,45 @@
       "cwd": "${workspaceFolder}",
       "skipFiles": ["<node_internals>/**"],
       "console": "integratedTerminal"
+    },
+    {
+      // Same flags as `pnpm dev:debug` in packages/api, minus `--inspect`: VS Code adds its own,
+      // on a local port it picks. `--watch` restarts on save; VS Code re-attaches to the new process.
+      "name": "Debug api",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": [
+        "--conditions=source",
+        "--env-file-if-exists=${workspaceFolder}/.env",
+        "--watch"
+      ],
+      "program": "${workspaceFolder}/packages/api/src/server.ts",
+      "cwd": "${workspaceFolder}/packages/api",
+      "skipFiles": ["<node_internals>/**"],
+      "console": "integratedTerminal"
+    },
+    {
+      // Same flags as `pnpm import:debug`, minus the inspector. Pass `--file <path>` in "args"
+      // to import a downloaded bulk file instead of fetching today's.
+      "name": "Debug import",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["--conditions=source", "--env-file-if-exists=${workspaceFolder}/.env"],
+      "program": "${workspaceFolder}/packages/api/src/import.ts",
+      "args": [],
+      "cwd": "${workspaceFolder}/packages/api",
+      "skipFiles": ["<node_internals>/**"],
+      "console": "integratedTerminal"
+    },
+    {
+      // Opens Chrome on Windows on the Vite dev server: start it first with `pnpm dev`.
+      // From WSL this needs the JavaScript Debugger Companion extension (ms-vscode.js-debug-companion).
+      // For Edge, change "type" to "msedge".
+      "name": "Debug web",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://127.0.0.1:5173",
+      "webRoot": "${workspaceFolder}/packages/web"
     }
   ]
 }
