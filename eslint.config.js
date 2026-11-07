@@ -34,8 +34,8 @@ const coreNoIo = {
           },
           {
             regex:
-              '^(pg|postgres|pg-.*|kysely|drizzle-orm.*|prisma|@prisma/.*|axios|undici|ky|got)$',
-            message: '`core` must not do I/O: no database or HTTP clients.',
+              '^(pg|postgres|pg-.*|kysely|drizzle-orm.*|prisma|@prisma/.*|axios|undici|ky|got|hono|hono/.*|@hono/.*)$',
+            message: '`core` must not do I/O: no database, HTTP client or HTTP server libraries.',
           },
           {
             regex: '^@mtg-suite/(api|web)(/|$)',
@@ -82,7 +82,13 @@ const apiNoWeb = {
   },
 };
 
-/** `web` UI text goes through the i18n library, never as a JSX literal. */
+/**
+ * `web` UI text goes through the i18n library (i18next), never as a JSX literal.
+ * i18next has no official lint rule. The community `eslint-plugin-i18next` (`no-literal-string`)
+ * was evaluated (v6.1.5, 2026-11-07): its default `jsx-text-only` mode covers what this rule
+ * covers; its `jsx-only` mode also checks attributes, but needs a hand-kept list of non-UI
+ * attributes (`className`, `href`, ...). Not worth a dependency for now: kept this rule.
+ */
 const webNoJsxLiterals = {
   files: ['packages/web/**/*.tsx'],
   plugins: { react, 'react-hooks': reactHooks },

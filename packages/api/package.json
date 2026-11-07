@@ -6,5 +6,20 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^26.6.6"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.6",
+    "@mtg-suite/core": "workspace:*",
+    "hono": "^4.13.16",
+    "postgres": "^4.1.0"
+  },
+  "scripts": {
+    "dev": "node --conditions=source --env-file-if-exists=../../.env --watch src/server.ts",
+    "dev:debug": "node --conditions=source --env-file-if-exists=../../.env --watch --inspect=127.0.0.1:9229 src/server.ts",
+    "import:catalog": "node --conditions=source --env-file-if-exists=../../.env src/import.ts",
+    "import:debug": "node --conditions=source --env-file-if-exists=../../.env --inspect-wait=127.0.0.1:9229 src/import.ts",
+    "build": "tsc -b",
+    "start": "node dist/server.js",
+    "sheet:preview": "node --conditions=source --env-file-if-exists=../../.env src/sheet-preview.ts"
   }
 }

@@ -1,0 +1,31 @@
+{
+  "app": {
+    "title": "Generatore di fogli proxy",
+    "intro": "Incolla una decklist, una carta per riga: quantità e nome inglese esatto (es. 4 Sol Ring)."
+  },
+  "decklist": {
+    "label": "Decklist",
+    "placeholder": "4 Sol Ring\n1 Counterspell",
+    "resolve": "Riconosci le carte",
+    "resolving": "Riconoscimento in corso…",
+    "error": "Non è stato possibile riconoscere le carte. Riprova tra poco."
+  },
+  "line": {
+    "quantity": "{{count}}×",
+    "notFound": "Carta non trovata",
+    "ambiguous": "Nome ambiguo: {{count}} carte con questo nome",
+    "noPrint": "Nessuna stampa cartacea stampabile",
+    "imageAlt": "Immagine di {{name}}"
+  },
+  "pdf": {
+    "download": "Scarica il PDF",
+    "generating": "Creazione del PDF…",
+    "error": "Non è stato possibile creare il PDF. Riprova tra poco.",
+    "fileName": "proxy-mtg-suite.pdf"
+  },
+  "footer": {
+    "disclaimer": "Progetto non ufficiale, non affiliato a Wizards of the Coast.",
+    "scryfall": "Dati e immagini delle carte da Scryfall.",
+    "report": "Segnala un problema"
+  }
+}
