@@ -15,19 +15,48 @@ interface Slot {
   readonly imageUrl: string;
 }
 
-function slotsOf(sheet: Sheet): Slot[] {
+/** The slots of one printed copy: one per face, so two for a double-faced card. */
+type Copy = readonly Slot[];
+
+function copiesOf(sheet: Sheet): Copy[] {
   return sheet.lines.flatMap((line) => {
     if (line.status !== 'resolved' || !line.defaultPrint) return [];
-    const faces = line.defaultPrint.faces.map((face) => ({
+    const copy = line.defaultPrint.faces.map((face) => ({
       imageUrl: face.imageUris[sheet.options.imageQuality],
     }));
-    return Array.from({ length: line.quantity }, () => faces).flat();
+    return Array.from({ length: line.quantity }, () => copy);
   });
+}
+
+/**
+ * The sheet's cells in reading order, `null` for an empty one. The faces of a copy always sit
+ * next to each other in one row, so they can be cut out together: when a copy does not fit in
+ * what is left of a row, the next single-faced copy fills the gap, or the gap stays empty.
+ */
+function cellsOf(sheet: Sheet): (Slot | null)[] {
+  const pending = copiesOf(sheet);
+  const cells: (Slot | null)[] = [];
+  while (pending.length > 0) {
+    const free = COLUMNS - (cells.length % COLUMNS);
+    const next = pending.findIndex((copy) => copy.length <= free);
+    if (next === -1) {
+      cells.push(...Array<null>(free).fill(null));
+      continue;
+    }
+    cells.push(...(pending.splice(next, 1)[0] ?? []));
+  }
+  return cells;
 }
 
 /** The distinct image URLs the sheet needs, in print order: fetch these for `generateSheetPdf`. */
 export function sheetImageUrls(sheet: Sheet): string[] {
-  return [...new Set(slotsOf(sheet).map((slot) => slot.imageUrl))];
+  return [
+    ...new Set(
+      copiesOf(sheet)
+        .flat()
+        .map((slot) => slot.imageUrl),
+    ),
+  ];
 }
 
 /**
@@ -43,13 +72,14 @@ export async function generateSheetPdf(
   const left = (page.width - COLUMNS * CARD_MM.width) / 2;
   const top = (page.height - ROWS * CARD_MM.height) / 2;
   const perPage = COLUMNS * ROWS;
-  const slots = slotsOf(sheet);
+  const cells = cellsOf(sheet);
   // Each distinct image is embedded once, however many slots show it.
   const embedded = new Map<string, PDFImage>();
 
-  for (let first = 0; first < slots.length; first += perPage) {
+  for (let first = 0; first < cells.length; first += perPage) {
     const pdfPage = doc.addPage([page.width * PT_PER_MM, page.height * PT_PER_MM]);
-    for (const [index, slot] of slots.slice(first, first + perPage).entries()) {
+    for (const [index, slot] of cells.slice(first, first + perPage).entries()) {
+      if (!slot) continue;
       let image = embedded.get(slot.imageUrl);
       if (!image) {
         const bytes = images.get(slot.imageUrl);
