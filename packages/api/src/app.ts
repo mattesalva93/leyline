@@ -25,7 +25,8 @@ export function createApp(deps: AppDeps): Hono {
         400,
       );
     }
-    return c.json({ lines: await resolveDecklist(text, catalog) });
+    const today = new Date().toISOString().slice(0, 10); // UTC date, like Scryfall's
+    return c.json({ lines: await resolveDecklist(text, catalog, { today }) });
   });
 
   return app;

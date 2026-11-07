@@ -16,11 +16,15 @@ function isPrintable(print: Print): boolean {
   );
 }
 
-/** The most recent printable paper print, or `null` when there is none. */
-export function defaultPrint(prints: readonly Print[]): Print | null {
+/**
+ * The most recent printable paper print already released on `today` (ISO date), or `null` when
+ * there is none. Scryfall lists previewed prints before their release date.
+ */
+export function defaultPrint(prints: readonly Print[], today: string): Print | null {
   let best: Print | null = null;
   for (const print of prints) {
-    if (isPrintable(print) && (!best || print.releasedAt > best.releasedAt)) best = print;
+    const eligible = isPrintable(print) && print.releasedAt <= today;
+    if (eligible && (!best || print.releasedAt > best.releasedAt)) best = print;
   }
   return best;
 }

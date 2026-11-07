@@ -1,6 +1,11 @@
 import { defaultPrint } from './default-print.ts';
 import type { Catalog, CatalogEntry, DecklistLine } from './types.ts';
 
+export interface ResolveOptions {
+  /** Today's date (ISO, `YYYY-MM-DD`): prints released later are not default candidates. */
+  readonly today: string;
+}
+
 interface ParsedLine {
   readonly text: string;
   readonly quantity: number;
@@ -35,22 +40,30 @@ function cardNameKeys(cardName: string): string[] {
  * Parses a decklist ("quantity name" lines, or just a name for one copy; blank lines skipped)
  * and resolves each line by exact English name, ignoring case and spacing.
  */
-export async function resolveDecklist(text: string, catalog: Catalog): Promise<DecklistLine[]> {
+export async function resolveDecklist(
+  text: string,
+  catalog: Catalog,
+  options: ResolveOptions,
+): Promise<DecklistLine[]> {
   const parsed = text
     .split(/\r?\n/)
     .filter((raw) => raw.trim() !== '')
     .map(parseLine);
   const entries = await catalog.findByNames([...new Set(parsed.map((line) => nameKey(line.name)))]);
 
-  return parsed.map((line) => resolveLine(line, entries));
+  return parsed.map((line) => resolveLine(line, entries, options.today));
 }
 
-function resolveLine(line: ParsedLine, entries: readonly CatalogEntry[]): DecklistLine {
+function resolveLine(
+  line: ParsedLine,
+  entries: readonly CatalogEntry[],
+  today: string,
+): DecklistLine {
   const base = { text: line.text, quantity: line.quantity, lang: 'en' } as const;
   const key = nameKey(line.name);
   const matches = entries
     .filter((e) => cardNameKeys(e.card.name).includes(key))
-    .map((e) => ({ card: e.card, defaultPrint: defaultPrint(e.prints) }));
+    .map((e) => ({ card: e.card, defaultPrint: defaultPrint(e.prints, today) }));
   // Cards that can be printed win: art series, for one, are separate cards sharing the name.
   const printable = matches.filter((match) => match.defaultPrint);
   const candidates = printable.length > 0 ? printable : matches;

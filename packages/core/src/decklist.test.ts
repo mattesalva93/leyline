@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { createInMemoryCatalog, resolveDecklist } from './index.ts';
 import { aCard, aPrint } from './test-fixtures.ts';
 
+/** Fixed "today" for the default print rule: prints released later are not out yet. */
+const today = '2026-11-07';
 const solRing = aCard({ oracleId: 'sol-ring', name: 'Sol Ring' });
 const solRingC21 = aPrint({ id: 'sol-ring-c21', releasedAt: '2021-04-23' });
 
@@ -9,7 +11,7 @@ describe('resolveDecklist', () => {
   it('resolves a "quantity name" line to its card and default print', async () => {
     const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]);
 
-    const lines = await resolveDecklist('4 Sol Ring', catalog);
+    const lines = await resolveDecklist('4 Sol Ring', catalog, { today });
 
     expect(lines).toEqual([
       {
@@ -34,6 +36,7 @@ describe('resolveDecklist', () => {
     const lines = await resolveDecklist(
       '4 sol ring\n\n  2   COUNTERSPELL  \r\n1 Sol Rnig\n',
       catalog,
+      { today },
     );
 
     expect(lines.map((line) => [line.text, line.status, line.quantity])).toEqual([
@@ -46,7 +49,7 @@ describe('resolveDecklist', () => {
   it('reads a line with only a name as one copy', async () => {
     const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]);
 
-    const [line] = await resolveDecklist('Sol Ring', catalog);
+    const [line] = await resolveDecklist('Sol Ring', catalog, { today });
 
     expect(line).toMatchObject({ status: 'resolved', quantity: 1, card: solRing });
   });
@@ -69,9 +72,19 @@ describe('resolveDecklist', () => {
       { card: solRing, prints: [older, ...unprintable, latestPaper] },
     ]);
 
-    const [line] = await resolveDecklist('1 Sol Ring', catalog);
+    const [line] = await resolveDecklist('1 Sol Ring', catalog, { today });
 
     expect(line).toMatchObject({ status: 'resolved', defaultPrint: { id: 'latest-paper' } });
+  });
+
+  it('ignores prints that are not released yet when picking the default', async () => {
+    const preview = aPrint({ id: 'preview', releasedAt: '2027-04-09' });
+    const releasedToday = aPrint({ id: 'released-today', releasedAt: today });
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [preview, releasedToday] }]);
+
+    const [line] = await resolveDecklist('1 Sol Ring', catalog, { today });
+
+    expect(line).toMatchObject({ defaultPrint: { id: 'released-today' } });
   });
 
   it('resolves a card without printable prints with no default print', async () => {
@@ -79,7 +92,7 @@ describe('resolveDecklist', () => {
       { card: solRing, prints: [aPrint({ id: 'digital', digital: true })] },
     ]);
 
-    const [line] = await resolveDecklist('1 Sol Ring', catalog);
+    const [line] = await resolveDecklist('1 Sol Ring', catalog, { today });
 
     expect(line).toMatchObject({ status: 'resolved', defaultPrint: null });
   });
@@ -91,6 +104,7 @@ describe('resolveDecklist', () => {
     const lines = await resolveDecklist(
       '1 Delver of Secrets\n1 delver of secrets // insectile aberration\n1 Insectile Aberration',
       catalog,
+      { today },
     );
 
     expect(lines.map((line) => line.status)).toEqual(['resolved', 'resolved', 'notFound']);
@@ -112,7 +126,7 @@ describe('resolveDecklist', () => {
       { card: delverArt, prints: [artSeries] },
     ]);
 
-    const lines = await resolveDecklist('1 Sol Ring\n1 Delver of Secrets', catalog);
+    const lines = await resolveDecklist('1 Sol Ring\n1 Delver of Secrets', catalog, { today });
 
     expect(lines).toMatchObject([
       { status: 'resolved', card: solRing },
@@ -128,7 +142,7 @@ describe('resolveDecklist', () => {
       { card: goblinB, prints: [aPrint()] },
     ]);
 
-    const [line] = await resolveDecklist('3 Goblin', catalog);
+    const [line] = await resolveDecklist('3 Goblin', catalog, { today });
 
     expect(line).toEqual({
       text: '3 Goblin',
