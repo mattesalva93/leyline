@@ -3,6 +3,7 @@
   "version": "0.2.0",
   "configurations": [
     {
+      // Same inspector flags as the `test:debug` script in package.json: keep them in sync.
       "name": "Debug test file corrente",
       "type": "node",
       "request": "launch",
