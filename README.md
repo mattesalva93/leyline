@@ -16,7 +16,7 @@ pnpm db:up            # PostgreSQL with pg_trgm
 pnpm check            # typecheck, lint, format check, tests (what CI runs)
 ```
 
-Domain language lives in `GLOSSARY.md`, decisions in `docs/adr/`, review rules in `CODING_STANDARDS.md`.
+Domain language lives in `GLOSSARY.md`, decisions in `docs/adr/`, review rules in `CODING_STANDARDS.md`. To debug with breakpoints, see [`docs/debugging.md`](docs/debugging.md).
 
 ## License
 
