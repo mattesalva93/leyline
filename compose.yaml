@@ -1,6 +1,8 @@
 services:
   web:
     build: { context: ., target: web }
+    # Rebuild on every `up`, so a manual test never runs a stale image (layer cache keeps it fast).
+    pull_policy: build
     ports:
       - '127.0.0.1:${WEB_PORT:-8080}:80'
     depends_on:
@@ -8,6 +10,7 @@ services:
 
   api:
     build: { context: ., target: api }
+    pull_policy: build
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-mtg}:${POSTGRES_PASSWORD:-mtg}@postgres:5432/${POSTGRES_DB:-mtg_suite}
       # Inside the container, listen on every interface so `web` can reach it.
