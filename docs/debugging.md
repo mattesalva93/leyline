@@ -21,16 +21,17 @@ VS Code runs on Windows and opens the repo through the WSL extension. When you o
 
 Pick one in the Run and Debug view (Ctrl+Shift+D), then press F5.
 
-### "Debug test file corrente"
+### "Debug current test file"
 
-Runs Vitest on the test file open in the editor, with `--inspect-brk --no-file-parallelism`:
+Runs Vitest on the test file open in the editor, with `--inspect-brk --no-file-parallelism --test-timeout=0 --hook-timeout=0`:
 
 - `--inspect-brk` turns on Vitest's debug mode. From a terminal it opens the inspector and pauses before the test file runs (see `pnpm test:debug` below).
 - `--no-file-parallelism` runs one file at a time in a single process, so there is only one process to debug. Vitest refuses `--inspect-brk` without it.
+- `--test-timeout=0` and `--hook-timeout=0` turn off Vitest's timeouts (5 s per test, 10 s per hook). They keep counting while execution is paused on a breakpoint, so without these flags the test fails while you inspect it.
 
 VS Code attaches to the Vitest worker by itself (`autoAttachChildProcesses`) before any test code runs. Because the inspector is already open, Vitest skips its own initial pause: execution stops only on your breakpoints. Set them in the `.ts` source before pressing F5.
 
-### "Node file corrente"
+### "Debug current Node file"
 
 Runs `node` on the `.ts` file open in the editor. Node 26 strips TypeScript types natively, so there is no build step and breakpoints sit on the source.
 
@@ -45,7 +46,7 @@ pnpm test:debug                                   # all test files, in watch mod
 pnpm test:debug packages/core/src/foo.test.ts     # one file
 ```
 
-The script runs `vitest --inspect-brk=127.0.0.1:9229 --no-file-parallelism`. Vitest prints `Debugger listening on ws://127.0.0.1:9229/...` and waits for a debugger.
+The script runs `vitest --inspect-brk=127.0.0.1:9229 --no-file-parallelism --test-timeout=0 --hook-timeout=0`, so timeouts are off here too. Vitest prints `Debugger listening on ws://127.0.0.1:9229/...` and waits for a debugger.
 
 To attach from Chrome or Edge on Windows:
 
