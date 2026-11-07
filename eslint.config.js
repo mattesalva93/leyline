@@ -1,0 +1,115 @@
+// @ts-check
+import js from '@eslint/js';
+import prettier from 'eslint-config-prettier';
+import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
+
+// Guardrails from ticket #2 and CODING_STANDARDS.md. Each one fails the lint.
+
+/** `core` is pure: no network, file system, process or database access. */
+const coreNoIo = {
+  files: ['packages/core/**/*.{ts,tsx}'],
+  languageOptions: { globals: {} },
+  rules: {
+    'no-restricted-globals': [
+      'error',
+      ...['fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'process', 'require'].map(
+        (name) => ({ name, message: '`core` must not do I/O: receive data as arguments.' }),
+      ),
+    ],
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: [
+          {
+            regex: '^node:',
+            message: '`core` must not do I/O: no Node built-in modules.',
+          },
+          {
+            regex:
+              '^(fs|fs/promises|path|os|net|http|https|http2|child_process|worker_threads|dgram|dns|tls|readline|stream|zlib)$',
+            message: '`core` must not do I/O: no Node built-in modules.',
+          },
+          {
+            regex:
+              '^(pg|postgres|pg-.*|kysely|drizzle-orm.*|prisma|@prisma/.*|axios|undici|ky|got)$',
+            message: '`core` must not do I/O: no database or HTTP clients.',
+          },
+          {
+            regex: '^@mtg-suite/(api|web)(/|$)',
+            message: '`core` must not depend on `api` or `web`.',
+          },
+        ],
+      },
+    ],
+  },
+};
+
+/** `web` and `api` share only `core`'s types; they never import each other. */
+const webNoApi = {
+  files: ['packages/web/**/*.{ts,tsx}'],
+  rules: {
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: [
+          {
+            regex: '^@mtg-suite/api(/|$)|^(\\.\\./)+(packages/)?api(/|$)',
+            message: '`web` must not import from `api`: share types through `core`.',
+          },
+        ],
+      },
+    ],
+  },
+};
+
+const apiNoWeb = {
+  files: ['packages/api/**/*.{ts,tsx}'],
+  rules: {
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: [
+          {
+            regex: '^@mtg-suite/web(/|$)|^(\\.\\./)+(packages/)?web(/|$)',
+            message: '`api` must not import from `web`: share types through `core`.',
+          },
+        ],
+      },
+    ],
+  },
+};
+
+/** `web` UI text goes through the i18n library, never as a JSX literal. */
+const webNoJsxLiterals = {
+  files: ['packages/web/**/*.tsx'],
+  plugins: { react, 'react-hooks': reactHooks },
+  languageOptions: { globals: globals.browser },
+  settings: { react: { version: 'detect' } },
+  rules: {
+    ...react.configs.flat.recommended.rules,
+    ...react.configs.flat['jsx-runtime'].rules,
+    ...reactHooks.configs.recommended.rules,
+    'react/jsx-no-literals': [
+      'error',
+      { noStrings: true, ignoreProps: true, noAttributeStrings: false },
+    ],
+  },
+};
+
+export default tseslint.config(
+  { ignores: ['**/dist/**', '**/coverage/**', '**/node_modules/**', 'research/**'] },
+  js.configs.recommended,
+  ...tseslint.configs.strict,
+  {
+    files: ['*.{js,ts}', 'packages/api/**/*.ts'],
+    languageOptions: { globals: globals.node },
+  },
+  coreNoIo,
+  webNoApi,
+  apiNoWeb,
+  webNoJsxLiterals,
+  prettier,
+);

@@ -1,0 +1,10 @@
+{
+  "name": "@mtg-suite/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^26.6.6"
+  }
+}
