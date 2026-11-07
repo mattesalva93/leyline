@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   defaultSheetOptions,
   generateSheetPdf,
+  hasPrintableCopies,
   sheetImageUrls,
   type DecklistLine,
   type Print,
@@ -377,5 +378,34 @@ describe('generateSheetPdf', () => {
 
       expect(layout.slice(-3)).toEqual(['1:3:2 sol', '2:1:1 front', '2:1:2 back']);
     });
+  });
+});
+
+describe('hasPrintableCopies', () => {
+  it('is true when a resolved line has a default print', () => {
+    expect(hasPrintableCopies(sheetOf(resolvedLine(1, print)))).toBe(true);
+  });
+
+  it('is false when no line has a print to put on the sheet', () => {
+    const noPrint: DecklistLine = {
+      text: '1 Card Name',
+      status: 'resolved',
+      quantity: 1,
+      lang: 'en',
+      card: aCard(),
+      defaultPrint: null,
+      allocations: [],
+    };
+    const notFound: DecklistLine = { text: '1 Nope', status: 'notFound', quantity: 1, lang: 'en' };
+    const ambiguous: DecklistLine = {
+      text: '1 Bolt',
+      status: 'ambiguous',
+      quantity: 1,
+      lang: 'en',
+      candidates: [aCard()],
+    };
+
+    expect(hasPrintableCopies(sheetOf())).toBe(false);
+    expect(hasPrintableCopies(sheetOf(noPrint, notFound, ambiguous))).toBe(false);
   });
 });

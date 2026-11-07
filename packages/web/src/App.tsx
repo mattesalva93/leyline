@@ -1,6 +1,7 @@
 import {
   defaultSheetOptions,
   generateSheetPdf,
+  hasPrintableCopies,
   sheetImageUrls,
   type DecklistLine,
 } from '@mtg-suite/core';
@@ -42,7 +43,7 @@ export function App() {
   }
 
   const busy = status === 'resolving' || status === 'generating';
-  const printable = lines.some((line) => line.status === 'resolved' && line.defaultPrint);
+  const printable = hasPrintableCopies({ options: defaultSheetOptions, lines });
 
   return (
     <div className="page">

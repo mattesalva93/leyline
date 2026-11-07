@@ -30,6 +30,11 @@ interface Slot {
 /** The slots of one printed copy: one per face, so two for a double-faced card. */
 type Copy = readonly Slot[];
 
+/** Whether the sheet puts at least one card on paper: what makes a PDF worth generating. */
+export function hasPrintableCopies(sheet: Sheet): boolean {
+  return copiesOf(sheet).length > 0;
+}
+
 function copiesOf(sheet: Sheet): Copy[] {
   return sheet.lines.flatMap((line) => {
     if (line.status !== 'resolved' || !line.defaultPrint) return [];
