@@ -1,0 +1,9 @@
+# Reject any push that targets main on the remote: plain push, force push and deletion alike.
+# main only moves by merging a pull request on GitHub (see docs/adr/0006).
+# Git feeds one line per ref: <local ref> <local sha> <remote ref> <remote sha>.
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo "pre-push: pushing to main is not allowed. Push a branch and open a pull request." >&2
+    exit 1
+  fi
+done
