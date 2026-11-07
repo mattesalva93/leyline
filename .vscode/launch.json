@@ -1,0 +1,35 @@
+{
+  // Debug configurations. See docs/debugging.md.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Same inspector flags as the `test:debug` script in package.json: keep them in sync.
+      "name": "Debug current test file",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+      "args": [
+        "run",
+        "${relativeFile}",
+        "--inspect-brk=127.0.0.1:9229",
+        "--no-file-parallelism",
+        "--test-timeout=0",
+        "--hook-timeout=0"
+      ],
+      "cwd": "${workspaceFolder}",
+      "autoAttachChildProcesses": true,
+      "smartStep": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Debug current Node file",
+      "type": "node",
+      "request": "launch",
+      "program": "${file}",
+      "cwd": "${workspaceFolder}",
+      "skipFiles": ["<node_internals>/**"],
+      "console": "integratedTerminal"
+    }
+  ]
+}
