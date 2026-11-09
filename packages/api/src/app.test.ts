@@ -120,11 +120,11 @@ afterAll(async () => {
   await db.drop();
 });
 
-async function resolve(text: unknown) {
+async function resolve(text: unknown, lang?: unknown) {
   const response = await createApp({ sql: db.sql }).request('/api/decklists/resolve', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, lang }),
   });
   return { status: response.status, body: (await response.json()) as { lines: unknown[] } };
 }
@@ -270,6 +270,50 @@ describe('POST /api/decklists/resolve', () => {
         ],
       },
     ]);
+  });
+
+  it('resolves lines in the requested language, falling back to English with a warning', async () => {
+    const counterspell = {
+      oracle_id: 'aaaaaaaa-0000-0000-0000-00000000c0de',
+      name: 'Counterspell',
+    };
+    await importBulk(
+      db.sql,
+      bulkStream([
+        scryfallCard({ id: 'sol-ring-en', released_at: '2025-01-01' }),
+        scryfallCard({
+          id: 'sol-ring-it',
+          lang: 'it',
+          set: 'c21',
+          released_at: '2021-04-23',
+          printed_name: 'Anello Solare',
+          image_status: 'lowres',
+        }),
+        scryfallCard({ id: 'counterspell-en', ...counterspell, set: 'mh2' }),
+        scryfallCard({
+          id: 'counterspell-it',
+          ...counterspell,
+          lang: 'it',
+          set: 'mh2',
+          printed_name: 'Contromagia',
+          image_status: 'placeholder',
+        }),
+      ]),
+    );
+
+    const { status, body } = await resolve('1 Sol Ring\n1 Counterspell', 'it');
+
+    expect(status).toBe(200);
+    expect(body.lines).toMatchObject([
+      { lang: 'it', defaultPrint: { id: 'sol-ring-it' }, printWarning: 'lowResolution' },
+      { lang: 'it', defaultPrint: { id: 'counterspell-en' }, printWarning: 'languageFallback' },
+    ]);
+  });
+
+  it('rejects a language the catalog does not hold', async () => {
+    const { status } = await resolve('1 Sol Ring', 'ja');
+
+    expect(status).toBe(400);
   });
 
   it('resolves a 100-line decklist, half of it misspelled, in one call', async () => {
