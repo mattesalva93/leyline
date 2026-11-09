@@ -1,5 +1,5 @@
 // Streams a Scryfall bulk file into the catalog and swaps it in atomically (ADR 0002).
-import type { ImageUris, PrintFace } from '@mtg-suite/core';
+import { cardKeys, type ImageUris, type PrintFace } from '@mtg-suite/core';
 import type { Readable } from 'node:stream';
 import { createInterface } from 'node:readline';
 import { createCatalogTables, type Sql } from './db.ts';
@@ -49,6 +49,11 @@ interface ScryfallCard {
 interface CardRow {
   readonly oracle_id: string;
   readonly name: string;
+}
+
+interface NameRow {
+  readonly key: string;
+  readonly oracle_id: string;
 }
 
 interface PrintRow {
@@ -141,11 +146,12 @@ export async function importBulk(sql: Sql, bulk: Readable): Promise<{ prints: nu
 async function importLocked(sql: Sql, bulk: Readable): Promise<{ prints: number }> {
   // The daily schedule counts from the start, so a long import does not push the next one later.
   const startedAt = new Date();
-  await sql`drop table if exists prints_staging, cards_staging`;
+  await sql`drop table if exists prints_staging, cards_staging, card_names_staging`;
   await createCatalogTables(sql, '_staging');
 
   let imported = 0;
   let cards = new Map<string, CardRow>();
+  let names = new Map<string, NameRow>();
   let prints: PrintRow[] = [];
   const flush = async () => {
     if (prints.length === 0) return;
@@ -153,9 +159,14 @@ async function importLocked(sql: Sql, bulk: Readable): Promise<{ prints: number 
       insert into cards_staging ${sql([...cards.values()])}
       on conflict (oracle_id) do nothing
     `;
+    await sql`
+      insert into card_names_staging ${sql([...names.values()])}
+      on conflict (key, oracle_id) do nothing
+    `;
     await sql`insert into prints_staging ${sql(prints)}`;
     imported += prints.length;
     cards = new Map();
+    names = new Map();
     prints = [];
   };
 
@@ -166,19 +177,23 @@ async function importLocked(sql: Sql, bulk: Readable): Promise<{ prints: number 
     if (!rows) continue;
     cards.set(rows.card.oracle_id, rows.card);
     prints.push(rows.print);
+    for (const key of cardKeys(rows.card.name, [rows.print.printed_name])) {
+      names.set(`${key}\n${rows.card.oracle_id}`, { key, oracle_id: rows.card.oracle_id });
+    }
     if (prints.length >= BATCH_SIZE) await flush();
   }
   await flush();
 
   await sql.begin(async (tx) => {
-    await tx`drop table if exists prints, cards`;
+    await tx`drop table if exists prints, cards, card_names`;
     await tx`alter table cards_staging rename to cards`;
     await tx`alter table prints_staging rename to prints`;
+    await tx`alter table card_names_staging rename to card_names`;
     // Indexes keep their names across a table rename: drop the suffix so the next import can
     // create its staging indexes again. Renaming a primary key's index renames the constraint.
     const indexes = await tx<{ indexname: string }[]>`
       select indexname from pg_indexes
-      where schemaname = current_schema() and tablename in ('cards', 'prints')
+      where schemaname = current_schema() and tablename in ('cards', 'prints', 'card_names')
     `;
     for (const { indexname } of indexes) {
       await tx`alter index ${tx(indexname)} rename to ${tx(indexname.replace('_staging_', '_'))}`;

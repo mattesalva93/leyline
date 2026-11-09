@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createInMemoryCatalog, resolveDecklist } from './index.ts';
+import { chooseCandidate, createInMemoryCatalog, resolveDecklist } from './index.ts';
 import { aCard, aPrint } from './test-fixtures.ts';
 
 /** Fixed "today" for the default print rule: prints released later are not out yet. */
@@ -34,7 +34,7 @@ describe('resolveDecklist', () => {
     ]);
 
     const lines = await resolveDecklist(
-      '4 sol ring\n\n  2   COUNTERSPELL  \r\n1 Sol Rnig\n',
+      '4 sol ring\n\n  2   COUNTERSPELL  \r\n1 Xyzzy Plover\n',
       catalog,
       { today },
     );
@@ -42,8 +42,177 @@ describe('resolveDecklist', () => {
     expect(lines.map((line) => [line.text, line.status, line.quantity])).toEqual([
       ['4 sol ring', 'resolved', 4],
       ['  2   COUNTERSPELL  ', 'resolved', 2],
-      ['1 Sol Rnig', 'notFound', 1],
+      ['1 Xyzzy Plover', 'notFound', 1],
     ]);
+  });
+
+  it('ignores section headers and comments of deckbuilder exports', async () => {
+    const counterspell = aCard({ oracleId: 'counterspell', name: 'Counterspell' });
+    const catalog = createInMemoryCatalog([
+      { card: solRing, prints: [solRingC21] },
+      { card: counterspell, prints: [aPrint({ id: 'counterspell-mh2' })] },
+    ]);
+    const exported = [
+      'Commander',
+      '1 Sol Ring',
+      '',
+      'Deck',
+      '// Instants',
+      '# from Moxfield',
+      'Creatures (12)',
+      'Sideboard:',
+      'SB: 2 Counterspell',
+      'MAYBEBOARD',
+    ].join('\n');
+
+    const lines = await resolveDecklist(exported, catalog, { today });
+
+    expect(lines).toMatchObject([
+      { text: '1 Sol Ring', status: 'resolved', quantity: 1, card: solRing },
+      { text: 'SB: 2 Counterspell', status: 'resolved', quantity: 2, card: counterspell },
+    ]);
+  });
+
+  it('reads "4x name" as four copies', async () => {
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]);
+
+    const [line] = await resolveDecklist('4x Sol Ring', catalog, { today });
+
+    expect(line).toMatchObject({ status: 'resolved', quantity: 4, card: solRing });
+  });
+
+  it('uses exactly the print an Arena or MTGO line names by set and collector number', async () => {
+    const c21 = aPrint({
+      id: 'sol-ring-c21',
+      set: 'c21',
+      collectorNumber: '263',
+      releasedAt: '2021-04-23',
+    });
+    const cmm = aPrint({
+      id: 'sol-ring-cmm',
+      set: 'cmm',
+      collectorNumber: '410',
+      releasedAt: '2023-08-04',
+    });
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [c21, cmm] }]);
+
+    const lines = await resolveDecklist('1 Sol Ring (C21) 263\n2 Sol Ring (C21) 263 *F*', catalog, {
+      today,
+    });
+
+    expect(lines).toMatchObject([
+      { status: 'resolved', quantity: 1, card: solRing, defaultPrint: { id: 'sol-ring-c21' } },
+      { status: 'resolved', quantity: 2, card: solRing, defaultPrint: { id: 'sol-ring-c21' } },
+    ]);
+  });
+
+  it('matches set and collector number whatever their case', async () => {
+    const variant = aPrint({ id: 'sol-ring-variant', set: 'plst', collectorNumber: 'c21-263' });
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21, variant] }]);
+
+    const [line] = await resolveDecklist('1 Sol Ring (PLST) C21-263', catalog, { today });
+
+    expect(line).toMatchObject({ defaultPrint: { id: 'sol-ring-variant' } });
+  });
+
+  it('takes the language of the named print when it exists only in another one', async () => {
+    const italianOnly = aPrint({
+      id: 'sol-ring-it',
+      lang: 'it',
+      set: 'c21',
+      collectorNumber: '263',
+    });
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21, italianOnly] }]);
+
+    const [line] = await resolveDecklist('1 Sol Ring (C21) 263', catalog, { today });
+
+    expect(line).toMatchObject({ lang: 'it', defaultPrint: { id: 'sol-ring-it' } });
+  });
+
+  it('falls back to the name when the set and number name no print of that card', async () => {
+    const counterspell = aCard({ oracleId: 'counterspell', name: 'Counterspell' });
+    const counterspellMh2 = aPrint({ id: 'counterspell-mh2', set: 'mh2', collectorNumber: '267' });
+    const catalog = createInMemoryCatalog([
+      { card: solRing, prints: [solRingC21] },
+      { card: counterspell, prints: [counterspellMh2] },
+    ]);
+
+    const lines = await resolveDecklist('1 Sol Ring (XXX) 999\n1 Sol Ring (MH2) 267', catalog, {
+      today,
+    });
+
+    expect(lines).toMatchObject([
+      { text: '1 Sol Ring (XXX) 999', status: 'resolved', card: solRing, defaultPrint: solRingC21 },
+      { text: '1 Sol Ring (MH2) 267', status: 'resolved', card: solRing, defaultPrint: solRingC21 },
+    ]);
+  });
+
+  it('resolves a misspelled name to the closest card', async () => {
+    const solTalisman = aCard({ oracleId: 'sol-talisman', name: 'Sol Talisman' });
+    const catalog = createInMemoryCatalog([
+      { card: solRing, prints: [solRingC21] },
+      { card: solTalisman, prints: [aPrint({ id: 'sol-talisman-mir' })] },
+    ]);
+
+    const [line] = await resolveDecklist('1 sol rnig', catalog, { today });
+
+    expect(line).toMatchObject({ status: 'resolved', card: solRing });
+  });
+
+  it('suggests the closest cards, best first, when a misspelled name is about as close to each', async () => {
+    const bolt = aCard({ oracleId: 'bolt', name: 'Lightning Bolt' });
+    const helix = aCard({ oracleId: 'helix', name: 'Lightning Helix' });
+    const greaves = aCard({ oracleId: 'greaves', name: 'Lightning Greaves' });
+    const catalog = createInMemoryCatalog([
+      { card: greaves, prints: [aPrint()] },
+      { card: helix, prints: [aPrint()] },
+      { card: bolt, prints: [aPrint()] },
+    ]);
+
+    const [line] = await resolveDecklist('2 lightning', catalog, { today });
+
+    // "lightning" is about as close to Bolt and Helix, clearly further from Greaves.
+    expect(line).toMatchObject({
+      status: 'ambiguous',
+      quantity: 2,
+      candidates: [{ card: bolt }, { card: helix }],
+    });
+  });
+
+  it('resolves an Italian printed name, even one an older reprint used, to its card', async () => {
+    const solRingIt = aPrint({ id: 'sol-ring-it', lang: 'it', printedName: 'Anello Solare' });
+    const emberBeast = aCard({ oracleId: 'ember-beast', name: 'Ember Beast' });
+    const catalog = createInMemoryCatalog([
+      { card: solRing, prints: [solRingC21, solRingIt] },
+      {
+        card: emberBeast,
+        prints: [
+          aPrint({ id: 'ember-beast-it-old', lang: 'it', printedName: 'Bestia Tizzone' }),
+          aPrint({ id: 'ember-beast-it', lang: 'it', printedName: 'Bestia di Brace' }),
+        ],
+      },
+    ]);
+
+    const lines = await resolveDecklist(
+      '1 anello solare\n1 Bestia Tizzone\n1 bestia di brace',
+      catalog,
+      { today },
+    );
+
+    expect(lines).toMatchObject([
+      { status: 'resolved', card: solRing },
+      { status: 'resolved', card: emberBeast },
+      { status: 'resolved', card: emberBeast },
+    ]);
+  });
+
+  it('ignores accents in the written name', async () => {
+    const seance = aCard({ oracleId: 'seance', name: 'Séance' });
+    const catalog = createInMemoryCatalog([{ card: seance, prints: [aPrint()] }]);
+
+    const [line] = await resolveDecklist('1 Seance', catalog, { today });
+
+    expect(line).toMatchObject({ status: 'resolved', card: seance });
   });
 
   it('reads a line with only a name as one copy', async () => {
@@ -107,7 +276,7 @@ describe('resolveDecklist', () => {
     expect(line).toMatchObject({ status: 'resolved', defaultPrint: null });
   });
 
-  it('resolves a double-faced card by its full name or its front-face name', async () => {
+  it('resolves a double-faced card by its full name, its front face, or its back face', async () => {
     const delver = aCard({ oracleId: 'delver', name: 'Delver of Secrets // Insectile Aberration' });
     const catalog = createInMemoryCatalog([{ card: delver, prints: [aPrint()] }]);
 
@@ -117,7 +286,12 @@ describe('resolveDecklist', () => {
       { today },
     );
 
-    expect(lines.map((line) => line.status)).toEqual(['resolved', 'resolved', 'notFound']);
+    // The back face alone is no exact name: it matches the full name as a misspelling would.
+    expect(lines).toMatchObject([
+      { status: 'resolved', card: delver },
+      { status: 'resolved', card: delver },
+      { status: 'resolved', card: delver },
+    ]);
   });
 
   it('prefers the printable card when an art series card shares its name', async () => {
@@ -147,9 +321,11 @@ describe('resolveDecklist', () => {
   it('marks a name shared by several cards as ambiguous, listing them', async () => {
     const goblinA = aCard({ oracleId: 'goblin-a', name: 'Goblin' });
     const goblinB = aCard({ oracleId: 'goblin-b', name: 'Goblin' });
+    const goblinAPrint = aPrint({ id: 'goblin-a-print' });
+    const goblinBPrint = aPrint({ id: 'goblin-b-print' });
     const catalog = createInMemoryCatalog([
-      { card: goblinA, prints: [aPrint()] },
-      { card: goblinB, prints: [aPrint()] },
+      { card: goblinA, prints: [goblinAPrint] },
+      { card: goblinB, prints: [goblinBPrint] },
     ]);
 
     const [line] = await resolveDecklist('3 Goblin', catalog, { today });
@@ -159,7 +335,34 @@ describe('resolveDecklist', () => {
       status: 'ambiguous',
       quantity: 3,
       lang: 'en',
-      candidates: [goblinA, goblinB],
+      candidates: [
+        { card: goblinA, defaultPrint: goblinAPrint },
+        { card: goblinB, defaultPrint: goblinBPrint },
+      ],
+    });
+  });
+});
+
+describe('chooseCandidate', () => {
+  it('resolves an ambiguous line to the chosen candidate, keeping its text and quantity', async () => {
+    const goblinA = aCard({ oracleId: 'goblin-a', name: 'Goblin' });
+    const goblinB = aCard({ oracleId: 'goblin-b', name: 'Goblin' });
+    const goblinBPrint = aPrint({ id: 'goblin-b-print' });
+    const catalog = createInMemoryCatalog([
+      { card: goblinA, prints: [aPrint({ id: 'goblin-a-print' })] },
+      { card: goblinB, prints: [goblinBPrint] },
+    ]);
+    const [line] = await resolveDecklist('3 Goblin', catalog, { today });
+    if (line?.status !== 'ambiguous') throw new Error('expected an ambiguous line');
+
+    expect(chooseCandidate(line, 'goblin-b')).toEqual({
+      text: '3 Goblin',
+      status: 'resolved',
+      quantity: 3,
+      lang: 'en',
+      card: goblinB,
+      defaultPrint: goblinBPrint,
+      allocations: [],
     });
   });
 });

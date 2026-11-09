@@ -1,7 +1,13 @@
 import type { DecklistLine } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
 
-export function DecklistLineItem({ line }: { line: DecklistLine }) {
+interface DecklistLineItemProps {
+  readonly line: DecklistLine;
+  /** Called with the oracle id of the suggestion the user picks on an ambiguous line. */
+  readonly onChoose: (oracleId: string) => void;
+}
+
+export function DecklistLineItem({ line, onChoose }: DecklistLineItemProps) {
   const { t } = useTranslation();
   const face = line.status === 'resolved' ? line.defaultPrint?.faces[0] : undefined;
 
@@ -26,9 +32,19 @@ export function DecklistLineItem({ line }: { line: DecklistLine }) {
         </span>
         {line.status === 'notFound' && <span className="line__note">{t('line.notFound')}</span>}
         {line.status === 'ambiguous' && (
-          <span className="line__note">
-            {t('line.ambiguous', { count: line.candidates.length })}
-          </span>
+          <div className="line__suggestions">
+            <span className="line__note">{t('line.ambiguous')}</span>
+            {line.candidates.map(({ card }) => (
+              <button
+                key={card.oracleId}
+                type="button"
+                className="line__suggestion"
+                onClick={() => onChoose(card.oracleId)}
+              >
+                {card.name}
+              </button>
+            ))}
+          </div>
         )}
         {line.status === 'resolved' && !line.defaultPrint && (
           <span className="line__note">{t('line.noPrint')}</span>

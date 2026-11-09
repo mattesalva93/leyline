@@ -21,6 +21,7 @@ export function connect(url: string, options: ConnectOptions = {}): Sql {
 export async function createCatalogTables(sql: Sql, suffix: '' | '_staging'): Promise<void> {
   const cards = sql(`cards${suffix}`);
   const prints = sql(`prints${suffix}`);
+  const names = sql(`card_names${suffix}`);
   await sql`
     create table if not exists ${cards} (
       oracle_id text not null,
@@ -28,13 +29,18 @@ export async function createCatalogTables(sql: Sql, suffix: '' | '_staging'): Pr
       constraint ${sql(`cards${suffix}_pkey`)} primary key (oracle_id)
     )
   `;
-  // Lookup keys follow `Catalog.findByNames`: lowercased full name and front-face name.
+  // Every name key a card answers to (`cardKeys` in core).
   await sql`
-    create index if not exists ${sql(`cards${suffix}_name_idx`)} on ${cards} (lower(name))
+    create table if not exists ${names} (
+      key text not null,
+      oracle_id text not null,
+      constraint ${sql(`card_names${suffix}_pkey`)} primary key (key, oracle_id)
+    )
   `;
+  // Fuzzy name search (ADR 0003): the `%` similarity operator uses this index.
   await sql`
-    create index if not exists ${sql(`cards${suffix}_front_face_idx`)}
-    on ${cards} (lower(split_part(name, ' // ', 1)))
+    create index if not exists ${sql(`card_names${suffix}_key_trgm_idx`)}
+    on ${names} using gin (key gin_trgm_ops)
   `;
   await sql`
     create table if not exists ${prints} (

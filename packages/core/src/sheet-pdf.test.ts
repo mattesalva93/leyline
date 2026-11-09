@@ -5,6 +5,7 @@ import {
   generateSheetPdf,
   hasPrintableCopies,
   sheetImageUrls,
+  unprintedLines,
   type DecklistLine,
   type Print,
   type Sheet,
@@ -402,10 +403,39 @@ describe('hasPrintableCopies', () => {
       status: 'ambiguous',
       quantity: 1,
       lang: 'en',
-      candidates: [aCard()],
+      candidates: [{ card: aCard(), defaultPrint: print }],
     };
 
     expect(hasPrintableCopies(sheetOf())).toBe(false);
     expect(hasPrintableCopies(sheetOf(noPrint, notFound, ambiguous))).toBe(false);
+  });
+});
+
+describe('unprintedLines', () => {
+  it('lists the lines that put no copy on the sheet, in decklist order', () => {
+    const printed = resolvedLine(2, print);
+    const notFound: DecklistLine = { text: '1 Nope', status: 'notFound', quantity: 1, lang: 'en' };
+    const ambiguous: DecklistLine = {
+      text: '1 Lightning',
+      status: 'ambiguous',
+      quantity: 1,
+      lang: 'en',
+      candidates: [{ card: aCard(), defaultPrint: print }],
+    };
+    const noPrint: DecklistLine = {
+      text: '1 Digital Only',
+      status: 'resolved',
+      quantity: 1,
+      lang: 'en',
+      card: aCard(),
+      defaultPrint: null,
+      allocations: [],
+    };
+
+    expect(unprintedLines(sheetOf(notFound, printed, ambiguous, noPrint))).toEqual([
+      notFound,
+      ambiguous,
+      noPrint,
+    ]);
   });
 });

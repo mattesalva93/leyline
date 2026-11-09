@@ -11,7 +11,7 @@ import {
   type PDFImage,
   type PDFOperator,
 } from 'pdf-lib';
-import type { Sheet, SheetOptions } from './types.ts';
+import type { DecklistLine, Sheet, SheetOptions } from './types.ts';
 
 export const defaultSheetOptions: SheetOptions = { pageFormat: 'A4', imageQuality: 'large' };
 
@@ -35,14 +35,21 @@ export function hasPrintableCopies(sheet: Sheet): boolean {
   return copiesOf(sheet).length > 0;
 }
 
+/** The lines that put no copy on the sheet (not found, ambiguous, no print): warn about these. */
+export function unprintedLines(sheet: Sheet): DecklistLine[] {
+  return sheet.lines.filter((line) => lineCopies(line, sheet.options).length === 0);
+}
+
 function copiesOf(sheet: Sheet): Copy[] {
-  return sheet.lines.flatMap((line) => {
-    if (line.status !== 'resolved' || !line.defaultPrint) return [];
-    const copy = line.defaultPrint.faces.map((face) => ({
-      imageUrl: face.imageUris[sheet.options.imageQuality],
-    }));
-    return Array.from({ length: line.quantity }, () => copy);
-  });
+  return sheet.lines.flatMap((line) => lineCopies(line, sheet.options));
+}
+
+function lineCopies(line: DecklistLine, options: SheetOptions): Copy[] {
+  if (line.status !== 'resolved' || !line.defaultPrint) return [];
+  const copy = line.defaultPrint.faces.map((face) => ({
+    imageUrl: face.imageUris[options.imageQuality],
+  }));
+  return Array.from({ length: line.quantity }, () => copy);
 }
 
 /**

@@ -1,27 +1,29 @@
 {
   "app": {
     "title": "Generatore di fogli proxy",
-    "intro": "Incolla una decklist, una carta per riga: quantità e nome inglese esatto (es. 4 Sol Ring)."
+    "intro": "Incolla o scrivi una decklist, una carta per riga, in inglese o in italiano (es. 4 Sol Ring, anello del sole, 1 Sol Ring (C21) 263). Ogni riga viene riconosciuta quando vai a capo."
   },
   "decklist": {
     "label": "Decklist",
     "placeholder": "4 Sol Ring\n1 Counterspell",
-    "resolve": "Riconosci le carte",
     "resolving": "Riconoscimento in corso…",
     "error": "Non è stato possibile riconoscere le carte. Riprova tra poco."
   },
   "line": {
     "quantity": "{{count}}×",
-    "notFound": "Carta non trovata",
-    "ambiguous": "Nome ambiguo: {{count}} carte con questo nome",
+    "notFound": "Carta non trovata: correggi la riga, non verrà stampata",
+    "ambiguous": "Quale carta intendevi?",
     "noPrint": "Nessuna stampa cartacea stampabile",
-    "imageAlt": "Immagine di {{name}}"
+    "imageAlt": "Immagine di {{name}}",
+    "pending": "Da riconoscere: vai a capo o esci dal campo"
   },
   "pdf": {
     "download": "Scarica il PDF",
     "generating": "Creazione del PDF…",
     "error": "Non è stato possibile creare il PDF. Riprova tra poco.",
-    "fileName": "proxy-mtg-suite.pdf"
+    "fileName": "proxy-mtg-suite.pdf",
+    "unprinted_one": "1 riga non verrà stampata: controlla le righe segnalate.",
+    "unprinted_other": "{{count}} righe non verranno stampate: controlla le righe segnalate."
   },
   "footer": {
     "disclaimer": "Progetto non ufficiale, non affiliato a Wizards of the Coast.",

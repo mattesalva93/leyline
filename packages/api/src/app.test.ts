@@ -5,6 +5,110 @@ import { migrate } from './db.ts';
 import { bulkStream, doubleFacedCard, scryfallCard, textStream } from './scryfall-fixtures.ts';
 import { createTestDb, type TestDb } from './test-db.ts';
 
+/** A Commander deck's worth of real card names, for the 100-line batch. */
+const COMMANDER_NAMES = [
+  'Sol Ring',
+  'Arcane Signet',
+  'Command Tower',
+  'Lightning Greaves',
+  'Swiftfoot Boots',
+  'Counterspell',
+  'Swords to Plowshares',
+  'Path to Exile',
+  'Cultivate',
+  "Kodama's Reach",
+  'Rampant Growth',
+  'Beast Within',
+  'Chaos Warp',
+  'Cyclonic Rift',
+  'Rhystic Study',
+  'Mystic Remora',
+  'Smothering Tithe',
+  'Demonic Tutor',
+  'Vampiric Tutor',
+  'Eternal Witness',
+  'Llanowar Elves',
+  'Elvish Mystic',
+  'Birds of Paradise',
+  'Farseek',
+  "Nature's Lore",
+  'Three Visits',
+  'Skyshroud Claim',
+  'Explosive Vegetation',
+  'Harmonize',
+  "Rishkar's Expertise",
+  'Return of the Wildspeaker',
+  'Heroic Intervention',
+  "Teferi's Protection",
+  'Wrath of God',
+  'Damnation',
+  'Toxic Deluge',
+  'Blasphemous Act',
+  'Vandalblast',
+  'Austere Command',
+  'Anguished Unmaking',
+  'Generous Gift',
+  "Assassin's Trophy",
+  'Krosan Grip',
+  'Reclamation Sage',
+  'Acidic Slime',
+  'Solemn Simulacrum',
+  'Burnished Hart',
+  "Wayfarer's Bauble",
+  'Mind Stone',
+  'Fellwar Stone',
+  'Thought Vessel',
+  "Commander's Sphere",
+  'Talisman of Dominance',
+  'Talisman of Progress',
+  'Darksteel Ingot',
+  'Worn Powerstone',
+  'Thran Dynamo',
+  'Gilded Lotus',
+  'Basalt Monolith',
+  'Chromatic Lantern',
+  'Exotic Orchard',
+  'Reflecting Pool',
+  'Path of Ancestry',
+  'Evolving Wilds',
+  'Terramorphic Expanse',
+  'Myriad Landscape',
+  'Ash Barrens',
+  'Temple of the False God',
+  'Reliquary Tower',
+  "Rogue's Passage",
+  'Bojuka Bog',
+  'Strip Mine',
+  'Ghost Quarter',
+  'Tectonic Edge',
+  'Field of the Dead',
+  'Castle Garenbrig',
+  'Mosswort Bridge',
+  'Kessig Wolf Run',
+  'Gavony Township',
+  'Grim Backwoods',
+  'Llanowar Wastes',
+  'Yavimaya Coast',
+  'Shivan Reef',
+  'Sulfurous Springs',
+  'Battlefield Forge',
+  'Caves of Koilos',
+  'Adarkar Wastes',
+  'Underground River',
+  'Karplusan Forest',
+  'Brushland',
+  'Sungrass Prairie',
+  'Canopy Vista',
+  'Cinder Glade',
+  'Prairie Stream',
+  'Smoldering Marsh',
+  'Sunken Hollow',
+  'Fabled Passage',
+  'Prismatic Vista',
+  'Breeding Pool',
+  'Overgrown Tomb',
+];
+
 let db: TestDb;
 
 beforeAll(async () => {
@@ -37,7 +141,7 @@ describe('POST /api/decklists/resolve', () => {
       ]),
     );
 
-    const { status, body } = await resolve('4 Sol Ring\n2 delver of secrets\n1 Sol Rnig');
+    const { status, body } = await resolve('4 Sol Ring\n2 delver of secrets\n1 Xyzzy Plover');
 
     expect(status).toBe(200);
     expect(body.lines).toMatchObject([
@@ -63,8 +167,133 @@ describe('POST /api/decklists/resolve', () => {
           ],
         },
       },
-      { text: '1 Sol Rnig', status: 'notFound' },
+      { text: '1 Xyzzy Plover', status: 'notFound' },
     ]);
+  });
+
+  it('resolves English, misspelled and Italian names, old translations included, to one card', async () => {
+    const emberBeast = { oracle_id: 'aaaaaaaa-0000-0000-0000-0000000000eb', name: 'Ember Beast' };
+    await importBulk(
+      db.sql,
+      bulkStream([
+        scryfallCard({ id: 'sol-ring-c21' }),
+        scryfallCard({ id: 'sol-ring-it', lang: 'it', set: 'cmm', printed_name: 'Anello Solare' }),
+        scryfallCard({
+          id: 'sol-talisman-mir',
+          oracle_id: 'aaaaaaaa-0000-0000-0000-0000000005a1',
+          name: 'Sol Talisman',
+          set: 'mir',
+        }),
+        scryfallCard({
+          id: 'ember-beast-it-old',
+          ...emberBeast,
+          lang: 'it',
+          set: 'mrd',
+          printed_name: 'Bestia Tizzone',
+        }),
+        scryfallCard({
+          id: 'ember-beast-it',
+          ...emberBeast,
+          lang: 'it',
+          set: 'ddl',
+          printed_name: 'Bestia di Brace',
+        }),
+        doubleFacedCard({
+          id: 'delver-it',
+          lang: 'it',
+          card_faces: [
+            { name: 'Delver of Secrets', printed_name: 'Scopritore di Segreti' },
+            { name: 'Insectile Aberration', printed_name: 'Insetto Aberrante' },
+          ],
+        }),
+      ]),
+    );
+
+    const { body } = await resolve(
+      [
+        'sol ring',
+        '1 sol ring',
+        '1 sol rnig',
+        'anello solare',
+        '1 anelo solare',
+        '1 Bestia Tizzone',
+        '1 bestia di brace',
+        '1 scopritore di segreti',
+      ].join('\n'),
+    );
+
+    expect(body.lines).toMatchObject([
+      ...Array(5).fill({ status: 'resolved', card: { name: 'Sol Ring' } }),
+      ...Array(2).fill({ status: 'resolved', card: { name: 'Ember Beast' } }),
+      { status: 'resolved', card: { name: 'Delver of Secrets // Insectile Aberration' } },
+    ]);
+  });
+
+  it('uses the print an Arena line names, and suggests cards for an ambiguous one', async () => {
+    await importBulk(
+      db.sql,
+      bulkStream([
+        scryfallCard({ id: 'sol-ring-c21', set: 'c21', collector_number: '263' }),
+        scryfallCard({
+          id: 'sol-ring-cmm',
+          set: 'cmm',
+          collector_number: '410',
+          released_at: '2023-08-04',
+        }),
+        scryfallCard({
+          id: 'bolt-m11',
+          oracle_id: 'aaaaaaaa-0000-0000-0000-00000000b017',
+          name: 'Lightning Bolt',
+          set: 'm11',
+          collector_number: '149',
+        }),
+        scryfallCard({
+          id: 'helix-rav',
+          oracle_id: 'aaaaaaaa-0000-0000-0000-0000000000e1',
+          name: 'Lightning Helix',
+          set: 'rav',
+          collector_number: '213',
+        }),
+      ]),
+    );
+
+    const { body } = await resolve('1 Sol Ring (C21) 263\n2 lightning');
+
+    expect(body.lines).toMatchObject([
+      { status: 'resolved', card: { name: 'Sol Ring' }, defaultPrint: { id: 'sol-ring-c21' } },
+      {
+        status: 'ambiguous',
+        quantity: 2,
+        candidates: [
+          { card: { name: 'Lightning Bolt' }, defaultPrint: { id: 'bolt-m11' } },
+          { card: { name: 'Lightning Helix' }, defaultPrint: { id: 'helix-rav' } },
+        ],
+      },
+    ]);
+  });
+
+  it('resolves a 100-line decklist, half of it misspelled, in one call', async () => {
+    await importBulk(
+      db.sql,
+      bulkStream(
+        COMMANDER_NAMES.map((name, i) =>
+          scryfallCard({
+            id: `card-${i}`,
+            oracle_id: `aaaaaaaa-0000-0000-0000-${String(i).padStart(12, '0')}`,
+            name,
+          }),
+        ),
+      ),
+    );
+    // Every other name gets a typo (last letter typed twice): the fuzzy lookup runs on 50 names.
+    const typo = (name: string) => `${name}${name.at(-1)}`;
+    const decklist = COMMANDER_NAMES.map((name, i) => `1 ${i % 2 ? typo(name) : name}`);
+
+    const { body } = await resolve(['Commander', ...decklist].join('\n'));
+
+    expect(body.lines).toMatchObject(
+      COMMANDER_NAMES.map((name) => ({ status: 'resolved', card: { name } })),
+    );
   });
 
   it('imports only English and Italian prints', async () => {
