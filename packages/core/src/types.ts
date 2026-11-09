@@ -1,7 +1,12 @@
 // Domain types. Names follow GLOSSARY.md.
 
-/** Card language: the catalog holds English and Italian prints (ADR 0002). */
-export type Lang = 'en' | 'it';
+/** Card languages: the catalog holds English and Italian prints (ADR 0002). */
+export const LANGS = ['it', 'en'] as const;
+export type Lang = (typeof LANGS)[number];
+
+export function isLang(value: unknown): value is Lang {
+  return LANGS.some((lang) => lang === value);
+}
 
 /** Scryfall's `image_status`. */
 export type ImageStatus = 'highres_scan' | 'lowres' | 'placeholder' | 'missing';
@@ -81,18 +86,25 @@ interface DecklistLineBase {
   readonly lang: Lang;
 }
 
-export interface ResolvedLine extends DecklistLineBase {
-  readonly status: 'resolved';
-  readonly card: Card;
-  /** `null` when the card has no printable print in the line language. */
-  readonly defaultPrint: Print | null;
-  readonly allocations: readonly Allocation[];
-}
+/**
+ * Why a line's default print needs the user's attention: a low-resolution image, which an
+ * English print could replace (`lowResolution`) or not (`lowResolutionWithoutEnglish`), or no
+ * print with a real image in the line's language, so English stands in (`languageFallback`).
+ */
+export type PrintWarning = 'lowResolution' | 'lowResolutionWithoutEnglish' | 'languageFallback';
 
-/** A card an ambiguous line could mean, with the print it would default to. */
+/** A card a line means or could mean, with the print it defaults to. */
 export interface Candidate {
   readonly card: Card;
+  /** `null` when the card has no printable print, in the line language or in English. */
   readonly defaultPrint: Print | null;
+  /** `null` when the default print is fine as it is. */
+  readonly printWarning: PrintWarning | null;
+}
+
+export interface ResolvedLine extends DecklistLineBase, Candidate {
+  readonly status: 'resolved';
+  readonly allocations: readonly Allocation[];
 }
 
 export interface AmbiguousLine extends DecklistLineBase {

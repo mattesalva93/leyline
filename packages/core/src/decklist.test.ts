@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { chooseCandidate, createInMemoryCatalog, resolveDecklist } from './index.ts';
+import {
+  applyCandidateChoice,
+  chooseCandidate,
+  createInMemoryCatalog,
+  resolveDecklist,
+  setLineQuantity,
+} from './index.ts';
 import { aCard, aPrint } from './test-fixtures.ts';
 
 /** Fixed "today" for the default print rule: prints released later are not out yet. */
@@ -11,7 +17,7 @@ describe('resolveDecklist', () => {
   it('resolves a "quantity name" line to its card and default print', async () => {
     const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]);
 
-    const lines = await resolveDecklist('4 Sol Ring', catalog, { today });
+    const lines = await resolveDecklist('4 Sol Ring', catalog, { today, lang: 'en' });
 
     expect(lines).toEqual([
       {
@@ -21,6 +27,7 @@ describe('resolveDecklist', () => {
         lang: 'en',
         card: solRing,
         defaultPrint: solRingC21,
+        printWarning: null,
         allocations: [],
       },
     ]);
@@ -36,7 +43,7 @@ describe('resolveDecklist', () => {
     const lines = await resolveDecklist(
       '4 sol ring\n\n  2   COUNTERSPELL  \r\n1 Xyzzy Plover\n',
       catalog,
-      { today },
+      { today, lang: 'en' },
     );
 
     expect(lines.map((line) => [line.text, line.status, line.quantity])).toEqual([
@@ -65,7 +72,7 @@ describe('resolveDecklist', () => {
       'MAYBEBOARD',
     ].join('\n');
 
-    const lines = await resolveDecklist(exported, catalog, { today });
+    const lines = await resolveDecklist(exported, catalog, { today, lang: 'en' });
 
     expect(lines).toMatchObject([
       { text: '1 Sol Ring', status: 'resolved', quantity: 1, card: solRing },
@@ -76,7 +83,7 @@ describe('resolveDecklist', () => {
   it('reads "4x name" as four copies', async () => {
     const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]);
 
-    const [line] = await resolveDecklist('4x Sol Ring', catalog, { today });
+    const [line] = await resolveDecklist('4x Sol Ring', catalog, { today, lang: 'en' });
 
     expect(line).toMatchObject({ status: 'resolved', quantity: 4, card: solRing });
   });
@@ -98,6 +105,7 @@ describe('resolveDecklist', () => {
 
     const lines = await resolveDecklist('1 Sol Ring (C21) 263\n2 Sol Ring (C21) 263 *F*', catalog, {
       today,
+      lang: 'en',
     });
 
     expect(lines).toMatchObject([
@@ -110,7 +118,10 @@ describe('resolveDecklist', () => {
     const variant = aPrint({ id: 'sol-ring-variant', set: 'plst', collectorNumber: 'c21-263' });
     const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21, variant] }]);
 
-    const [line] = await resolveDecklist('1 Sol Ring (PLST) C21-263', catalog, { today });
+    const [line] = await resolveDecklist('1 Sol Ring (PLST) C21-263', catalog, {
+      today,
+      lang: 'en',
+    });
 
     expect(line).toMatchObject({ defaultPrint: { id: 'sol-ring-variant' } });
   });
@@ -124,7 +135,7 @@ describe('resolveDecklist', () => {
     });
     const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21, italianOnly] }]);
 
-    const [line] = await resolveDecklist('1 Sol Ring (C21) 263', catalog, { today });
+    const [line] = await resolveDecklist('1 Sol Ring (C21) 263', catalog, { today, lang: 'en' });
 
     expect(line).toMatchObject({ lang: 'it', defaultPrint: { id: 'sol-ring-it' } });
   });
@@ -139,6 +150,7 @@ describe('resolveDecklist', () => {
 
     const lines = await resolveDecklist('1 Sol Ring (XXX) 999\n1 Sol Ring (MH2) 267', catalog, {
       today,
+      lang: 'en',
     });
 
     expect(lines).toMatchObject([
@@ -154,7 +166,7 @@ describe('resolveDecklist', () => {
       { card: solTalisman, prints: [aPrint({ id: 'sol-talisman-mir' })] },
     ]);
 
-    const [line] = await resolveDecklist('1 sol rnig', catalog, { today });
+    const [line] = await resolveDecklist('1 sol rnig', catalog, { today, lang: 'en' });
 
     expect(line).toMatchObject({ status: 'resolved', card: solRing });
   });
@@ -169,7 +181,7 @@ describe('resolveDecklist', () => {
       { card: bolt, prints: [aPrint()] },
     ]);
 
-    const [line] = await resolveDecklist('2 lightning', catalog, { today });
+    const [line] = await resolveDecklist('2 lightning', catalog, { today, lang: 'en' });
 
     // "lightning" is about as close to Bolt and Helix, clearly further from Greaves.
     expect(line).toMatchObject({
@@ -196,7 +208,7 @@ describe('resolveDecklist', () => {
     const lines = await resolveDecklist(
       '1 anello solare\n1 Bestia Tizzone\n1 bestia di brace',
       catalog,
-      { today },
+      { today, lang: 'en' },
     );
 
     expect(lines).toMatchObject([
@@ -210,7 +222,7 @@ describe('resolveDecklist', () => {
     const seance = aCard({ oracleId: 'seance', name: 'Séance' });
     const catalog = createInMemoryCatalog([{ card: seance, prints: [aPrint()] }]);
 
-    const [line] = await resolveDecklist('1 Seance', catalog, { today });
+    const [line] = await resolveDecklist('1 Seance', catalog, { today, lang: 'en' });
 
     expect(line).toMatchObject({ status: 'resolved', card: seance });
   });
@@ -218,7 +230,7 @@ describe('resolveDecklist', () => {
   it('reads a line with only a name as one copy', async () => {
     const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]);
 
-    const [line] = await resolveDecklist('Sol Ring', catalog, { today });
+    const [line] = await resolveDecklist('Sol Ring', catalog, { today, lang: 'en' });
 
     expect(line).toMatchObject({ status: 'resolved', quantity: 1, card: solRing });
   });
@@ -241,7 +253,7 @@ describe('resolveDecklist', () => {
       { card: solRing, prints: [older, ...unprintable, latestPaper] },
     ]);
 
-    const [line] = await resolveDecklist('1 Sol Ring', catalog, { today });
+    const [line] = await resolveDecklist('1 Sol Ring', catalog, { today, lang: 'en' });
 
     expect(line).toMatchObject({ status: 'resolved', defaultPrint: { id: 'latest-paper' } });
   });
@@ -251,7 +263,7 @@ describe('resolveDecklist', () => {
     const releasedToday = aPrint({ id: 'released-today', releasedAt: today });
     const catalog = createInMemoryCatalog([{ card: solRing, prints: [preview, releasedToday] }]);
 
-    const [line] = await resolveDecklist('1 Sol Ring', catalog, { today });
+    const [line] = await resolveDecklist('1 Sol Ring', catalog, { today, lang: 'en' });
 
     expect(line).toMatchObject({ defaultPrint: { id: 'released-today' } });
   });
@@ -261,7 +273,7 @@ describe('resolveDecklist', () => {
     const italian = aPrint({ id: 'italian', lang: 'it', releasedAt: '2025-01-01' });
     const catalog = createInMemoryCatalog([{ card: solRing, prints: [english, italian] }]);
 
-    const [line] = await resolveDecklist('1 Sol Ring', catalog, { today });
+    const [line] = await resolveDecklist('1 Sol Ring', catalog, { today, lang: 'en' });
 
     expect(line).toMatchObject({ lang: 'en', defaultPrint: { id: 'english' } });
   });
@@ -271,7 +283,7 @@ describe('resolveDecklist', () => {
       { card: solRing, prints: [aPrint({ id: 'digital', digital: true })] },
     ]);
 
-    const [line] = await resolveDecklist('1 Sol Ring', catalog, { today });
+    const [line] = await resolveDecklist('1 Sol Ring', catalog, { today, lang: 'en' });
 
     expect(line).toMatchObject({ status: 'resolved', defaultPrint: null });
   });
@@ -283,7 +295,7 @@ describe('resolveDecklist', () => {
     const lines = await resolveDecklist(
       '1 Delver of Secrets\n1 delver of secrets // insectile aberration\n1 Insectile Aberration',
       catalog,
-      { today },
+      { today, lang: 'en' },
     );
 
     // The back face alone is no exact name: it matches the full name as a misspelling would.
@@ -310,7 +322,10 @@ describe('resolveDecklist', () => {
       { card: delverArt, prints: [artSeries] },
     ]);
 
-    const lines = await resolveDecklist('1 Sol Ring\n1 Delver of Secrets', catalog, { today });
+    const lines = await resolveDecklist('1 Sol Ring\n1 Delver of Secrets', catalog, {
+      today,
+      lang: 'en',
+    });
 
     expect(lines).toMatchObject([
       { status: 'resolved', card: solRing },
@@ -328,7 +343,7 @@ describe('resolveDecklist', () => {
       { card: goblinB, prints: [goblinBPrint] },
     ]);
 
-    const [line] = await resolveDecklist('3 Goblin', catalog, { today });
+    const [line] = await resolveDecklist('3 Goblin', catalog, { today, lang: 'en' });
 
     expect(line).toEqual({
       text: '3 Goblin',
@@ -336,8 +351,8 @@ describe('resolveDecklist', () => {
       quantity: 3,
       lang: 'en',
       candidates: [
-        { card: goblinA, defaultPrint: goblinAPrint },
-        { card: goblinB, defaultPrint: goblinBPrint },
+        { card: goblinA, defaultPrint: goblinAPrint, printWarning: null },
+        { card: goblinB, defaultPrint: goblinBPrint, printWarning: null },
       ],
     });
   });
@@ -352,7 +367,7 @@ describe('chooseCandidate', () => {
       { card: goblinA, prints: [aPrint({ id: 'goblin-a-print' })] },
       { card: goblinB, prints: [goblinBPrint] },
     ]);
-    const [line] = await resolveDecklist('3 Goblin', catalog, { today });
+    const [line] = await resolveDecklist('3 Goblin', catalog, { today, lang: 'en' });
     if (line?.status !== 'ambiguous') throw new Error('expected an ambiguous line');
 
     expect(chooseCandidate(line, 'goblin-b')).toEqual({
@@ -362,7 +377,228 @@ describe('chooseCandidate', () => {
       lang: 'en',
       card: goblinB,
       defaultPrint: goblinBPrint,
+      printWarning: null,
       allocations: [],
     });
+  });
+});
+
+describe('resolveDecklist in Italian', () => {
+  const inItalian = { today, lang: 'it' } as const;
+
+  it('defaults to the most recent printable Italian print', async () => {
+    const english = aPrint({ id: 'english', releasedAt: '2025-01-01' });
+    const italianOld = aPrint({ id: 'italian-old', lang: 'it', releasedAt: '2010-01-01' });
+    const italianNew = aPrint({ id: 'italian-new', lang: 'it', releasedAt: '2021-04-23' });
+    const italianDigital = aPrint({
+      id: 'italian-digital',
+      lang: 'it',
+      releasedAt: '2024-01-01',
+      digital: true,
+    });
+    const catalog = createInMemoryCatalog([
+      { card: solRing, prints: [english, italianOld, italianNew, italianDigital] },
+    ]);
+
+    const [line] = await resolveDecklist('1 Sol Ring', catalog, inItalian);
+
+    expect(line).toMatchObject({
+      lang: 'it',
+      defaultPrint: { id: 'italian-new' },
+      printWarning: null,
+    });
+  });
+
+  it('keeps a low-resolution Italian print as default, warning that English looks better', async () => {
+    const english = aPrint({ id: 'english', releasedAt: '2025-01-01' });
+    const lowres = aPrint({
+      id: 'italian-lowres',
+      lang: 'it',
+      releasedAt: '2021-04-23',
+      imageStatus: 'lowres',
+    });
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [english, lowres] }]);
+
+    const [line] = await resolveDecklist('1 Sol Ring', catalog, inItalian);
+
+    expect(line).toMatchObject({
+      lang: 'it',
+      defaultPrint: { id: 'italian-lowres' },
+      printWarning: 'lowResolution',
+    });
+  });
+
+  it('says when a low-resolution Italian print has no English print to switch to', async () => {
+    const lowres = aPrint({ id: 'italian-lowres', lang: 'it', imageStatus: 'lowres' });
+    const englishPlaceholder = aPrint({ id: 'english-placeholder', imageStatus: 'placeholder' });
+    const catalog = createInMemoryCatalog([
+      { card: solRing, prints: [lowres, englishPlaceholder] },
+    ]);
+
+    const [line] = await resolveDecklist('1 Sol Ring', catalog, inItalian);
+
+    expect(line).toMatchObject({
+      defaultPrint: { id: 'italian-lowres' },
+      printWarning: 'lowResolutionWithoutEnglish',
+    });
+  });
+
+  it('says when a low-resolution Italian print a line names has no English version', async () => {
+    const named = { set: 'c21', collectorNumber: '263' };
+    const italian = aPrint({ id: 'c21-it', lang: 'it', ...named, imageStatus: 'lowres' });
+    const otherEnglish = aPrint({ id: 'cmm-en', set: 'cmm', collectorNumber: '410' });
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [italian, otherEnglish] }]);
+
+    const [line] = await resolveDecklist('1 Sol Ring (C21) 263', catalog, inItalian);
+
+    expect(line).toMatchObject({
+      defaultPrint: { id: 'c21-it' },
+      printWarning: 'lowResolutionWithoutEnglish',
+    });
+  });
+
+  it('falls back to the English default, warning, when no Italian print has a real image', async () => {
+    const english = aPrint({ id: 'english', releasedAt: '2021-04-23' });
+    const placeholder = aPrint({
+      id: 'italian-placeholder',
+      lang: 'it',
+      releasedAt: '2025-01-01',
+      imageStatus: 'placeholder',
+    });
+    const missing = aPrint({
+      id: 'italian-missing',
+      lang: 'it',
+      releasedAt: '2024-01-01',
+      imageStatus: 'missing',
+    });
+    const counterspell = aCard({ oracleId: 'counterspell', name: 'Counterspell' });
+    const catalog = createInMemoryCatalog([
+      { card: solRing, prints: [english, placeholder, missing] },
+      { card: counterspell, prints: [aPrint({ id: 'counterspell-en' })] },
+    ]);
+
+    const lines = await resolveDecklist('1 Sol Ring\n1 Counterspell', catalog, inItalian);
+
+    expect(lines).toMatchObject([
+      { lang: 'it', defaultPrint: { id: 'english' }, printWarning: 'languageFallback' },
+      { lang: 'it', defaultPrint: { id: 'counterspell-en' }, printWarning: 'languageFallback' },
+    ]);
+  });
+
+  it('falls back to a low-resolution English print with the language warning', async () => {
+    const lowres = aPrint({ id: 'english-lowres', imageStatus: 'lowres' });
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [lowres] }]);
+
+    const [line] = await resolveDecklist('1 Sol Ring', catalog, inItalian);
+
+    expect(line).toMatchObject({
+      defaultPrint: { id: 'english-lowres' },
+      printWarning: 'languageFallback',
+    });
+  });
+
+  it('uses the Italian print a line names by set and number, warning when it is low-resolution', async () => {
+    const named = { set: 'c21', collectorNumber: '263' };
+    const english = aPrint({ id: 'c21-en', ...named });
+    const italian = aPrint({ id: 'c21-it', lang: 'it', ...named, imageStatus: 'lowres' });
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [english, italian] }]);
+
+    const [line] = await resolveDecklist('1 Sol Ring (C21) 263', catalog, inItalian);
+
+    expect(line).toMatchObject({
+      lang: 'it',
+      defaultPrint: { id: 'c21-it' },
+      printWarning: 'lowResolution',
+    });
+  });
+
+  it('falls back, warning, to the English print a line names when its Italian one has no real image', async () => {
+    const named = { set: 'c21', collectorNumber: '263' };
+    const english = aPrint({ id: 'c21-en', ...named });
+    const italian = aPrint({ id: 'c21-it', lang: 'it', ...named, imageStatus: 'placeholder' });
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [italian, english] }]);
+
+    const [line] = await resolveDecklist('1 Sol Ring (C21) 263', catalog, inItalian);
+
+    expect(line).toMatchObject({
+      lang: 'it',
+      defaultPrint: { id: 'c21-en' },
+      printWarning: 'languageFallback',
+    });
+  });
+});
+
+describe('setLineQuantity', () => {
+  it('changes how many copies a line prints and writes the new quantity in its text', async () => {
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]);
+    const [line] = await resolveDecklist('4 Sol Ring', catalog, { today, lang: 'en' });
+    if (!line) throw new Error('expected a line');
+
+    expect(setLineQuantity(line, 2)).toEqual({ ...line, quantity: 2, text: '2 Sol Ring' });
+  });
+
+  it('rewrites only the quantity, in every format a decklist line can take', async () => {
+    const counterspell = aCard({ oracleId: 'counterspell', name: 'Counterspell' });
+    const catalog = createInMemoryCatalog([
+      { card: solRing, prints: [solRingC21] },
+      { card: counterspell, prints: [aPrint({ id: 'counterspell-mh2' })] },
+    ]);
+    const written = ['4x Sol Ring', 'Sol Ring', 'SB: 2 Counterspell', '  1 Sol Ring (C21) 263 *F*'];
+    const lines = await resolveDecklist(written.join('\n'), catalog, { today, lang: 'en' });
+
+    expect(lines.map((line) => setLineQuantity(line, 3).text)).toEqual([
+      '3x Sol Ring',
+      '3 Sol Ring',
+      'SB: 3 Counterspell',
+      '  3 Sol Ring (C21) 263 *F*',
+    ]);
+  });
+
+  it('refuses a quantity that is not a whole number of at least one copy', async () => {
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]);
+    const [line] = await resolveDecklist('4 Sol Ring', catalog, { today, lang: 'en' });
+    if (!line) throw new Error('expected a line');
+
+    expect(() => setLineQuantity(line, 0)).toThrow();
+    expect(() => setLineQuantity(line, 1.5)).toThrow();
+  });
+});
+
+describe('applyCandidateChoice', () => {
+  const goblinA = aCard({ oracleId: 'goblin-a', name: 'Goblin' });
+  const goblinB = aCard({ oracleId: 'goblin-b', name: 'Goblin' });
+  const catalog = createInMemoryCatalog([
+    { card: goblinA, prints: [aPrint({ id: 'goblin-a-print' })] },
+    { card: goblinB, prints: [aPrint({ id: 'goblin-b-print' })] },
+  ]);
+
+  it('resolves an ambiguous line to the card the user picked among its candidates', async () => {
+    const [line] = await resolveDecklist('3 Goblin', catalog, { today, lang: 'it' });
+    if (!line) throw new Error('expected a line');
+
+    expect(applyCandidateChoice(line, 'goblin-b')).toMatchObject({
+      status: 'resolved',
+      lang: 'it',
+      card: goblinB,
+      defaultPrint: { id: 'goblin-b-print' },
+    });
+  });
+
+  it('leaves the line as it is when the picked card is not among its candidates', async () => {
+    const [line] = await resolveDecklist('3 Goblin', catalog, { today, lang: 'en' });
+    if (!line) throw new Error('expected a line');
+
+    expect(applyCandidateChoice(line, 'sol-ring')).toBe(line);
+  });
+
+  it('leaves a line that is not ambiguous as it is', async () => {
+    const [line] = await resolveDecklist(
+      '1 Sol Ring',
+      createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]),
+      { today, lang: 'en' },
+    );
+    if (!line) throw new Error('expected a line');
+
+    expect(applyCandidateChoice(line, 'goblin-a')).toBe(line);
   });
 });

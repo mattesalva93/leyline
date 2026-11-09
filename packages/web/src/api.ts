@@ -1,10 +1,10 @@
-import type { DecklistLine } from '@mtg-suite/core';
+import type { DecklistLine, Lang } from '@mtg-suite/core';
 
-export async function resolveDecklistText(text: string): Promise<DecklistLine[]> {
+export async function resolveDecklistText(text: string, lang: Lang): Promise<DecklistLine[]> {
   const response = await fetch('/api/decklists/resolve', {
     method: 'POST',
     headers: { 'content-type': 'application/json', accept: 'application/json' },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, lang }),
   });
   if (!response.ok) throw new Error(`Resolve failed with ${response.status}`);
   return ((await response.json()) as { lines: DecklistLine[] }).lines;

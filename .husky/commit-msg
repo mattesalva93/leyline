@@ -1,0 +1,6 @@
+# Reject a commit message that credits an AI tool as co-author: commits here are authored by
+# their human committer. Human co-authors stay allowed. Git passes the message file as $1.
+if grep -qiE '^co-authored-by:[^(|*]*(claude|anthropic|copilot|openai|chatgpt|gemini|cursor)' "$1"; then
+  echo "commit-msg: remove the AI Co-Authored-By trailer from the commit message." >&2
+  exit 1
+fi

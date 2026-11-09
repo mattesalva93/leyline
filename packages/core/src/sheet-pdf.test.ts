@@ -235,6 +235,7 @@ function resolvedLine(quantity: number, print: Print): DecklistLine {
     lang: 'en',
     card: aCard(),
     defaultPrint: print,
+    printWarning: null,
     allocations: [],
   };
 }
@@ -395,6 +396,7 @@ describe('hasPrintableCopies', () => {
       lang: 'en',
       card: aCard(),
       defaultPrint: null,
+      printWarning: null,
       allocations: [],
     };
     const notFound: DecklistLine = { text: '1 Nope', status: 'notFound', quantity: 1, lang: 'en' };
@@ -403,7 +405,7 @@ describe('hasPrintableCopies', () => {
       status: 'ambiguous',
       quantity: 1,
       lang: 'en',
-      candidates: [{ card: aCard(), defaultPrint: print }],
+      candidates: [{ card: aCard(), defaultPrint: print, printWarning: null }],
     };
 
     expect(hasPrintableCopies(sheetOf())).toBe(false);
@@ -420,7 +422,7 @@ describe('unprintedLines', () => {
       status: 'ambiguous',
       quantity: 1,
       lang: 'en',
-      candidates: [{ card: aCard(), defaultPrint: print }],
+      candidates: [{ card: aCard(), defaultPrint: print, printWarning: null }],
     };
     const noPrint: DecklistLine = {
       text: '1 Digital Only',
@@ -429,6 +431,7 @@ describe('unprintedLines', () => {
       lang: 'en',
       card: aCard(),
       defaultPrint: null,
+      printWarning: null,
       allocations: [],
     };
 
