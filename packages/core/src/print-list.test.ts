@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createInMemoryCatalog, isPrintCursor, listPrints } from './index.ts';
+import { createInMemoryCatalog, isPrintCursor, listPrints, resolveDecklist } from './index.ts';
 import { aCard, aPrint } from './test-fixtures.ts';
 
 /** Fixed "today": prints released later are not out yet. */
@@ -106,6 +106,19 @@ describe('listPrints', () => {
 
     expect(page?.prints.map((print) => print.id)).toEqual(['forest-en']);
     expect(page?.total).toBe(1);
+  });
+
+  it('lists first the print a line of the card defaults to, even among prints of one day', async () => {
+    const sameDay = ['281', '9', '10'].map((collectorNumber) =>
+      aPrint({ id: `forest-${collectorNumber}`, collectorNumber, releasedAt: '2024-11-15' }),
+    );
+    const catalog = createInMemoryCatalog([{ card: forest, prints: sameDay }]);
+
+    const page = await listPrints(catalog, { oracleId: 'forest', lang: 'en', today, limit: 3 });
+    const [line] = await resolveDecklist('1 Forest', catalog, { today, lang: 'en' });
+
+    expect(page?.prints[0]?.id).toBe('forest-9');
+    expect(line).toMatchObject({ defaultPrint: { id: 'forest-9' } });
   });
 
   it('is null for a card the catalog does not hold', async () => {

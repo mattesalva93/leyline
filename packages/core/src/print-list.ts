@@ -1,5 +1,6 @@
-import { isPrintable } from './default-print.ts';
-import type { Catalog, Lang, Print, PrintPage } from './types.ts';
+import { printablePrints } from './default-print.ts';
+import { comparePrintSortKeys, printSortKey, type PrintSortKey } from './print-order.ts';
+import type { Catalog, Lang, PrintPage } from './types.ts';
 
 export interface ListPrintsOptions {
   readonly oracleId: string;
@@ -12,26 +13,9 @@ export interface ListPrintsOptions {
   readonly cursor?: string | null | undefined;
 }
 
-/** Where a print sorts in the list: what a cursor remembers of the last print shown. */
-type SortKey = readonly [releasedAt: string, set: string, collectorNumber: string, id: string];
-
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-function sortKey(print: Print): SortKey {
-  return [print.releasedAt, print.set, print.collectorNumber, print.id];
-}
-
-/** Newest first; within a release day by set, then collector number ("9" before "10"). */
-function compareSortKeys(a: SortKey, b: SortKey): number {
-  return (
-    b[0].localeCompare(a[0]) ||
-    a[1].localeCompare(b[1]) ||
-    a[2].localeCompare(b[2], 'en', { numeric: true }) ||
-    a[3].localeCompare(b[3])
-  );
-}
-
-function decodeCursor(cursor: unknown): SortKey | null {
+function decodeCursor(cursor: unknown): PrintSortKey | null {
   if (typeof cursor !== 'string') return null;
   let key: unknown;
   try {
@@ -44,7 +28,7 @@ function decodeCursor(cursor: unknown): SortKey | null {
     key.length === 4 &&
     key.every((part) => typeof part === 'string') &&
     ISO_DATE.test(key[0] as string);
-  return isKey ? (key as unknown as SortKey) : null;
+  return isKey ? (key as unknown as PrintSortKey) : null;
 }
 
 /** Whether `value` is a cursor `listPrints` handed out. */
@@ -64,24 +48,20 @@ export async function listPrints(
 ): Promise<PrintPage | null> {
   const entry = await catalog.findCard(oracleId);
   if (!entry) return null;
-  const printableIn = (printLang: Lang) =>
-    entry.prints.filter(
-      (print) => print.lang === printLang && isPrintable(print) && print.releasedAt <= today,
-    );
   // Same fallback as the default print: a line with no print in its language prints English.
-  const inLang = printableIn(lang);
-  const prints = (inLang.length > 0 ? inLang : printableIn('en')).sort((a, b) =>
-    compareSortKeys(sortKey(a), sortKey(b)),
-  );
+  const inLang = printablePrints(entry.prints, lang, today);
+  const prints = inLang.length > 0 ? inLang : printablePrints(entry.prints, 'en', today);
   const after = cursor ? decodeCursor(cursor) : null;
   if (cursor && !after) throw new Error(`Not a print cursor: ${cursor}`);
-  const start = after ? prints.findIndex((print) => compareSortKeys(sortKey(print), after) > 0) : 0;
+  const start = after
+    ? prints.findIndex((print) => comparePrintSortKeys(printSortKey(print), after) > 0)
+    : 0;
   const page = start === -1 ? [] : prints.slice(start, start + limit);
   const last = page.at(-1);
   const hasMore = start !== -1 && start + limit < prints.length;
   return {
     prints: page,
     total: prints.length,
-    nextCursor: hasMore && last ? JSON.stringify(sortKey(last)) : null,
+    nextCursor: hasMore && last ? JSON.stringify(printSortKey(last)) : null,
   };
 }

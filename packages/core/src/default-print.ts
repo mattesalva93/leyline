@@ -1,3 +1,4 @@
+import { comparePrintSortKeys, printSortKey } from './print-order.ts';
 import type { Candidate, Lang, Print, PrintWarning } from './types.ts';
 
 const TOKEN_LAYOUTS = new Set(['token', 'double_faced_token', 'emblem']);
@@ -8,7 +9,7 @@ export function hasRealImage(print: Print): boolean {
 }
 
 /** Whether a print can stand in for a playable paper card. */
-export function isPrintable(print: Print): boolean {
+function isPrintable(print: Print): boolean {
   return (
     !print.digital &&
     !print.oversized &&
@@ -21,16 +22,18 @@ export function isPrintable(print: Print): boolean {
 }
 
 /**
- * The most recent printable paper print in `lang` already released on `today` (ISO date), or
- * `null` when there is none. Scryfall lists previewed prints before their release date.
+ * The printable paper prints in `lang` already released on `today` (ISO date), newest first.
+ * Scryfall lists previewed prints before their release date.
  */
+export function printablePrints(prints: readonly Print[], lang: Lang, today: string): Print[] {
+  return prints
+    .filter((print) => print.lang === lang && isPrintable(print) && print.releasedAt <= today)
+    .sort((a, b) => comparePrintSortKeys(printSortKey(a), printSortKey(b)));
+}
+
+/** The first of `printablePrints`, or `null` when there is none. */
 function latestPrintable(prints: readonly Print[], lang: Lang, today: string): Print | null {
-  let best: Print | null = null;
-  for (const print of prints) {
-    const eligible = print.lang === lang && isPrintable(print) && print.releasedAt <= today;
-    if (eligible && (!best || print.releasedAt > best.releasedAt)) best = print;
-  }
-  return best;
+  return printablePrints(prints, lang, today)[0] ?? null;
 }
 
 /**
