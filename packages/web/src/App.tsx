@@ -169,13 +169,17 @@ export function App() {
   /**
    * Writes the new quantity into the decklist text itself, so the text always says what gets
    * printed. The rewritten line keeps its resolution and the user's choices: no new request.
+   * The quantity goes on the resolution as the server sent it, never on the displayed line:
+   * the choices are applied again on top, so nothing they derived goes stale.
    */
   function changeLineQuantity(writtenIndex: number, quantity: number) {
     const writtenLine = writtenLines[writtenIndex];
-    const line = writtenLine === undefined ? undefined : displayedLine(writtenLine);
-    if (writtenLine === undefined || !line) return;
-    const rewritten = setLineQuantity(line, quantity);
-    const key = resolutionKey(languageOf(writtenLine), rewritten.text);
+    if (writtenLine === undefined) return;
+    const lang = languageOf(writtenLine);
+    const resolution = resolutions.get(resolutionKey(lang, writtenLine));
+    if (!resolution) return;
+    const rewritten = setLineQuantity(resolution, quantity);
+    const key = resolutionKey(lang, rewritten.text);
     requestedKeys.current.add(key);
     setResolutions((previous) => new Map(previous).set(key, rewritten));
     const choices = choicesByLine.get(writtenLine);
