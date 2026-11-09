@@ -27,15 +27,30 @@ function toPrint(row: PrintRow): Print {
 /** `Catalog` on the PostgreSQL tables filled by `importBulk`. */
 export function createPostgresCatalog(sql: Sql): Catalog {
   return {
-    async findByNames(names: readonly string[]) {
+    async findByNames(names, { minSimilarity }) {
       if (names.length === 0) return [];
-      const keys = [...names];
+      const oracleIds = await sql.begin(async (tx) => {
+        const exact = await tx<{ key: string; oracleId: string }[]>`
+          select key, oracle_id as "oracleId" from card_names where key = any(${[...names]}::text[])
+        `;
+        // Only names without an exact match need the (slower) similarity search.
+        const found = new Set(exact.map((row) => row.key));
+        const misspelled = names.filter((name) => !found.has(name));
+        if (misspelled.length === 0) return exact.map((row) => row.oracleId);
+        // `%` matches at `pg_trgm.similarity_threshold`; `true` scopes it to this transaction.
+        await tx`select set_config('pg_trgm.similarity_threshold', ${String(minSimilarity)}, true)`;
+        const similar = await tx<{ oracleId: string }[]>`
+          select distinct n.oracle_id as "oracleId"
+          from unnest(${misspelled}::text[]) as q(key)
+          join card_names n on n.key % q.key
+        `;
+        return [...exact, ...similar].map((row) => row.oracleId);
+      });
+      if (oracleIds.length === 0) return [];
       const cards = await sql<{ oracleId: string; name: string }[]>`
         select oracle_id as "oracleId", name from cards
-        where lower(name) = any(${keys}::text[])
-           or lower(split_part(name, ' // ', 1)) = any(${keys}::text[])
+        where oracle_id = any(${[...new Set(oracleIds)]}::text[])
       `;
-      if (cards.length === 0) return [];
       const prints = await sql<PrintRow[]>`
         select
           id, oracle_id as "oracleId", set, collector_number as "collectorNumber", lang,

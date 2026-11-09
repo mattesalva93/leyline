@@ -57,11 +57,15 @@ export interface CatalogEntry {
 /** How `core` queries cards and prints. `api` implements it on PostgreSQL. */
 export interface Catalog {
   /**
-   * Returns at least every card whose full name or front-face name, lowercased and with single
-   * spaces, equals one of `names` (already normalised that way), with all its prints. Extra
-   * cards are allowed: `core` does the final match.
+   * Returns, for each of `names` (already normalised with `nameKey`), at least every card that
+   * has a name key (see `cardKeys`) equal to it, with all its prints; when no card has, at
+   * least every card with a name key whose trigram similarity to it reaches `minSimilarity`.
+   * Extra cards are allowed: `core` does the final match.
    */
-  findByNames(names: readonly string[]): Promise<readonly CatalogEntry[]>;
+  findByNames(
+    names: readonly string[],
+    options: { readonly minSimilarity: number },
+  ): Promise<readonly CatalogEntry[]>;
 }
 
 /** A (`Print`, quantity) pair inside a `DecklistLine`. */
@@ -85,9 +89,16 @@ export interface ResolvedLine extends DecklistLineBase {
   readonly allocations: readonly Allocation[];
 }
 
+/** A card an ambiguous line could mean, with the print it would default to. */
+export interface Candidate {
+  readonly card: Card;
+  readonly defaultPrint: Print | null;
+}
+
 export interface AmbiguousLine extends DecklistLineBase {
   readonly status: 'ambiguous';
-  readonly candidates: readonly Card[];
+  /** Best match first. */
+  readonly candidates: readonly Candidate[];
 }
 
 export interface NotFoundLine extends DecklistLineBase {
