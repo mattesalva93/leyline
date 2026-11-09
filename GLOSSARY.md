@@ -23,6 +23,6 @@ Language rule: code, identifiers, and code comments are in English. User-facing 
 | catalogo                   | `Catalog`       | The interface `core` uses to query cards and prints. `api` implements it on PostgreSQL; tests implement it in memory.                                              |
 | voce di catalogo           | `CatalogEntry`  | A `Card` with every `Print` the `Catalog` holds for it: what the catalog returns for a name lookup.                                                                |
 | stato immagine             | `imageStatus`   | Scryfall's `image_status`: `highres_scan`, `lowres`, `placeholder`, `missing`. Drives the language fallback.                                                       |
-| avviso sulla stampa        | `PrintWarning`  | Why a line's `defaultPrint` needs the user's attention: its image is low-resolution, or the line's language had no print with a real image and English stands in.  |
+| avviso sulla stampa        | `PrintWarning`  | Why a line's `defaultPrint` needs the user's attention before printing.                                                                                            |
 
 _Avoid_: "card" for a printing (say `Print`), "variant" in code (a variant is a `Print` shown in the variant picker).
