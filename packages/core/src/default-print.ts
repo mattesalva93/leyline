@@ -8,7 +8,7 @@ export function hasRealImage(print: Print): boolean {
 }
 
 /** Whether a print can stand in for a playable paper card. */
-function isPrintable(print: Print): boolean {
+export function isPrintable(print: Print): boolean {
   return (
     !print.digital &&
     !print.oversized &&
