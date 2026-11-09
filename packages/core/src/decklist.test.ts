@@ -62,7 +62,7 @@ describe('resolveDecklist', () => {
       aPrint({ id: 'oversized', releasedAt: newer, oversized: true }),
       aPrint({ id: 'token-layout', releasedAt: newer, layout: 'token' }),
       aPrint({ id: 'token-set', releasedAt: newer, setType: 'token' }),
-      aPrint({ id: 'playtest', releasedAt: newer, setType: 'playtest' }),
+      aPrint({ id: 'playtest', releasedAt: newer, setType: 'funny', promoTypes: ['playtest'] }),
       aPrint({ id: 'placeholder', releasedAt: newer, imageStatus: 'placeholder' }),
       aPrint({ id: 'missing', releasedAt: newer, imageStatus: 'missing' }),
     ];
@@ -85,6 +85,16 @@ describe('resolveDecklist', () => {
     const [line] = await resolveDecklist('1 Sol Ring', catalog, { today });
 
     expect(line).toMatchObject({ defaultPrint: { id: 'released-today' } });
+  });
+
+  it('never picks a print in another language as the default of an English line', async () => {
+    const english = aPrint({ id: 'english', releasedAt: '2021-04-23' });
+    const italian = aPrint({ id: 'italian', lang: 'it', releasedAt: '2025-01-01' });
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [english, italian] }]);
+
+    const [line] = await resolveDecklist('1 Sol Ring', catalog, { today });
+
+    expect(line).toMatchObject({ lang: 'en', defaultPrint: { id: 'english' } });
   });
 
   it('resolves a card without printable prints with no default print', async () => {

@@ -22,6 +22,7 @@
     "dev": "pnpm --recursive --parallel run dev",
     "dev:debug": "pnpm --recursive --parallel run dev:debug",
     "import:catalog": "pnpm --filter @mtg-suite/api run import:catalog",
+    "import:daily": "pnpm --filter @mtg-suite/api run import:daily",
     "import:debug": "pnpm --filter @mtg-suite/api run import:debug",
     "sheet:preview": "pnpm --filter @mtg-suite/api run sheet:preview"
   },

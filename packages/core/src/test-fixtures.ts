@@ -11,12 +11,14 @@ export function aPrint(overrides: Partial<Print> = {}): Print {
     set: 'tst',
     collectorNumber: '1',
     lang: 'en',
+    printedName: 'Card Name',
     releasedAt: '2020-01-01',
     imageStatus: 'highres_scan',
     digital: false,
     oversized: false,
     layout: 'normal',
     setType: 'expansion',
+    promoTypes: [],
     faces: [
       {
         name: 'Card Name',
