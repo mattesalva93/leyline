@@ -529,12 +529,29 @@ describe('resolveDecklist in Italian', () => {
 });
 
 describe('setLineQuantity', () => {
-  it('changes how many copies a line prints, keeping the rest of it', async () => {
+  it('changes how many copies a line prints and writes the new quantity in its text', async () => {
     const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]);
     const [line] = await resolveDecklist('4 Sol Ring', catalog, { today, lang: 'en' });
     if (!line) throw new Error('expected a line');
 
-    expect(setLineQuantity(line, 2)).toEqual({ ...line, quantity: 2 });
+    expect(setLineQuantity(line, 2)).toEqual({ ...line, quantity: 2, text: '2 Sol Ring' });
+  });
+
+  it('rewrites only the quantity, in every format a decklist line can take', async () => {
+    const counterspell = aCard({ oracleId: 'counterspell', name: 'Counterspell' });
+    const catalog = createInMemoryCatalog([
+      { card: solRing, prints: [solRingC21] },
+      { card: counterspell, prints: [aPrint({ id: 'counterspell-mh2' })] },
+    ]);
+    const written = ['4x Sol Ring', 'Sol Ring', 'SB: 2 Counterspell', '  1 Sol Ring (C21) 263 *F*'];
+    const lines = await resolveDecklist(written.join('\n'), catalog, { today, lang: 'en' });
+
+    expect(lines.map((line) => setLineQuantity(line, 3).text)).toEqual([
+      '3x Sol Ring',
+      '3 Sol Ring',
+      'SB: 3 Counterspell',
+      '  3 Sol Ring (C21) 263 *F*',
+    ]);
   });
 
   it('refuses a quantity that is not a whole number of at least one copy', async () => {

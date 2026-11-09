@@ -40,14 +40,20 @@ function resolutionKey(lang: Lang, writtenLine: string): string {
 interface LineChoices {
   /** Set when the line uses another language than the default one. */
   readonly lang?: Lang;
-  readonly quantity?: number;
   /** The card picked among an ambiguous line's candidates. */
   readonly oracleId?: string;
 }
 
-/** A written line the server has not resolved yet: shown as typed, and it holds the PDF back. */
-interface UnresolvedLine {
-  readonly unresolvedText: string;
+/** One written line of the decklist, as the list below the text area shows it. */
+interface ListItem {
+  /** Where the line sits in the decklist text, counting blank lines too. */
+  readonly writtenIndex: number;
+  readonly writtenLine: string;
+  /**
+   * `undefined` while the server has not resolved the line yet: it is shown as typed, and it
+   * holds the PDF back.
+   */
+  readonly line: DecklistLine | undefined;
 }
 
 export function App() {
@@ -56,7 +62,8 @@ export function App() {
   const [defaultLang, setDefaultLang] = useState(loadDefaultLang);
   const [resolutions, setResolutions] = useState<ResolutionsByLanguage>(new Map());
   const [choicesByLine, setChoicesByLine] = useState<ReadonlyMap<string, LineChoices>>(new Map());
-  const [panelLineText, setPanelLineText] = useState<string | null>(null);
+  // The `writtenIndex` of the line whose panel is open.
+  const [panelLineIndex, setPanelLineIndex] = useState<number | null>(null);
   const [requestsInFlight, setRequestsInFlight] = useState(0);
   const [lastRequestFailed, setLastRequestFailed] = useState(false);
   const [pdfStatus, setPdfStatus] = useState<PdfStatus>('idle');
@@ -141,31 +148,43 @@ export function App() {
   }
 
   /**
-   * The line to show for `writtenLine`: its resolution in its language with the user's picks
-   * applied; `null` when it names no card, `undefined` while not resolved yet.
+   * The line to show for `writtenLine`: its resolution in its language with the user's pick
+   * among candidates applied; `null` when it names no card, `undefined` while not resolved yet.
    */
   function displayedLine(writtenLine: string): DecklistLine | null | undefined {
     const resolution = resolutions.get(resolutionKey(languageOf(writtenLine), writtenLine));
     if (!resolution) return resolution;
-    const { quantity, oracleId } = choicesByLine.get(writtenLine) ?? {};
-    const line = oracleId === undefined ? resolution : applyCandidateChoice(resolution, oracleId);
-    return quantity === undefined ? line : setLineQuantity(line, quantity);
+    const { oracleId } = choicesByLine.get(writtenLine) ?? {};
+    return oracleId === undefined ? resolution : applyCandidateChoice(resolution, oracleId);
   }
 
-  // The written lines in order: resolved ones, or the text of those not resolved yet.
-  const listItems = decklistText
-    .split(LINE_BREAK)
-    .flatMap((writtenLine): (DecklistLine | UnresolvedLine)[] => {
-      const line = displayedLine(writtenLine);
-      if (line === undefined) {
-        return writtenLine.trim() === '' ? [] : [{ unresolvedText: writtenLine }];
-      }
-      return line ? [line] : [];
-    });
-  const panelLine = panelLineText === null ? null : displayedLine(panelLineText);
-  const resolvedLines = listItems.filter(
-    (item): item is DecklistLine => !('unresolvedText' in item),
-  );
+  const writtenLines = decklistText.split(LINE_BREAK);
+
+  /**
+   * Writes the new quantity into the decklist text itself, so the text always says what gets
+   * printed. The rewritten line keeps its resolution and the user's choices: no new request.
+   */
+  function changeLineQuantity(writtenIndex: number, quantity: number) {
+    const writtenLine = writtenLines[writtenIndex];
+    const line = writtenLine === undefined ? undefined : displayedLine(writtenLine);
+    if (writtenLine === undefined || !line) return;
+    const rewritten = setLineQuantity(line, quantity);
+    const key = resolutionKey(languageOf(writtenLine), rewritten.text);
+    requestedKeys.current.add(key);
+    setResolutions((previous) => new Map(previous).set(key, rewritten));
+    const choices = choicesByLine.get(writtenLine);
+    if (choices) updateChoices(rewritten.text, choices);
+    setDecklistText(writtenLines.with(writtenIndex, rewritten.text).join('\n'));
+  }
+
+  const listItems = writtenLines.flatMap((writtenLine, writtenIndex): ListItem[] => {
+    const line = displayedLine(writtenLine);
+    if (line === null || (line === undefined && writtenLine.trim() === '')) return [];
+    return [{ writtenIndex, writtenLine, line }];
+  });
+  const panelWrittenLine = panelLineIndex === null ? undefined : writtenLines[panelLineIndex];
+  const panelLine = panelWrittenLine === undefined ? undefined : displayedLine(panelWrittenLine);
+  const resolvedLines = listItems.flatMap((item) => item.line ?? []);
   const unresolvedCount = listItems.length - resolvedLines.length;
   const sheet = { options: defaultSheetOptions, lines: resolvedLines };
   const unprintedCount = unprintedLines(sheet).length;
@@ -209,21 +228,21 @@ export function App() {
         {listItems.length > 0 && (
           <>
             <ul className="lines">
-              {listItems.map((item, index) =>
-                'unresolvedText' in item ? (
-                  <li key={index} className="line line--pending">
-                    <span className="line__name">{item.unresolvedText.trim()}</span>
+              {listItems.map(({ writtenIndex, writtenLine, line }) =>
+                line === undefined ? (
+                  <li key={writtenIndex} className="line line--pending">
+                    <span className="line__name">{writtenLine.trim()}</span>
                     <span className="line__note">
                       {requestsInFlight > 0 ? t('decklist.resolving') : t('line.pending')}
                     </span>
                   </li>
                 ) : (
                   <DecklistLineItem
-                    key={index}
-                    line={item}
-                    onPickCandidate={(oracleId) => updateChoices(item.text, { oracleId })}
-                    onOpenPanel={() => setPanelLineText(item.text)}
-                    onSwitchLineToEnglish={() => void changeLineLanguage(item.text, 'en')}
+                    key={writtenIndex}
+                    line={line}
+                    onPickCandidate={(oracleId) => updateChoices(writtenLine, { oracleId })}
+                    onOpenPanel={() => setPanelLineIndex(writtenIndex)}
+                    onSwitchLineToEnglish={() => void changeLineLanguage(writtenLine, 'en')}
                   />
                 ),
               )}
@@ -249,12 +268,12 @@ export function App() {
       <LinePanel
         line={panelLine?.status === 'resolved' ? panelLine : null}
         onLanguageChange={(lang) =>
-          panelLineText !== null && void changeLineLanguage(panelLineText, lang)
+          panelWrittenLine !== undefined && void changeLineLanguage(panelWrittenLine, lang)
         }
         onQuantityChange={(quantity) =>
-          panelLineText !== null && updateChoices(panelLineText, { quantity })
+          panelLineIndex !== null && changeLineQuantity(panelLineIndex, quantity)
         }
-        onClose={() => setPanelLineText(null)}
+        onClose={() => setPanelLineIndex(null)}
       />
       <Footer />
     </div>

@@ -227,10 +227,18 @@ function closestCards(key: string, named: readonly NamedEntry[]): CatalogEntry[]
     .map((match) => match.entry);
 }
 
-/** The line with `quantity` copies. */
+/**
+ * A written line split around its quantity: what comes before it (indentation, "SB:"), the
+ * quantity with its "x" if any (empty when the line names one copy implicitly), and the rest.
+ */
+const WRITTEN_QUANTITY = /^(\s*(?:SB:\s*)?)(?:(\d+)(x?)\s+)?(.*)$/is;
+
+/** The line with `quantity` copies, its text rewritten to say so, as the user would write it. */
 export function setLineQuantity(line: DecklistLine, quantity: number): DecklistLine {
   if (!Number.isInteger(quantity) || quantity < 1) {
     throw new Error(`A line prints a whole number of copies, at least one: got ${quantity}`);
   }
-  return { ...line, quantity };
+  const [, beforeQuantity = '', , timesMark = '', rest = ''] =
+    WRITTEN_QUANTITY.exec(line.text) ?? [];
+  return { ...line, quantity, text: `${beforeQuantity}${quantity}${timesMark} ${rest}` };
 }
