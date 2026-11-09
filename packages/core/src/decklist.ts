@@ -143,14 +143,8 @@ function resolveLine(
   const closest = closestCards(nameKey(line.name), named);
   const explicit = line.printRef && namedPrint(closest, line.printRef, base.lang);
   if (explicit) {
-    return resolvedLine(
-      { ...base, lang: explicit.lang },
-      {
-        card: explicit.card,
-        defaultPrint: explicit.print,
-        printWarning: qualityWarning(explicit.print),
-      },
-    );
+    const { lang: explicitLang, ...candidate } = explicit;
+    return resolvedLine({ ...base, lang: explicitLang }, candidate);
   }
   const matches = closest.map((entry) => ({
     card: entry.card,
@@ -166,20 +160,33 @@ function resolveLine(
 }
 
 /**
- * The print `ref` names among `entries`' prints: in `lang` when it exists in several languages,
- * unless only another language has a real image of it.
+ * The print `ref` names among `entries`' prints, with the language the line takes: `lang` when
+ * the print exists in it, the print's own otherwise. When the print in `lang` has no real image,
+ * another language's stands in, with a warning.
  */
-function namedPrint(entries: readonly CatalogEntry[], ref: PrintRef, lang: Lang) {
+function namedPrint(
+  entries: readonly CatalogEntry[],
+  ref: PrintRef,
+  lang: Lang,
+): (Candidate & { readonly lang: Lang }) | undefined {
   const found = entries.flatMap((entry) =>
     entry.prints
       .filter(
         (print) =>
           print.set === ref.set && print.collectorNumber.toLowerCase() === ref.collectorNumber,
       )
-      .map((print) => ({ card: entry.card, print, lang: print.lang })),
+      .map((print) => ({ card: entry.card, print })),
   );
   const withImage = found.filter((match) => hasRealImage(match.print));
-  return withImage.find((match) => match.lang === lang) ?? withImage[0] ?? found[0];
+  const match = withImage.find((m) => m.print.lang === lang) ?? withImage[0] ?? found[0];
+  if (!match) return undefined;
+  const stoodIn = match.print.lang !== lang && found.some((m) => m.print.lang === lang);
+  return {
+    card: match.card,
+    defaultPrint: match.print,
+    lang: stoodIn ? lang : match.print.lang,
+    printWarning: stoodIn ? 'languageFallback' : qualityWarning(match.print),
+  };
 }
 
 /** Resolves an ambiguous line to the candidate the user chose, by its card's oracle id. */

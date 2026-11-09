@@ -482,7 +482,7 @@ describe('resolveDecklist in Italian', () => {
     });
   });
 
-  it('takes the English print a line names when its Italian one has no real image', async () => {
+  it('falls back, warning, to the English print a line names when its Italian one has no real image', async () => {
     const named = { set: 'c21', collectorNumber: '263' };
     const english = aPrint({ id: 'c21-en', ...named });
     const italian = aPrint({ id: 'c21-it', lang: 'it', ...named, imageStatus: 'placeholder' });
@@ -490,7 +490,11 @@ describe('resolveDecklist in Italian', () => {
 
     const [line] = await resolveDecklist('1 Sol Ring (C21) 263', catalog, inItalian);
 
-    expect(line).toMatchObject({ lang: 'en', defaultPrint: { id: 'c21-en' }, printWarning: null });
+    expect(line).toMatchObject({
+      lang: 'it',
+      defaultPrint: { id: 'c21-en' },
+      printWarning: 'languageFallback',
+    });
   });
 });
 
