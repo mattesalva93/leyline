@@ -4,23 +4,29 @@ import { PrintWarningNote } from './PrintWarningNote.tsx';
 
 interface DecklistLineItemProps {
   readonly line: DecklistLine;
-  /** Called with the oracle id of the suggestion the user picks on an ambiguous line. */
-  readonly onChoose: (oracleId: string) => void;
-  /** Opens the line's panel: offered on resolved lines. */
-  readonly onOpen: () => void;
-  readonly onUseEnglish: () => void;
+  /** Called with the oracle id of the card the user picks among an ambiguous line's candidates. */
+  readonly onPickCandidate: (oracleId: string) => void;
+  /** Opens the line's panel: only resolved lines have one. */
+  readonly onOpenPanel: () => void;
+  readonly onSwitchLineToEnglish: () => void;
 }
 
-export function DecklistLineItem({ line, onChoose, onOpen, onUseEnglish }: DecklistLineItemProps) {
+/** One line of the decklist as a card: image, quantity, name, language and what needs fixing. */
+export function DecklistLineItem({
+  line,
+  onPickCandidate,
+  onOpenPanel,
+  onSwitchLineToEnglish,
+}: DecklistLineItemProps) {
   const { t } = useTranslation();
-  const face = line.status === 'resolved' ? line.defaultPrint?.faces[0] : undefined;
-  const summary = (
+  const frontFace = line.status === 'resolved' ? line.defaultPrint?.faces[0] : undefined;
+  const cardSummary = (
     <>
-      {face ? (
+      {frontFace ? (
         <img
           className="line__image"
-          src={face.imageUris.small}
-          alt={t('line.imageAlt', { name: face.name })}
+          src={frontFace.imageUris.small}
+          alt={t('line.imageAlt', { name: frontFace.name })}
           width={146}
           height={204}
           loading="lazy"
@@ -45,12 +51,12 @@ export function DecklistLineItem({ line, onChoose, onOpen, onUseEnglish }: Deckl
           type="button"
           className="line__open"
           aria-label={t('line.open', { name: line.card.name })}
-          onClick={onOpen}
+          onClick={onOpenPanel}
         >
-          {summary}
+          {cardSummary}
         </button>
       ) : (
-        <div className="line__summary">{summary}</div>
+        <div className="line__summary">{cardSummary}</div>
       )}
       {line.status === 'notFound' && <p className="line__note">{t('line.notFound')}</p>}
       {line.status === 'ambiguous' && (
@@ -61,7 +67,7 @@ export function DecklistLineItem({ line, onChoose, onOpen, onUseEnglish }: Deckl
               key={card.oracleId}
               type="button"
               className="button--secondary"
-              onClick={() => onChoose(card.oracleId)}
+              onClick={() => onPickCandidate(card.oracleId)}
             >
               {card.name}
             </button>
@@ -69,7 +75,7 @@ export function DecklistLineItem({ line, onChoose, onOpen, onUseEnglish }: Deckl
         </div>
       )}
       {line.status === 'resolved' && (
-        <PrintWarningNote line={line} onSwitchLineToEnglish={onUseEnglish} />
+        <PrintWarningNote line={line} onSwitchLineToEnglish={onSwitchLineToEnglish} />
       )}
     </li>
   );

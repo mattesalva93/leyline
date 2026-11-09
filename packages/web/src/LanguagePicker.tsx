@@ -4,14 +4,14 @@ import { useTranslation } from 'react-i18next';
 
 interface LanguagePickerProps {
   readonly label: string;
-  readonly value: Lang;
+  readonly selectedLang: Lang;
   readonly onChange: (lang: Lang) => void;
 }
 
-/** Italian or English, as a pair of radio buttons. */
-export function LanguagePicker({ label, value, onChange }: LanguagePickerProps) {
+/** One radio button per card language. */
+export function LanguagePicker({ label, selectedLang, onChange }: LanguagePickerProps) {
   const { t } = useTranslation();
-  const name = useId();
+  const radioGroupName = useId();
   return (
     <fieldset className="language-picker">
       <legend>{label}</legend>
@@ -19,9 +19,9 @@ export function LanguagePicker({ label, value, onChange }: LanguagePickerProps) 
         <label key={lang} className="language-picker__option">
           <input
             type="radio"
-            name={name}
+            name={radioGroupName}
             value={lang}
-            checked={value === lang}
+            checked={selectedLang === lang}
             onChange={() => onChange(lang)}
           />
           {t(`lang.${lang}`)}

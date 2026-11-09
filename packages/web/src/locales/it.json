@@ -28,7 +28,7 @@
     "useEnglish": "Usa la versione inglese",
     "languageFallback": "Nessuna stampa in {{lang}} con un'immagine: viene usata quella inglese."
   },
-  "sheet": {
+  "panel": {
     "lang": "Lingua di questa carta",
     "quantity": "Copie",
     "decrease": "Una copia in meno",
