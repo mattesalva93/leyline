@@ -1,4 +1,4 @@
-import type { DecklistLine } from '@mtg-suite/core';
+import { previewPrint, type DecklistLine } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
 import { PrintWarningNote } from './PrintWarningNote.tsx';
 
@@ -19,7 +19,7 @@ export function DecklistLineItem({
   onSwitchLineToEnglish,
 }: DecklistLineItemProps) {
   const { t } = useTranslation();
-  const frontFace = line.status === 'resolved' ? line.defaultPrint?.faces[0] : undefined;
+  const frontFace = previewPrint(line)?.faces[0];
   const cardSummary = (
     <>
       {frontFace ? (

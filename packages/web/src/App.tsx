@@ -1,5 +1,6 @@
 import {
   applyCandidateChoice,
+  applyPrintChoice,
   defaultSheetOptions,
   generateSheetPdf,
   hasPrintableCopies,
@@ -9,6 +10,7 @@ import {
   unprintedLines,
   type DecklistLine,
   type Lang,
+  type PrintChoice,
 } from '@mtg-suite/core';
 import { useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -42,6 +44,8 @@ interface LineChoices {
   readonly lang?: Lang;
   /** The card picked among an ambiguous line's candidates. */
   readonly oracleId?: string;
+  /** The print picked in the print picker, for every copy of the line. */
+  readonly print?: PrintChoice;
 }
 
 /** One written line of the decklist, as the list below the text area shows it. */
@@ -148,14 +152,16 @@ export function App() {
   }
 
   /**
-   * The line to show for `writtenLine`: its resolution in its language with the user's pick
-   * among candidates applied; `null` when it names no card, `undefined` while not resolved yet.
+   * The line to show for `writtenLine`: its resolution in its language with the user's picks
+   * (candidate, print) applied; `null` when it names no card, `undefined` while not resolved yet.
    */
   function displayedLine(writtenLine: string): DecklistLine | null | undefined {
     const resolution = resolutions.get(resolutionKey(languageOf(writtenLine), writtenLine));
     if (!resolution) return resolution;
-    const { oracleId } = choicesByLine.get(writtenLine) ?? {};
-    return oracleId === undefined ? resolution : applyCandidateChoice(resolution, oracleId);
+    const { oracleId, print } = choicesByLine.get(writtenLine) ?? {};
+    const withCandidate =
+      oracleId === undefined ? resolution : applyCandidateChoice(resolution, oracleId);
+    return print === undefined ? withCandidate : applyPrintChoice(withCandidate, print);
   }
 
   const writtenLines = decklistText.split(LINE_BREAK);
@@ -272,6 +278,11 @@ export function App() {
         }
         onQuantityChange={(quantity) =>
           panelLineIndex !== null && changeLineQuantity(panelLineIndex, quantity)
+        }
+        onPrintChoice={(print) =>
+          panelWrittenLine !== undefined &&
+          panelLine?.status === 'resolved' &&
+          updateChoices(panelWrittenLine, { print: { oracleId: panelLine.card.oracleId, print } })
         }
         onClose={() => setPanelLineIndex(null)}
       />
