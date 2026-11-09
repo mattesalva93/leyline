@@ -14,6 +14,10 @@ Default vocabulary: needs-triage, needs-info, ready-for-agent, ready-for-human, 
 
 Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
+## Commits
+
+Before any `git commit` → read `docs/agents/commits.md`.
+
 ## Sheet preview
 
 Changing the sheet layout or the PDF → run `pnpm sheet:preview` and look at `.preview/sheet-*.png`; show those images when asking the user a layout question.
