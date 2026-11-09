@@ -1,5 +1,5 @@
 import {
-  chooseCandidate,
+  applyCandidateChoice,
   defaultSheetOptions,
   generateSheetPdf,
   hasPrintableCopies,
@@ -128,11 +128,7 @@ export function App() {
     const resolution = resolutions.get(resolutionKey(langOf(written), written));
     if (!resolution) return resolution;
     const { quantity, oracleId } = edits.get(written) ?? {};
-    let line: DecklistLine = resolution;
-    // The pick stays when the line changes language, if that card is still a candidate.
-    if (line.status === 'ambiguous' && line.candidates.some((c) => c.card.oracleId === oracleId)) {
-      line = chooseCandidate(line, oracleId ?? '');
-    }
+    const line = oracleId === undefined ? resolution : applyCandidateChoice(resolution, oracleId);
     return quantity === undefined ? line : setLineQuantity(line, quantity);
   }
 

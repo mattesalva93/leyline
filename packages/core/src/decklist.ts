@@ -196,6 +196,17 @@ export function chooseCandidate(line: AmbiguousLine, oracleId: string): Resolved
   return resolvedLine({ text: line.text, quantity: line.quantity, lang: line.lang }, candidate);
 }
 
+/**
+ * The line with the user's pick applied: an ambiguous line resolves to the card `oracleId`
+ * names when it is one of its candidates. The pick is kept apart from the line, so it survives
+ * resolving the line again, in another language for one; any other line comes back as it is.
+ */
+export function applyCandidateChoice(line: DecklistLine, oracleId: string): DecklistLine {
+  const isCandidate =
+    line.status === 'ambiguous' && line.candidates.some((c) => c.card.oracleId === oracleId);
+  return isCandidate ? chooseCandidate(line, oracleId) : line;
+}
+
 /** Cards named exactly `key`; failing that, the cards most similar to it. */
 function closestCards(key: string, named: readonly NamedEntry[]): CatalogEntry[] {
   const exact = named.filter(({ keys }) => keys.includes(key)).map(({ entry }) => entry);

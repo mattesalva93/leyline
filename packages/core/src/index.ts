@@ -4,6 +4,7 @@ export { LANGS, isLang } from './types.ts';
 export { createInMemoryCatalog } from './in-memory-catalog.ts';
 export { cardKeys } from './name-match.ts';
 export {
+  applyCandidateChoice,
   chooseCandidate,
   resolveDecklist,
   setLineQuantity,

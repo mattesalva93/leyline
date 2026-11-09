@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyCandidateChoice,
   chooseCandidate,
   createInMemoryCatalog,
   resolveDecklist,
@@ -514,5 +515,44 @@ describe('setLineQuantity', () => {
 
     expect(() => setLineQuantity(line, 0)).toThrow();
     expect(() => setLineQuantity(line, 1.5)).toThrow();
+  });
+});
+
+describe('applyCandidateChoice', () => {
+  const goblinA = aCard({ oracleId: 'goblin-a', name: 'Goblin' });
+  const goblinB = aCard({ oracleId: 'goblin-b', name: 'Goblin' });
+  const catalog = createInMemoryCatalog([
+    { card: goblinA, prints: [aPrint({ id: 'goblin-a-print' })] },
+    { card: goblinB, prints: [aPrint({ id: 'goblin-b-print' })] },
+  ]);
+
+  it('resolves an ambiguous line to the card the user picked among its candidates', async () => {
+    const [line] = await resolveDecklist('3 Goblin', catalog, { today, lang: 'it' });
+    if (!line) throw new Error('expected a line');
+
+    expect(applyCandidateChoice(line, 'goblin-b')).toMatchObject({
+      status: 'resolved',
+      lang: 'it',
+      card: goblinB,
+      defaultPrint: { id: 'goblin-b-print' },
+    });
+  });
+
+  it('leaves the line as it is when the picked card is not among its candidates', async () => {
+    const [line] = await resolveDecklist('3 Goblin', catalog, { today, lang: 'en' });
+    if (!line) throw new Error('expected a line');
+
+    expect(applyCandidateChoice(line, 'sol-ring')).toBe(line);
+  });
+
+  it('leaves a line that is not ambiguous as it is', async () => {
+    const [line] = await resolveDecklist(
+      '1 Sol Ring',
+      createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]),
+      { today, lang: 'en' },
+    );
+    if (!line) throw new Error('expected a line');
+
+    expect(applyCandidateChoice(line, 'goblin-a')).toBe(line);
   });
 });
