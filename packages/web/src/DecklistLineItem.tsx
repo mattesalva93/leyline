@@ -68,7 +68,9 @@ export function DecklistLineItem({ line, onChoose, onOpen, onUseEnglish }: Deckl
           ))}
         </div>
       )}
-      {line.status === 'resolved' && <PrintWarningNote line={line} onUseEnglish={onUseEnglish} />}
+      {line.status === 'resolved' && (
+        <PrintWarningNote line={line} onSwitchLineToEnglish={onUseEnglish} />
+      )}
     </li>
   );
 }

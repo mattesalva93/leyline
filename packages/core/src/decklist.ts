@@ -181,11 +181,12 @@ function namedPrint(
   const match = withImage.find((m) => m.print.lang === lang) ?? withImage[0] ?? found[0];
   if (!match) return undefined;
   const stoodIn = match.print.lang !== lang && found.some((m) => m.print.lang === lang);
+  const englishExists = withImage.some((m) => m.print.lang === 'en');
   return {
     card: match.card,
     defaultPrint: match.print,
     lang: stoodIn ? lang : match.print.lang,
-    printWarning: stoodIn ? 'languageFallback' : qualityWarning(match.print),
+    printWarning: stoodIn ? 'languageFallback' : qualityWarning(match.print, englishExists),
   };
 }
 

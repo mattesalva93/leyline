@@ -3,27 +3,37 @@ import { useTranslation } from 'react-i18next';
 
 interface PrintWarningNoteProps {
   readonly line: ResolvedLine;
-  /** Switches the line to English: offered when its print is low-resolution. */
-  readonly onUseEnglish: () => void;
+  /** Switches the line to English: offered when an English print would look better. */
+  readonly onSwitchLineToEnglish: () => void;
 }
 
-/** What is wrong with a line's default print, if anything, and the way out. */
-export function PrintWarningNote({ line, onUseEnglish }: PrintWarningNoteProps) {
+/** What is wrong with a line's default print, if anything, and the way out when there is one. */
+export function PrintWarningNote({ line, onSwitchLineToEnglish }: PrintWarningNoteProps) {
   const { t } = useTranslation();
-  const lang = t(`lang.${line.lang}`).toLowerCase();
-  if (line.printWarning === 'languageFallback') {
-    return <p className="line__note">{t('line.languageFallback', { lang })}</p>;
+  const lineLanguageName = t(`lang.${line.lang}`).toLowerCase();
+
+  if (!line.defaultPrint) {
+    const message =
+      line.lang === 'en'
+        ? t('line.noEnglishPrint')
+        : t('line.noPrintInLanguageOrEnglish', { lang: lineLanguageName });
+    return <p className="line__note">{message}</p>;
   }
-  if (line.printWarning === 'lowResolution') {
-    return (
-      <div className="line__note">
-        <p>{t('line.lowResolution')}</p>
-        <button type="button" className="button--secondary" onClick={onUseEnglish}>
-          {t('line.useEnglish')}
-        </button>
-      </div>
-    );
+  switch (line.printWarning) {
+    case 'languageFallback':
+      return <p className="line__note">{t('line.languageFallback', { lang: lineLanguageName })}</p>;
+    case 'lowResolutionWithoutEnglish':
+      return <p className="line__note">{t('line.lowResolutionWithoutEnglish')}</p>;
+    case 'lowResolution':
+      return (
+        <div className="line__note">
+          <p>{t('line.lowResolution')}</p>
+          <button type="button" className="button--secondary" onClick={onSwitchLineToEnglish}>
+            {t('line.useEnglish')}
+          </button>
+        </div>
+      );
+    case null:
+      return null;
   }
-  if (!line.defaultPrint) return <p className="line__note">{t('line.noPrint')}</p>;
-  return null;
 }

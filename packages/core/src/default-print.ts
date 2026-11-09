@@ -33,10 +33,14 @@ function latestPrintable(prints: readonly Print[], lang: Lang, today: string): P
   return best;
 }
 
-/** What to warn about a print used by a line in its own language. */
-export function qualityWarning(print: Print | null): PrintWarning | null {
+/**
+ * What to warn about a print used by a line in its own language. `englishExists` tells whether
+ * the line, switched to English, would get an English print with a real image instead.
+ */
+export function qualityWarning(print: Print | null, englishExists: boolean): PrintWarning | null {
   // English is what a line falls back to, so only other languages can trade it for quality.
-  return print && print.lang !== 'en' && print.imageStatus === 'lowres' ? 'lowResolution' : null;
+  if (!print || print.lang === 'en' || print.imageStatus !== 'lowres') return null;
+  return englishExists ? 'lowResolution' : 'lowResolutionWithoutEnglish';
 }
 
 /**
@@ -49,9 +53,9 @@ export function defaultPrintFor(
   today: string,
 ): Pick<Candidate, 'defaultPrint' | 'printWarning'> {
   const print = latestPrintable(prints, lang, today);
+  const english = lang === 'en' ? print : latestPrintable(prints, 'en', today);
   if (!print && lang !== 'en') {
-    const english = latestPrintable(prints, 'en', today);
     return { defaultPrint: english, printWarning: english && 'languageFallback' };
   }
-  return { defaultPrint: print, printWarning: qualityWarning(print) };
+  return { defaultPrint: print, printWarning: qualityWarning(print, english !== null) };
 }

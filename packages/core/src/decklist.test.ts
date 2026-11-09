@@ -428,6 +428,35 @@ describe('resolveDecklist in Italian', () => {
     });
   });
 
+  it('says when a low-resolution Italian print has no English print to switch to', async () => {
+    const lowres = aPrint({ id: 'italian-lowres', lang: 'it', imageStatus: 'lowres' });
+    const englishPlaceholder = aPrint({ id: 'english-placeholder', imageStatus: 'placeholder' });
+    const catalog = createInMemoryCatalog([
+      { card: solRing, prints: [lowres, englishPlaceholder] },
+    ]);
+
+    const [line] = await resolveDecklist('1 Sol Ring', catalog, inItalian);
+
+    expect(line).toMatchObject({
+      defaultPrint: { id: 'italian-lowres' },
+      printWarning: 'lowResolutionWithoutEnglish',
+    });
+  });
+
+  it('says when a low-resolution Italian print a line names has no English version', async () => {
+    const named = { set: 'c21', collectorNumber: '263' };
+    const italian = aPrint({ id: 'c21-it', lang: 'it', ...named, imageStatus: 'lowres' });
+    const otherEnglish = aPrint({ id: 'cmm-en', set: 'cmm', collectorNumber: '410' });
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [italian, otherEnglish] }]);
+
+    const [line] = await resolveDecklist('1 Sol Ring (C21) 263', catalog, inItalian);
+
+    expect(line).toMatchObject({
+      defaultPrint: { id: 'c21-it' },
+      printWarning: 'lowResolutionWithoutEnglish',
+    });
+  });
+
   it('falls back to the English default, warning, when no Italian print has a real image', async () => {
     const english = aPrint({ id: 'english', releasedAt: '2021-04-23' });
     const placeholder = aPrint({

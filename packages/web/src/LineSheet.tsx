@@ -49,7 +49,7 @@ export function LineSheet({ line, onLangChange, onQuantityChange, onClose }: Lin
             <h2 id="sheet-title">{line.card.name}</h2>
           </div>
           <LanguagePicker label={t('sheet.lang')} value={line.lang} onChange={onLangChange} />
-          <PrintWarningNote line={line} onUseEnglish={() => onLangChange('en')} />
+          <PrintWarningNote line={line} onSwitchLineToEnglish={() => onLangChange('en')} />
           <fieldset className="quantity">
             <legend>{t('sheet.quantity')}</legend>
             <button

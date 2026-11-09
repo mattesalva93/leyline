@@ -86,8 +86,12 @@ interface DecklistLineBase {
   readonly lang: Lang;
 }
 
-/** Why a line's default print needs the user's attention. */
-export type PrintWarning = 'lowResolution' | 'languageFallback';
+/**
+ * Why a line's default print needs the user's attention: a low-resolution image, which an
+ * English print could replace (`lowResolution`) or not (`lowResolutionWithoutEnglish`), or no
+ * print with a real image in the line's language, so English stands in (`languageFallback`).
+ */
+export type PrintWarning = 'lowResolution' | 'lowResolutionWithoutEnglish' | 'languageFallback';
 
 /** A card a line means or could mean, with the print it defaults to. */
 export interface Candidate {
