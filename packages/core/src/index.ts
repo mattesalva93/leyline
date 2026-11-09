@@ -2,7 +2,12 @@
 export type * from './types.ts';
 export { createInMemoryCatalog } from './in-memory-catalog.ts';
 export { cardKeys } from './name-match.ts';
-export { chooseCandidate, resolveDecklist, type ResolveOptions } from './decklist.ts';
+export {
+  chooseCandidate,
+  resolveDecklist,
+  setLineQuantity,
+  type ResolveOptions,
+} from './decklist.ts';
 export {
   defaultSheetOptions,
   generateSheetPdf,

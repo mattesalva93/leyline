@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { chooseCandidate, createInMemoryCatalog, resolveDecklist } from './index.ts';
+import {
+  chooseCandidate,
+  createInMemoryCatalog,
+  resolveDecklist,
+  setLineQuantity,
+} from './index.ts';
 import { aCard, aPrint } from './test-fixtures.ts';
 
 /** Fixed "today" for the default print rule: prints released later are not out yet. */
@@ -486,5 +491,24 @@ describe('resolveDecklist in Italian', () => {
     const [line] = await resolveDecklist('1 Sol Ring (C21) 263', catalog, inItalian);
 
     expect(line).toMatchObject({ lang: 'en', defaultPrint: { id: 'c21-en' }, printWarning: null });
+  });
+});
+
+describe('setLineQuantity', () => {
+  it('changes how many copies a line prints, keeping the rest of it', async () => {
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]);
+    const [line] = await resolveDecklist('4 Sol Ring', catalog, { today, lang: 'en' });
+    if (!line) throw new Error('expected a line');
+
+    expect(setLineQuantity(line, 2)).toEqual({ ...line, quantity: 2 });
+  });
+
+  it('refuses a quantity that is not a whole number of at least one copy', async () => {
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]);
+    const [line] = await resolveDecklist('4 Sol Ring', catalog, { today, lang: 'en' });
+    if (!line) throw new Error('expected a line');
+
+    expect(() => setLineQuantity(line, 0)).toThrow();
+    expect(() => setLineQuantity(line, 1.5)).toThrow();
   });
 });

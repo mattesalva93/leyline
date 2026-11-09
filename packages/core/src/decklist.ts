@@ -207,3 +207,11 @@ function closestCards(key: string, named: readonly NamedEntry[]): CatalogEntry[]
     .filter((match) => match.score >= best.score - SUGGESTION_MARGIN)
     .map((match) => match.entry);
 }
+
+/** The line with `quantity` copies. */
+export function setLineQuantity(line: DecklistLine, quantity: number): DecklistLine {
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    throw new Error(`A line prints a whole number of copies, at least one: got ${quantity}`);
+  }
+  return { ...line, quantity };
+}
