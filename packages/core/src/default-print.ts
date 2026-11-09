@@ -2,7 +2,7 @@ import type { Print } from './types.ts';
 
 const TOKEN_LAYOUTS = new Set(['token', 'double_faced_token', 'emblem']);
 
-/** Whether a print can stand in for a playable paper card (see `defaultPrint` in GLOSSARY.md). */
+/** Whether a print can stand in for a playable paper card. */
 function isPrintable(print: Print): boolean {
   return (
     !print.digital &&
