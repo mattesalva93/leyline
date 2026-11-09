@@ -1,7 +1,8 @@
 import type { Print } from '@mtg-suite/core';
 import { useEffect, useRef, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PRINT_TILE_GAP, PRINT_TILE_MIN_WIDTH } from './print-page-size.ts';
+import { PRINT_TILE_GAP, PRINT_TILE_MIN_WIDTH } from './print-picker-geometry.ts';
+import { SMALL_IMAGE } from './scryfall-image-sizes.ts';
 import type { PrintPages } from './use-print-pages.ts';
 
 interface PrintPickerProps {
@@ -91,8 +92,8 @@ export function PrintPicker({
                         className="print-tile__image"
                         src={frontFace.imageUris.small}
                         alt={t('line.imageAlt', { name: frontFace.name })}
-                        width={146}
-                        height={204}
+                        width={SMALL_IMAGE.width}
+                        height={SMALL_IMAGE.height}
                         loading="lazy"
                       />
                     )}

@@ -2,8 +2,10 @@ import { previewPrint, type Lang, type Print, type ResolvedLine } from '@mtg-sui
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LanguagePicker } from './LanguagePicker.tsx';
+import { contentWidthOf, printPageSize } from './print-picker-geometry.ts';
 import { PrintPicker } from './PrintPicker.tsx';
 import { PrintWarningNote } from './PrintWarningNote.tsx';
+import { NORMAL_IMAGE } from './scryfall-image-sizes.ts';
 import { usePrintPages } from './use-print-pages.ts';
 
 interface LinePanelProps {
@@ -27,7 +29,6 @@ export function LinePanel({
   const { t } = useTranslation();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isPrintPickerOpen, setIsPrintPickerOpen] = useState(false);
-  const printPages = usePrintPages(line?.card.oracleId ?? null, line?.lang ?? 'en');
   const isOpen = line !== null;
 
   useEffect(() => {
@@ -35,6 +36,13 @@ export function LinePanel({
     if (isOpen && !dialog?.open) dialog?.showModal();
     if (!isOpen && dialog?.open) dialog.close();
   }, [isOpen]);
+
+  // Called after the effect above, so its first request measures the panel already open.
+  const printPages = usePrintPages(line?.card.oracleId ?? null, line?.lang ?? 'en', () => {
+    const dialog = dialogRef.current;
+    const gridWidth = dialog?.open ? contentWidthOf(dialog) : window.innerWidth;
+    return printPageSize(gridWidth, window.innerHeight);
+  });
 
   function closePanel() {
     setIsPrintPickerOpen(false);
@@ -73,8 +81,8 @@ export function LinePanel({
                 className="panel__image"
                 src={frontFace.imageUris.normal}
                 alt={t('line.imageAlt', { name: frontFace.name })}
-                width={488}
-                height={680}
+                width={NORMAL_IMAGE.width}
+                height={NORMAL_IMAGE.height}
               />
             )}
             <h2 id="panel-title">{line.card.name}</h2>

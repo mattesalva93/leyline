@@ -1,6 +1,7 @@
 import { previewPrint, type DecklistLine } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
 import { PrintWarningNote } from './PrintWarningNote.tsx';
+import { SMALL_IMAGE } from './scryfall-image-sizes.ts';
 
 interface DecklistLineItemProps {
   readonly line: DecklistLine;
@@ -27,8 +28,8 @@ export function DecklistLineItem({
           className="line__image"
           src={frontFace.imageUris.small}
           alt={t('line.imageAlt', { name: frontFace.name })}
-          width={146}
-          height={204}
+          width={SMALL_IMAGE.width}
+          height={SMALL_IMAGE.height}
           loading="lazy"
         />
       ) : (

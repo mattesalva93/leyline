@@ -14,6 +14,7 @@ export {
   type ResolveOptions,
 } from './decklist.ts';
 export {
+  CARD_MM,
   defaultSheetOptions,
   generateSheetPdf,
   hasPrintableCopies,

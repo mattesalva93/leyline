@@ -1,7 +1,6 @@
 import type { Lang, Print } from '@mtg-suite/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchPrintPage } from './api.ts';
-import { printPageSizeForWindow } from './print-page-size.ts';
 
 export interface PrintPages {
   /** Every print loaded so far, newest first. */
@@ -26,8 +25,13 @@ const NOTHING_LOADED: LoadedPages = { prints: [], total: null, nextCursor: null 
 /**
  * The prints the card `oracleId` can print with in `lang`, loaded a page at a time; the first
  * page is asked for as soon as there is a card, so its total is ready before the picker opens.
+ * `pageSize` says, when each request leaves, how many prints to ask for.
  */
-export function usePrintPages(oracleId: string | null, lang: Lang): PrintPages {
+export function usePrintPages(
+  oracleId: string | null,
+  lang: Lang,
+  pageSize: () => number,
+): PrintPages {
   const [loaded, setLoaded] = useState<LoadedPages>(NOTHING_LOADED);
   const [isLoading, setIsLoading] = useState(false);
   const [lastRequestFailed, setLastRequestFailed] = useState(false);
@@ -38,6 +42,11 @@ export function usePrintPages(oracleId: string | null, lang: Lang): PrintPages {
   const requestInFlight = useRef(false);
   // The pages already loaded, for `loadMore` to append to without waiting for a re-render.
   const loadedRef = useRef(loaded);
+  // The latest `pageSize`, read when a request leaves: a new function must not reload pages.
+  const pageSizeRef = useRef(pageSize);
+  useEffect(() => {
+    pageSizeRef.current = pageSize;
+  });
 
   const loadPage = useCallback(
     async (previous: LoadedPages) => {
@@ -49,7 +58,7 @@ export function usePrintPages(oracleId: string | null, lang: Lang): PrintPages {
         const page = await fetchPrintPage(
           oracleId,
           lang,
-          printPageSizeForWindow(),
+          pageSizeRef.current(),
           previous.nextCursor,
         );
         if (request !== latestRequest.current) return;

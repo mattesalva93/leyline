@@ -18,7 +18,7 @@ export const defaultSheetOptions: SheetOptions = { pageFormat: 'A4', imageQualit
 const PT_PER_MM = 72 / 25.4;
 const PAGE_MM = { A4: { width: 210, height: 297 } } as const;
 /** A real Magic card. The one measure the PDF must never get wrong. */
-const CARD_MM = { width: 63, height: 88 } as const;
+export const CARD_MM = { width: 63, height: 88 } as const;
 const COLUMNS = 3;
 const ROWS = 3;
 
