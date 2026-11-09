@@ -383,6 +383,35 @@ describe('generateSheetPdf', () => {
   });
 });
 
+describe('sheetImageUrls', () => {
+  const chosen = aPrint({
+    id: 'chosen',
+    faces: [
+      {
+        name: 'Card Name',
+        imageUris: {
+          small: 'https://cards.scryfall.io/small/front/chosen.jpg',
+          normal: 'https://cards.scryfall.io/normal/front/chosen.jpg',
+          large: 'https://cards.scryfall.io/large/front/chosen.jpg',
+        },
+      },
+    ],
+  });
+
+  it('uses the allocated print for the copies it holds, the default print for the rest', () => {
+    const allChosen = { ...resolvedLine(3, print), allocations: [{ print: chosen, quantity: 3 }] };
+    const oneChosen = { ...resolvedLine(3, print), allocations: [{ print: chosen, quantity: 1 }] };
+
+    expect(sheetImageUrls(sheetOf(allChosen))).toEqual([
+      'https://cards.scryfall.io/large/front/chosen.jpg',
+    ]);
+    expect(sheetImageUrls(sheetOf(oneChosen))).toEqual([
+      'https://cards.scryfall.io/large/front/chosen.jpg',
+      largeUrl,
+    ]);
+  });
+});
+
 describe('hasPrintableCopies', () => {
   it('is true when a resolved line has a default print', () => {
     expect(hasPrintableCopies(sheetOf(resolvedLine(1, print)))).toBe(true);

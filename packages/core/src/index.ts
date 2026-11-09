@@ -6,7 +6,9 @@ export { isPrintCursor, listPrints, type ListPrintsOptions } from './print-list.
 export { cardKeys } from './name-match.ts';
 export {
   applyCandidateChoice,
+  applyPrintChoice,
   chooseCandidate,
+  previewPrint,
   resolveDecklist,
   setLineQuantity,
   type ResolveOptions,
