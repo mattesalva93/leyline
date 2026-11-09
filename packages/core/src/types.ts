@@ -71,12 +71,29 @@ export interface Catalog {
     names: readonly string[],
     options: { readonly minSimilarity: number },
   ): Promise<readonly CatalogEntry[]>;
+  /** The card with oracle id `oracleId` and all its prints, or `null` when there is none. */
+  findCard(oracleId: string): Promise<CatalogEntry | null>;
+}
+
+/** One page of the prints a card can print with, as the print picker shows them. */
+export interface PrintPage {
+  readonly prints: readonly Print[];
+  /** How many prints all the pages hold together. */
+  readonly total: number;
+  /** Asks for the next page; `null` on the last one. */
+  readonly nextCursor: string | null;
 }
 
 /** A (`Print`, quantity) pair inside a `DecklistLine`. */
 export interface Allocation {
   readonly print: Print;
   readonly quantity: number;
+}
+
+/** The print the user picked for a line of the card `oracleId`, in the print picker. */
+export interface PrintChoice {
+  readonly oracleId: string;
+  readonly print: Print;
 }
 
 interface DecklistLineBase {

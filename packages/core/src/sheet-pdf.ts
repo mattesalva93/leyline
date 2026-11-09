@@ -11,14 +11,14 @@ import {
   type PDFImage,
   type PDFOperator,
 } from 'pdf-lib';
-import type { DecklistLine, Sheet, SheetOptions } from './types.ts';
+import type { DecklistLine, Print, Sheet, SheetOptions } from './types.ts';
 
 export const defaultSheetOptions: SheetOptions = { pageFormat: 'A4', imageQuality: 'large' };
 
 const PT_PER_MM = 72 / 25.4;
 const PAGE_MM = { A4: { width: 210, height: 297 } } as const;
 /** A real Magic card. The one measure the PDF must never get wrong. */
-const CARD_MM = { width: 63, height: 88 } as const;
+export const CARD_MM = { width: 63, height: 88 } as const;
 const COLUMNS = 3;
 const ROWS = 3;
 
@@ -44,12 +44,21 @@ function copiesOf(sheet: Sheet): Copy[] {
   return sheet.lines.flatMap((line) => lineCopies(line, sheet.options));
 }
 
+/** A line's copies: each allocation's with its print, the copies left with the default one. */
 function lineCopies(line: DecklistLine, options: SheetOptions): Copy[] {
-  if (line.status !== 'resolved' || !line.defaultPrint) return [];
-  const copy = line.defaultPrint.faces.map((face) => ({
-    imageUrl: face.imageUris[options.imageQuality],
-  }));
-  return Array.from({ length: line.quantity }, () => copy);
+  if (line.status !== 'resolved') return [];
+  const copiesOfPrint = (print: Print | null, quantity: number): Copy[] => {
+    if (!print || quantity <= 0) return [];
+    const copy = print.faces.map((face) => ({ imageUrl: face.imageUris[options.imageQuality] }));
+    return Array.from({ length: quantity }, () => copy);
+  };
+  const allocated = line.allocations.reduce((sum, allocation) => sum + allocation.quantity, 0);
+  return [
+    ...line.allocations.flatMap((allocation) =>
+      copiesOfPrint(allocation.print, allocation.quantity),
+    ),
+    ...copiesOfPrint(line.defaultPrint, line.quantity - allocated),
+  ];
 }
 
 /**

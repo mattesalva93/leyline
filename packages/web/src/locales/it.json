@@ -35,7 +35,10 @@
     "increase": "Una copia in più",
     "minus": "−",
     "plus": "+",
-    "close": "Fatto"
+    "close": "Fatto",
+    "prints": "Altre stampe",
+    "printCount_one": "1 stampa disponibile",
+    "printCount_other": "{{count}} stampe disponibili"
   },
   "pdf": {
     "download": "Scarica il PDF",
@@ -49,5 +52,17 @@
     "disclaimer": "Progetto non ufficiale, non affiliato a Wizards of the Coast.",
     "scryfall": "Dati e immagini delle carte da Scryfall.",
     "report": "Segnala un problema"
+  },
+  "printPicker": {
+    "title": "Stampe di {{name}}",
+    "back": "Indietro",
+    "setAndNumber": "{{set}} #{{number}}",
+    "quality": {
+      "highres_scan": "Alta risoluzione",
+      "lowres": "Bassa risoluzione"
+    },
+    "loading": "Caricamento delle stampe…",
+    "error": "Non è stato possibile caricare le stampe. Riprova tra poco.",
+    "retry": "Riprova"
   }
 }

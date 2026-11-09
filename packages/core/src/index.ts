@@ -2,15 +2,19 @@
 export type * from './types.ts';
 export { LANGS, isLang } from './types.ts';
 export { createInMemoryCatalog } from './in-memory-catalog.ts';
+export { isPrintCursor, listPrints, type ListPrintsOptions } from './print-list.ts';
 export { cardKeys } from './name-match.ts';
 export {
   applyCandidateChoice,
+  applyPrintChoice,
   chooseCandidate,
+  previewPrint,
   resolveDecklist,
   setLineQuantity,
   type ResolveOptions,
 } from './decklist.ts';
 export {
+  CARD_MM,
   defaultSheetOptions,
   generateSheetPdf,
   hasPrintableCopies,

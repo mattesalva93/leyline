@@ -272,3 +272,77 @@ button:disabled {
 .footer p {
   margin: 0.125rem 0;
 }
+
+.panel__prints {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.badge {
+  min-width: 1.5rem;
+  padding: 0 0.375rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+/* Print picker: grid of the prints a line can use, inside the line panel. */
+.print-picker__header {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.print-picker__header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.print-picker__year h3 {
+  margin: 1rem 0 0.5rem;
+  font-size: 1rem;
+}
+
+.print-picker__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--print-tile-min-width), 1fr));
+  gap: var(--print-tile-gap);
+}
+
+.print-tile {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0.25rem;
+  border: 2px solid transparent;
+  background: transparent;
+  color: inherit;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.print-tile--picked {
+  border-color: var(--accent);
+}
+
+.print-tile__image {
+  width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+}
+
+.print-tile__quality--lowres {
+  color: var(--warning);
+}
+
+.print-picker__status {
+  min-height: 1.5rem;
+  color: var(--muted);
+}

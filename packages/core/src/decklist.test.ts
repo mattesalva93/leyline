@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyCandidateChoice,
+  applyPrintChoice,
+  previewPrint,
   chooseCandidate,
   createInMemoryCatalog,
   resolveDecklist,
@@ -600,5 +602,84 @@ describe('applyCandidateChoice', () => {
     if (!line) throw new Error('expected a line');
 
     expect(applyCandidateChoice(line, 'goblin-a')).toBe(line);
+  });
+});
+
+describe('applyPrintChoice', () => {
+  const solRingIt = aPrint({ id: 'sol-ring-it', lang: 'it', releasedAt: '2025-01-01' });
+  const solRingItOld = aPrint({ id: 'sol-ring-it-old', lang: 'it', releasedAt: '2016-01-01' });
+  const solRingItLowres = aPrint({ id: 'sol-ring-it-lowres', lang: 'it', imageStatus: 'lowres' });
+  const catalog = createInMemoryCatalog([
+    { card: solRing, prints: [solRingC21, solRingIt, solRingItOld, solRingItLowres] },
+  ]);
+  async function solRingLine(lang: 'it' | 'en') {
+    const [line] = await resolveDecklist('4 Sol Ring', catalog, { today, lang });
+    if (!line) throw new Error('expected a line');
+    return line;
+  }
+
+  it('prints every copy of the line with the chosen print, keeping its default print', async () => {
+    const line = await solRingLine('it');
+
+    const chosen = applyPrintChoice(line, { oracleId: 'sol-ring', print: solRingItOld });
+
+    expect(chosen).toMatchObject({
+      defaultPrint: { id: 'sol-ring-it' },
+      allocations: [{ print: { id: 'sol-ring-it-old' }, quantity: 4 }],
+    });
+    expect(previewPrint(chosen)?.id).toBe('sol-ring-it-old');
+  });
+
+  it('keeps every copy on the chosen print after the quantity changes', async () => {
+    const line = setLineQuantity(await solRingLine('it'), 2);
+
+    expect(applyPrintChoice(line, { oracleId: 'sol-ring', print: solRingItOld })).toMatchObject({
+      allocations: [{ print: { id: 'sol-ring-it-old' }, quantity: 2 }],
+    });
+  });
+
+  it('warns about a chosen low-resolution print, as English could replace it', async () => {
+    const line = await solRingLine('it');
+
+    expect(applyPrintChoice(line, { oracleId: 'sol-ring', print: solRingItLowres })).toMatchObject({
+      printWarning: 'lowResolution',
+    });
+  });
+
+  it('keeps warning that an Italian line prints in English after an English print is chosen', async () => {
+    const english2016 = aPrint({ id: 'sol-ring-en-2016', releasedAt: '2016-01-01' });
+    const englishOnly = createInMemoryCatalog([
+      { card: solRing, prints: [solRingC21, english2016] },
+    ]);
+    const [line] = await resolveDecklist('4 Sol Ring', englishOnly, { today, lang: 'it' });
+    if (!line) throw new Error('expected a line');
+
+    expect(applyPrintChoice(line, { oracleId: 'sol-ring', print: english2016 })).toMatchObject({
+      lang: 'it',
+      printWarning: 'languageFallback',
+      allocations: [{ print: { id: 'sol-ring-en-2016' }, quantity: 4 }],
+    });
+  });
+
+  it('leaves the line as it is once it asks for another language or card than the choice', async () => {
+    const english = await solRingLine('en');
+    const italian = await solRingLine('it');
+
+    expect(applyPrintChoice(english, { oracleId: 'sol-ring', print: solRingItOld })).toBe(english);
+    expect(applyPrintChoice(italian, { oracleId: 'goblin-a', print: solRingItOld })).toBe(italian);
+  });
+});
+
+describe('previewPrint', () => {
+  it('is the default print of a line with no print chosen, and null for an unresolved one', async () => {
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]);
+    const [resolved, notFound] = await resolveDecklist('1 Sol Ring\n1 Xyzzy', catalog, {
+      today,
+      lang: 'en',
+    });
+    if (!resolved || !notFound) throw new Error('expected two lines');
+
+    expect(previewPrint(resolved)?.id).toBe('sol-ring-c21');
+    expect(previewPrint(notFound)).toBeNull();
   });
 });

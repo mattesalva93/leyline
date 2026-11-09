@@ -1,4 +1,4 @@
-import type { DecklistLine, Lang } from '@mtg-suite/core';
+import type { DecklistLine, Lang, PrintPage } from '@mtg-suite/core';
 
 export async function resolveDecklistText(text: string, lang: Lang): Promise<DecklistLine[]> {
   const response = await fetch('/api/decklists/resolve', {
@@ -23,4 +23,20 @@ export async function fetchImages(urls: readonly string[]): Promise<Map<string, 
     }),
   );
   return new Map(entries);
+}
+
+/** One page of the prints `oracleId` can print with in `lang`, `limit` at most (the server caps it). */
+export async function fetchPrintPage(
+  oracleId: string,
+  lang: Lang,
+  limit: number,
+  cursor: string | null,
+): Promise<PrintPage> {
+  const query = new URLSearchParams({ lang, limit: String(limit) });
+  if (cursor) query.set('cursor', cursor);
+  const response = await fetch(`/api/cards/${encodeURIComponent(oracleId)}/prints?${query}`, {
+    headers: { accept: 'application/json' },
+  });
+  if (!response.ok) throw new Error(`Prints failed with ${response.status}`);
+  return (await response.json()) as PrintPage;
 }
