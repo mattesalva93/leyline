@@ -3,6 +3,7 @@ import {
   defaultSheetOptions,
   generateSheetPdf,
   hasPrintableCopies,
+  LANGS,
   setLineQuantity,
   sheetImageUrls,
   unprintedLines,
@@ -90,7 +91,7 @@ export function App() {
 
   /** Resolves each written line in its own language: one request per language. */
   function resolveWritten(texts: readonly string[], langOfLine = langOf) {
-    for (const lang of ['it', 'en'] as const) {
+    for (const lang of LANGS) {
       void resolveLines(
         texts.filter((written) => langOfLine(written) === lang),
         lang,

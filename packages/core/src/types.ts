@@ -1,7 +1,12 @@
 // Domain types. Names follow GLOSSARY.md.
 
-/** Card language: the catalog holds English and Italian prints (ADR 0002). */
-export type Lang = 'en' | 'it';
+/** Card languages: the catalog holds English and Italian prints (ADR 0002). */
+export const LANGS = ['it', 'en'] as const;
+export type Lang = (typeof LANGS)[number];
+
+export function isLang(value: unknown): value is Lang {
+  return LANGS.some((lang) => lang === value);
+}
 
 /** Scryfall's `image_status`. */
 export type ImageStatus = 'highres_scan' | 'lowres' | 'placeholder' | 'missing';

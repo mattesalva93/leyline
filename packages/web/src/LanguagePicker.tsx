@@ -1,8 +1,6 @@
-import type { Lang } from '@mtg-suite/core';
+import { LANGS, type Lang } from '@mtg-suite/core';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
-
-const LANGS: readonly Lang[] = ['it', 'en'];
 
 interface LanguagePickerProps {
   readonly label: string;

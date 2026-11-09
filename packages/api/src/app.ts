@@ -1,4 +1,4 @@
-import { resolveDecklist, type Lang } from '@mtg-suite/core';
+import { isLang, resolveDecklist, type Lang } from '@mtg-suite/core';
 import { Hono } from 'hono';
 import type { Sql } from './db.ts';
 import { createPostgresCatalog } from './postgres-catalog.ts';
@@ -9,14 +9,13 @@ export interface AppDeps {
 
 /** Longest decklist text accepted, in characters: far above a 100-card deck. */
 const MAX_DECKLIST_LENGTH = 50_000;
-const LANGS: readonly unknown[] = ['en', 'it'] satisfies Lang[];
 
 /** `{ text, lang? }` from a resolve request body, or `null` when it is not one. */
 function resolveRequest(body: unknown): { text: string; lang: Lang } | null {
   if (typeof body !== 'object' || body === null) return null;
   const { text, lang = 'en' } = body as { text?: unknown; lang?: unknown };
   if (typeof text !== 'string' || text.length > MAX_DECKLIST_LENGTH) return null;
-  return LANGS.includes(lang) ? { text, lang: lang as Lang } : null;
+  return isLang(lang) ? { text, lang } : null;
 }
 
 export function createApp(deps: AppDeps): Hono {
