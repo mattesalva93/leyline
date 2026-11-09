@@ -1,7 +1,7 @@
 // Domain types. Names follow GLOSSARY.md.
 
-/** Card language. Only English is imported for now (ADR 0002 adds Italian later). */
-export type Lang = 'en';
+/** Card language: the catalog holds English and Italian prints (ADR 0002). */
+export type Lang = 'en' | 'it';
 
 /** Scryfall's `image_status`. */
 export type ImageStatus = 'highres_scan' | 'lowres' | 'placeholder' | 'missing';
@@ -32,6 +32,8 @@ export interface Print {
   readonly set: string;
   readonly collectorNumber: string;
   readonly lang: Lang;
+  /** The name printed on the card, in `lang`; multi-face prints use "Front // Back". */
+  readonly printedName: string;
   /** ISO date, `YYYY-MM-DD`. */
   readonly releasedAt: string;
   readonly imageStatus: ImageStatus;
@@ -41,6 +43,8 @@ export interface Print {
   readonly layout: string;
   /** Scryfall `set_type`, e.g. `expansion`, `token`, `playtest`. */
   readonly setType: string;
+  /** Scryfall `promo_types`, e.g. `playtest` for Mystery Booster playtest cards. */
+  readonly promoTypes: readonly string[];
   readonly faces: readonly PrintFace[];
 }
 

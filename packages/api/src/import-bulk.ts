@@ -4,9 +4,14 @@ import type { Readable } from 'node:stream';
 import { createInterface } from 'node:readline';
 import { createCatalogTables, type Sql } from './db.ts';
 
-/** Only English for now; ADR 0002 widens this to `en` and `it`. */
-const LANGS = new Set(['en']);
+/** ADR 0002: the catalog holds English and Italian prints only. */
+const LANGS = new Set(['en', 'it']);
 const BATCH_SIZE = 1000;
+/**
+ * Advisory lock key held for a whole import, since imports share the staging tables. Any
+ * constant unique to this app works; this one spells "MTG1" in ASCII.
+ */
+const IMPORT_LOCK = 0x4d544731;
 
 interface ScryfallImageUris {
   readonly small: string;
@@ -16,6 +21,7 @@ interface ScryfallImageUris {
 
 interface ScryfallFace {
   readonly name: string;
+  readonly printed_name?: string;
   readonly oracle_id?: string;
   readonly image_uris?: ScryfallImageUris;
 }
@@ -26,9 +32,11 @@ interface ScryfallCard {
   readonly oracle_id?: string;
   readonly name: string;
   readonly lang: string;
+  readonly printed_name?: string;
   readonly released_at: string;
   readonly set: string;
   readonly set_type: string;
+  readonly promo_types?: readonly string[];
   readonly collector_number: string;
   readonly digital: boolean;
   readonly oversized: boolean;
@@ -49,12 +57,14 @@ interface PrintRow {
   readonly set: string;
   readonly collector_number: string;
   readonly lang: string;
+  readonly printed_name: string;
   readonly released_at: string;
   readonly image_status: string;
   readonly digital: boolean;
   readonly oversized: boolean;
   readonly layout: string;
   readonly set_type: string;
+  readonly promo_types: readonly string[];
   readonly faces: readonly PrintFace[];
 }
 
@@ -73,6 +83,17 @@ function facesOf(card: ScryfallCard): PrintFace[] {
   );
 }
 
+/**
+ * Scryfall sets `printed_name` only where it differs from `name`, and on the faces of multi-face
+ * prints. Italian names can change between reprints, so each print keeps its own.
+ */
+function printedNameOf(card: ScryfallCard): string {
+  if (card.printed_name) return card.printed_name;
+  const faces = card.card_faces ?? [];
+  if (!faces.some((face) => face.printed_name)) return card.name;
+  return faces.map((face) => face.printed_name ?? face.name).join(' // ');
+}
+
 function toRows(card: ScryfallCard): { card: CardRow; print: PrintRow } | null {
   // Reversible cards carry the oracle id on their faces only.
   const oracleId = card.oracle_id ?? card.card_faces?.[0]?.oracle_id;
@@ -85,12 +106,14 @@ function toRows(card: ScryfallCard): { card: CardRow; print: PrintRow } | null {
       set: card.set,
       collector_number: card.collector_number,
       lang: card.lang,
+      printed_name: printedNameOf(card),
       released_at: card.released_at,
       image_status: card.image_status,
       digital: card.digital,
       oversized: card.oversized,
       layout: card.layout,
       set_type: card.set_type,
+      promo_types: card.promo_types ?? [],
       faces: facesOf(card),
     },
   };
@@ -102,6 +125,22 @@ function toRows(card: ScryfallCard): { card: CardRow; print: PrintRow } | null {
  * only after the whole file is read, so a failed import leaves the previous catalog serving.
  */
 export async function importBulk(sql: Sql, bulk: Readable): Promise<{ prints: number }> {
+  // Session-level lock: it must be taken and released on the same connection.
+  await using lockConnection = await sql.reserve();
+  const [row] = await lockConnection<
+    { locked: boolean }[]
+  >`select pg_try_advisory_lock(${IMPORT_LOCK}) as locked`;
+  if (!row?.locked) throw new Error('Another catalog import is running');
+  try {
+    return await importLocked(sql, bulk);
+  } finally {
+    await lockConnection`select pg_advisory_unlock(${IMPORT_LOCK})`;
+  }
+}
+
+async function importLocked(sql: Sql, bulk: Readable): Promise<{ prints: number }> {
+  // The daily schedule counts from the start, so a long import does not push the next one later.
+  const startedAt = new Date();
   await sql`drop table if exists prints_staging, cards_staging`;
   await createCatalogTables(sql, '_staging');
 
@@ -144,6 +183,15 @@ export async function importBulk(sql: Sql, bulk: Readable): Promise<{ prints: nu
     for (const { indexname } of indexes) {
       await tx`alter index ${tx(indexname)} rename to ${tx(indexname.replace('_staging_', '_'))}`;
     }
+    await tx`insert into catalog_imports (started_at) values (${startedAt})`;
   });
   return { prints: imported };
+}
+
+/** When the import that produced the live catalog started, or `null` before the first one. */
+export async function lastImportStartedAt(sql: Sql): Promise<Date | null> {
+  const [row] = await sql<
+    { startedAt: Date | null }[]
+  >`select max(started_at) as "startedAt" from catalog_imports`;
+  return row?.startedAt ?? null;
 }

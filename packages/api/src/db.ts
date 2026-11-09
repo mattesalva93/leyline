@@ -43,12 +43,14 @@ export async function createCatalogTables(sql: Sql, suffix: '' | '_staging'): Pr
       set text not null,
       collector_number text not null,
       lang text not null,
+      printed_name text not null,
       released_at date not null,
       image_status text not null,
       digital boolean not null,
       oversized boolean not null,
       layout text not null,
       set_type text not null,
+      promo_types text[] not null,
       faces jsonb not null,
       constraint ${sql(`prints${suffix}_pkey`)} primary key (id)
     )
@@ -63,4 +65,5 @@ export async function migrate(sql: Sql): Promise<void> {
   // Fuzzy name search (ADR 0003). Also created by docker/postgres/init for local databases.
   await sql`create extension if not exists pg_trgm`;
   await createCatalogTables(sql, '');
+  await sql`create table if not exists catalog_imports (started_at timestamptz not null)`;
 }

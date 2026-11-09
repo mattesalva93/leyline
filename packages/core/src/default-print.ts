@@ -1,4 +1,4 @@
-import type { Print } from './types.ts';
+import type { Lang, Print } from './types.ts';
 
 const TOKEN_LAYOUTS = new Set(['token', 'double_faced_token', 'emblem']);
 
@@ -10,20 +10,20 @@ function isPrintable(print: Print): boolean {
     print.layout !== 'art_series' &&
     !TOKEN_LAYOUTS.has(print.layout) &&
     print.setType !== 'token' &&
-    print.setType !== 'playtest' &&
+    !print.promoTypes.includes('playtest') &&
     print.imageStatus !== 'placeholder' &&
     print.imageStatus !== 'missing'
   );
 }
 
 /**
- * The most recent printable paper print already released on `today` (ISO date), or `null` when
- * there is none. Scryfall lists previewed prints before their release date.
+ * The most recent printable paper print in `lang` already released on `today` (ISO date), or
+ * `null` when there is none. Scryfall lists previewed prints before their release date.
  */
-export function defaultPrint(prints: readonly Print[], today: string): Print | null {
+export function defaultPrint(prints: readonly Print[], lang: Lang, today: string): Print | null {
   let best: Print | null = null;
   for (const print of prints) {
-    const eligible = isPrintable(print) && print.releasedAt <= today;
+    const eligible = print.lang === lang && isPrintable(print) && print.releasedAt <= today;
     if (eligible && (!best || print.releasedAt > best.releasedAt)) best = print;
   }
   return best;

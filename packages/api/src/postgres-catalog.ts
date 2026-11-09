@@ -12,12 +12,14 @@ function toPrint(row: PrintRow): Print {
     set: row.set,
     collectorNumber: row.collectorNumber,
     lang: row.lang,
+    printedName: row.printedName,
     releasedAt: row.releasedAt,
     imageStatus: row.imageStatus,
     digital: row.digital,
     oversized: row.oversized,
     layout: row.layout,
     setType: row.setType,
+    promoTypes: row.promoTypes,
     faces: row.faces,
   };
 }
@@ -37,8 +39,10 @@ export function createPostgresCatalog(sql: Sql): Catalog {
       const prints = await sql<PrintRow[]>`
         select
           id, oracle_id as "oracleId", set, collector_number as "collectorNumber", lang,
+          printed_name as "printedName",
           released_at::text as "releasedAt", image_status as "imageStatus", digital, oversized,
-          layout, set_type as "setType", faces
+          layout, set_type as "setType",
+          promo_types as "promoTypes", faces
         from prints
         where oracle_id = any(${cards.map((card) => card.oracleId)}::text[])
         order by released_at desc, id

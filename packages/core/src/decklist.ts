@@ -63,7 +63,7 @@ function resolveLine(
   const key = nameKey(line.name);
   const matches = entries
     .filter((e) => cardNameKeys(e.card.name).includes(key))
-    .map((e) => ({ card: e.card, defaultPrint: defaultPrint(e.prints, today) }));
+    .map((e) => ({ card: e.card, defaultPrint: defaultPrint(e.prints, base.lang, today) }));
   // Cards that can be printed win: art series, for one, are separate cards sharing the name.
   const printable = matches.filter((match) => match.defaultPrint);
   const candidates = printable.length > 0 ? printable : matches;

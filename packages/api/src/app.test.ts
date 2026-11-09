@@ -67,6 +67,112 @@ describe('POST /api/decklists/resolve', () => {
     ]);
   });
 
+  it('imports only English and Italian prints', async () => {
+    await importBulk(
+      db.sql,
+      bulkStream([
+        scryfallCard({ id: 'sol-ring-en' }),
+        scryfallCard({
+          id: 'bolt-it',
+          oracle_id: 'aaaaaaaa-0000-0000-0000-00000000b017',
+          name: 'Lightning Bolt',
+          lang: 'it',
+          printed_name: 'Fulmine',
+        }),
+        scryfallCard({
+          id: 'counterspell-ja',
+          oracle_id: 'aaaaaaaa-0000-0000-0000-00000000c0de',
+          name: 'Counterspell',
+          lang: 'ja',
+          printed_name: '対抗呪文',
+        }),
+      ]),
+    );
+
+    const { body } = await resolve('1 Sol Ring\n1 Lightning Bolt\n1 Counterspell');
+
+    expect(body.lines).toMatchObject([
+      { status: 'resolved', defaultPrint: { id: 'sol-ring-en' } },
+      // Known from its Italian print, but an English line has no English print to default to.
+      { status: 'resolved', card: { name: 'Lightning Bolt' }, defaultPrint: null },
+      { status: 'notFound' },
+    ]);
+  });
+
+  it("keeps each print's printed name, language, release date and image status", async () => {
+    await importBulk(
+      db.sql,
+      bulkStream([
+        scryfallCard({ id: 'sol-ring-lowres', released_at: '2020-04-17', image_status: 'lowres' }),
+        doubleFacedCard({ id: 'delver-isd', released_at: '2011-09-30' }),
+      ]),
+    );
+
+    const { body } = await resolve('1 Sol Ring\n1 Delver of Secrets');
+
+    expect(body.lines).toMatchObject([
+      {
+        defaultPrint: {
+          printedName: 'Sol Ring',
+          lang: 'en',
+          releasedAt: '2020-04-17',
+          imageStatus: 'lowres',
+        },
+      },
+      { defaultPrint: { printedName: 'Delver of Secrets // Insectile Aberration' } },
+    ]);
+  });
+
+  it('never defaults to digital, art series, oversized, token or playtest prints', async () => {
+    const newer = { released_at: '2025-06-01' };
+    await importBulk(
+      db.sql,
+      bulkStream([
+        scryfallCard({ id: 'sol-ring-paper', released_at: '2021-04-23' }),
+        scryfallCard({
+          id: 'sol-ring-mtgo',
+          ...newer,
+          set: 'prm',
+          set_type: 'promo',
+          digital: true,
+        }),
+        scryfallCard({ id: 'sol-ring-oversized', ...newer, set: 'oc21', oversized: true }),
+        scryfallCard({
+          id: 'sol-ring-playtest',
+          ...newer,
+          set: 'cmb1',
+          set_type: 'funny',
+          promo_types: ['playtest'],
+        }),
+        scryfallCard({
+          id: 'sol-ring-art',
+          ...newer,
+          oracle_id: 'aaaaaaaa-0000-0000-0000-0000000000a7',
+          name: 'Sol Ring // Sol Ring',
+          set: 'ac21',
+          set_type: 'memorabilia',
+          layout: 'art_series',
+        }),
+        scryfallCard({
+          id: 'goblin-token',
+          ...newer,
+          oracle_id: 'aaaaaaaa-0000-0000-0000-00000000060b',
+          name: 'Goblin',
+          set: 'tc21',
+          set_type: 'token',
+          layout: 'token',
+        }),
+      ]),
+    );
+
+    const { body } = await resolve('1 Sol Ring\n1 Goblin');
+
+    expect(body.lines).toMatchObject([
+      { status: 'resolved', card: { name: 'Sol Ring' }, defaultPrint: { id: 'sol-ring-paper' } },
+      { status: 'resolved', card: { name: 'Goblin' }, defaultPrint: null },
+    ]);
+  });
+
   it('serves the newest complete import, and keeps it when a later import fails', async () => {
     const counterspell = scryfallCard({
       id: 'counterspell-mh2',

@@ -17,6 +17,7 @@
     "dev": "node --conditions=source --env-file-if-exists=../../.env --watch src/server.ts",
     "dev:debug": "node --conditions=source --env-file-if-exists=../../.env --watch --inspect=127.0.0.1:9229 src/server.ts",
     "import:catalog": "node --conditions=source --env-file-if-exists=../../.env src/import.ts",
+    "import:daily": "node --conditions=source --env-file-if-exists=../../.env src/import-daily.ts",
     "import:debug": "node --conditions=source --env-file-if-exists=../../.env --inspect-wait=127.0.0.1:9229 src/import.ts",
     "build": "tsc -b",
     "start": "node dist/server.js",
