@@ -110,7 +110,7 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.strict,
   {
-    files: ['*.{js,ts}', 'packages/api/**/*.ts'],
+    files: ['*.{js,ts}', 'scripts/**/*.js', 'packages/api/**/*.ts'],
     languageOptions: { globals: globals.node },
   },
   coreNoIo,
