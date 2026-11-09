@@ -137,7 +137,22 @@ export function App() {
     );
   }
 
+  /** Drops the print picked for each of `writtenLines`: it is a print in their old language. */
+  function forgetPrintChoices(writtenLines: readonly string[]) {
+    setChoicesByLine((previous) => {
+      const next = new Map(previous);
+      for (const writtenLine of writtenLines) {
+        const { print: _forgotten, ...kept } = previous.get(writtenLine) ?? {};
+        if (_forgotten) next.set(writtenLine, kept);
+      }
+      return next;
+    });
+  }
+
   function changeDefaultLanguage(lang: Lang) {
+    forgetPrintChoices(
+      decklistText.split(LINE_BREAK).filter((line) => !choicesByLine.get(line)?.lang),
+    );
     setDefaultLang(lang);
     saveDefaultLang(lang);
     resolveEachInItsLanguage(
@@ -148,7 +163,9 @@ export function App() {
 
   // Switched only once resolved, so the line (and its open panel) never goes back to unresolved.
   async function changeLineLanguage(writtenLine: string, lang: Lang) {
-    if (await resolveInLanguage([writtenLine], lang)) updateChoices(writtenLine, { lang });
+    if (lang === languageOf(writtenLine) || !(await resolveInLanguage([writtenLine], lang))) return;
+    forgetPrintChoices([writtenLine]);
+    updateChoices(writtenLine, { lang });
   }
 
   /**
