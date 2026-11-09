@@ -13,11 +13,15 @@ export default defineConfig({
   test: {
     // Inline projects with `extends: true` inherit the root options below;
     // projects found by a glob would not.
-    projects: packages.map((name) => ({
-      extends: true,
-      root: `packages/${name}`,
-      test: { name: `@mtg-suite/${name}` },
-    })),
+    projects: [
+      ...packages.map((name) => ({
+        extends: true,
+        root: `packages/${name}`,
+        test: { name: `@mtg-suite/${name}` },
+      })),
+      // Repo tooling, such as the git hook checks.
+      { extends: true, root: 'scripts', test: { name: 'scripts' } },
+    ],
     // `tsc -b` also compiles test files into `dist/`: run only the sources.
     exclude: [...configDefaults.exclude, '**/dist/**'],
   },

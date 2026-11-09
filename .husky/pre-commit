@@ -2,5 +2,6 @@ if [ "$(git symbolic-ref --short -q HEAD)" = "main" ]; then
   echo "pre-commit: committing on main is not allowed. Create a branch first: git switch -c <branch>" >&2
   exit 1
 fi
+node scripts/check-adrs.js
 pnpm exec lint-staged
 pnpm typecheck
