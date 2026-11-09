@@ -1,4 +1,4 @@
-import { defaultPrint } from './default-print.ts';
+import { defaultPrintFor, hasRealImage, qualityWarning } from './default-print.ts';
 import { cardKeys, nameKey, trigramSimilarity, trigrams } from './name-match.ts';
 import type {
   AmbiguousLine,
@@ -21,6 +21,8 @@ const SUGGESTION_MARGIN = 0.1;
 export interface ResolveOptions {
   /** Today's date (ISO, `YYYY-MM-DD`): prints released later are not default candidates. */
   readonly today: string;
+  /** The language lines ask for, unless the print they name is in another one. */
+  readonly lang: Lang;
 }
 
 /** The print an Arena or MTGO line names: Scryfall set code and collector number, lowercase. */
@@ -116,7 +118,7 @@ export async function resolveDecklist(
     return { entry, keys, trigrams: keys.map(trigrams) };
   });
 
-  return parsed.map((line) => resolveLine(line, named, options.today));
+  return parsed.map((line) => resolveLine(line, named, options));
 }
 
 /** A catalog entry with the name keys it answers to, ready to compare. */
@@ -132,19 +134,27 @@ function resolvedLine(base: LineBase, candidate: Candidate): ResolvedLine {
   return { ...base, status: 'resolved', ...candidate, allocations: [] };
 }
 
-function resolveLine(line: ParsedLine, named: readonly NamedEntry[], today: string): DecklistLine {
-  const base = { text: line.text, quantity: line.quantity, lang: 'en' } as const;
+function resolveLine(
+  line: ParsedLine,
+  named: readonly NamedEntry[],
+  { today, lang }: ResolveOptions,
+): DecklistLine {
+  const base = { text: line.text, quantity: line.quantity, lang };
   const closest = closestCards(nameKey(line.name), named);
   const explicit = line.printRef && namedPrint(closest, line.printRef, base.lang);
   if (explicit) {
     return resolvedLine(
       { ...base, lang: explicit.lang },
-      { card: explicit.card, defaultPrint: explicit.print },
+      {
+        card: explicit.card,
+        defaultPrint: explicit.print,
+        printWarning: qualityWarning(explicit.print),
+      },
     );
   }
   const matches = closest.map((entry) => ({
     card: entry.card,
-    defaultPrint: defaultPrint(entry.prints, base.lang, today),
+    ...defaultPrintFor(entry.prints, lang, today),
   }));
   // Cards that can be printed win: art series, for one, are separate cards sharing the name.
   const printable = matches.filter((match) => match.defaultPrint);
@@ -155,7 +165,10 @@ function resolveLine(line: ParsedLine, named: readonly NamedEntry[], today: stri
   return resolvedLine(base, match);
 }
 
-/** The print `ref` names among `entries`' prints, in `lang` when it exists in several languages. */
+/**
+ * The print `ref` names among `entries`' prints: in `lang` when it exists in several languages,
+ * unless only another language has a real image of it.
+ */
 function namedPrint(entries: readonly CatalogEntry[], ref: PrintRef, lang: Lang) {
   const found = entries.flatMap((entry) =>
     entry.prints
@@ -165,7 +178,8 @@ function namedPrint(entries: readonly CatalogEntry[], ref: PrintRef, lang: Lang)
       )
       .map((print) => ({ card: entry.card, print, lang: print.lang })),
   );
-  return found.find((match) => match.lang === lang) ?? found[0];
+  const withImage = found.filter((match) => hasRealImage(match.print));
+  return withImage.find((match) => match.lang === lang) ?? withImage[0] ?? found[0];
 }
 
 /** Resolves an ambiguous line to the candidate the user chose, by its card's oracle id. */

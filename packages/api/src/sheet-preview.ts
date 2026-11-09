@@ -40,7 +40,7 @@ const outDir = fileURLToPath(new URL('../../../.preview/', import.meta.url));
 const sql = connect(databaseUrl());
 try {
   const today = new Date().toISOString().slice(0, 10);
-  const lines = await resolveDecklist(text, createPostgresCatalog(sql), { today });
+  const lines = await resolveDecklist(text, createPostgresCatalog(sql), { today, lang: 'en' });
   for (const line of lines.filter((line) => line.status !== 'resolved' || !line.defaultPrint)) {
     console.warn(`Not printed (${line.status}): ${line.text}`);
   }

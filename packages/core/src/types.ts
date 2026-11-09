@@ -81,18 +81,21 @@ interface DecklistLineBase {
   readonly lang: Lang;
 }
 
-export interface ResolvedLine extends DecklistLineBase {
-  readonly status: 'resolved';
-  readonly card: Card;
-  /** `null` when the card has no printable print in the line language. */
-  readonly defaultPrint: Print | null;
-  readonly allocations: readonly Allocation[];
-}
+/** Why a line's default print needs the user's attention. */
+export type PrintWarning = 'lowResolution' | 'languageFallback';
 
-/** A card an ambiguous line could mean, with the print it would default to. */
+/** A card a line means or could mean, with the print it defaults to. */
 export interface Candidate {
   readonly card: Card;
+  /** `null` when the card has no printable print, in the line language or in English. */
   readonly defaultPrint: Print | null;
+  /** `null` when the default print is fine as it is. */
+  readonly printWarning: PrintWarning | null;
+}
+
+export interface ResolvedLine extends DecklistLineBase, Candidate {
+  readonly status: 'resolved';
+  readonly allocations: readonly Allocation[];
 }
 
 export interface AmbiguousLine extends DecklistLineBase {
