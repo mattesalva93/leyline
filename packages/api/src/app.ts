@@ -1,4 +1,4 @@
-import { isLang, resolveDecklist, type Lang } from '@mtg-suite/core';
+import { isLang, isPrintCursor, listPrints, resolveDecklist, type Lang } from '@mtg-suite/core';
 import { Hono } from 'hono';
 import type { Sql } from './db.ts';
 import { createPostgresCatalog } from './postgres-catalog.ts';
@@ -9,6 +9,16 @@ export interface AppDeps {
 
 /** Longest decklist text accepted, in characters: far above a 100-card deck. */
 const MAX_DECKLIST_LENGTH = 50_000;
+
+/** Most prints one call returns, whatever the client asks for: keeps every response small. */
+const MAX_PRINTS_PER_PAGE = 50;
+
+const POSITIVE_INTEGER = /^[1-9]\d*$/;
+
+/** The UTC date, like Scryfall's release dates. */
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 /** `{ text, lang? }` from a resolve request body, or `null` when it is not one. */
 function resolveRequest(body: unknown): { text: string; lang: Lang } | null {
@@ -35,9 +45,34 @@ export function createApp(deps: AppDeps): Hono {
         400,
       );
     }
-    const today = new Date().toISOString().slice(0, 10); // UTC date, like Scryfall's
-    const lines = await resolveDecklist(request.text, catalog, { today, lang: request.lang });
+    const lines = await resolveDecklist(request.text, catalog, {
+      today: today(),
+      lang: request.lang,
+    });
     return c.json({ lines });
+  });
+
+  app.get('/api/cards/:oracleId/prints', async (c) => {
+    const { lang = 'en', limit, cursor } = c.req.query();
+    const limitIsValid = limit === undefined || POSITIVE_INTEGER.test(limit);
+    if (!isLang(lang) || !limitIsValid || (cursor !== undefined && !isPrintCursor(cursor))) {
+      return c.json(
+        {
+          error:
+            'Expected the query ?lang=en|it&limit=<whole number of at least 1>&cursor=<nextCursor of the previous page>.',
+        },
+        400,
+      );
+    }
+    const page = await listPrints(catalog, {
+      oracleId: c.req.param('oracleId'),
+      lang,
+      today: today(),
+      limit: Math.min(Number(limit ?? MAX_PRINTS_PER_PAGE), MAX_PRINTS_PER_PAGE),
+      cursor,
+    });
+    if (!page) return c.json({ error: 'No card has this oracle id.' }, 404);
+    return c.json(page);
   });
 
   return app;

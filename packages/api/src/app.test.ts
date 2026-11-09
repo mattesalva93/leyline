@@ -477,3 +477,96 @@ describe('POST /api/decklists/resolve', () => {
     expect((await resolve('1 Sol Ring\n'.repeat(4_545))).status).toBe(200);
   });
 });
+
+describe('GET /api/cards/:oracleId/prints', () => {
+  const forest = {
+    oracle_id: 'aaaaaaaa-0000-0000-0000-0000000000f0',
+    name: 'Forest',
+    set_type: 'expansion',
+  };
+  /** Forest has hundreds of prints: 60 Italian ones across 30 years, newest first by index. */
+  const italianForests = Array.from({ length: 60 }, (_, index) =>
+    scryfallCard({
+      ...forest,
+      id: `forest-it-${String(index).padStart(2, '0')}`,
+      lang: 'it',
+      set: `s${String(index).padStart(2, '0')}`,
+      collector_number: String(250 + (index % 4)),
+      released_at: `${2025 - Math.floor(index / 2)}-06-01`,
+    }),
+  );
+
+  beforeAll(async () => {
+    await importBulk(
+      db.sql,
+      bulkStream([
+        ...italianForests,
+        scryfallCard({ ...forest, id: 'forest-en', released_at: '2025-06-01' }),
+        scryfallCard({ ...forest, id: 'forest-it-mtgo', lang: 'it', digital: true }),
+      ]),
+    );
+  });
+
+  async function printsPage(oracleId: string, query: Record<string, string>) {
+    const params = new URLSearchParams(query);
+    const response = await createApp({ sql: db.sql }).request(
+      `/api/cards/${oracleId}/prints?${params}`,
+    );
+    return {
+      status: response.status,
+      body: (await response.json()) as {
+        prints: { id: string; releasedAt: string }[];
+        total: number;
+        nextCursor: string | null;
+      },
+    };
+  }
+
+  it('pages through the printable prints in the asked language, newest first, with the total', async () => {
+    const ids: string[] = [];
+    let cursor: string | null = null;
+    let pages = 0;
+    do {
+      const query: Record<string, string> = { lang: 'it', limit: '25' };
+      if (cursor) query.cursor = cursor;
+      const { status, body } = await printsPage(forest.oracle_id, query);
+      expect(status).toBe(200);
+      expect(body.total).toBe(60);
+      ids.push(...body.prints.map((print) => print.id));
+      cursor = body.nextCursor;
+      pages += 1;
+    } while (cursor);
+
+    expect(pages).toBe(3);
+    expect(ids).toEqual(italianForests.map((card) => card.id));
+  });
+
+  it('never returns more than 50 prints in one call, whatever the client asks for', async () => {
+    const { status, body } = await printsPage(forest.oracle_id, { lang: 'it', limit: '1000' });
+
+    expect(status).toBe(200);
+    expect(body.prints).toHaveLength(50);
+    expect(body.total).toBe(60);
+    expect(body.nextCursor).not.toBeNull();
+  });
+
+  it('returns 50 prints when the client gives no limit', async () => {
+    const { body } = await printsPage(forest.oracle_id, { lang: 'it' });
+
+    expect(body.prints).toHaveLength(50);
+  });
+
+  it('rejects a limit, cursor or language it cannot read', async () => {
+    const id = forest.oracle_id;
+    expect((await printsPage(id, { lang: 'it', limit: '0' })).status).toBe(400);
+    expect((await printsPage(id, { lang: 'it', limit: 'ten' })).status).toBe(400);
+    expect((await printsPage(id, { lang: 'it', cursor: 'nope' })).status).toBe(400);
+    expect((await printsPage(id, { lang: 'fr' })).status).toBe(400);
+  });
+
+  it('answers 404 for a card the catalog does not hold', async () => {
+    const { status } = await printsPage('aaaaaaaa-0000-0000-0000-00000000dead', { lang: 'it' });
+
+    expect(status).toBe(404);
+  });
+});
