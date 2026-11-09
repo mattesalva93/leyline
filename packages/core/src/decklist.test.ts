@@ -646,6 +646,21 @@ describe('applyPrintChoice', () => {
     });
   });
 
+  it('keeps warning that an Italian line prints in English after an English print is chosen', async () => {
+    const english2016 = aPrint({ id: 'sol-ring-en-2016', releasedAt: '2016-01-01' });
+    const englishOnly = createInMemoryCatalog([
+      { card: solRing, prints: [solRingC21, english2016] },
+    ]);
+    const [line] = await resolveDecklist('4 Sol Ring', englishOnly, { today, lang: 'it' });
+    if (!line) throw new Error('expected a line');
+
+    expect(applyPrintChoice(line, { oracleId: 'sol-ring', print: english2016 })).toMatchObject({
+      lang: 'it',
+      printWarning: 'languageFallback',
+      allocations: [{ print: { id: 'sol-ring-en-2016' }, quantity: 4 }],
+    });
+  });
+
   it('leaves the line as it is once it asks for another language or card than the choice', async () => {
     const english = await solRingLine('en');
     const italian = await solRingLine('it');

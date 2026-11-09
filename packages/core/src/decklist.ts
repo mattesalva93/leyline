@@ -229,7 +229,8 @@ export function applyPrintChoice(
   const englishExists = line.printWarning !== 'lowResolutionWithoutEnglish';
   return {
     ...line,
-    printWarning: qualityWarning(print, englishExists),
+    printWarning:
+      print.lang === line.lang ? qualityWarning(print, englishExists) : 'languageFallback',
     allocations: [{ print, quantity: line.quantity }],
   };
 }
