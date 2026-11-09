@@ -133,7 +133,7 @@ const QUARTER_CIRCLE_KAPPA = 0.5522847498;
 /**
  * The outline a card is cut and sleeved along: `slot` with rounded corners, in points.
  * Scryfall's JPGs paint the corners outside that curve, white or black depending on the
- * print, so clipping to it lets the paper show there instead (ADR 0004).
+ * print, so clipping to it lets the paper show there instead (ADR 0007).
  */
 function cardOutline(slot: Box): PDFOperator[] {
   const [x, y, width, height, r] = [
@@ -169,7 +169,7 @@ interface Box {
 /**
  * The smallest box with the image's aspect ratio that covers `slot`, centred. The image is
  * scaled uniformly, never stretched, and the slot clips what overflows: with Scryfall's
- * images only a sliver of outer border, never the copyright or the artist (ADR 0004).
+ * images only a sliver of outer border, never the copyright or the artist (ADR 0007).
  */
 function coverBox(slot: Box, imageRatio: number): Box {
   const width = Math.max(slot.width, slot.height * imageRatio);

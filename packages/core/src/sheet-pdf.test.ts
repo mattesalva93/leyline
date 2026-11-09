@@ -293,7 +293,7 @@ describe('generateSheetPdf', () => {
 
   it('fills the slot with a Scryfall "large" image, scaled uniformly, trimming only the side edges', async () => {
     // 672×936 px is slightly wider than a card. 88 mm high gives 63.18 mm wide, centred
-    // on the slot: 0.09 mm of outer border is clipped on each side, nothing is stretched (ADR 0004).
+    // on the slot: 0.09 mm of outer border is clipped on each side, nothing is stretched (ADR 0007).
     const scryfallImage = new Map([[largeUrl, jpegOfSize(672, 936)]]);
 
     const [page] = await readPdf(
