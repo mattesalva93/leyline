@@ -140,15 +140,43 @@ export interface NotFoundLine extends DecklistLineBase {
 /** One entry of a decklist. */
 export type DecklistLine = ResolvedLine | AmbiguousLine | NotFoundLine;
 
-/** Layout options of a `Sheet`. Margins, spacing and crop marks come later. */
+/** Layout options of a `Sheet`. */
 export interface SheetOptions {
   readonly pageFormat: 'A4';
   /** Which Scryfall image goes in the PDF: JPG "large" (ADR 0001). */
   readonly imageQuality: 'large';
+  /** The least white paper left between the page edge and anything printed. */
+  readonly marginMm: number;
+  /** The paper left between two neighbouring cards. */
+  readonly spacingMm: number;
 }
 
 /** Layout options plus the lines to print. */
 export interface Sheet {
   readonly options: SheetOptions;
   readonly lines: readonly DecklistLine[];
+}
+
+/** A rectangle on the page, in mm from its top-left corner. */
+export interface BoxMm {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+/** A `Slot` where the layout puts it: the card-sized box and the face whose image fills it. */
+export interface PlacedSlot {
+  readonly box: BoxMm;
+  readonly face: PrintFace;
+}
+
+/** Where everything of a `Sheet` goes on paper: what the PDF draws and the preview shows. */
+export interface SheetLayout {
+  /** The size of every page, in mm. */
+  readonly pageMm: { readonly width: number; readonly height: number };
+  readonly columns: number;
+  readonly rows: number;
+  /** The placed slots of each page, in reading order; empty cells are left out. */
+  readonly pages: readonly (readonly PlacedSlot[])[];
 }

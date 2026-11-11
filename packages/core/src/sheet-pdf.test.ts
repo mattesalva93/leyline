@@ -9,6 +9,7 @@ import {
   type DecklistLine,
   type Print,
   type Sheet,
+  type SheetOptions,
 } from './index.ts';
 import { aCard, aPrint } from './test-fixtures.ts';
 
@@ -333,6 +334,38 @@ describe('generateSheetPdf', () => {
       y: 192.5,
       width: 63,
       height: 88,
+    });
+  });
+
+  describe('margins and spacing', () => {
+    const layoutOf = async (options: Partial<SheetOptions>, quantity: number) =>
+      readPdf(
+        await generateSheetPdf(
+          {
+            options: { ...defaultSheetOptions, ...options },
+            lines: [resolvedLine(quantity, print)],
+          },
+          cardRatioImage,
+        ),
+      );
+
+    it('leaves the spacing between cards and centres the grid on the page', async () => {
+      // 3 columns of 63 mm + 2 gaps of 2 mm = 193 mm; 3 rows of 88 mm + 2 gaps = 268 mm.
+      const [page] = await layoutOf({ marginMm: 5, spacingMm: 2 }, 9);
+
+      const columns = [8.5, 73.5, 138.5];
+      const rowsFromBottom = [194.5, 104.5, 14.5];
+      expect(page?.imagesMm.map(rounded)).toEqual(
+        rowsFromBottom.flatMap((y) => columns.map((x) => ({ x, y, width: 63, height: 88 }))),
+      );
+    });
+
+    it('puts fewer cards on a page when the margins leave no room for another column', async () => {
+      // 210 mm − 2 × 15 mm leaves 180 mm: two 63 mm columns, centred 42 mm from each side.
+      const pages = await layoutOf({ marginMm: 15, spacingMm: 0 }, 7);
+
+      expect(pages.map((page) => page.imagesMm.length)).toEqual([6, 1]);
+      expect(pages[0]?.imagesMm.slice(0, 2).map((image) => rounded(image).x)).toEqual([42, 105]);
     });
   });
 
