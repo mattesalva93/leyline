@@ -9,7 +9,6 @@ import type {
   DecklistLine,
   Lang,
   Print,
-  PrintChoice,
   ResolvedLine,
 } from './types.ts';
 
@@ -209,31 +208,6 @@ export function applyCandidateChoice(line: DecklistLine, oracleId: string): Deck
   const isCandidate =
     line.status === 'ambiguous' && line.candidates.some((c) => c.card.oracleId === oracleId);
   return isCandidate ? chooseCandidate(line, oracleId) : line;
-}
-
-/**
- * The line with every copy printed with the chosen print. Like the candidate choice, the pick is
- * kept apart from the line: it applies only while the line resolves to the chosen card and
- * prints in the chosen print's language, and any other line comes back as it is.
- */
-export function applyPrintChoice(
-  line: DecklistLine,
-  { oracleId, print }: PrintChoice,
-): DecklistLine {
-  const applies =
-    line.status === 'resolved' &&
-    line.card.oracleId === oracleId &&
-    line.defaultPrint?.lang === print.lang;
-  if (!applies) return line;
-  // A card printed in Italian virtually always has an English print with a real image too,
-  // unless the default print's warning says it has none.
-  const englishExists = line.printWarning !== 'lowResolutionWithoutEnglish';
-  return {
-    ...line,
-    printWarning:
-      print.lang === line.lang ? qualityWarning(print, englishExists) : 'languageFallback',
-    allocations: [{ print, quantity: line.quantity }],
-  };
 }
 
 /** The print a line's preview shows: the one its first copy prints with, if any. */

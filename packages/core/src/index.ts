@@ -14,7 +14,6 @@ export {
 } from './allocation.ts';
 export {
   applyCandidateChoice,
-  applyPrintChoice,
   chooseCandidate,
   previewPrint,
   resolveDecklist,

@@ -1,4 +1,4 @@
-import { previewPrint, type DecklistLine } from '@mtg-suite/core';
+import { copiesByPrint, previewPrint, type DecklistLine } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
 import { PrintWarningNote } from './PrintWarningNote.tsx';
 import { SMALL_IMAGE } from './scryfall-image-sizes.ts';
@@ -74,6 +74,20 @@ export function DecklistLineItem({
             </button>
           ))}
         </div>
+      )}
+      {line.status === 'resolved' && line.allocations.length > 0 && (
+        <p className="line__copies">
+          {copiesByPrint(line)
+            .map(({ print, quantity }) =>
+              t(
+                print.id === line.defaultPrint?.id
+                  ? 'line.copiesOfDefaultPrint'
+                  : 'line.copiesOfPrint',
+                { count: quantity, set: print.set.toUpperCase(), number: print.collectorNumber },
+              ),
+            )
+            .join(' · ')}
+        </p>
       )}
       {line.status === 'resolved' && (
         <PrintWarningNote line={line} onSwitchLineToEnglish={onSwitchLineToEnglish} />

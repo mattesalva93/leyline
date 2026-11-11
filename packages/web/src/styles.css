@@ -149,6 +149,13 @@ button:disabled {
   font-weight: 600;
 }
 
+.line__copies {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
 .line__note {
   flex-basis: 100%;
   margin: 0;
@@ -319,13 +326,43 @@ button:disabled {
 .print-tile {
   display: flex;
   flex-direction: column;
-  width: 100%;
   padding: 0.25rem;
   border: 2px solid transparent;
-  background: transparent;
-  color: inherit;
   font-size: 0.75rem;
   text-align: center;
+}
+
+.print-tile__pick {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.print-tile__counter {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.print-tile__counter button {
+  min-width: 2.25rem; /* two buttons and the count fit the narrowest tile */
+  padding: 0.5rem 0;
+}
+
+.print-tile__counter output {
+  min-width: 2ch;
+  font-weight: 600;
+}
+
+.print-tile__unallocated {
+  color: var(--muted);
 }
 
 .print-tile--picked {

@@ -90,12 +90,6 @@ export interface Allocation {
   readonly quantity: number;
 }
 
-/** The print the user picked for a line of the card `oracleId`, in the print picker. */
-export interface PrintChoice {
-  readonly oracleId: string;
-  readonly print: Print;
-}
-
 /**
  * The copies the user allocated to prints on a line of the card `oracleId`, least recently
  * changed first.

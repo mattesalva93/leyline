@@ -4,8 +4,8 @@ import { CARD_MM } from '@mtg-suite/core';
 export const PRINT_TILE_MIN_WIDTH = 104;
 /** Space between tiles, in CSS px. */
 export const PRINT_TILE_GAP = 8;
-/** Height of the set and quality lines under a tile's image, in CSS px. */
-const PRINT_TILE_CAPTION_HEIGHT = 40;
+/** Height of the set and quality lines and the copy counter under a tile's image, in CSS px. */
+const PRINT_TILE_CAPTION_HEIGHT = 88;
 /** How many screens' worth of prints one request asks for. */
 const SCREENS_PER_PAGE = 2;
 

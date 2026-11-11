@@ -1,4 +1,4 @@
-import { previewPrint, type Lang, type Print, type ResolvedLine } from '@mtg-suite/core';
+import { previewPrint, type AllocationChoice, type Lang, type ResolvedLine } from '@mtg-suite/core';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LanguagePicker } from './LanguagePicker.tsx';
@@ -13,8 +13,8 @@ interface LinePanelProps {
   readonly line: ResolvedLine | null;
   readonly onLanguageChange: (lang: Lang) => void;
   readonly onQuantityChange: (quantity: number) => void;
-  /** Prints every copy of the line with `print`. */
-  readonly onPrintChoice: (print: Print) => void;
+  /** Called with the allocations the user set in the print picker. */
+  readonly onAllocationChoice: (allocations: AllocationChoice) => void;
   readonly onClose: () => void;
 }
 
@@ -23,7 +23,7 @@ export function LinePanel({
   line,
   onLanguageChange,
   onQuantityChange,
-  onPrintChoice,
+  onAllocationChoice,
   onClose,
 }: LinePanelProps) {
   const { t } = useTranslation();
@@ -63,11 +63,11 @@ export function LinePanel({
     >
       {line && isPrintPickerOpen && (
         <PrintPicker
-          cardName={line.card.name}
+          line={line}
           printPages={printPages}
-          pickedPrintId={shownPrint?.id}
-          onPickPrint={(print) => {
-            onPrintChoice(print);
+          onAllocationChoice={onAllocationChoice}
+          onPrintEveryCopy={(allocations) => {
+            onAllocationChoice(allocations);
             setIsPrintPickerOpen(false);
           }}
           onBack={() => setIsPrintPickerOpen(false)}

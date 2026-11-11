@@ -26,7 +26,9 @@
     "lowResolution": "L'immagine di questa stampa è a bassa risoluzione.",
     "lowResolutionWithoutEnglish": "L'immagine di questa stampa è a bassa risoluzione e non esiste una versione inglese da usare al suo posto.",
     "useEnglish": "Usa la versione inglese",
-    "languageFallback": "Nessuna stampa in {{lang}} con un'immagine: viene usata quella inglese."
+    "languageFallback": "Nessuna stampa in {{lang}} con un'immagine: viene usata quella inglese.",
+    "copiesOfPrint": "{{count}}× {{set}} #{{number}}",
+    "copiesOfDefaultPrint": "{{count}}× {{set}} #{{number}} (predefinita)"
   },
   "panel": {
     "lang": "Lingua di questa carta",
@@ -63,6 +65,11 @@
     },
     "loading": "Caricamento delle stampe…",
     "error": "Non è stato possibile caricare le stampe. Riprova tra poco.",
-    "retry": "Riprova"
+    "retry": "Riprova",
+    "copiesOf": "Copie con {{print}}",
+    "decrease": "Una copia in meno con {{print}}",
+    "increase": "Una copia in più con {{print}}",
+    "unallocated_one": "+1 non assegnata",
+    "unallocated_other": "+{{count}} non assegnate"
   }
 }
