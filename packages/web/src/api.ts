@@ -20,13 +20,22 @@ export async function fetchImages(
   onImageFetched: (fetchedCount: number) => void = () => {},
 ): Promise<Map<string, Uint8Array>> {
   let fetchedCount = 0;
+  // One failed image fails them all: the others are cancelled, so none reports progress after.
+  const cancelOnFailure = new AbortController();
+  const { signal } = cancelOnFailure;
   const entries = await Promise.all(
     urls.map(async (url) => {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`Image ${url} failed with ${response.status}`);
-      const bytes = new Uint8Array(await response.arrayBuffer());
-      onImageFetched(++fetchedCount);
-      return [url, bytes] as const;
+      try {
+        const response = await fetch(url, { signal });
+        if (!response.ok) throw new Error(`Image ${url} failed with ${response.status}`);
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        signal.throwIfAborted();
+        onImageFetched(++fetchedCount);
+        return [url, bytes] as const;
+      } catch (error) {
+        cancelOnFailure.abort();
+        throw error;
+      }
     }),
   );
   return new Map(entries);
