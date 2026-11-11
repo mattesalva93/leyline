@@ -2,6 +2,8 @@
 //   pnpm sheet:preview                      a built-in decklist covering the layout's hard cases
 //   pnpm sheet:preview --file deck.txt      a decklist of your own
 //   --margin 8 --spacing 1 --no-crop-marks  other sheet options (margin and spacing in mm)
+//   --page-format Letter                    another page format (A4 by default)
+//   --png                                   Scryfall's PNG images instead of the JPG "large" ones
 // Needs the catalog in PostgreSQL (pnpm db:up, pnpm import:catalog) and `pdftoppm`
 // (brew install poppler). Writes .preview/sheet.pdf and .preview/sheet-<page>.png.
 import { spawnSync } from 'node:child_process';
@@ -12,6 +14,7 @@ import { parseArgs } from 'node:util';
 import {
   defaultSheetOptions,
   generateSheetPdf,
+  pageFormats,
   resolveDecklist,
   sheetImageUrls,
 } from '@mtg-suite/core';
@@ -38,11 +41,19 @@ const { values } = parseArgs({
     margin: { type: 'string' },
     spacing: { type: 'string' },
     'crop-marks': { type: 'boolean' },
+    'page-format': { type: 'string' },
+    png: { type: 'boolean' },
   },
   allowNegative: true,
 });
+const pageFormat = pageFormats.find((format) => format === values['page-format']);
+if (values['page-format'] !== undefined && !pageFormat) {
+  throw new Error(`--page-format must be one of ${pageFormats.join(', ')}`);
+}
 const options = {
   ...defaultSheetOptions,
+  ...(pageFormat && { pageFormat }),
+  ...(values.png && { imageQuality: 'png' as const }),
   ...(values.margin !== undefined && { marginMm: Number(values.margin) }),
   ...(values.spacing !== undefined && { spacingMm: Number(values.spacing) }),
   ...(values['crop-marks'] !== undefined && { cropMarks: values['crop-marks'] }),

@@ -26,6 +26,7 @@ export function aPrint(overrides: Partial<Print> = {}): Print {
           small: 'https://cards.scryfall.io/small/front/x.jpg',
           normal: 'https://cards.scryfall.io/normal/front/x.jpg',
           large: 'https://cards.scryfall.io/large/front/x.jpg',
+          png: 'https://cards.scryfall.io/png/front/x.png',
         },
       },
     ],

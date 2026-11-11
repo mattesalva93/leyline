@@ -17,6 +17,7 @@ interface ScryfallImageUris {
   readonly small: string;
   readonly normal: string;
   readonly large: string;
+  readonly png: string;
 }
 
 interface ScryfallFace {
@@ -74,7 +75,7 @@ interface PrintRow {
 }
 
 function pickImageUris(uris: ScryfallImageUris): ImageUris {
-  return { small: uris.small, normal: uris.normal, large: uris.large };
+  return { small: uris.small, normal: uris.normal, large: uris.large, png: uris.png };
 }
 
 /**

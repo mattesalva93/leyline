@@ -14,9 +14,14 @@ export function toPdfFile(bytes: Uint8Array, fileName: string): File {
  * screen as the main input, and a browser able to share a PDF file.
  */
 export function deviceSharesPdf(): boolean {
-  if (!matchMedia('(pointer: coarse)').matches) return false;
+  if (!touchIsMainInput()) return false;
   // A stand-in PDF: `canShare` needs a file to judge, before the real one exists.
   return canShareFile(toPdfFile(new TextEncoder().encode('%PDF-'), 'check.pdf'));
+}
+
+/** Whether a touch screen is the main input: a phone or a tablet, as far as the browser tells. */
+export function touchIsMainInput(): boolean {
+  return matchMedia('(pointer: coarse)').matches;
 }
 
 /** Whether the browser can put `file` in the native share menu; `canShare` needs no tap. */

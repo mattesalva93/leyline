@@ -253,6 +253,52 @@ function jpegLabel(bytes: Uint8Array): string {
   return String.fromCharCode(...bytes.subarray(6, 4 + length));
 }
 
+/**
+ * A blank, fully transparent RGBA PNG: a real image a PDF writer can decode, built without
+ * compression (deflate "stored" blocks) since `core` may not import `node:zlib`.
+ */
+function pngOfSize(width: number, height: number): Uint8Array {
+  const crcTable = Array.from({ length: 256 }, (_, n) => {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    return c >>> 0;
+  });
+  const crc32 = (bytes: Uint8Array) => {
+    let c = 0xffffffff;
+    for (const byte of bytes) c = (crcTable[(c ^ byte) & 0xff] ?? 0) ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  };
+  const uint32 = (value: number) => [
+    value >>> 24,
+    (value >>> 16) & 0xff,
+    (value >>> 8) & 0xff,
+    value & 0xff,
+  ];
+  const chunk = (type: string, data: Uint8Array) => {
+    const typed = new Uint8Array([...[...type].map((char) => char.charCodeAt(0)), ...data]);
+    return [...uint32(data.length), ...typed, ...uint32(crc32(typed))];
+  };
+  // Each row: filter byte 0, then 4 zero bytes per pixel.
+  const raw = new Uint8Array(height * (1 + width * 4));
+  const zlib: number[] = [0x78, 0x01];
+  const BLOCK = 0xffff;
+  for (let start = 0; start < raw.length; start += BLOCK) {
+    const block = raw.subarray(start, start + BLOCK);
+    const isLast = start + BLOCK >= raw.length ? 1 : 0;
+    const length = block.length;
+    zlib.push(isLast, length & 0xff, length >> 8, ~length & 0xff, (~length >> 8) & 0xff, ...block);
+  }
+  let [a, b] = [1, 0];
+  for (const byte of raw) [a, b] = [(a + byte) % 65521, (b + ((a + byte) % 65521)) % 65521];
+  zlib.push(...uint32(((b << 16) | a) >>> 0));
+  return new Uint8Array([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    ...chunk('IHDR', new Uint8Array([...uint32(width), ...uint32(height), 8, 6, 0, 0, 0])),
+    ...chunk('IDAT', new Uint8Array(zlib)),
+    ...chunk('IEND', new Uint8Array()),
+  ]); // prettier-ignore
+}
+
 function resolvedLine(quantity: number, print: Print): DecklistLine {
   return {
     text: `${quantity} Card Name`,
@@ -319,6 +365,27 @@ describe('generateSheetPdf', () => {
     expect(page?.imagesMm.map(rounded)).toEqual(expected);
   });
 
+  it('lays out nine cards of exactly 63×88 mm on one Letter page, in a centred 3×3 grid', async () => {
+    const sheet = {
+      options: { ...defaultSheetOptions, pageFormat: 'Letter' as const },
+      lines: [resolvedLine(9, print)],
+    };
+
+    const pages = await readPdf(await generateSheetPdf(sheet, cardRatioImage));
+
+    expect(pages).toHaveLength(1);
+    const [page] = pages;
+    // Letter is 8.5×11 in: 215.9×279.4 mm. Grid 189×264 mm centred on it: left margin
+    // 13.45 mm, top and bottom 7.7 mm.
+    expect(page?.widthMm).toBeCloseTo(215.9, MM_DIGITS);
+    expect(page?.heightMm).toBeCloseTo(279.4, MM_DIGITS);
+    const columns = [13.45, 76.45, 139.45];
+    const rowsFromBottom = [183.7, 95.7, 7.7];
+    expect(page?.imagesMm.map(rounded)).toEqual(
+      rowsFromBottom.flatMap((y) => columns.map((x) => ({ x, y, width: 63, height: 88 }))),
+    );
+  });
+
   it('fills the slot with a Scryfall "large" image, scaled uniformly, trimming only the side edges', async () => {
     // 672×936 px is slightly wider than a card. 88 mm high gives 63.18 mm wide, centred
     // on the slot: 0.09 mm of outer border is clipped on each side, nothing is stretched (ADR 0007).
@@ -331,6 +398,26 @@ describe('generateSheetPdf', () => {
     expect(page?.imagesMm.map(rounded)).toEqual([{ x: 10.5, y: 192.5, width: 63, height: 88 }]);
     expect(page?.imagesMm.map((image) => rounded(image.drawn))).toEqual([
       { x: 10.41, y: 192.5, width: 63.18, height: 88 },
+    ]);
+  });
+
+  it('at maximum quality, fills the slot with the Scryfall PNG, trimming only the top and bottom edges', async () => {
+    // Scryfall's PNG is 744×1040 px, slightly narrower than a card. 63 mm wide gives 88.06 mm
+    // high, centred on the slot: 0.03 mm of outer border is clipped top and bottom (ADR 0007).
+    const pngUrl = print.faces[0]?.imageUris.png ?? '';
+    const sheet = {
+      options: { ...defaultSheetOptions, imageQuality: 'png' as const },
+      lines: [resolvedLine(1, print)],
+    };
+
+    const [page] = await readPdf(
+      await generateSheetPdf(sheet, new Map([[pngUrl, pngOfSize(744, 1040)]])),
+    );
+
+    expect(sheetImageUrls(sheet)).toEqual(['https://cards.scryfall.io/png/front/x.png']);
+    expect(page?.imagesMm.map(rounded)).toEqual([{ x: 10.5, y: 192.5, width: 63, height: 88 }]);
+    expect(page?.imagesMm.map((image) => rounded(image.drawn))).toEqual([
+      { x: 10.5, y: 192.47, width: 63, height: 88.06 },
     ]);
   });
 
@@ -492,7 +579,7 @@ describe('generateSheetPdf', () => {
   describe('double-faced cards', () => {
     const face = (side: string) => ({
       name: side,
-      imageUris: { small: `s-${side}`, normal: `n-${side}`, large: `l-${side}` },
+      imageUris: { small: `s-${side}`, normal: `n-${side}`, large: `l-${side}`, png: `p-${side}` },
     });
     const delver = aPrint({ layout: 'transform', faces: [face('front'), face('back')] });
     const solRing = aPrint({ faces: [face('sol')] });
@@ -546,6 +633,7 @@ describe('sheetImageUrls', () => {
           small: 'https://cards.scryfall.io/small/front/chosen.jpg',
           normal: 'https://cards.scryfall.io/normal/front/chosen.jpg',
           large: 'https://cards.scryfall.io/large/front/chosen.jpg',
+          png: 'https://cards.scryfall.io/png/front/chosen.png',
         },
       },
     ],
@@ -636,7 +724,12 @@ describe('layoutSheet', () => {
       layout: 'transform',
       faces: ['front', 'back'].map((side) => ({
         name: side,
-        imageUris: { small: `s-${side}`, normal: `n-${side}`, large: `l-${side}` },
+        imageUris: {
+          small: `s-${side}`,
+          normal: `n-${side}`,
+          large: `l-${side}`,
+          png: `p-${side}`,
+        },
       })),
     });
     const sheet: Sheet = {
@@ -679,6 +772,16 @@ describe('layoutSheet', () => {
     const { marginMm, spacingMm } = sheetOptionLimits;
 
     const layout = layoutSheet(withOptions({ marginMm: marginMm.max, spacingMm: spacingMm.max }));
+
+    expect([layout.columns, layout.rows]).toEqual([2, 2]);
+  });
+
+  it('still fits two cards by two on Letter at the widest margin and spacing it accepts', () => {
+    const { marginMm, spacingMm } = sheetOptionLimits;
+
+    const layout = layoutSheet(
+      withOptions({ pageFormat: 'Letter', marginMm: marginMm.max, spacingMm: spacingMm.max }),
+    );
 
     expect([layout.columns, layout.rows]).toEqual([2, 2]);
   });

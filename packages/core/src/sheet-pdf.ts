@@ -21,7 +21,7 @@ const CROP_MARK_THICKNESS_PT = 0.5;
 
 /**
  * Builds the print-ready PDF from `layoutSheet`. `images` maps each URL from `sheetImageUrls`
- * to its JPG bytes.
+ * to its bytes: JPG for the "large" image quality, PNG for the "png" one.
  */
 export async function generateSheetPdf(
   sheet: Sheet,
@@ -41,7 +41,10 @@ export async function generateSheetPdf(
       if (!image) {
         const bytes = images.get(imageUrl);
         if (!bytes) throw new Error(`Missing image bytes for ${imageUrl}`);
-        image = await doc.embedJpg(bytes);
+        image =
+          sheet.options.imageQuality === 'png'
+            ? await doc.embedPng(bytes)
+            : await doc.embedJpg(bytes);
         embedded.set(imageUrl, image);
       }
       // PDF coordinates start at the bottom-left corner of the page.

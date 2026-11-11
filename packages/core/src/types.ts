@@ -22,6 +22,8 @@ export interface ImageUris {
   readonly small: string;
   readonly normal: string;
   readonly large: string;
+  /** The largest image, with transparent corners: what the "maximum quality" sheet prints. */
+  readonly png: string;
 }
 
 /** One printed face. Single-faced prints have one, double-faced prints two. */
@@ -140,11 +142,17 @@ export interface NotFoundLine extends DecklistLineBase {
 /** One entry of a decklist. */
 export type DecklistLine = ResolvedLine | AmbiguousLine | NotFoundLine;
 
+/** Which Scryfall image a `Sheet` prints: the JPG "large" one, or the PNG. */
+export type ImageQuality = 'large' | 'png';
+
+/** The paper size a `Sheet` prints on. */
+export type PageFormat = 'A4' | 'Letter';
+
 /** Layout options of a `Sheet`. */
 export interface SheetOptions {
-  readonly pageFormat: 'A4';
-  /** Which Scryfall image goes in the PDF: JPG "large" (ADR 0001). */
-  readonly imageQuality: 'large';
+  readonly pageFormat: PageFormat;
+  /** Which Scryfall image goes in the PDF: JPG "large", or the heavier PNG (ADR 0001). */
+  readonly imageQuality: ImageQuality;
   /** The least white paper left between the page edge and anything printed. */
   readonly marginMm: number;
   /** The paper left between two neighbouring cards. */

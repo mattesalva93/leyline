@@ -3,6 +3,8 @@ import type {
   BoxMm,
   CropMark,
   DecklistLine,
+  ImageQuality,
+  PageFormat,
   PlacedSlot,
   PrintFace,
   Sheet,
@@ -20,14 +22,22 @@ export const defaultSheetOptions: SheetOptions = {
 
 /**
  * The margins and spacing a sheet accepts, in mm: wide enough for any home printer, narrow
- * enough that an A4 page always holds at least two cards by two.
+ * enough that every page format always holds at least two cards by two.
  */
 export const sheetOptionLimits = {
   marginMm: { min: 0, max: 20 },
   spacingMm: { min: 0, max: 10 },
 } as const;
 
-const PAGE_MM = { A4: { width: 210, height: 297 } } as const;
+/** Page sizes, in mm. Letter is 8.5×11 in. */
+const PAGE_MM = {
+  A4: { width: 210, height: 297 },
+  Letter: { width: 215.9, height: 279.4 },
+} as const satisfies Record<PageFormat, { width: number; height: number }>;
+/** The page formats a sheet can print on, in the order the options show them. */
+export const pageFormats: readonly PageFormat[] = ['A4', 'Letter'];
+/** The image qualities a sheet can print with, in the order the options show them. */
+export const imageQualities: readonly ImageQuality[] = ['large', 'png'];
 /** A real Magic card. The one measure the PDF must never get wrong. */
 export const CARD_MM = { width: 63, height: 88 } as const;
 /** Corner radius of a real card, measured on Scryfall's images (about 2.9 mm). */
