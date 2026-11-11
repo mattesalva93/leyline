@@ -365,7 +365,7 @@ button:disabled {
   color: var(--muted);
 }
 
-.print-tile--picked {
+.print-tile--used {
   border-color: var(--accent);
 }
 

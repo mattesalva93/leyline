@@ -27,8 +27,8 @@
     "lowResolutionWithoutEnglish": "L'immagine di questa stampa è a bassa risoluzione e non esiste una versione inglese da usare al suo posto.",
     "useEnglish": "Usa la versione inglese",
     "languageFallback": "Nessuna stampa in {{lang}} con un'immagine: viene usata quella inglese.",
-    "copiesOfPrint": "{{count}}× {{set}} #{{number}}",
-    "copiesOfDefaultPrint": "{{count}}× {{set}} #{{number}} (predefinita)"
+    "copiesOfPrint": "{{count}}× {{print}}",
+    "copiesOfDefaultPrint": "{{count}}× {{print}} (predefinita)"
   },
   "panel": {
     "lang": "Lingua di questa carta",

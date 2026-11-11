@@ -3,6 +3,7 @@ import {
   allocateEveryCopy,
   allocatePrintCopies,
   applyAllocationChoice,
+  copiesAllocatedTo,
   copiesByPrint,
   fitAllocations,
   previewPrint,
@@ -24,19 +25,18 @@ const catalog = createInMemoryCatalog([
   { card: forest, prints: [forestFdn, forestM21, forestZnr] },
 ]);
 
-async function forestLine(quantity: number): Promise<ResolvedLine> {
-  const [line] = await resolveDecklist(`${quantity} Forest`, catalog, { today, lang: 'en' });
+function resolved(line: DecklistLine | undefined): ResolvedLine {
   if (line?.status !== 'resolved') throw new Error('expected a resolved line');
   return line;
 }
 
-function resolved(line: DecklistLine): ResolvedLine {
-  if (line.status !== 'resolved') throw new Error('expected a resolved line');
-  return line;
+async function forestLine(quantity: number): Promise<ResolvedLine> {
+  const [line] = await resolveDecklist(`${quantity} Forest`, catalog, { today, lang: 'en' });
+  return resolved(line);
 }
 
-/** How many copies of each print the line puts on the sheet, by print id. */
-function copiesOf(line: ResolvedLine) {
+/** The line's allocations as (print id, quantity) pairs. */
+function allocationsById(line: ResolvedLine) {
   return line.allocations.map(({ print, quantity }) => [print.id, quantity]);
 }
 
@@ -50,7 +50,7 @@ describe('allocatePrintCopies', () => {
       allocatePrintCopies(resolved(sevenM21), forestZnr, 6),
     );
 
-    expect(copiesOf(resolved(sixZnr))).toEqual([
+    expect(allocationsById(resolved(sixZnr))).toEqual([
       ['forest-m21', 7],
       ['forest-znr', 6],
     ]);
@@ -144,8 +144,7 @@ describe('applyAllocationChoice', () => {
   ]);
   async function solRingLine(lang: 'it' | 'en') {
     const [line] = await resolveDecklist('4 Sol Ring', solRingCatalog, { today, lang });
-    if (line?.status !== 'resolved') throw new Error('expected a resolved line');
-    return line;
+    return resolved(line);
   }
 
   it('keeps the default print the copies left over use', async () => {
@@ -175,8 +174,9 @@ describe('applyAllocationChoice', () => {
     const lowresDefault = createInMemoryCatalog([
       { card: solRing, prints: [solRingC21, lowresNewest, solRingItOld] },
     ]);
-    const [line] = await resolveDecklist('4 Sol Ring', lowresDefault, { today, lang: 'it' });
-    if (line?.status !== 'resolved') throw new Error('expected a resolved line');
+    const line = resolved(
+      (await resolveDecklist('4 Sol Ring', lowresDefault, { today, lang: 'it' }))[0],
+    );
 
     expect(applyAllocationChoice(line, allocateEveryCopy(line, solRingItOld))).toMatchObject({
       printWarning: null,
@@ -191,8 +191,9 @@ describe('applyAllocationChoice', () => {
     const englishOnly = createInMemoryCatalog([
       { card: solRing, prints: [solRingC21, english2016] },
     ]);
-    const [line] = await resolveDecklist('4 Sol Ring', englishOnly, { today, lang: 'it' });
-    if (line?.status !== 'resolved') throw new Error('expected a resolved line');
+    const line = resolved(
+      (await resolveDecklist('4 Sol Ring', englishOnly, { today, lang: 'it' }))[0],
+    );
 
     expect(applyAllocationChoice(line, allocateEveryCopy(line, english2016))).toMatchObject({
       lang: 'it',
@@ -240,6 +241,7 @@ describe('copiesByPrint', () => {
     const line = await forestLine(4);
     const oneFdn = resolved(applyAllocationChoice(line, allocatePrintCopies(line, forestFdn, 1)));
 
+    expect(copiesAllocatedTo(oneFdn, forestFdn)).toBe(1);
     expect(unallocatedCopies(oneFdn)).toBe(3);
     expect(copiesByPrint(oneFdn).map(({ print, quantity }) => [print.id, quantity])).toEqual([
       ['forest-fdn', 4],

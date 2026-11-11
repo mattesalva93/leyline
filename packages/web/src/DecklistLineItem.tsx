@@ -1,5 +1,6 @@
 import { copiesByPrint, previewPrint, type DecklistLine } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
+import { setAndNumberOf } from './print-label.ts';
 import { PrintWarningNote } from './PrintWarningNote.tsx';
 import { SMALL_IMAGE } from './scryfall-image-sizes.ts';
 
@@ -83,7 +84,7 @@ export function DecklistLineItem({
                 print.id === line.defaultPrint?.id
                   ? 'line.copiesOfDefaultPrint'
                   : 'line.copiesOfPrint',
-                { count: quantity, set: print.set.toUpperCase(), number: print.collectorNumber },
+                { count: quantity, print: setAndNumberOf(print, t) },
               ),
             )
             .join(' · ')}

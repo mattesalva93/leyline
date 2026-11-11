@@ -1,4 +1,4 @@
-import { qualityWarning } from './default-print.ts';
+import { mostSeriousWarning, qualityWarning } from './default-print.ts';
 import type {
   Allocation,
   AllocationChoice,
@@ -27,22 +27,16 @@ export function applyAllocationChoice(
   return { ...allocated, printWarning: worstWarning(allocated) };
 }
 
-/** Most serious first: printing another language than asked beats a blurry image. */
-const WARNINGS_BY_SEVERITY: readonly PrintWarning[] = [
-  'languageFallback',
-  'lowResolutionWithoutEnglish',
-  'lowResolution',
-];
-
 /** The most serious warning among the prints the line's copies use. */
 function worstWarning(line: ResolvedLine): PrintWarning | null {
   // A card printed in Italian virtually always has an English print with a real image too,
   // unless the default print's warning says it has none.
   const englishExists = line.printWarning !== 'lowResolutionWithoutEnglish';
-  const warnings = copiesByPrint(line).map(({ print }) =>
-    print.lang === line.lang ? qualityWarning(print, englishExists) : 'languageFallback',
+  return mostSeriousWarning(
+    copiesByPrint(line).map(({ print }) =>
+      print.lang === line.lang ? qualityWarning(print, englishExists) : 'languageFallback',
+    ),
   );
-  return WARNINGS_BY_SEVERITY.find((warning) => warnings.includes(warning)) ?? null;
 }
 
 /**
@@ -62,9 +56,14 @@ export function copiesByPrint(line: ResolvedLine): Allocation[] {
   return [...byPrint.values()];
 }
 
+/** How many of the line's copies the user allocated to `print` itself. */
+export function copiesAllocatedTo(line: ResolvedLine, print: Print): number {
+  return line.allocations.find((allocation) => allocation.print.id === print.id)?.quantity ?? 0;
+}
+
 /** How many of the line's copies no allocation takes: they print with the default print. */
 export function unallocatedCopies(line: ResolvedLine): number {
-  return line.quantity - allocatedCopies(line.allocations);
+  return line.quantity - sumOfCopies(line.allocations);
 }
 
 /**
@@ -77,7 +76,7 @@ export function allocatePrintCopies(
   copies: number,
 ): AllocationChoice {
   const others = line.allocations.filter((allocation) => allocation.print.id !== print.id);
-  const quantity = Math.min(copies, line.quantity - allocatedCopies(others));
+  const quantity = Math.min(copies, line.quantity - sumOfCopies(others));
   return {
     oracleId: line.card.oracleId,
     allocations: quantity > 0 ? [...others, { print, quantity }] : others,
@@ -94,7 +93,7 @@ export function allocateEveryCopy(line: ResolvedLine, print: Print): AllocationC
  * default print go first; then copies come off the allocations, the most recently changed first.
  */
 export function fitAllocations(choice: AllocationChoice, lineQuantity: number): AllocationChoice {
-  let excess = allocatedCopies(choice.allocations) - lineQuantity;
+  let excess = sumOfCopies(choice.allocations) - lineQuantity;
   const fitted: Allocation[] = [];
   for (const allocation of choice.allocations.toReversed()) {
     const taken = Math.min(Math.max(excess, 0), allocation.quantity);
@@ -106,6 +105,7 @@ export function fitAllocations(choice: AllocationChoice, lineQuantity: number): 
   return { ...choice, allocations: fitted };
 }
 
-function allocatedCopies(allocations: readonly Allocation[]): number {
+/** How many copies `allocations` take together. */
+function sumOfCopies(allocations: readonly Allocation[]): number {
   return allocations.reduce((sum, allocation) => sum + allocation.quantity, 0);
 }

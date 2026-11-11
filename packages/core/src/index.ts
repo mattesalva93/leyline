@@ -8,6 +8,7 @@ export {
   allocateEveryCopy,
   allocatePrintCopies,
   applyAllocationChoice,
+  copiesAllocatedTo,
   copiesByPrint,
   fitAllocations,
   unallocatedCopies,

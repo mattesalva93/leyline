@@ -1,6 +1,7 @@
 import {
   allocateEveryCopy,
   allocatePrintCopies,
+  copiesAllocatedTo,
   copiesByPrint,
   unallocatedCopies,
   type AllocationChoice,
@@ -9,12 +10,13 @@ import {
 } from '@mtg-suite/core';
 import { useEffect, useRef, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
+import { setAndNumberOf } from './print-label.ts';
 import { PRINT_TILE_GAP, PRINT_TILE_MIN_WIDTH } from './print-picker-geometry.ts';
 import { SMALL_IMAGE } from './scryfall-image-sizes.ts';
 import type { PrintPages } from './use-print-pages.ts';
 
 interface PrintPickerProps {
-  /** The line whose copies the picker allocates: the prints it uses are marked as picked. */
+  /** The line whose copies the picker allocates: the prints its copies use are marked. */
   readonly line: ResolvedLine;
   readonly printPages: PrintPages;
   /** Called with the allocations a print's +/− counter sets. */
@@ -70,10 +72,8 @@ export function PrintPicker({
     // A new observer per page: it reports at once if the end is still in sight.
   }, [prints.length, hasMore, lastRequestFailed, loadMore]);
 
-  const pickedPrintIds = new Set(copiesByPrint(line).map(({ print }) => print.id));
+  const printIdsUsedByLine = new Set(copiesByPrint(line).map(({ print }) => print.id));
   const unallocated = unallocatedCopies(line);
-  const allocatedCopiesOf = (print: Print) =>
-    line.allocations.find((allocation) => allocation.print.id === print.id)?.quantity ?? 0;
   const changeAllocatedCopies = (print: Print, copies: number) =>
     onAllocationChoice(allocatePrintCopies(line, print, copies));
 
@@ -96,19 +96,16 @@ export function PrintPicker({
           <ul className="print-picker__grid">
             {printsOfYear.map((print) => {
               const frontFace = print.faces[0];
-              const picked = pickedPrintIds.has(print.id);
-              const setAndNumber = t('printPicker.setAndNumber', {
-                set: print.set.toUpperCase(),
-                number: print.collectorNumber,
-              });
-              const allocated = allocatedCopiesOf(print);
+              const usedByLine = printIdsUsedByLine.has(print.id);
+              const setAndNumber = setAndNumberOf(print, t);
+              const allocated = copiesAllocatedTo(line, print);
               const isDefaultPrint = print.id === line.defaultPrint?.id;
               return (
-                <li key={print.id} className={`print-tile${picked ? ' print-tile--picked' : ''}`}>
+                <li key={print.id} className={`print-tile${usedByLine ? ' print-tile--used' : ''}`}>
                   <button
                     type="button"
                     className="print-tile__pick"
-                    aria-pressed={picked}
+                    aria-pressed={usedByLine}
                     onClick={() => onPrintEveryCopy(allocateEveryCopy(line, print))}
                   >
                     {frontFace && (
