@@ -589,6 +589,50 @@ describe('layoutSheet', () => {
     lines: [resolvedLine(1, print)],
   });
 
+  it('places every slot and crop mark where the PDF draws them, so a preview matches the PDF', async () => {
+    const delver = aPrint({
+      layout: 'transform',
+      faces: ['front', 'back'].map((side) => ({
+        name: side,
+        imageUris: { small: `s-${side}`, normal: `n-${side}`, large: `l-${side}` },
+      })),
+    });
+    const sheet: Sheet = {
+      options: { ...defaultSheetOptions, marginMm: 3, spacingMm: 1.5 },
+      lines: [resolvedLine(8, print), resolvedLine(2, delver)],
+    };
+    const images = new Map([
+      [largeUrl, jpegOfSize(672, 936)],
+      ['l-front', jpegOfSize(672, 936)],
+      ['l-back', jpegOfSize(672, 936)],
+    ]);
+
+    const layout = layoutSheet(sheet);
+    const pages = await readPdf(await generateSheetPdf(sheet, images));
+
+    const fromBottom = (box: Box): Box => ({
+      ...box,
+      y: layout.pageMm.height - box.y - box.height,
+    });
+    const roundedPoint = ({ x, y }: Point): Point => ({
+      x: Number(x.toFixed(MM_DIGITS)),
+      y: Number(y.toFixed(MM_DIGITS)),
+    });
+    const segmentFromBottom = ({ from, to }: Segment): Segment => ({
+      from: roundedPoint({ ...from, y: layout.pageMm.height - from.y }),
+      to: roundedPoint({ ...to, y: layout.pageMm.height - to.y }),
+    });
+    expect(pages.map((page) => page.imagesMm.map(rounded))).toEqual(
+      layout.pages.map((slots) => slots.map((slot) => rounded(fromBottom(slot.box)))),
+    );
+    for (const page of pages) {
+      expect(
+        page.linesMm.map(({ from, to }) => ({ from: roundedPoint(from), to: roundedPoint(to) })),
+      ).toEqual(layout.cropMarks.map(segmentFromBottom));
+    }
+    expect(pages.length).toBeGreaterThan(1);
+  });
+
   it('still fits two cards by two at the widest margin and spacing it accepts', () => {
     const { marginMm, spacingMm } = sheetOptionLimits;
 
