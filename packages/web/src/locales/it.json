@@ -43,7 +43,7 @@
     "printCount_other": "{{count}} stampe disponibili"
   },
   "sheetOptions": {
-    "title": "Impaginazione",
+    "title": "Opzioni del foglio",
     "margin": "Margine dal bordo del foglio (mm)",
     "spacing": "Spazio tra le carte (mm)",
     "cropMarks": "Segni di taglio"
