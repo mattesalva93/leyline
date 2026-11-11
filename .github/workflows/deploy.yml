@@ -1,0 +1,63 @@
+name: Deploy
+
+# Off until a VPS is chosen: the job runs only once the repository variable DEPLOY_ENABLED is
+# 'true' (ADR 0012). Any host with SSH and Docker Compose works; see docs/deploy.md.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time; a newer one waits instead of cancelling a half-done `up`.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      vars.DEPLOY_ENABLED == 'true' && (
+        (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+        (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+      )
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The commit CI passed on, not whatever main holds by now.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ vars.DEPLOY_HOST }}
+          USER: ${{ vars.DEPLOY_USER }}
+          PORT: ${{ vars.DEPLOY_PORT || '22' }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # A pinned host key: never trust whatever answers on first connection.
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host deploy\n  HostName %s\n  User %s\n  Port %s\n  IdentityFile ~/.ssh/deploy_key\n  StrictHostKeyChecking yes\n' \
+            "$HOST" "$USER" "$PORT" > ~/.ssh/config
+
+      # The host builds the images itself, from the tracked files only: its .env stays untouched.
+      # DEPLOY_PATH expands on the runner on purpose: the host has no such variable.
+      - name: Copy the sources
+        run: |
+          # shellcheck disable=SC2029
+          git archive --format=tar HEAD | ssh deploy "mkdir -p '$DEPLOY_PATH' && tar -x -C '$DEPLOY_PATH'"
+
+      - name: Rebuild and restart
+        run: |
+          # shellcheck disable=SC2029
+          ssh deploy "cd '$DEPLOY_PATH' && docker compose up -d --wait --remove-orphans"
