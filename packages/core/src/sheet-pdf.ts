@@ -11,7 +11,8 @@ import {
   type PDFImage,
   type PDFOperator,
 } from 'pdf-lib';
-import type { DecklistLine, Print, Sheet, SheetOptions } from './types.ts';
+import { copiesByPrint } from './allocation.ts';
+import type { DecklistLine, Sheet, SheetOptions } from './types.ts';
 
 export const defaultSheetOptions: SheetOptions = { pageFormat: 'A4', imageQuality: 'large' };
 
@@ -44,21 +45,13 @@ function copiesOf(sheet: Sheet): Copy[] {
   return sheet.lines.flatMap((line) => lineCopies(line, sheet.options));
 }
 
-/** A line's copies: each allocation's with its print, the copies left with the default one. */
+/** A line's copies, one per copy of each print it uses. */
 function lineCopies(line: DecklistLine, options: SheetOptions): Copy[] {
   if (line.status !== 'resolved') return [];
-  const copiesOfPrint = (print: Print | null, quantity: number): Copy[] => {
-    if (!print || quantity <= 0) return [];
+  return copiesByPrint(line).flatMap(({ print, quantity }) => {
     const copy = print.faces.map((face) => ({ imageUrl: face.imageUris[options.imageQuality] }));
     return Array.from({ length: quantity }, () => copy);
-  };
-  const allocated = line.allocations.reduce((sum, allocation) => sum + allocation.quantity, 0);
-  return [
-    ...line.allocations.flatMap((allocation) =>
-      copiesOfPrint(allocation.print, allocation.quantity),
-    ),
-    ...copiesOfPrint(line.defaultPrint, line.quantity - allocated),
-  ];
+  });
 }
 
 /**

@@ -96,6 +96,15 @@ export interface PrintChoice {
   readonly print: Print;
 }
 
+/**
+ * The copies the user allocated to prints on a line of the card `oracleId`, least recently
+ * changed first.
+ */
+export interface AllocationChoice {
+  readonly oracleId: string;
+  readonly allocations: readonly Allocation[];
+}
+
 interface DecklistLineBase {
   /** The line as the user wrote it. */
   readonly text: string;

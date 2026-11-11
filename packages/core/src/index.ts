@@ -5,6 +5,14 @@ export { createInMemoryCatalog } from './in-memory-catalog.ts';
 export { isPrintCursor, listPrints, type ListPrintsOptions } from './print-list.ts';
 export { cardKeys } from './name-match.ts';
 export {
+  allocateEveryCopy,
+  allocatePrintCopies,
+  applyAllocationChoice,
+  copiesByPrint,
+  fitAllocations,
+  unallocatedCopies,
+} from './allocation.ts';
+export {
   applyCandidateChoice,
   applyPrintChoice,
   chooseCandidate,

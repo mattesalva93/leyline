@@ -1,3 +1,4 @@
+import { copiesByPrint } from './allocation.ts';
 import { defaultPrintFor, hasRealImage, qualityWarning } from './default-print.ts';
 import { cardKeys, nameKey, trigramSimilarity, trigrams } from './name-match.ts';
 import type {
@@ -238,7 +239,7 @@ export function applyPrintChoice(
 /** The print a line's preview shows: the one its first copy prints with, if any. */
 export function previewPrint(line: DecklistLine): Print | null {
   if (line.status !== 'resolved') return null;
-  return line.allocations.find((allocation) => allocation.quantity > 0)?.print ?? line.defaultPrint;
+  return copiesByPrint(line)[0]?.print ?? null;
 }
 
 /** Cards named exactly `key`; failing that, the cards most similar to it. */
