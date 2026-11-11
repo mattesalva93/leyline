@@ -181,7 +181,7 @@ export interface SheetLayout {
   readonly rows: number;
   /** The placed slots of each page, in reading order; empty cells are left out. */
   readonly pages: readonly (readonly PlacedSlot[])[];
-  /** The same on every page, around the whole grid; empty when crop marks are off. */
+  /** The same on every page, around the grid and between its cards; empty when crop marks are off. */
   readonly cropMarks: readonly CropMark[];
 }
 
@@ -191,7 +191,7 @@ export interface PointMm {
   readonly y: number;
 }
 
-/** A short straight line in the margin, on the extension of a card edge: where to cut. */
+/** A short straight line on the extension of a card edge, off the cards: where to cut. */
 export interface CropMark {
   readonly from: PointMm;
   readonly to: PointMm;

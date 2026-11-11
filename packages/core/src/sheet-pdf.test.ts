@@ -403,6 +403,10 @@ describe('generateSheetPdf', () => {
       const [page] = await readPdf(await generateSheetPdf(sheet, cardRatioImage));
       return page;
     };
+    // The grid of the 3 mm margin, 1 mm spacing sheet: 191×266 mm, 9.5 mm from the sides,
+    // 15.5 mm from top and bottom. Each gap between two cards has two edges.
+    const columnEdges = [9.5, 72.5, 73.5, 136.5, 137.5, 200.5];
+    const rowEdgesFromBottom = [15.5, 103.5, 104.5, 192.5, 193.5, 281.5];
     /** A line as `x1,y1 → x2,y2`, its ends in increasing order, rounded to 0.01 mm. */
     const described = ({ from, to }: Segment) => {
       const [a, b] = [from, to].sort((p, q) => p.x - q.x || p.y - q.y) as [Point, Point];
@@ -411,18 +415,56 @@ describe('generateSheetPdf', () => {
     };
 
     it('marks every card edge outside the grid, 1 mm away from it and 4 mm long', async () => {
-      // Margin 3 mm, spacing 1 mm: a 191×266 mm grid, 9.5 mm from the sides, 15.5 mm from
-      // top and bottom. Each gap between two cards has two edges, so two marks.
       const page = await pageOf({ marginMm: 3, spacingMm: 1, cropMarks: true });
+      const outsideGrid = ({ from, to }: Segment) =>
+        Math.max(from.x, to.x) < 9.5 ||
+        Math.min(from.x, to.x) > 200.5 ||
+        Math.max(from.y, to.y) < 15.5 ||
+        Math.min(from.y, to.y) > 281.5;
 
-      const columnEdges = [9.5, 72.5, 73.5, 136.5, 137.5, 200.5];
-      const rowEdgesFromBottom = [15.5, 103.5, 104.5, 192.5, 193.5, 281.5];
-      expect(page?.linesMm.map(described).sort()).toEqual(
+      expect(page?.linesMm.filter(outsideGrid).map(described).sort()).toEqual(
         [
           ...columnEdges.flatMap((x) => [`${x},10.5 → ${x},14.5`, `${x},282.5 → ${x},286.5`]),
           ...rowEdgesFromBottom.flatMap((y) => [`4.5,${y} → 8.5,${y}`, `201.5,${y} → 205.5,${y}`]),
         ].sort(),
       );
+    });
+
+    it('marks every card edge across the gaps between cards, from corner to corner', async () => {
+      // Same 191×266 mm grid: 1 mm gaps between rows at 103.5–104.5 and 192.5–193.5 mm from the
+      // bottom, between columns at 72.5–73.5 and 136.5–137.5 mm. Where two gaps cross, the
+      // marks close a small square.
+      const page = await pageOf({ marginMm: 3, spacingMm: 1, cropMarks: true });
+      const insideGrid = ({ from, to }: Segment) =>
+        Math.min(from.x, to.x) >= 9.5 &&
+        Math.max(from.x, to.x) <= 200.5 &&
+        Math.min(from.y, to.y) >= 15.5 &&
+        Math.max(from.y, to.y) <= 281.5;
+
+      const rowGaps = [
+        [103.5, 104.5],
+        [192.5, 193.5],
+      ];
+      const columnGaps = [
+        [72.5, 73.5],
+        [136.5, 137.5],
+      ];
+      expect(page?.linesMm.filter(insideGrid).map(described).sort()).toEqual(
+        [
+          ...rowGaps.flatMap(([bottom, top]) =>
+            columnEdges.map((x) => `${x},${bottom} → ${x},${top}`),
+          ),
+          ...columnGaps.flatMap(([left, right]) =>
+            rowEdgesFromBottom.map((y) => `${left},${y} → ${right},${y}`),
+          ),
+        ].sort(),
+      );
+    });
+
+    it('draws no mark between cards that touch', async () => {
+      const page = await pageOf({ marginMm: 5, spacingMm: 0, cropMarks: true });
+
+      expect(page?.linesMm).toHaveLength(16);
     });
 
     it('shortens a mark rather than print inside the margin, and leaves it out with no room', async () => {

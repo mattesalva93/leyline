@@ -135,16 +135,40 @@ export function layoutSheet(sheet: Sheet): SheetLayout {
         ),
       ),
     ].sort((a, b) => a - b);
+  const columnEdges = edges(left, CARD_MM.width, columns);
+  const rowEdges = edges(top, CARD_MM.height, rows);
   const cropMarks = sheet.options.cropMarks
-    ? cropMarksAround(
-        grid,
-        edges(left, CARD_MM.width, columns),
-        edges(top, CARD_MM.height, rows),
-        pageMm,
-        marginMm,
-      )
+    ? [
+        ...cropMarksAround(grid, columnEdges, rowEdges, pageMm, marginMm),
+        ...cropMarksBetween(columnEdges, rowEdges, spacingMm),
+      ]
     : [];
   return { pageMm, columns, rows, pages, cropMarks };
+}
+
+/**
+ * Crop marks across the gaps between cards: on each of `columnEdges` through every gap between
+ * two rows, and on each of `rowEdges` through every gap between two columns. They run from one
+ * card's box to the next; the cards' rounded corners keep them off the images. None when the
+ * cards touch.
+ */
+function cropMarksBetween(
+  columnEdges: readonly number[],
+  rowEdges: readonly number[],
+  spacingMm: number,
+): CropMark[] {
+  if (spacingMm <= 0) return [];
+  // With spacing, edges come in pairs: a card's far edge, then the next card's near edge.
+  const gapsBetween = (cardEdges: readonly number[]) =>
+    cardEdges.slice(1, -1).flatMap((edge, index) => (index % 2 === 0 ? [edge] : []));
+  return [
+    ...gapsBetween(rowEdges).flatMap((gapStart) =>
+      columnEdges.map((x) => ({ from: { x, y: gapStart }, to: { x, y: gapStart + spacingMm } })),
+    ),
+    ...gapsBetween(columnEdges).flatMap((gapStart) =>
+      rowEdges.map((y) => ({ from: { x: gapStart, y }, to: { x: gapStart + spacingMm, y } })),
+    ),
+  ];
 }
 
 /**
