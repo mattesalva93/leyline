@@ -93,7 +93,7 @@ export function App() {
   const [sheetOptions, setSheetOptions] = useState<SheetOptions>(defaultSheetOptions);
   const [pdfStatus, setPdfStatus] = useState<PdfStatus>({ step: 'idle' });
   const [sharesPdf] = useState(deviceSharesPdf);
-  const [isTouchDevice] = useState(touchIsMainInput);
+  const [touchIsMain] = useState(touchIsMainInput);
   const [isSharingPdf, setIsSharingPdf] = useState(false);
   // Every `resolutionKey` already asked for, so a line is sent once per language however often
   // the decklist text changes.
@@ -355,7 +355,7 @@ export function App() {
             <SheetOptionsForm
               options={sheetOptions}
               onChange={setSheetOptions}
-              warnAboutPngWeight={isTouchDevice}
+              warnAboutPngWeight={touchIsMain}
             />
             {layout && <SheetPreview layout={layout} />}
             <p className="print-at-actual-size" role="note">

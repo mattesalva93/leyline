@@ -26,6 +26,7 @@ export {
   CARD_MM,
   defaultSheetOptions,
   hasPrintableCopies,
+  imageQualities,
   layoutSheet,
   pageFormats,
   sheetImageUrls,

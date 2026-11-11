@@ -1,4 +1,5 @@
 import {
+  imageQualities,
   pageFormats,
   sheetOptionLimits,
   type ImageQuality,
@@ -7,8 +8,6 @@ import {
 } from '@mtg-suite/core';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-const imageQualities: readonly ImageQuality[] = ['large', 'png'];
 
 interface SheetOptionsFormProps {
   readonly options: SheetOptions;

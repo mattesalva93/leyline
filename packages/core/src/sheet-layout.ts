@@ -3,6 +3,7 @@ import type {
   BoxMm,
   CropMark,
   DecklistLine,
+  ImageQuality,
   PageFormat,
   PlacedSlot,
   PrintFace,
@@ -35,6 +36,8 @@ const PAGE_MM = {
 } as const satisfies Record<PageFormat, { width: number; height: number }>;
 /** The page formats a sheet can print on, in the order the options show them. */
 export const pageFormats: readonly PageFormat[] = ['A4', 'Letter'];
+/** The image qualities a sheet can print with, in the order the options show them. */
+export const imageQualities: readonly ImageQuality[] = ['large', 'png'];
 /** A real Magic card. The one measure the PDF must never get wrong. */
 export const CARD_MM = { width: 63, height: 88 } as const;
 /** Corner radius of a real card, measured on Scryfall's images (about 2.9 mm). */
