@@ -384,7 +384,7 @@ button:disabled {
   color: var(--muted);
 }
 
-/* Sheet layout settings and page preview. */
+/* Sheet layout settings, page preview and PDF download. */
 .sheet-options {
   display: flex;
   flex-direction: column;
@@ -455,4 +455,21 @@ button:disabled {
   align-items: center;
   gap: 1rem;
   margin-top: 0.5rem;
+}
+
+.print-at-actual-size {
+  font-weight: 600;
+}
+
+.pdf-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.pdf-progress progress {
+  width: 100%;
 }

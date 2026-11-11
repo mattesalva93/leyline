@@ -64,7 +64,10 @@
     "error": "Non è stato possibile creare il PDF. Riprova tra poco.",
     "fileName": "proxy-mtg-suite.pdf",
     "unprinted_one": "1 riga non verrà stampata: controlla le righe segnalate.",
-    "unprinted_other": "{{count}} righe non verranno stampate: controlla le righe segnalate."
+    "unprinted_other": "{{count}} righe non verranno stampate: controlla le righe segnalate.",
+    "printAtActualSize": "Stampa al 100% («dimensione reale»), senza «adatta alla pagina»: solo così le carte misurano {{width}}×{{height}} mm.",
+    "fetchingImages": "Scaricamento delle immagini: {{fetched}} di {{count}}",
+    "composingPages": "Composizione delle pagine…"
   },
   "footer": {
     "disclaimer": "Progetto non ufficiale, non affiliato a Wizards of the Coast.",

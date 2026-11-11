@@ -12,14 +12,21 @@ export async function resolveDecklistText(text: string, lang: Lang): Promise<Dec
 
 /**
  * Fetches card images straight from cards.scryfall.io, which allows any origin (ADR 0001).
- * Browsers set their own User-Agent; the image CDN has no rate limit.
+ * Browsers set their own User-Agent; the image CDN has no rate limit. `onImageFetched` is
+ * called with how many images have arrived so far.
  */
-export async function fetchImages(urls: readonly string[]): Promise<Map<string, Uint8Array>> {
+export async function fetchImages(
+  urls: readonly string[],
+  onImageFetched: (fetchedCount: number) => void = () => {},
+): Promise<Map<string, Uint8Array>> {
+  let fetchedCount = 0;
   const entries = await Promise.all(
     urls.map(async (url) => {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`Image ${url} failed with ${response.status}`);
-      return [url, new Uint8Array(await response.arrayBuffer())] as const;
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      onImageFetched(++fetchedCount);
+      return [url, bytes] as const;
     }),
   );
   return new Map(entries);
