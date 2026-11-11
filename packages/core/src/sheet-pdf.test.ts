@@ -5,6 +5,7 @@ import {
   generateSheetPdf,
   hasPrintableCopies,
   layoutSheet,
+  pageFormats,
   sheetOptionLimits,
   sheetImageUrls,
   unprintedLines,
@@ -317,6 +318,27 @@ describe('generateSheetPdf', () => {
       columns.map((x) => ({ x, y, width: 63, height: 88 })),
     );
     expect(page?.imagesMm.map(rounded)).toEqual(expected);
+  });
+
+  it('lays out nine cards of exactly 63×88 mm on one Letter page, in a centred 3×3 grid', async () => {
+    const sheet = {
+      options: { ...defaultSheetOptions, pageFormat: 'Letter' as const },
+      lines: [resolvedLine(9, print)],
+    };
+
+    const pages = await readPdf(await generateSheetPdf(sheet, cardRatioImage));
+
+    expect(pages).toHaveLength(1);
+    const [page] = pages;
+    // Letter is 8.5×11 in: 215.9×279.4 mm. Grid 189×264 mm centred on it: left margin
+    // 13.45 mm, top and bottom 7.7 mm.
+    expect(page?.widthMm).toBeCloseTo(215.9, MM_DIGITS);
+    expect(page?.heightMm).toBeCloseTo(279.4, MM_DIGITS);
+    const columns = [13.45, 76.45, 139.45];
+    const rowsFromBottom = [183.7, 95.7, 7.7];
+    expect(page?.imagesMm.map(rounded)).toEqual(
+      rowsFromBottom.flatMap((y) => columns.map((x) => ({ x, y, width: 63, height: 88 }))),
+    );
   });
 
   it('fills the slot with a Scryfall "large" image, scaled uniformly, trimming only the side edges', async () => {
@@ -675,13 +697,18 @@ describe('layoutSheet', () => {
     expect(pages.length).toBeGreaterThan(1);
   });
 
-  it('still fits two cards by two at the widest margin and spacing it accepts', () => {
-    const { marginMm, spacingMm } = sheetOptionLimits;
+  it.each(pageFormats)(
+    'still fits two cards by two on %s at the widest margin and spacing it accepts',
+    (pageFormat) => {
+      const { marginMm, spacingMm } = sheetOptionLimits;
 
-    const layout = layoutSheet(withOptions({ marginMm: marginMm.max, spacingMm: spacingMm.max }));
+      const layout = layoutSheet(
+        withOptions({ pageFormat, marginMm: marginMm.max, spacingMm: spacingMm.max }),
+      );
 
-    expect([layout.columns, layout.rows]).toEqual([2, 2]);
-  });
+      expect([layout.columns, layout.rows]).toEqual([2, 2]);
+    },
+  );
 
   it('rejects a margin or a spacing outside the limits', () => {
     const { marginMm, spacingMm } = sheetOptionLimits;

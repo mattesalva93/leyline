@@ -140,9 +140,12 @@ export interface NotFoundLine extends DecklistLineBase {
 /** One entry of a decklist. */
 export type DecklistLine = ResolvedLine | AmbiguousLine | NotFoundLine;
 
+/** The paper size a `Sheet` prints on. */
+export type PageFormat = 'A4' | 'Letter';
+
 /** Layout options of a `Sheet`. */
 export interface SheetOptions {
-  readonly pageFormat: 'A4';
+  readonly pageFormat: PageFormat;
   /** Which Scryfall image goes in the PDF: JPG "large" (ADR 0001). */
   readonly imageQuality: 'large';
   /** The least white paper left between the page edge and anything printed. */

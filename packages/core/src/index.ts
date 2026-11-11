@@ -27,6 +27,7 @@ export {
   defaultSheetOptions,
   hasPrintableCopies,
   layoutSheet,
+  pageFormats,
   sheetImageUrls,
   sheetOptionLimits,
   unprintedLines,
