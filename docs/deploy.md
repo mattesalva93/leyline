@@ -5,7 +5,7 @@
 ## Turn it on
 
 1. **Prepare the host.** Install Docker Engine, create a deploy user in the `docker` group, open ports 80 and 443, and point the domain's DNS at the host.
-2. **Write the host's `.env`** in the deploy path, from `.env.example`, before the first deploy: PostgreSQL reads `POSTGRES_PASSWORD` only when it creates its volume, so a password changed later needs `ALTER USER` by hand. If the domain has an IPv6 (AAAA) record, `LISTEN_ADDRESS=0.0.0.0` publishes on IPv4 only: drop the record, or Let's Encrypt may fail to reach the host.
+2. **Write the host's `.env`** in the deploy path, from `.env.example`, before the first deploy: PostgreSQL reads `POSTGRES_PASSWORD` only when it creates its volume, so a password changed later needs `ALTER USER` by hand. If the domain has an IPv6 (AAAA) record, `PUBLISH_ADDRESS=0.0.0.0` publishes on IPv4 only: drop the record, or Let's Encrypt may fail to reach the host.
 3. **Make a key pair** for the workflow, and add its public half to the deploy user's `~/.ssh/authorized_keys`:
 
    ```sh

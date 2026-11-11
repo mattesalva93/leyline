@@ -4,7 +4,7 @@
 
 ## Decision
 
-The `web` service is Caddy. It serves the built SPA, forwards `/api` to the `api` service, and gets its own TLS certificates. Staging and production run the same `compose.yaml`; only the `.env` differs (site address, listen address, database password). On staging the site address is `localhost`, and Caddy signs its certificate with its own local CA.
+The `web` service is Caddy. It serves the built SPA, forwards `/api` to the `api` service, and gets its own TLS certificates. Staging and production run the same `compose.yaml`; only the `.env` differs (`.env.example` lists what). On staging the site address is `localhost`, and Caddy signs its certificate with its own local CA.
 
 ## Why
 

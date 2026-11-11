@@ -3,11 +3,11 @@ services:
     build: { context: ., target: web }
     # Rebuild on every `up`, so a manual test never runs a stale image (layer cache keeps it fast).
     pull_policy: build
-    # Loopback on staging; production sets LISTEN_ADDRESS=0.0.0.0 to take public traffic.
+    # Loopback on staging; production sets PUBLISH_ADDRESS=0.0.0.0 to take public traffic.
     ports:
-      - '${LISTEN_ADDRESS:-127.0.0.1}:80:80'
-      - '${LISTEN_ADDRESS:-127.0.0.1}:443:443'
-      - '${LISTEN_ADDRESS:-127.0.0.1}:443:443/udp' # HTTP/3
+      - '${PUBLISH_ADDRESS:-127.0.0.1}:80:80'
+      - '${PUBLISH_ADDRESS:-127.0.0.1}:443:443'
+      - '${PUBLISH_ADDRESS:-127.0.0.1}:443:443/udp' # HTTP/3
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
     volumes:
