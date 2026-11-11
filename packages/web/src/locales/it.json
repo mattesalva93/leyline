@@ -42,13 +42,32 @@
     "printCount_one": "1 stampa disponibile",
     "printCount_other": "{{count}} stampe disponibili"
   },
+  "sheetOptions": {
+    "title": "Opzioni del foglio",
+    "margin": "Margine dal bordo del foglio (mm)",
+    "spacing": "Spazio tra le carte (mm)",
+    "cropMarks": "Segni di taglio"
+  },
+  "sheetPreview": {
+    "title": "Anteprima della pagina",
+    "cardsPerPage": "{{columns}}×{{rows}} carte per pagina",
+    "pageLabel": "Pagina {{page}} di {{count}} come verrà stampata",
+    "page": "Pagina {{page}} di {{count}}",
+    "previous": "Pagina precedente",
+    "next": "Pagina successiva",
+    "previousSymbol": "‹",
+    "nextSymbol": "›"
+  },
   "pdf": {
     "download": "Scarica il PDF",
     "generating": "Creazione del PDF…",
     "error": "Non è stato possibile creare il PDF. Riprova tra poco.",
     "fileName": "proxy-mtg-suite.pdf",
     "unprinted_one": "1 riga non verrà stampata: controlla le righe segnalate.",
-    "unprinted_other": "{{count}} righe non verranno stampate: controlla le righe segnalate."
+    "unprinted_other": "{{count}} righe non verranno stampate: controlla le righe segnalate.",
+    "printAtActualSize": "Stampa al 100% («dimensione reale»), senza «adatta alla pagina»: solo così le carte misurano {{width}}×{{height}} mm.",
+    "fetchingImages": "Scaricamento delle immagini: {{fetched}} di {{count}}",
+    "composingPages": "Composizione delle pagine…"
   },
   "footer": {
     "disclaimer": "Progetto non ufficiale, non affiliato a Wizards of the Coast.",

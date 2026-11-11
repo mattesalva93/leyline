@@ -1,17 +1,20 @@
 import {
   applyAllocationChoice,
   applyCandidateChoice,
+  CARD_MM,
   defaultSheetOptions,
   fitAllocations,
   generateSheetPdf,
   hasPrintableCopies,
   LANGS,
+  layoutSheet,
   setLineQuantity,
   sheetImageUrls,
   unprintedLines,
   type AllocationChoice,
   type DecklistLine,
   type Lang,
+  type SheetOptions,
 } from '@mtg-suite/core';
 import { useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,8 +24,15 @@ import { loadDefaultLang, saveDefaultLang } from './default-lang.ts';
 import { Footer } from './Footer.tsx';
 import { LanguagePicker } from './LanguagePicker.tsx';
 import { LinePanel } from './LinePanel.tsx';
+import { SheetOptionsForm } from './SheetOptionsForm.tsx';
+import { SheetPreview } from './SheetPreview.tsx';
 
-type PdfStatus = 'idle' | 'generating' | 'failed';
+/** How far the PDF has got: images arrive one by one, then the pages are put together. */
+type PdfStatus =
+  | { readonly step: 'idle' }
+  | { readonly step: 'fetchingImages'; readonly fetchedCount: number; readonly imageCount: number }
+  | { readonly step: 'composingPages' }
+  | { readonly step: 'failed' };
 
 const LINE_BREAK = /\r?\n/;
 
@@ -71,7 +81,8 @@ export function App() {
   const [panelLineIndex, setPanelLineIndex] = useState<number | null>(null);
   const [requestsInFlight, setRequestsInFlight] = useState(0);
   const [lastRequestFailed, setLastRequestFailed] = useState(false);
-  const [pdfStatus, setPdfStatus] = useState<PdfStatus>('idle');
+  const [sheetOptions, setSheetOptions] = useState<SheetOptions>(defaultSheetOptions);
+  const [pdfStatus, setPdfStatus] = useState<PdfStatus>({ step: 'idle' });
   // Every `resolutionKey` already asked for, so a line is sent once per language however often
   // the decklist text changes.
   const requestedKeys = useRef(new Set<string>());
@@ -224,17 +235,24 @@ export function App() {
   const panelLine = panelWrittenLine === undefined ? undefined : displayedLine(panelWrittenLine);
   const resolvedLines = listItems.flatMap((item) => item.line ?? []);
   const unresolvedCount = listItems.length - resolvedLines.length;
-  const sheet = { options: defaultSheetOptions, lines: resolvedLines };
+  const sheet = { options: sheetOptions, lines: resolvedLines };
   const unprintedCount = unprintedLines(sheet).length;
+  const layout = hasPrintableCopies(sheet) ? layoutSheet(sheet) : null;
+  const isGeneratingPdf =
+    pdfStatus.step === 'fetchingImages' || pdfStatus.step === 'composingPages';
 
   async function downloadPdf() {
-    setPdfStatus('generating');
+    const urls = sheetImageUrls(sheet);
+    setPdfStatus({ step: 'fetchingImages', fetchedCount: 0, imageCount: urls.length });
     try {
-      const pdf = await generateSheetPdf(sheet, await fetchImages(sheetImageUrls(sheet)));
-      saveFile(pdf, t('pdf.fileName'));
-      setPdfStatus('idle');
+      const images = await fetchImages(urls, (fetchedCount) =>
+        setPdfStatus({ step: 'fetchingImages', fetchedCount, imageCount: urls.length }),
+      );
+      setPdfStatus({ step: 'composingPages' });
+      saveFile(await generateSheetPdf(sheet, images), t('pdf.fileName'));
+      setPdfStatus({ step: 'idle' });
     } catch {
-      setPdfStatus('failed');
+      setPdfStatus({ step: 'failed' });
     }
   }
 
@@ -290,16 +308,20 @@ export function App() {
                 {t('pdf.unprinted', { count: unprintedCount })}
               </p>
             )}
+            <SheetOptionsForm options={sheetOptions} onChange={setSheetOptions} />
+            {layout && <SheetPreview layout={layout} />}
+            <p className="print-at-actual-size" role="note">
+              {t('pdf.printAtActualSize', { width: CARD_MM.width, height: CARD_MM.height })}
+            </p>
             <button
               type="button"
-              disabled={
-                pdfStatus === 'generating' || unresolvedCount > 0 || !hasPrintableCopies(sheet)
-              }
+              disabled={isGeneratingPdf || unresolvedCount > 0 || !layout}
               onClick={downloadPdf}
             >
-              {pdfStatus === 'generating' ? t('pdf.generating') : t('pdf.download')}
+              {isGeneratingPdf ? t('pdf.generating') : t('pdf.download')}
             </button>
-            {pdfStatus === 'failed' && <p role="alert">{t('pdf.error')}</p>}
+            {isGeneratingPdf && <PdfProgress status={pdfStatus} />}
+            {pdfStatus.step === 'failed' && <p role="alert">{t('pdf.error')}</p>}
           </>
         )}
       </main>
@@ -317,6 +339,26 @@ export function App() {
         onClose={() => setPanelLineIndex(null)}
       />
       <Footer />
+    </div>
+  );
+}
+
+/** A progress bar for the PDF being generated, with what it is doing now. */
+function PdfProgress({ status }: { readonly status: PdfStatus }) {
+  const { t } = useTranslation();
+  const fetching = status.step === 'fetchingImages';
+  return (
+    <div className="pdf-progress" role="status">
+      {/* Without a value the bar shows activity of unknown length: composing the pages. */}
+      <progress
+        max={fetching ? status.imageCount : undefined}
+        value={fetching ? status.fetchedCount : undefined}
+      />
+      <span>
+        {fetching
+          ? t('pdf.fetchingImages', { fetched: status.fetchedCount, count: status.imageCount })
+          : t('pdf.composingPages')}
+      </span>
     </div>
   );
 }

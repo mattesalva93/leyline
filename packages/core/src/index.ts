@@ -22,10 +22,13 @@ export {
   type ResolveOptions,
 } from './decklist.ts';
 export {
+  CARD_CORNER_RADIUS_MM,
   CARD_MM,
   defaultSheetOptions,
-  generateSheetPdf,
   hasPrintableCopies,
+  layoutSheet,
   sheetImageUrls,
+  sheetOptionLimits,
   unprintedLines,
-} from './sheet-pdf.ts';
+} from './sheet-layout.ts';
+export { generateSheetPdf } from './sheet-pdf.ts';

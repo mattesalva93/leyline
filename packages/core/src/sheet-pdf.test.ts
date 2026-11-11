@@ -4,11 +4,14 @@ import {
   defaultSheetOptions,
   generateSheetPdf,
   hasPrintableCopies,
+  layoutSheet,
+  sheetOptionLimits,
   sheetImageUrls,
   unprintedLines,
   type DecklistLine,
   type Print,
   type Sheet,
+  type SheetOptions,
 } from './index.ts';
 import { aCard, aPrint } from './test-fixtures.ts';
 
@@ -38,6 +41,13 @@ interface PdfPage {
   readonly heightMm: number;
   /** Where each image is drawn, in mm from the bottom-left corner, in drawing order. */
   readonly imagesMm: readonly PlacedImage[];
+  /** Every stroked straight line, in mm from the bottom-left corner, in drawing order. */
+  readonly linesMm: readonly Segment[];
+}
+
+interface Segment {
+  readonly from: Point;
+  readonly to: Point;
 }
 
 /** Re-reads a PDF and returns page sizes and image boxes, by interpreting its content streams. */
@@ -57,10 +67,15 @@ async function readPdf(bytes: Uint8Array): Promise<PdfPage[]> {
       const image = xObjects?.lookup(PDFName.of(name));
       return image instanceof PDFRawStream ? jpegLabel(image.getContents()) : '';
     };
+    const { images, lines } = drawnContent(text);
     return {
       widthMm: width * MM_PER_PT,
       heightMm: height * MM_PER_PT,
-      imagesMm: drawnImages(text).map(({ name, drawn, visible, cornerRadius }) => ({
+      linesMm: lines.map(({ from, to }) => ({
+        from: { x: from.x * MM_PER_PT, y: from.y * MM_PER_PT },
+        to: { x: to.x * MM_PER_PT, y: to.y * MM_PER_PT },
+      })),
+      imagesMm: images.map(({ name, drawn, visible, cornerRadius }) => ({
         label: labelOf(name),
         ...toMm(visible),
         drawn: toMm(drawn),
@@ -145,10 +160,13 @@ function clipOf(points: readonly Point[]): Clip {
 /**
  * The images (`/Name Do`) in a content stream, in points: the box each is drawn in, the part
  * of it left visible by the clipping path (`W`), and that path's corner radius. Clipping paths
- * are read from their on-curve points (`re`, `m`, `l`, `c`). Assumes no rotation.
+ * are read from their on-curve points (`re`, `m`, `l`, `c`). Also the straight lines stroked
+ * (`m` then `l`, then `S`). Assumes no rotation.
  */
-function drawnImages(content: string): DrawnImage[] {
+function drawnContent(content: string): { images: DrawnImage[]; lines: Segment[] } {
   const images: DrawnImage[] = [];
+  const lines: Segment[] = [];
+  let segments: Segment[] = [];
   const stack: { ctm: Matrix; clip: Clip }[] = [];
   const unclipped: Clip = { box: UNCLIPPED, cornerRadius: 0 };
   let ctm = IDENTITY;
@@ -180,12 +198,20 @@ function drawnImages(content: string): DrawnImage[] {
     }
     if (token === 'm' || token === 'l' || token === 'c') {
       const [x = 0, y = 0] = operands.slice(-2);
-      path.push(toPage(x, y));
+      const point = toPage(x, y);
+      const previous = path.at(-1);
+      if (token === 'l' && previous) segments.push({ from: previous, to: point });
+      path.push(point);
+    }
+    if (token === 'S') {
+      lines.push(...segments);
+      path = [];
     }
     if ((token === 'W' || token === 'W*') && path.length > 0) {
       const next = clipOf(path);
       clip = { box: intersect(clip.box, next.box), cornerRadius: next.cornerRadius };
     }
+    if (token === 'n' || token === 'S') segments = [];
     if (token === 'n') path = [];
     if (token === 'Do') {
       const drawn = { x: ctm[4], y: ctm[5], width: ctm[0], height: ctm[3] };
@@ -198,7 +224,7 @@ function drawnImages(content: string): DrawnImage[] {
     }
     operands = [];
   }
-  return images;
+  return { images, lines };
 }
 
 const JPEG_COMMENT = [0xff, 0xfe];
@@ -336,6 +362,133 @@ describe('generateSheetPdf', () => {
     });
   });
 
+  describe('margins and spacing', () => {
+    const layoutOf = async (options: Partial<SheetOptions>, quantity: number) =>
+      readPdf(
+        await generateSheetPdf(
+          {
+            options: { ...defaultSheetOptions, ...options },
+            lines: [resolvedLine(quantity, print)],
+          },
+          cardRatioImage,
+        ),
+      );
+
+    it('leaves the spacing between cards and centres the grid on the page', async () => {
+      // 3 columns of 63 mm + 2 gaps of 2 mm = 193 mm; 3 rows of 88 mm + 2 gaps = 268 mm.
+      const [page] = await layoutOf({ marginMm: 5, spacingMm: 2 }, 9);
+
+      const columns = [8.5, 73.5, 138.5];
+      const rowsFromBottom = [194.5, 104.5, 14.5];
+      expect(page?.imagesMm.map(rounded)).toEqual(
+        rowsFromBottom.flatMap((y) => columns.map((x) => ({ x, y, width: 63, height: 88 }))),
+      );
+    });
+
+    it('puts fewer cards on a page when the margins leave no room for another column', async () => {
+      // 210 mm − 2 × 15 mm leaves 180 mm: two 63 mm columns, centred 42 mm from each side.
+      const pages = await layoutOf({ marginMm: 15, spacingMm: 0 }, 7);
+
+      expect(pages.map((page) => page.imagesMm.length)).toEqual([6, 1]);
+      expect(pages[0]?.imagesMm.slice(0, 2).map((image) => rounded(image).x)).toEqual([42, 105]);
+    });
+  });
+
+  describe('crop marks', () => {
+    const pageOf = async (options: Partial<SheetOptions>) => {
+      const sheet = {
+        options: { ...defaultSheetOptions, ...options },
+        lines: [resolvedLine(9, print)],
+      };
+      const [page] = await readPdf(await generateSheetPdf(sheet, cardRatioImage));
+      return page;
+    };
+    // The grid of the 3 mm margin, 1 mm spacing sheet: 191×266 mm, 9.5 mm from the sides,
+    // 15.5 mm from top and bottom. Each gap between two cards has two edges.
+    const columnEdges = [9.5, 72.5, 73.5, 136.5, 137.5, 200.5];
+    const rowEdgesFromBottom = [15.5, 103.5, 104.5, 192.5, 193.5, 281.5];
+    /** A line as `x1,y1 → x2,y2`, its ends in increasing order, rounded to 0.01 mm. */
+    const described = ({ from, to }: Segment) => {
+      const [a, b] = [from, to].sort((p, q) => p.x - q.x || p.y - q.y) as [Point, Point];
+      const mm = (value: number) => Number(value.toFixed(MM_DIGITS));
+      return `${mm(a.x)},${mm(a.y)} → ${mm(b.x)},${mm(b.y)}`;
+    };
+
+    it('marks every card edge outside the grid, 1 mm away from it and 4 mm long', async () => {
+      const page = await pageOf({ marginMm: 3, spacingMm: 1, cropMarks: true });
+      const outsideGrid = ({ from, to }: Segment) =>
+        Math.max(from.x, to.x) < 9.5 ||
+        Math.min(from.x, to.x) > 200.5 ||
+        Math.max(from.y, to.y) < 15.5 ||
+        Math.min(from.y, to.y) > 281.5;
+
+      expect(page?.linesMm.filter(outsideGrid).map(described).sort()).toEqual(
+        [
+          ...columnEdges.flatMap((x) => [`${x},10.5 → ${x},14.5`, `${x},282.5 → ${x},286.5`]),
+          ...rowEdgesFromBottom.flatMap((y) => [`4.5,${y} → 8.5,${y}`, `201.5,${y} → 205.5,${y}`]),
+        ].sort(),
+      );
+    });
+
+    it('marks every card edge across the gaps between cards, from corner to corner', async () => {
+      // Same 191×266 mm grid: 1 mm gaps between rows at 103.5–104.5 and 192.5–193.5 mm from the
+      // bottom, between columns at 72.5–73.5 and 136.5–137.5 mm. Where two gaps cross, the
+      // marks close a small square.
+      const page = await pageOf({ marginMm: 3, spacingMm: 1, cropMarks: true });
+      const insideGrid = ({ from, to }: Segment) =>
+        Math.min(from.x, to.x) >= 9.5 &&
+        Math.max(from.x, to.x) <= 200.5 &&
+        Math.min(from.y, to.y) >= 15.5 &&
+        Math.max(from.y, to.y) <= 281.5;
+
+      const rowGaps = [
+        [103.5, 104.5],
+        [192.5, 193.5],
+      ];
+      const columnGaps = [
+        [72.5, 73.5],
+        [136.5, 137.5],
+      ];
+      expect(page?.linesMm.filter(insideGrid).map(described).sort()).toEqual(
+        [
+          ...rowGaps.flatMap(([bottom, top]) =>
+            columnEdges.map((x) => `${x},${bottom} → ${x},${top}`),
+          ),
+          ...columnGaps.flatMap(([left, right]) =>
+            rowEdgesFromBottom.map((y) => `${left},${y} → ${right},${y}`),
+          ),
+        ].sort(),
+      );
+    });
+
+    it('draws no mark between cards that touch', async () => {
+      const page = await pageOf({ marginMm: 5, spacingMm: 0, cropMarks: true });
+
+      expect(page?.linesMm).toHaveLength(16);
+    });
+
+    it('shortens a mark rather than print inside the margin, and leaves it out with no room', async () => {
+      // Margin 8 mm: the grid sits 10.5 mm from the sides, so side marks run from 9.5 mm to
+      // the margin, 1.5 mm long. Margin 10 mm leaves 0.5 mm, less than the 1 mm gap.
+      const shortened = await pageOf({ marginMm: 8, cropMarks: true });
+      const none = await pageOf({ marginMm: 10, cropMarks: true });
+
+      expect(shortened?.linesMm.map(described)).toContain('8,16.5 → 9.5,16.5');
+      expect(shortened?.linesMm.map(described)).toContain('200.5,16.5 → 202,16.5');
+      const sideMarks = (page?: PdfPage) =>
+        page?.linesMm.filter((line) => line.from.y === line.to.y) ?? [];
+      expect(sideMarks(shortened)).toHaveLength(8);
+      expect(sideMarks(none)).toEqual([]);
+      expect(none?.linesMm).toHaveLength(8);
+    });
+
+    it('draws no line at all when crop marks are off', async () => {
+      const page = await pageOf({ cropMarks: false });
+
+      expect(page?.linesMm).toEqual([]);
+    });
+  });
+
   describe('double-faced cards', () => {
     const face = (side: string) => ({
       name: side,
@@ -469,5 +622,73 @@ describe('unprintedLines', () => {
       ambiguous,
       noPrint,
     ]);
+  });
+});
+
+describe('layoutSheet', () => {
+  const withOptions = (options: Partial<SheetOptions>): Sheet => ({
+    options: { ...defaultSheetOptions, ...options },
+    lines: [resolvedLine(1, print)],
+  });
+
+  it('places every slot and crop mark where the PDF draws them, so a preview matches the PDF', async () => {
+    const delver = aPrint({
+      layout: 'transform',
+      faces: ['front', 'back'].map((side) => ({
+        name: side,
+        imageUris: { small: `s-${side}`, normal: `n-${side}`, large: `l-${side}` },
+      })),
+    });
+    const sheet: Sheet = {
+      options: { ...defaultSheetOptions, marginMm: 3, spacingMm: 1.5 },
+      lines: [resolvedLine(8, print), resolvedLine(2, delver)],
+    };
+    const images = new Map([
+      [largeUrl, jpegOfSize(672, 936)],
+      ['l-front', jpegOfSize(672, 936)],
+      ['l-back', jpegOfSize(672, 936)],
+    ]);
+
+    const layout = layoutSheet(sheet);
+    const pages = await readPdf(await generateSheetPdf(sheet, images));
+
+    const fromBottom = (box: Box): Box => ({
+      ...box,
+      y: layout.pageMm.height - box.y - box.height,
+    });
+    const roundedPoint = ({ x, y }: Point): Point => ({
+      x: Number(x.toFixed(MM_DIGITS)),
+      y: Number(y.toFixed(MM_DIGITS)),
+    });
+    const segmentFromBottom = ({ from, to }: Segment): Segment => ({
+      from: roundedPoint({ ...from, y: layout.pageMm.height - from.y }),
+      to: roundedPoint({ ...to, y: layout.pageMm.height - to.y }),
+    });
+    expect(pages.map((page) => page.imagesMm.map(rounded))).toEqual(
+      layout.pages.map((slots) => slots.map((slot) => rounded(fromBottom(slot.box)))),
+    );
+    for (const page of pages) {
+      expect(
+        page.linesMm.map(({ from, to }) => ({ from: roundedPoint(from), to: roundedPoint(to) })),
+      ).toEqual(layout.cropMarks.map(segmentFromBottom));
+    }
+    expect(pages.length).toBeGreaterThan(1);
+  });
+
+  it('still fits two cards by two at the widest margin and spacing it accepts', () => {
+    const { marginMm, spacingMm } = sheetOptionLimits;
+
+    const layout = layoutSheet(withOptions({ marginMm: marginMm.max, spacingMm: spacingMm.max }));
+
+    expect([layout.columns, layout.rows]).toEqual([2, 2]);
+  });
+
+  it('rejects a margin or a spacing outside the limits', () => {
+    const { marginMm, spacingMm } = sheetOptionLimits;
+
+    expect(() => layoutSheet(withOptions({ marginMm: marginMm.max + 1 }))).toThrow(RangeError);
+    expect(() => layoutSheet(withOptions({ marginMm: marginMm.min - 1 }))).toThrow(RangeError);
+    expect(() => layoutSheet(withOptions({ spacingMm: spacingMm.max + 1 }))).toThrow(RangeError);
+    expect(() => layoutSheet(withOptions({ spacingMm: Number.NaN }))).toThrow(RangeError);
   });
 });
