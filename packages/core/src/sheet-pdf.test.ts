@@ -5,7 +5,6 @@ import {
   generateSheetPdf,
   hasPrintableCopies,
   layoutSheet,
-  pageFormats,
   sheetOptionLimits,
   sheetImageUrls,
   unprintedLines,
@@ -769,18 +768,23 @@ describe('layoutSheet', () => {
     expect(pages.length).toBeGreaterThan(1);
   });
 
-  it.each(pageFormats)(
-    'still fits two cards by two on %s at the widest margin and spacing it accepts',
-    (pageFormat) => {
-      const { marginMm, spacingMm } = sheetOptionLimits;
+  it('still fits two cards by two at the widest margin and spacing it accepts', () => {
+    const { marginMm, spacingMm } = sheetOptionLimits;
 
-      const layout = layoutSheet(
-        withOptions({ pageFormat, marginMm: marginMm.max, spacingMm: spacingMm.max }),
-      );
+    const layout = layoutSheet(withOptions({ marginMm: marginMm.max, spacingMm: spacingMm.max }));
 
-      expect([layout.columns, layout.rows]).toEqual([2, 2]);
-    },
-  );
+    expect([layout.columns, layout.rows]).toEqual([2, 2]);
+  });
+
+  it('still fits two cards by two on Letter at the widest margin and spacing it accepts', () => {
+    const { marginMm, spacingMm } = sheetOptionLimits;
+
+    const layout = layoutSheet(
+      withOptions({ pageFormat: 'Letter', marginMm: marginMm.max, spacingMm: spacingMm.max }),
+    );
+
+    expect([layout.columns, layout.rows]).toEqual([2, 2]);
+  });
 
   it('rejects a margin or a spacing outside the limits', () => {
     const { marginMm, spacingMm } = sheetOptionLimits;
