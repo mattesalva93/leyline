@@ -18,3 +18,11 @@
 		file_server
 	}
 }
+
+# For the compose healthcheck only, never published: plain HTTP, because the public site's
+# certificate names its domain, which a request from inside the container cannot match.
+http://127.0.0.1:8081 {
+	bind 127.0.0.1
+	root * /srv
+	file_server
+}

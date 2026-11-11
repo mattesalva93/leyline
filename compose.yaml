@@ -15,8 +15,16 @@ services:
       - caddy-data:/data
       - caddy-config:/config
     restart: unless-stopped
+    # Healthy once Caddy serves the built SPA.
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8081/index.html']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
   api:
     build: { context: ., target: api }
@@ -27,6 +35,18 @@ services:
       HOST: 0.0.0.0
       PORT: 3000
     restart: unless-stopped
+    # The image has no curl or wget: Node's own fetch asks the api. Healthy once it has migrated
+    # the database and serves requests, so `up --wait` fails on an api stuck restarting.
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
