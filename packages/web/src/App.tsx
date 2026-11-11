@@ -6,12 +6,14 @@ import {
   generateSheetPdf,
   hasPrintableCopies,
   LANGS,
+  layoutSheet,
   setLineQuantity,
   sheetImageUrls,
   unprintedLines,
   type AllocationChoice,
   type DecklistLine,
   type Lang,
+  type SheetOptions,
 } from '@mtg-suite/core';
 import { useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +23,8 @@ import { loadDefaultLang, saveDefaultLang } from './default-lang.ts';
 import { Footer } from './Footer.tsx';
 import { LanguagePicker } from './LanguagePicker.tsx';
 import { LinePanel } from './LinePanel.tsx';
+import { SheetOptionsForm } from './SheetOptionsForm.tsx';
+import { SheetPreview } from './SheetPreview.tsx';
 
 type PdfStatus = 'idle' | 'generating' | 'failed';
 
@@ -71,6 +75,7 @@ export function App() {
   const [panelLineIndex, setPanelLineIndex] = useState<number | null>(null);
   const [requestsInFlight, setRequestsInFlight] = useState(0);
   const [lastRequestFailed, setLastRequestFailed] = useState(false);
+  const [sheetOptions, setSheetOptions] = useState<SheetOptions>(defaultSheetOptions);
   const [pdfStatus, setPdfStatus] = useState<PdfStatus>('idle');
   // Every `resolutionKey` already asked for, so a line is sent once per language however often
   // the decklist text changes.
@@ -224,8 +229,9 @@ export function App() {
   const panelLine = panelWrittenLine === undefined ? undefined : displayedLine(panelWrittenLine);
   const resolvedLines = listItems.flatMap((item) => item.line ?? []);
   const unresolvedCount = listItems.length - resolvedLines.length;
-  const sheet = { options: defaultSheetOptions, lines: resolvedLines };
+  const sheet = { options: sheetOptions, lines: resolvedLines };
   const unprintedCount = unprintedLines(sheet).length;
+  const layout = hasPrintableCopies(sheet) ? layoutSheet(sheet) : null;
 
   async function downloadPdf() {
     setPdfStatus('generating');
@@ -290,11 +296,11 @@ export function App() {
                 {t('pdf.unprinted', { count: unprintedCount })}
               </p>
             )}
+            <SheetOptionsForm options={sheetOptions} onChange={setSheetOptions} />
+            {layout && <SheetPreview layout={layout} />}
             <button
               type="button"
-              disabled={
-                pdfStatus === 'generating' || unresolvedCount > 0 || !hasPrintableCopies(sheet)
-              }
+              disabled={pdfStatus === 'generating' || unresolvedCount > 0 || !layout}
               onClick={downloadPdf}
             >
               {pdfStatus === 'generating' ? t('pdf.generating') : t('pdf.download')}

@@ -42,6 +42,22 @@
     "printCount_one": "1 stampa disponibile",
     "printCount_other": "{{count}} stampe disponibili"
   },
+  "sheetOptions": {
+    "title": "Impaginazione",
+    "margin": "Margine dal bordo del foglio (mm)",
+    "spacing": "Spazio tra le carte (mm)",
+    "cropMarks": "Segni di taglio"
+  },
+  "sheetPreview": {
+    "title": "Anteprima della pagina",
+    "cardsPerPage": "{{columns}}×{{rows}} carte per pagina",
+    "pageLabel": "Pagina {{page}} di {{count}} come verrà stampata",
+    "page": "Pagina {{page}} di {{count}}",
+    "previous": "Pagina precedente",
+    "next": "Pagina successiva",
+    "previousSymbol": "‹",
+    "nextSymbol": "›"
+  },
   "pdf": {
     "download": "Scarica il PDF",
     "generating": "Creazione del PDF…",

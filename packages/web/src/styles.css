@@ -383,3 +383,76 @@ button:disabled {
   min-height: 1.5rem;
   color: var(--muted);
 }
+
+/* Sheet layout settings and page preview. */
+.sheet-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: none;
+}
+
+.sheet-options legend {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.sheet-options__field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sheet-options__field input {
+  width: 5rem;
+  min-height: 2.75rem; /* touch target */
+  font: inherit;
+  padding: 0 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+}
+
+.sheet-options__crop-marks {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 2.75rem; /* touch target */
+}
+
+.sheet-preview {
+  margin-bottom: 1rem;
+}
+
+.sheet-preview h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.sheet-preview__summary {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.sheet-preview__page {
+  display: block;
+  width: 100%;
+  max-width: 24rem;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  box-shadow: 0 0.125rem 0.5rem rgb(0 0 0 / 0.15);
+}
+
+.sheet-preview__pager {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
