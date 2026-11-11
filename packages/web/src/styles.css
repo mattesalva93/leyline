@@ -466,6 +466,10 @@ button:disabled {
   font-weight: 600;
 }
 
+.pdf-ready {
+  margin: 0.5rem 0 0;
+}
+
 .pdf-progress {
   display: flex;
   flex-direction: column;
