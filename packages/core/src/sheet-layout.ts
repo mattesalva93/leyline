@@ -18,6 +18,15 @@ export const defaultSheetOptions: SheetOptions = {
   cropMarks: true,
 };
 
+/**
+ * The margins and spacing a sheet accepts, in mm: wide enough for any home printer, narrow
+ * enough that an A4 page always holds at least two cards by two.
+ */
+export const sheetOptionLimits = {
+  marginMm: { min: 0, max: 20 },
+  spacingMm: { min: 0, max: 10 },
+} as const;
+
 const PAGE_MM = { A4: { width: 210, height: 297 } } as const;
 /** A real Magic card. The one measure the PDF must never get wrong. */
 export const CARD_MM = { width: 63, height: 88 } as const;
@@ -83,6 +92,12 @@ function cardsThatFit(availableMm: number, cardMm: number, spacingMm: number): n
  */
 export function layoutSheet(sheet: Sheet): SheetLayout {
   const { marginMm, spacingMm } = sheet.options;
+  for (const [name, value] of Object.entries({ marginMm, spacingMm })) {
+    const { min, max } = sheetOptionLimits[name as keyof typeof sheetOptionLimits];
+    if (!(value >= min && value <= max)) {
+      throw new RangeError(`${name} must be between ${min} and ${max} mm, got ${value}`);
+    }
+  }
   const pageMm = PAGE_MM[sheet.options.pageFormat];
   const columns = cardsThatFit(pageMm.width - 2 * marginMm, CARD_MM.width, spacingMm);
   const rows = cardsThatFit(pageMm.height - 2 * marginMm, CARD_MM.height, spacingMm);

@@ -28,6 +28,7 @@ export {
   hasPrintableCopies,
   layoutSheet,
   sheetImageUrls,
+  sheetOptionLimits,
   unprintedLines,
 } from './sheet-layout.ts';
 export { generateSheetPdf } from './sheet-pdf.ts';

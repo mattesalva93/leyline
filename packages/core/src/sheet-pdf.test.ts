@@ -4,6 +4,8 @@ import {
   defaultSheetOptions,
   generateSheetPdf,
   hasPrintableCopies,
+  layoutSheet,
+  sheetOptionLimits,
   sheetImageUrls,
   unprintedLines,
   type DecklistLine,
@@ -578,5 +580,29 @@ describe('unprintedLines', () => {
       ambiguous,
       noPrint,
     ]);
+  });
+});
+
+describe('layoutSheet', () => {
+  const withOptions = (options: Partial<SheetOptions>): Sheet => ({
+    options: { ...defaultSheetOptions, ...options },
+    lines: [resolvedLine(1, print)],
+  });
+
+  it('still fits two cards by two at the widest margin and spacing it accepts', () => {
+    const { marginMm, spacingMm } = sheetOptionLimits;
+
+    const layout = layoutSheet(withOptions({ marginMm: marginMm.max, spacingMm: spacingMm.max }));
+
+    expect([layout.columns, layout.rows]).toEqual([2, 2]);
+  });
+
+  it('rejects a margin or a spacing outside the limits', () => {
+    const { marginMm, spacingMm } = sheetOptionLimits;
+
+    expect(() => layoutSheet(withOptions({ marginMm: marginMm.max + 1 }))).toThrow(RangeError);
+    expect(() => layoutSheet(withOptions({ marginMm: marginMm.min - 1 }))).toThrow(RangeError);
+    expect(() => layoutSheet(withOptions({ spacingMm: spacingMm.max + 1 }))).toThrow(RangeError);
+    expect(() => layoutSheet(withOptions({ spacingMm: Number.NaN }))).toThrow(RangeError);
   });
 });
