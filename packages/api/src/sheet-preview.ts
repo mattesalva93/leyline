@@ -1,6 +1,7 @@
 // Renders a proxy sheet to PNG, to look at the layout without opening the app.
 //   pnpm sheet:preview                      a built-in decklist covering the layout's hard cases
 //   pnpm sheet:preview --file deck.txt      a decklist of your own
+//   --margin 8 --spacing 1 --no-crop-marks  other sheet options (margin and spacing in mm)
 // Needs the catalog in PostgreSQL (pnpm db:up, pnpm import:catalog) and `pdftoppm`
 // (brew install poppler). Writes .preview/sheet.pdf and .preview/sheet-<page>.png.
 import { spawnSync } from 'node:child_process';
@@ -30,7 +31,22 @@ const DEFAULT_DECKLIST = `4 Street Wraith
 1 Delver of Secrets
 2 Orcish Bowmasters`;
 
-const { values } = parseArgs({ options: { file: { type: 'string' } } });
+// `allowNegative` accepts `--no-crop-marks` for the boolean `--crop-marks`.
+const { values } = parseArgs({
+  options: {
+    file: { type: 'string' },
+    margin: { type: 'string' },
+    spacing: { type: 'string' },
+    'crop-marks': { type: 'boolean' },
+  },
+  allowNegative: true,
+});
+const options = {
+  ...defaultSheetOptions,
+  ...(values.margin !== undefined && { marginMm: Number(values.margin) }),
+  ...(values.spacing !== undefined && { spacingMm: Number(values.spacing) }),
+  ...(values['crop-marks'] !== undefined && { cropMarks: values['crop-marks'] }),
+};
 // pnpm runs the script in packages/api; INIT_CWD is where `pnpm` was typed.
 const text = values.file
   ? readFileSync(resolve(process.env.INIT_CWD ?? process.cwd(), values.file), 'utf8')
@@ -44,7 +60,7 @@ try {
   for (const line of lines.filter((line) => line.status !== 'resolved' || !line.defaultPrint)) {
     console.warn(`Not printed (${line.status}): ${line.text}`);
   }
-  const sheet = { options: defaultSheetOptions, lines };
+  const sheet = { options, lines };
   const pdf = await generateSheetPdf(sheet, await downloadImages(sheetImageUrls(sheet)));
 
   rmSync(outDir, { recursive: true, force: true });
