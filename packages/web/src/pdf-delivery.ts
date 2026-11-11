@@ -5,8 +5,7 @@
 
 const PDF_TYPE = 'application/pdf';
 
-/** Wraps the PDF bytes as a file named `fileName`, ready to share or download. */
-export function pdfFile(bytes: Uint8Array, fileName: string): File {
+export function toPdfFile(bytes: Uint8Array, fileName: string): File {
   return new File([bytes as BlobPart], fileName, { type: PDF_TYPE });
 }
 
@@ -17,7 +16,7 @@ export function pdfFile(bytes: Uint8Array, fileName: string): File {
 export function deviceSharesPdf(): boolean {
   if (!matchMedia('(pointer: coarse)').matches) return false;
   // A stand-in PDF: `canShare` needs a file to judge, before the real one exists.
-  return canShareFile(pdfFile(new TextEncoder().encode('%PDF-'), 'check.pdf'));
+  return canShareFile(toPdfFile(new TextEncoder().encode('%PDF-'), 'check.pdf'));
 }
 
 /** Whether the browser can put `file` in the native share menu; `canShare` needs no tap. */
@@ -27,19 +26,20 @@ export function canShareFile(file: File): boolean {
 
 /**
  * Opens the native share menu with `file`. Call it straight from a tap: the browser allows it only
- * for a few seconds after one. A refused share falls back to the download.
+ * for a few seconds after one. A share the browser refuses falls back to the download.
  */
 export async function sharePdf(file: File): Promise<void> {
   try {
     await navigator.share({ files: [file] });
   } catch (error) {
-    // The user closed the menu: they chose not to share, so nothing is downloaded either.
-    if (error instanceof DOMException && error.name === 'AbortError') return;
+    // AbortError: the user closed the menu, choosing not to share, so nothing is downloaded
+    // either. InvalidStateError: a share menu is already open.
+    if (error instanceof DOMException && ['AbortError', 'InvalidStateError'].includes(error.name))
+      return;
     downloadPdf(file);
   }
 }
 
-/** Hands `file` to the browser as a download. */
 export function downloadPdf(file: File) {
   const url = URL.createObjectURL(file);
   const link = document.createElement('a');
