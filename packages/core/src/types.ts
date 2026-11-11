@@ -107,7 +107,7 @@ interface DecklistLineBase {
 }
 
 /**
- * Why a line's default print needs the user's attention: a low-resolution image, which an
+ * Why the prints a line's copies use need the user's attention: a low-resolution image, which an
  * English print could replace (`lowResolution`) or not (`lowResolutionWithoutEnglish`), or no
  * print with a real image in the line's language, so English stands in (`languageFallback`).
  */
