@@ -577,3 +577,12 @@ describe('GET /api/cards/:oracleId/prints', () => {
     expect(status).toBe(404);
   });
 });
+
+describe('GET /api/health', () => {
+  it('answers ok, so the compose healthcheck can tell a serving api', async () => {
+    const response = await createApp({ sql: db.sql }).request('/api/health');
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true });
+  });
+});

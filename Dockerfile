@@ -27,7 +27,7 @@ USER node
 EXPOSE 3000
 CMD ["node", "dist/server.js"]
 
-FROM nginx:1.29-alpine AS web
-COPY docker/web/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/packages/web/dist /usr/share/nginx/html
-EXPOSE 80
+FROM caddy:2.11-alpine AS web
+COPY docker/web/Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /app/packages/web/dist /srv
+EXPOSE 80 443 443/udp

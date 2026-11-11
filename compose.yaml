@@ -3,10 +3,28 @@ services:
     build: { context: ., target: web }
     # Rebuild on every `up`, so a manual test never runs a stale image (layer cache keeps it fast).
     pull_policy: build
+    # Loopback on staging; production sets PUBLISH_ADDRESS=0.0.0.0 to take public traffic.
     ports:
-      - '127.0.0.1:${WEB_PORT:-8080}:80'
+      - '${PUBLISH_ADDRESS:-127.0.0.1}:80:80'
+      - '${PUBLISH_ADDRESS:-127.0.0.1}:443:443'
+      - '${PUBLISH_ADDRESS:-127.0.0.1}:443:443/udp' # HTTP/3
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+    volumes:
+      # Certificates and the local CA: losing them means new certificates on every start.
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+    # Healthy once Caddy serves the built SPA.
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8081/index.html']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
   api:
     build: { context: ., target: api }
@@ -16,6 +34,19 @@ services:
       # Inside the container, listen on every interface so `web` can reach it.
       HOST: 0.0.0.0
       PORT: 3000
+    restart: unless-stopped
+    # The image has no curl or wget: Node's own fetch asks the api. Healthy once it has migrated
+    # the database and serves requests, so `up --wait` fails on an api stuck restarting.
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -38,8 +69,11 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-mtg}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mtg}
       POSTGRES_DB: ${POSTGRES_DB:-mtg_suite}
+    restart: unless-stopped
+    # Loopback only, for `pnpm dev` and the tests: the database never faces the network,
+    # since Docker's port rules bypass host firewalls such as ufw.
     ports:
-      - '${POSTGRES_PORT:-5432}:5432'
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
     volumes:
       - postgres-data:/var/lib/postgresql
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
@@ -51,3 +85,5 @@ services:
 
 volumes:
   postgres-data:
+  caddy-data:
+  caddy-config:

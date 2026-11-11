@@ -1,0 +1,28 @@
+# Serves the built `web` app and forwards /api to the `api` service, over HTTPS (ADR 0011).
+{
+	# The local CA cannot be installed into the host's trust store from inside a container.
+	skip_install_trust
+}
+
+{$SITE_ADDRESS} {
+	# Not for search engines yet (also <meta name="robots"> in index.html).
+	header X-Robots-Tag "noindex, nofollow"
+
+	handle /api/* {
+		reverse_proxy api:3000
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+# For the compose healthcheck only, never published: plain HTTP, because the public site's
+# certificate names its domain, which a request from inside the container cannot match.
+http://127.0.0.1:8081 {
+	bind 127.0.0.1
+	root * /srv
+	file_server
+}
