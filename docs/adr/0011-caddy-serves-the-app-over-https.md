@@ -19,4 +19,4 @@ The `web` service is Caddy. It serves the built SPA, forwards `/api` to the `api
 
 - Browsers distrust the local CA until its root certificate is imported; `docs/staging.md` says how.
 - The `caddy-data` volume holds the certificates: losing it in production asks Let's Encrypt again, which has rate limits.
-- Staging and production both take ports 80 and 443 on their host.
+- Staging takes the standard HTTP and HTTPS ports on this machine, like production on its host.

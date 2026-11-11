@@ -1,12 +1,10 @@
 # Serves the built `web` app and forwards /api to the `api` service, over HTTPS (ADR 0011).
-# SITE_ADDRESS is `localhost` on staging (certificate from Caddy's own local CA) and the
-# public domain in production (certificate from Let's Encrypt).
 {
 	# The local CA cannot be installed into the host's trust store from inside a container.
 	skip_install_trust
 }
 
-{$SITE_ADDRESS:localhost} {
+{$SITE_ADDRESS} {
 	# Not for search engines yet (also <meta name="robots"> in index.html).
 	header X-Robots-Tag "noindex, nofollow"
 
