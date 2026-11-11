@@ -57,7 +57,7 @@
       "large": "Standard (JPG)",
       "png": "Qualità massima (PNG)"
     },
-    "pngWeightWarning": "Con la qualità massima il PDF pesa circa 200 MB ogni 100 carte: sul telefono la creazione può essere molto lenta o non riuscire."
+    "pngWeightWarning": "Con la qualità massima il PDF pesa circa 70 MB ogni 100 carte: sul telefono la creazione può essere molto lenta o non riuscire."
   },
   "sheetPreview": {
     "title": "Anteprima della pagina",
