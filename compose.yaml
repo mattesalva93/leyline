@@ -3,8 +3,17 @@ services:
     build: { context: ., target: web }
     # Rebuild on every `up`, so a manual test never runs a stale image (layer cache keeps it fast).
     pull_policy: build
+    # Loopback on staging; production sets LISTEN_ADDRESS=0.0.0.0 to take public traffic.
     ports:
-      - '127.0.0.1:${WEB_PORT:-8080}:80'
+      - '${LISTEN_ADDRESS:-127.0.0.1}:80:80'
+      - '${LISTEN_ADDRESS:-127.0.0.1}:443:443'
+      - '${LISTEN_ADDRESS:-127.0.0.1}:443:443/udp' # HTTP/3
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+    volumes:
+      # Certificates and the local CA: losing them means new certificates on every start.
+      - caddy-data:/data
+      - caddy-config:/config
     depends_on:
       - api
 
@@ -51,3 +60,5 @@ services:
 
 volumes:
   postgres-data:
+  caddy-data:
+  caddy-config:

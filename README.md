@@ -24,11 +24,7 @@ pnpm sheet:preview    # render a sample sheet to .preview/sheet-*.png (needs pdf
 
 `pnpm import:daily` keeps running and imports again once a day.
 
-To run the whole stack in containers (web on http://127.0.0.1:8080, api, PostgreSQL, and the `importer` service that fills the catalog on first start and refreshes it daily):
-
-```sh
-docker compose up --build
-```
+To run the whole production stack locally as staging (Caddy on https://localhost, api, PostgreSQL, and the `importer` service that fills the catalog on first start and refreshes it daily), see [`docs/staging.md`](docs/staging.md).
 
 Domain language lives in `GLOSSARY.md`, decisions in `docs/adr/`, review rules in `CODING_STANDARDS.md`. To debug with breakpoints, see [`docs/debugging.md`](docs/debugging.md).
 
