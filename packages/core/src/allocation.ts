@@ -1,0 +1,111 @@
+import { mostSeriousWarning, qualityWarning } from './default-print.ts';
+import type {
+  Allocation,
+  AllocationChoice,
+  DecklistLine,
+  Print,
+  PrintWarning,
+  ResolvedLine,
+} from './types.ts';
+
+/**
+ * The line with the copies the user allocated to prints. Like the candidate choice, the choice
+ * is kept apart from the line: it applies only while the line resolves to the chosen card, and
+ * any other line comes back as it is.
+ */
+export function applyAllocationChoice(
+  line: DecklistLine,
+  { oracleId, allocations }: AllocationChoice,
+): DecklistLine {
+  const applies =
+    line.status === 'resolved' &&
+    line.card.oracleId === oracleId &&
+    allocations.every((allocation) => allocation.print.lang === line.defaultPrint?.lang);
+  if (!applies) return line;
+  const fitted = fitAllocations({ oracleId, allocations }, line.quantity).allocations;
+  const allocated = { ...line, allocations: fitted };
+  return { ...allocated, printWarning: worstWarning(allocated) };
+}
+
+/** The most serious warning among the prints the line's copies use. */
+function worstWarning(line: ResolvedLine): PrintWarning | null {
+  // A card printed in Italian virtually always has an English print with a real image too,
+  // unless the default print's warning says it has none.
+  const englishExists = line.printWarning !== 'lowResolutionWithoutEnglish';
+  return mostSeriousWarning(
+    copiesByPrint(line).map(({ print }) =>
+      print.lang === line.lang ? qualityWarning(print, englishExists) : 'languageFallback',
+    ),
+  );
+}
+
+/**
+ * How many copies of each print the line puts on the sheet, in the order they print: its
+ * allocations, then the copies left with the default print.
+ */
+export function copiesByPrint(line: ResolvedLine): Allocation[] {
+  const byPrint = new Map<string, Allocation>();
+  const unallocated = line.defaultPrint && {
+    print: line.defaultPrint,
+    quantity: unallocatedCopies(line),
+  };
+  for (const { print, quantity } of [...line.allocations, ...(unallocated ? [unallocated] : [])]) {
+    if (quantity <= 0) continue;
+    byPrint.set(print.id, { print, quantity: (byPrint.get(print.id)?.quantity ?? 0) + quantity });
+  }
+  return [...byPrint.values()];
+}
+
+/** How many of the line's copies the user allocated to `print` itself. */
+export function copiesAllocatedTo(line: ResolvedLine, print: Print): number {
+  return line.allocations.find((allocation) => allocation.print.id === print.id)?.quantity ?? 0;
+}
+
+/** How many of the line's copies no allocation takes: they print with the default print. */
+export function unallocatedCopies(line: ResolvedLine): number {
+  return line.quantity - sumOfCopies(line.allocations);
+}
+
+/**
+ * The line's allocation choice with `copies` copies of `print`. The print becomes the line's
+ * most recently changed allocation.
+ */
+export function allocatePrintCopies(
+  line: ResolvedLine,
+  print: Print,
+  copies: number,
+): AllocationChoice {
+  const others = line.allocations.filter((allocation) => allocation.print.id !== print.id);
+  const quantity = Math.min(copies, line.quantity - sumOfCopies(others));
+  return {
+    oracleId: line.card.oracleId,
+    allocations: quantity > 0 ? [...others, { print, quantity }] : others,
+  };
+}
+
+/** The allocation choice printing every copy of `line` with `print`. */
+export function allocateEveryCopy(line: ResolvedLine, print: Print): AllocationChoice {
+  return { oracleId: line.card.oracleId, allocations: [{ print, quantity: line.quantity }] };
+}
+
+/**
+ * The allocation choice of a line now printing `lineQuantity` copies. The copies left with the
+ * default print go first; then copies come off the allocations, the most recently changed first.
+ */
+export function fitAllocations(choice: AllocationChoice, lineQuantity: number): AllocationChoice {
+  let excess = sumOfCopies(choice.allocations) - lineQuantity;
+  const fitted: Allocation[] = [];
+  for (const allocation of choice.allocations.toReversed()) {
+    const taken = Math.min(Math.max(excess, 0), allocation.quantity);
+    excess -= taken;
+    if (allocation.quantity > taken) {
+      fitted.unshift({ ...allocation, quantity: allocation.quantity - taken });
+    }
+  }
+  return { ...choice, allocations: fitted };
+}
+
+/** How many copies `allocations` take together. */
+function sumOfCopies(allocations: readonly Allocation[]): number {
+  return allocations.reduce((sum, allocation) => sum + allocation.quantity, 0);
+}

@@ -90,10 +90,13 @@ export interface Allocation {
   readonly quantity: number;
 }
 
-/** The print the user picked for a line of the card `oracleId`, in the print picker. */
-export interface PrintChoice {
+/**
+ * The copies the user allocated to prints on a line of the card `oracleId`, least recently
+ * changed first.
+ */
+export interface AllocationChoice {
   readonly oracleId: string;
-  readonly print: Print;
+  readonly allocations: readonly Allocation[];
 }
 
 interface DecklistLineBase {
@@ -104,7 +107,7 @@ interface DecklistLineBase {
 }
 
 /**
- * Why a line's default print needs the user's attention: a low-resolution image, which an
+ * Why the prints a line's copies use need the user's attention: a low-resolution image, which an
  * English print could replace (`lowResolution`) or not (`lowResolutionWithoutEnglish`), or no
  * print with a real image in the line's language, so English stands in (`languageFallback`).
  */

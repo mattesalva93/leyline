@@ -1,16 +1,28 @@
-import type { Print } from '@mtg-suite/core';
+import {
+  allocateEveryCopy,
+  allocatePrintCopies,
+  copiesAllocatedTo,
+  copiesByPrint,
+  unallocatedCopies,
+  type AllocationChoice,
+  type Print,
+  type ResolvedLine,
+} from '@mtg-suite/core';
 import { useEffect, useRef, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
+import { setAndNumberOf } from './print-label.ts';
 import { PRINT_TILE_GAP, PRINT_TILE_MIN_WIDTH } from './print-picker-geometry.ts';
 import { SMALL_IMAGE } from './scryfall-image-sizes.ts';
 import type { PrintPages } from './use-print-pages.ts';
 
 interface PrintPickerProps {
-  readonly cardName: string;
+  /** The line whose copies the picker allocates: the prints its copies use are marked. */
+  readonly line: ResolvedLine;
   readonly printPages: PrintPages;
-  /** The print the line shows now: marked as picked. */
-  readonly pickedPrintId: string | undefined;
-  readonly onPickPrint: (print: Print) => void;
+  /** Called with the allocations a print's +/− counter sets. */
+  readonly onAllocationChoice: (allocations: AllocationChoice) => void;
+  /** Called with the allocations a tap on a print sets: every copy on that print. */
+  readonly onPrintEveryCopy: (allocations: AllocationChoice) => void;
   readonly onBack: () => void;
 }
 
@@ -32,14 +44,15 @@ function byReleaseYear(prints: readonly Print[]): ReleaseYear[] {
 }
 
 /**
- * The grid of the prints a line can use, grouped by release year, newest first. More prints
- * load as the user scrolls near the end of the grid.
+ * The grid of the prints a line can use, grouped by release year, newest first. Tapping a print
+ * puts every copy on it; its +/− counter moves one copy at a time between it and the default
+ * print. More prints load as the user scrolls near the end of the grid.
  */
 export function PrintPicker({
-  cardName,
+  line,
   printPages,
-  pickedPrintId,
-  onPickPrint,
+  onAllocationChoice,
+  onPrintEveryCopy,
   onBack,
 }: PrintPickerProps) {
   const { t } = useTranslation();
@@ -59,6 +72,11 @@ export function PrintPicker({
     // A new observer per page: it reports at once if the end is still in sight.
   }, [prints.length, hasMore, lastRequestFailed, loadMore]);
 
+  const printIdsUsedByLine = new Set(copiesByPrint(line).map(({ print }) => print.id));
+  const unallocated = unallocatedCopies(line);
+  const changeAllocatedCopies = (print: Print, copies: number) =>
+    onAllocationChoice(allocatePrintCopies(line, print, copies));
+
   const tileSizes = {
     '--print-tile-min-width': `${PRINT_TILE_MIN_WIDTH}px`,
     '--print-tile-gap': `${PRINT_TILE_GAP}px`,
@@ -70,7 +88,7 @@ export function PrintPicker({
         <button type="button" className="button--secondary" onClick={onBack}>
           {t('printPicker.back')}
         </button>
-        <h2 id="panel-title">{t('printPicker.title', { name: cardName })}</h2>
+        <h2 id="panel-title">{t('printPicker.title', { name: line.card.name })}</h2>
       </div>
       {byReleaseYear(prints).map(({ year, prints: printsOfYear }) => (
         <section key={year} className="print-picker__year" aria-label={year}>
@@ -78,14 +96,17 @@ export function PrintPicker({
           <ul className="print-picker__grid">
             {printsOfYear.map((print) => {
               const frontFace = print.faces[0];
-              const picked = print.id === pickedPrintId;
+              const usedByLine = printIdsUsedByLine.has(print.id);
+              const setAndNumber = setAndNumberOf(print, t);
+              const allocated = copiesAllocatedTo(line, print);
+              const isDefaultPrint = print.id === line.defaultPrint?.id;
               return (
-                <li key={print.id}>
+                <li key={print.id} className={`print-tile${usedByLine ? ' print-tile--used' : ''}`}>
                   <button
                     type="button"
-                    className={`print-tile${picked ? ' print-tile--picked' : ''}`}
-                    aria-pressed={picked}
-                    onClick={() => onPickPrint(print)}
+                    className="print-tile__pick"
+                    aria-pressed={usedByLine}
+                    onClick={() => onPrintEveryCopy(allocateEveryCopy(line, print))}
                   >
                     {frontFace && (
                       <img
@@ -97,18 +118,41 @@ export function PrintPicker({
                         loading="lazy"
                       />
                     )}
-                    <span className="print-tile__set">
-                      {t('printPicker.setAndNumber', {
-                        set: print.set.toUpperCase(),
-                        number: print.collectorNumber,
-                      })}
-                    </span>
+                    <span className="print-tile__set">{setAndNumber}</span>
                     <span
                       className={`print-tile__quality print-tile__quality--${print.imageStatus}`}
                     >
                       {t(`printPicker.quality.${print.imageStatus}`)}
                     </span>
                   </button>
+                  <div
+                    className="print-tile__counter"
+                    role="group"
+                    aria-label={t('printPicker.copiesOf', { print: setAndNumber })}
+                  >
+                    <button
+                      type="button"
+                      aria-label={t('printPicker.decrease', { print: setAndNumber })}
+                      disabled={allocated === 0}
+                      onClick={() => changeAllocatedCopies(print, allocated - 1)}
+                    >
+                      {t('panel.minus')}
+                    </button>
+                    <output aria-live="polite">{allocated}</output>
+                    <button
+                      type="button"
+                      aria-label={t('printPicker.increase', { print: setAndNumber })}
+                      disabled={unallocated === 0}
+                      onClick={() => changeAllocatedCopies(print, allocated + 1)}
+                    >
+                      {t('panel.plus')}
+                    </button>
+                  </div>
+                  {isDefaultPrint && unallocated > 0 && (
+                    <span className="print-tile__unallocated">
+                      {t('printPicker.unallocated', { count: unallocated })}
+                    </span>
+                  )}
                 </li>
               );
             })}

@@ -46,6 +46,20 @@ export function qualityWarning(print: Print | null, englishExists: boolean): Pri
   return englishExists ? 'lowResolution' : 'lowResolutionWithoutEnglish';
 }
 
+/** Most serious first: printing another language than asked beats a blurry image. */
+const WARNINGS_BY_SEVERITY: readonly PrintWarning[] = [
+  'languageFallback',
+  'lowResolutionWithoutEnglish',
+  'lowResolution',
+];
+
+/** The most serious of `warnings`, or `null` when there is none. */
+export function mostSeriousWarning(
+  warnings: readonly (PrintWarning | null)[],
+): PrintWarning | null {
+  return WARNINGS_BY_SEVERITY.find((warning) => warnings.includes(warning)) ?? null;
+}
+
 /**
  * The default print of a card's `prints` for a line in `lang`, with what to warn about. A line
  * whose language has no printable print falls back to English.

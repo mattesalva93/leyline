@@ -7,7 +7,7 @@ interface PrintWarningNoteProps {
   readonly onSwitchLineToEnglish: () => void;
 }
 
-/** What is wrong with a line's default print, if anything, and the way out when there is one. */
+/** What is wrong with the prints a line's copies use, if anything, and the way out when there is one. */
 export function PrintWarningNote({ line, onSwitchLineToEnglish }: PrintWarningNoteProps) {
   const { t } = useTranslation();
   const lineLanguageName = t(`lang.${line.lang}`).toLowerCase();

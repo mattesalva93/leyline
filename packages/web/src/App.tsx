@@ -1,16 +1,17 @@
 import {
+  applyAllocationChoice,
   applyCandidateChoice,
-  applyPrintChoice,
   defaultSheetOptions,
+  fitAllocations,
   generateSheetPdf,
   hasPrintableCopies,
   LANGS,
   setLineQuantity,
   sheetImageUrls,
   unprintedLines,
+  type AllocationChoice,
   type DecklistLine,
   type Lang,
-  type PrintChoice,
 } from '@mtg-suite/core';
 import { useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -44,8 +45,8 @@ interface LineChoices {
   readonly lang?: Lang;
   /** The card picked among an ambiguous line's candidates. */
   readonly oracleId?: string;
-  /** The print picked in the print picker, for every copy of the line. */
-  readonly print?: PrintChoice;
+  /** The copies allocated to prints in the print picker. */
+  readonly allocations?: AllocationChoice;
 }
 
 /** One written line of the decklist, as the list below the text area shows it. */
@@ -137,48 +138,50 @@ export function App() {
     );
   }
 
-  /** Drops the print picked for each of `writtenLines`: it is a print in their old language. */
-  function forgetPrintChoices(writtenLines: readonly string[]) {
+  /** Drops the allocations of each of `writtenLines`: they use prints in their old language. */
+  function forgetAllocations(writtenLines: readonly string[]) {
     setChoicesByLine((previous) => {
       const next = new Map(previous);
       for (const writtenLine of writtenLines) {
-        const { print: _forgotten, ...kept } = previous.get(writtenLine) ?? {};
+        const { allocations: _forgotten, ...kept } = previous.get(writtenLine) ?? {};
         if (_forgotten) next.set(writtenLine, kept);
       }
       return next;
     });
   }
 
-  function changeDefaultLanguage(lang: Lang) {
-    forgetPrintChoices(
-      decklistText.split(LINE_BREAK).filter((line) => !choicesByLine.get(line)?.lang),
-    );
+  // Like a line's own language, switched only once the lines that follow it are resolved: a
+  // failed request keeps them, and their allocations, as they were.
+  async function changeDefaultLanguage(lang: Lang) {
+    const followingLines = decklistText
+      .split(LINE_BREAK)
+      .filter((writtenLine) => !choicesByLine.get(writtenLine)?.lang);
+    if (!(await resolveInLanguage(followingLines, lang))) return;
+    forgetAllocations(followingLines);
     setDefaultLang(lang);
     saveDefaultLang(lang);
-    resolveEachInItsLanguage(
-      decklistText.split(LINE_BREAK),
-      (writtenLine) => choicesByLine.get(writtenLine)?.lang ?? lang,
-    );
   }
 
   // Switched only once resolved, so the line (and its open panel) never goes back to unresolved.
   async function changeLineLanguage(writtenLine: string, lang: Lang) {
     if (lang === languageOf(writtenLine) || !(await resolveInLanguage([writtenLine], lang))) return;
-    forgetPrintChoices([writtenLine]);
+    forgetAllocations([writtenLine]);
     updateChoices(writtenLine, { lang });
   }
 
   /**
    * The line to show for `writtenLine`: its resolution in its language with the user's picks
-   * (candidate, print) applied; `null` when it names no card, `undefined` while not resolved yet.
+   * (candidate, allocations) applied; `null` when it names no card, `undefined` while not resolved yet.
    */
   function displayedLine(writtenLine: string): DecklistLine | null | undefined {
     const resolution = resolutions.get(resolutionKey(languageOf(writtenLine), writtenLine));
     if (!resolution) return resolution;
-    const { oracleId, print } = choicesByLine.get(writtenLine) ?? {};
+    const { oracleId, allocations } = choicesByLine.get(writtenLine) ?? {};
     const withCandidate =
       oracleId === undefined ? resolution : applyCandidateChoice(resolution, oracleId);
-    return print === undefined ? withCandidate : applyPrintChoice(withCandidate, print);
+    return allocations === undefined
+      ? withCandidate
+      : applyAllocationChoice(withCandidate, allocations);
   }
 
   const writtenLines = decklistText.split(LINE_BREAK);
@@ -187,7 +190,9 @@ export function App() {
    * Writes the new quantity into the decklist text itself, so the text always says what gets
    * printed. The rewritten line keeps its resolution and the user's choices: no new request.
    * The quantity goes on the resolution as the server sent it, never on the displayed line:
-   * the choices are applied again on top, so nothing they derived goes stale.
+   * the choices are applied again on top, so nothing they derived goes stale. The allocations
+   * are fitted to the new quantity for good, so raising it again leaves the copies taken off on
+   * the default print.
    */
   function changeLineQuantity(writtenIndex: number, quantity: number) {
     const writtenLine = writtenLines[writtenIndex];
@@ -200,7 +205,13 @@ export function App() {
     requestedKeys.current.add(key);
     setResolutions((previous) => new Map(previous).set(key, rewritten));
     const choices = choicesByLine.get(writtenLine);
-    if (choices) updateChoices(rewritten.text, choices);
+    if (choices) {
+      const { allocations } = choices;
+      updateChoices(rewritten.text, {
+        ...choices,
+        ...(allocations && { allocations: fitAllocations(allocations, quantity) }),
+      });
+    }
     setDecklistText(writtenLines.with(writtenIndex, rewritten.text).join('\n'));
   }
 
@@ -235,7 +246,7 @@ export function App() {
         <LanguagePicker
           label={t('app.defaultLang')}
           selectedLang={defaultLang}
-          onChange={changeDefaultLanguage}
+          onChange={(lang) => void changeDefaultLanguage(lang)}
         />
         <div className="decklist-form">
           <label htmlFor="decklist">{t('decklist.label')}</label>
@@ -300,10 +311,8 @@ export function App() {
         onQuantityChange={(quantity) =>
           panelLineIndex !== null && changeLineQuantity(panelLineIndex, quantity)
         }
-        onPrintChoice={(print) =>
-          panelWrittenLine !== undefined &&
-          panelLine?.status === 'resolved' &&
-          updateChoices(panelWrittenLine, { print: { oracleId: panelLine.card.oracleId, print } })
+        onAllocationChoice={(allocations) =>
+          panelWrittenLine !== undefined && updateChoices(panelWrittenLine, { allocations })
         }
         onClose={() => setPanelLineIndex(null)}
       />
