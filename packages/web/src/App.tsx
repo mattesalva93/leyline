@@ -24,14 +24,19 @@ import { loadDefaultLang, saveDefaultLang } from './default-lang.ts';
 import { Footer } from './Footer.tsx';
 import { LanguagePicker } from './LanguagePicker.tsx';
 import { LinePanel } from './LinePanel.tsx';
+import { canShareFile, deviceSharesPdf, downloadPdf, pdfFile, sharePdf } from './pdf-delivery.ts';
 import { SheetOptionsForm } from './SheetOptionsForm.tsx';
 import { SheetPreview } from './SheetPreview.tsx';
 
-/** How far the PDF has got: images arrive one by one, then the pages are put together. */
+/**
+ * How far the PDF has got: images arrive one by one, then the pages are put together. On a device
+ * that shares it, the finished PDF waits for a second tap to open the share menu.
+ */
 type PdfStatus =
   | { readonly step: 'idle' }
   | { readonly step: 'fetchingImages'; readonly fetchedCount: number; readonly imageCount: number }
   | { readonly step: 'composingPages' }
+  | { readonly step: 'readyToShare'; readonly file: File; readonly layoutJson: string }
   | { readonly step: 'failed' };
 
 const LINE_BREAK = /\r?\n/;
@@ -83,6 +88,7 @@ export function App() {
   const [lastRequestFailed, setLastRequestFailed] = useState(false);
   const [sheetOptions, setSheetOptions] = useState<SheetOptions>(defaultSheetOptions);
   const [pdfStatus, setPdfStatus] = useState<PdfStatus>({ step: 'idle' });
+  const [sharesPdf] = useState(deviceSharesPdf);
   // Every `resolutionKey` already asked for, so a line is sent once per language however often
   // the decklist text changes.
   const requestedKeys = useRef(new Set<string>());
@@ -241,7 +247,15 @@ export function App() {
   const isGeneratingPdf =
     pdfStatus.step === 'fetchingImages' || pdfStatus.step === 'composingPages';
 
-  async function downloadPdf() {
+  // The PDF waiting to be shared, unless the sheet has changed since: then it is made again.
+  const pdfToShare =
+    pdfStatus.step === 'readyToShare' && layout && pdfStatus.layoutJson === JSON.stringify(layout)
+      ? pdfStatus.file
+      : null;
+
+  async function createPdf() {
+    if (!layout) return;
+    const layoutJson = JSON.stringify(layout);
     const urls = sheetImageUrls(sheet);
     setPdfStatus({ step: 'fetchingImages', fetchedCount: 0, imageCount: urls.length });
     try {
@@ -249,11 +263,24 @@ export function App() {
         setPdfStatus({ step: 'fetchingImages', fetchedCount, imageCount: urls.length }),
       );
       setPdfStatus({ step: 'composingPages' });
-      saveFile(await generateSheetPdf(sheet, images), t('pdf.fileName'));
-      setPdfStatus({ step: 'idle' });
+      const file = pdfFile(await generateSheetPdf(sheet, images), t('pdf.fileName'));
+      // The browser opens the share menu only within a few seconds of a tap, and fetching the
+      // images outlasts that: sharing waits for a tap of its own.
+      if (sharesPdf && canShareFile(file)) {
+        setPdfStatus({ step: 'readyToShare', file, layoutJson });
+      } else {
+        downloadPdf(file);
+        setPdfStatus({ step: 'idle' });
+      }
     } catch {
       setPdfStatus({ step: 'failed' });
     }
+  }
+
+  function pdfButtonLabel(): string {
+    if (isGeneratingPdf) return t('pdf.generating');
+    if (pdfToShare) return t('pdf.saveOrShare');
+    return sharesPdf ? t('pdf.create') : t('pdf.download');
   }
 
   return (
@@ -316,10 +343,15 @@ export function App() {
             <button
               type="button"
               disabled={isGeneratingPdf || unresolvedCount > 0 || !layout}
-              onClick={downloadPdf}
+              onClick={() => (pdfToShare ? void sharePdf(pdfToShare) : void createPdf())}
             >
-              {isGeneratingPdf ? t('pdf.generating') : t('pdf.download')}
+              {pdfButtonLabel()}
             </button>
+            {pdfToShare && (
+              <p className="pdf-ready" role="status">
+                {t('pdf.readyToShare')}
+              </p>
+            )}
             {isGeneratingPdf && <PdfProgress status={pdfStatus} />}
             {pdfStatus.step === 'failed' && <p role="alert">{t('pdf.error')}</p>}
           </>
@@ -361,15 +393,4 @@ function PdfProgress({ status }: { readonly status: PdfStatus }) {
       </span>
     </div>
   );
-}
-
-/** Hands `bytes` to the browser as a PDF download named `fileName`. */
-function saveFile(bytes: Uint8Array, fileName: string) {
-  const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  link.click();
-  // Revoking right after click() can cancel the download in Firefox and Safari.
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }

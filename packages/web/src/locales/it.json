@@ -60,6 +60,9 @@
   },
   "pdf": {
     "download": "Scarica il PDF",
+    "create": "Crea il PDF",
+    "saveOrShare": "Salva o condividi",
+    "readyToShare": "PDF pronto: tocca «Salva o condividi» per salvarlo sul telefono o mandarlo a chi lo stamperà.",
     "generating": "Creazione del PDF…",
     "error": "Non è stato possibile creare il PDF. Riprova tra poco.",
     "fileName": "proxy-mtg-suite.pdf",
