@@ -417,6 +417,11 @@ button:disabled {
   color: inherit;
 }
 
+/* A value outside the limits never reaches the sheet: show that it is not in use. */
+.sheet-options__field input:invalid {
+  border-color: var(--warning);
+}
+
 .sheet-options__crop-marks {
   display: flex;
   gap: 0.5rem;
