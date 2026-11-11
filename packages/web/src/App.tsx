@@ -150,16 +150,16 @@ export function App() {
     });
   }
 
-  function changeDefaultLanguage(lang: Lang) {
-    forgetAllocations(
-      decklistText.split(LINE_BREAK).filter((line) => !choicesByLine.get(line)?.lang),
-    );
+  // Like a line's own language, switched only once the lines that follow it are resolved: a
+  // failed request keeps them, and their allocations, as they were.
+  async function changeDefaultLanguage(lang: Lang) {
+    const followingLines = decklistText
+      .split(LINE_BREAK)
+      .filter((writtenLine) => !choicesByLine.get(writtenLine)?.lang);
+    if (!(await resolveInLanguage(followingLines, lang))) return;
+    forgetAllocations(followingLines);
     setDefaultLang(lang);
     saveDefaultLang(lang);
-    resolveEachInItsLanguage(
-      decklistText.split(LINE_BREAK),
-      (writtenLine) => choicesByLine.get(writtenLine)?.lang ?? lang,
-    );
   }
 
   // Switched only once resolved, so the line (and its open panel) never goes back to unresolved.
@@ -246,7 +246,7 @@ export function App() {
         <LanguagePicker
           label={t('app.defaultLang')}
           selectedLang={defaultLang}
-          onChange={changeDefaultLanguage}
+          onChange={(lang) => void changeDefaultLanguage(lang)}
         />
         <div className="decklist-form">
           <label htmlFor="decklist">{t('decklist.label')}</label>
