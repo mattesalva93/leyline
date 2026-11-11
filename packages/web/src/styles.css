@@ -422,6 +422,19 @@ button:disabled {
   border-color: var(--warning);
 }
 
+.sheet-options__field select {
+  min-height: 2.75rem; /* touch target */
+  font: inherit;
+  padding: 0 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.sheet-options__png-weight-warning {
+  margin: 0;
+  color: var(--warning);
+}
+
 .sheet-options__crop-marks {
   display: flex;
   gap: 0.5rem;

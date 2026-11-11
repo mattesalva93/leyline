@@ -24,7 +24,14 @@ import { loadDefaultLang, saveDefaultLang } from './default-lang.ts';
 import { Footer } from './Footer.tsx';
 import { LanguagePicker } from './LanguagePicker.tsx';
 import { LinePanel } from './LinePanel.tsx';
-import { canShareFile, deviceSharesPdf, downloadPdf, sharePdf, toPdfFile } from './pdf-delivery.ts';
+import {
+  canShareFile,
+  deviceSharesPdf,
+  downloadPdf,
+  sharePdf,
+  toPdfFile,
+  touchIsMainInput,
+} from './pdf-delivery.ts';
 import { SheetOptionsForm } from './SheetOptionsForm.tsx';
 import { SheetPreview } from './SheetPreview.tsx';
 
@@ -86,6 +93,7 @@ export function App() {
   const [sheetOptions, setSheetOptions] = useState<SheetOptions>(defaultSheetOptions);
   const [pdfStatus, setPdfStatus] = useState<PdfStatus>({ step: 'idle' });
   const [sharesPdf] = useState(deviceSharesPdf);
+  const [isTouchDevice] = useState(touchIsMainInput);
   const [isSharingPdf, setIsSharingPdf] = useState(false);
   // Every `resolutionKey` already asked for, so a line is sent once per language however often
   // the decklist text changes.
@@ -344,7 +352,11 @@ export function App() {
                 {t('pdf.unprinted', { count: unprintedCount })}
               </p>
             )}
-            <SheetOptionsForm options={sheetOptions} onChange={setSheetOptions} />
+            <SheetOptionsForm
+              options={sheetOptions}
+              onChange={setSheetOptions}
+              warnAboutPngWeight={isTouchDevice}
+            />
             {layout && <SheetPreview layout={layout} />}
             <p className="print-at-actual-size" role="note">
               {t('pdf.printAtActualSize', { width: CARD_MM.width, height: CARD_MM.height })}

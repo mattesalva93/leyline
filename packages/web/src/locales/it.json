@@ -46,7 +46,18 @@
     "title": "Opzioni del foglio",
     "margin": "Margine dal bordo del foglio (mm)",
     "spacing": "Spazio tra le carte (mm)",
-    "cropMarks": "Segni di taglio"
+    "cropMarks": "Segni di taglio",
+    "pageFormat": "Formato della pagina",
+    "pageFormats": {
+      "A4": "A4",
+      "Letter": "Letter (USA)"
+    },
+    "imageQuality": "Qualità delle immagini",
+    "imageQualities": {
+      "large": "Standard (JPG)",
+      "png": "Qualità massima (PNG)"
+    },
+    "pngWeightWarning": "Con la qualità massima il PDF pesa circa 200 MB ogni 100 carte: sul telefono la creazione può essere molto lenta o non riuscire."
   },
   "sheetPreview": {
     "title": "Anteprima della pagina",
