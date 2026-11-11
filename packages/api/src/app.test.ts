@@ -154,7 +154,14 @@ describe('POST /api/decklists/resolve', () => {
           id: 'sol-ring-cmm',
           set: 'cmm',
           releasedAt: '2023-08-04',
-          faces: [{ imageUris: { large: expect.stringContaining('sol-ring-cmm') } }],
+          faces: [
+            {
+              imageUris: {
+                large: expect.stringContaining('sol-ring-cmm'),
+                png: 'https://cards.scryfall.io/png/front/sol-ring-cmm.png',
+              },
+            },
+          ],
         },
       },
       {
