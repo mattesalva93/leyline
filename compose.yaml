@@ -14,6 +14,7 @@ services:
       # Certificates and the local CA: losing them means new certificates on every start.
       - caddy-data:/data
       - caddy-config:/config
+    restart: unless-stopped
     depends_on:
       - api
 
@@ -25,6 +26,7 @@ services:
       # Inside the container, listen on every interface so `web` can reach it.
       HOST: 0.0.0.0
       PORT: 3000
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -47,6 +49,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-mtg}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mtg}
       POSTGRES_DB: ${POSTGRES_DB:-mtg_suite}
+    restart: unless-stopped
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     volumes:
