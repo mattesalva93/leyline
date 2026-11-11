@@ -1,5 +1,7 @@
 import { copiesByPrint } from './allocation.ts';
 import type {
+  BoxMm,
+  CropMark,
   DecklistLine,
   PlacedSlot,
   PrintFace,
@@ -13,6 +15,7 @@ export const defaultSheetOptions: SheetOptions = {
   imageQuality: 'large',
   marginMm: 5,
   spacingMm: 0,
+  cropMarks: true,
 };
 
 const PAGE_MM = { A4: { width: 210, height: 297 } } as const;
@@ -20,6 +23,10 @@ const PAGE_MM = { A4: { width: 210, height: 297 } } as const;
 export const CARD_MM = { width: 63, height: 88 } as const;
 /** Corner radius of a real card, measured on Scryfall's images (about 2.9 mm). */
 export const CARD_CORNER_RADIUS_MM = 3;
+/** How far a crop mark stays from the grid, so it never shows on a card cut a little off. */
+const CROP_MARK_GAP_MM = 1;
+/** How long a crop mark is when the margin has room for it. */
+const CROP_MARK_LENGTH_MM = 4;
 /** Absorbs floating-point error, so a grid that fits exactly is not dropped. */
 const FIT_TOLERANCE_MM = 1e-9;
 
@@ -81,6 +88,12 @@ export function layoutSheet(sheet: Sheet): SheetLayout {
   const rows = cardsThatFit(pageMm.height - 2 * marginMm, CARD_MM.height, spacingMm);
   const left = (pageMm.width - (columns * (CARD_MM.width + spacingMm) - spacingMm)) / 2;
   const top = (pageMm.height - (rows * (CARD_MM.height + spacingMm) - spacingMm)) / 2;
+  const grid = {
+    x: left,
+    y: top,
+    width: pageMm.width - 2 * left,
+    height: pageMm.height - 2 * top,
+  };
   const perPage = columns * rows;
   const cells = cellsOf(copiesOf(sheet), columns);
   const pages: PlacedSlot[][] = [];
@@ -99,7 +112,61 @@ export function layoutSheet(sheet: Sheet): SheetLayout {
       }),
     );
   }
-  return { pageMm, columns, rows, pages };
+  const edges = (start: number, cardMm: number, count: number) =>
+    [
+      ...new Set(
+        Array.from({ length: count }, (_, index) => start + index * (cardMm + spacingMm)).flatMap(
+          (edge) => [edge, edge + cardMm],
+        ),
+      ),
+    ].sort((a, b) => a - b);
+  const cropMarks = sheet.options.cropMarks
+    ? cropMarksAround(
+        grid,
+        edges(left, CARD_MM.width, columns),
+        edges(top, CARD_MM.height, rows),
+        pageMm,
+        marginMm,
+      )
+    : [];
+  return { pageMm, columns, rows, pages, cropMarks };
+}
+
+/**
+ * Crop marks on each of `columnEdges` above and below `grid`, and on each of `rowEdges` left
+ * and right of it. A mark never enters the margin: it is shortened to the room left, or left
+ * out when there is none.
+ */
+function cropMarksAround(
+  grid: BoxMm,
+  columnEdges: readonly number[],
+  rowEdges: readonly number[],
+  pageMm: { readonly width: number; readonly height: number },
+  marginMm: number,
+): CropMark[] {
+  /** The stretch of a mark going away from `gridEdge` towards `pageEdge`, or `null`. */
+  const stretch = (gridEdge: number, pageEdge: number): [number, number] | null => {
+    const direction = Math.sign(pageEdge - gridEdge);
+    const start = gridEdge + direction * CROP_MARK_GAP_MM;
+    const room = Math.min(CROP_MARK_LENGTH_MM, Math.abs(pageEdge - start) - marginMm);
+    return room > FIT_TOLERANCE_MM ? [start, start + direction * room] : null;
+  };
+  const marks: CropMark[] = [];
+  for (const [gridEdge, pageEdge] of [
+    [grid.y, 0],
+    [grid.y + grid.height, pageMm.height],
+  ] as const) {
+    const ys = stretch(gridEdge, pageEdge);
+    if (ys) marks.push(...columnEdges.map((x) => ({ from: { x, y: ys[0] }, to: { x, y: ys[1] } })));
+  }
+  for (const [gridEdge, pageEdge] of [
+    [grid.x, 0],
+    [grid.x + grid.width, pageMm.width],
+  ] as const) {
+    const xs = stretch(gridEdge, pageEdge);
+    if (xs) marks.push(...rowEdges.map((y) => ({ from: { x: xs[0], y }, to: { x: xs[1], y } })));
+  }
+  return marks;
 }
 
 /**

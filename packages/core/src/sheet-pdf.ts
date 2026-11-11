@@ -8,6 +8,7 @@ import {
   moveTo,
   popGraphicsState,
   pushGraphicsState,
+  rgb,
   type PDFImage,
   type PDFOperator,
 } from 'pdf-lib';
@@ -15,6 +16,8 @@ import { CARD_CORNER_RADIUS_MM, layoutSheet } from './sheet-layout.ts';
 import type { BoxMm, Sheet } from './types.ts';
 
 const PT_PER_MM = 72 / 25.4;
+/** Thin enough to cut along precisely, thick enough for any printer to render. */
+const CROP_MARK_THICKNESS_PT = 0.5;
 
 /**
  * Builds the print-ready PDF from `layoutSheet`. `images` maps each URL from `sheetImageUrls`
@@ -52,6 +55,14 @@ export async function generateSheetPdf(
         height: box.height * PT_PER_MM,
       });
       pdfPage.pushOperators(popGraphicsState());
+    }
+    for (const { from, to } of layout.cropMarks) {
+      pdfPage.drawLine({
+        start: { x: from.x * PT_PER_MM, y: (pageMm.height - from.y) * PT_PER_MM },
+        end: { x: to.x * PT_PER_MM, y: (pageMm.height - to.y) * PT_PER_MM },
+        thickness: CROP_MARK_THICKNESS_PT,
+        color: rgb(0, 0, 0),
+      });
     }
   }
   return doc.save();

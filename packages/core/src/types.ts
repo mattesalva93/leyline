@@ -149,6 +149,8 @@ export interface SheetOptions {
   readonly marginMm: number;
   /** The paper left between two neighbouring cards. */
   readonly spacingMm: number;
+  /** Whether crop marks are drawn around the grid. */
+  readonly cropMarks: boolean;
 }
 
 /** Layout options plus the lines to print. */
@@ -179,4 +181,18 @@ export interface SheetLayout {
   readonly rows: number;
   /** The placed slots of each page, in reading order; empty cells are left out. */
   readonly pages: readonly (readonly PlacedSlot[])[];
+  /** The same on every page, around the whole grid; empty when crop marks are off. */
+  readonly cropMarks: readonly CropMark[];
+}
+
+/** A point on the page, in mm from its top-left corner. */
+export interface PointMm {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** A short straight line in the margin, on the extension of a card edge: where to cut. */
+export interface CropMark {
+  readonly from: PointMm;
+  readonly to: PointMm;
 }
