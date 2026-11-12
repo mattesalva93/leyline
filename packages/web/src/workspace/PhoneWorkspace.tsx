@@ -29,27 +29,26 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
       <InTopBar>
         <DecklistCount cardCount={generator.cardCount} pageCount={generator.pageCount} />
       </InTopBar>
+      {/* Outside the scrolling step, so the banner stays put under the top bar. */}
+      {step === 'list' && <AdSlot className="shrink-0 border-b-2 border-border bg-panel p-1.5" />}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {step === 'list' && (
-          <>
-            <AdSlot className="border-b-2 border-border bg-panel p-1.5" />
-            <div className="flex flex-col gap-4 p-3 pr-4">
-              <BoardPanel title={t('workspace.decklistPanel')} isFoldable className="shrink-0">
-                <DecklistEditor generator={generator} className="h-[38dvh]" />
-              </BoardPanel>
-              <BoardPanel
-                title={t('workspace.inspector.summary')}
-                isFoldable
-                className="shrink-0"
-                bodyClassName="p-3"
-              >
-                <DecklistSummary
-                  defaultLang={generator.defaultLang}
-                  onDefaultLangChange={generator.changeDefaultLanguage}
-                />
-              </BoardPanel>
-            </div>
-          </>
+          <div className="flex flex-col gap-4 p-3 pr-4">
+            <BoardPanel title={t('workspace.decklistPanel')} isFoldable className="shrink-0">
+              <DecklistEditor generator={generator} className="h-[38dvh]" />
+            </BoardPanel>
+            <BoardPanel
+              title={t('workspace.inspector.summary')}
+              isFoldable
+              className="shrink-0"
+              bodyClassName="p-3"
+            >
+              <DecklistSummary
+                defaultLang={generator.defaultLang}
+                onDefaultLangChange={generator.changeDefaultLanguage}
+              />
+            </BoardPanel>
+          </div>
         )}
         {step === 'cards' && (
           <div className="p-3">
