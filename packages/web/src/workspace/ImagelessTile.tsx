@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { SECONDARY_BUTTON } from '../ui/board-styles.ts';
 import { Icon } from '../ui/Icon.tsx';
 import type { ImagelessGridTile } from './grid-tiles.ts';
+import { CARD_SHAPE } from '../card-shape.ts';
 
 interface ImagelessTileProps {
   readonly gridTile: ImagelessGridTile;
@@ -28,7 +29,8 @@ export function ImagelessTile({
   return (
     <li className="min-w-0 pt-7">
       <div
-        className={`flex card-shape flex-col gap-1.5 overflow-hidden border-2 border-dashed p-2 text-xs ${reason === 'pending' ? 'border-border bg-panel/70' : 'border-danger bg-panel'} ${isSelected ? 'outline-4 outline-offset-4 outline-accent' : ''}`}
+        style={CARD_SHAPE}
+        className={`flex w-full flex-col gap-1.5 overflow-hidden border-2 border-dashed p-2 text-xs ${reason === 'pending' ? 'border-border bg-panel/70' : 'border-danger bg-panel'} ${isSelected ? 'outline-4 outline-offset-4 outline-accent' : ''}`}
       >
         {reason !== 'pending' && (
           <p className="flex items-center gap-1 font-semibold text-danger">

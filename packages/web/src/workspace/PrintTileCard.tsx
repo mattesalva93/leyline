@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { setAndNumberOf } from '../print-label.ts';
 import { NORMAL_IMAGE } from '../scryfall-image-sizes.ts';
 import type { PrintGridTile } from './grid-tiles.ts';
+import { CARD_SHAPE } from '../card-shape.ts';
 
 /** The space between two tiles in a row, which the link between siblings spans, in CSS px. */
 export const TILE_GAP_PX = 22;
@@ -58,13 +59,14 @@ export function PrintTileCard({
         type="button"
         aria-label={t('tile.open', { name: line.card.name })}
         aria-pressed={isSelected}
-        className="relative z-10 card-shape bg-raised focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-accent"
-        style={{ boxShadow: cardShadow(hasSiblings, isSelected) }}
+        className="relative z-10 block w-full bg-raised focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-accent"
+        style={{ ...CARD_SHAPE, boxShadow: cardShadow(hasSiblings, isSelected) }}
         onClick={onSelect}
       >
         {frontFace && (
           <img
-            className="card-shape"
+            className="block w-full"
+            style={CARD_SHAPE}
             src={frontFace.imageUris.normal}
             alt={t('line.imageAlt', { name: frontFace.name })}
             width={NORMAL_IMAGE.width}

@@ -15,6 +15,7 @@ import { PRINT_TILE_GAP, PRINT_TILE_MIN_WIDTH } from './print-picker-geometry.ts
 import { SMALL_IMAGE } from './scryfall-image-sizes.ts';
 import { SECONDARY_BUTTON } from './ui/board-styles.ts';
 import type { PrintPages } from './use-print-pages.ts';
+import { CARD_SHAPE } from './card-shape.ts';
 
 /** Marks the element that scrolls the print picker: more prints load as its end comes near. */
 export const PRINT_PICKER_SCROLL_ROOT = 'data-print-picker-scroll-root';
@@ -114,7 +115,8 @@ export function PrintPicker({ line, printPages, onAllocationChoice }: PrintPicke
                   >
                     {frontFace && (
                       <img
-                        className="card-shape"
+                        className="block w-full"
+                        style={CARD_SHAPE}
                         src={frontFace.imageUris.small}
                         alt={t('line.imageAlt', { name: frontFace.name })}
                         width={SMALL_IMAGE.width}

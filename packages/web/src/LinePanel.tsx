@@ -8,6 +8,7 @@ import { PrintWarningNote } from './PrintWarningNote.tsx';
 import { NORMAL_IMAGE } from './scryfall-image-sizes.ts';
 import { SYMBOL_BUTTON } from './ui/board-styles.ts';
 import { usePrintPages } from './use-print-pages.ts';
+import { CARD_SHAPE } from './card-shape.ts';
 
 interface LinePanelProps {
   readonly line: ResolvedLine;
@@ -37,7 +38,8 @@ export function LinePanel({
       <div className="flex items-center gap-3">
         {frontFace && (
           <img
-            className="w-20 shrink-0 card-shape"
+            className="block w-20 shrink-0"
+            style={CARD_SHAPE}
             src={frontFace.imageUris.normal}
             alt={t('line.imageAlt', { name: frontFace.name })}
             width={NORMAL_IMAGE.width}

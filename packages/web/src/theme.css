@@ -62,14 +62,6 @@
   }
 }
 
-/* A Scryfall image shown whole: only the card's own rounded corners are clipped (ADR 0007). */
-@utility card-shape {
-  display: block;
-  width: 100%;
-  aspect-ratio: 488 / 680;
-  border-radius: 4.75% / 3.5%;
-}
-
 @utility dot-grid {
   background-image: radial-gradient(var(--color-dot) 1px, transparent 1px);
   background-size: 20px 20px;
