@@ -22,8 +22,6 @@ import { resolveDecklistText } from './api.ts';
 import { loadDefaultLang, saveDefaultLang } from './default-lang.ts';
 import { useSheetPdf, type SheetPdf } from './use-sheet-pdf.ts';
 
-const LINE_BREAK = /\r?\n/;
-
 /**
  * What the server resolved each written line to, in each language asked for, keyed by
  * `resolutionKey`. `null` marks a written line that names no card (blank, header, comment).
@@ -122,7 +120,7 @@ export function useGenerator(): Generator {
   // the decklist text changes.
   const requestedKeys = useRef(new Set<string>());
 
-  const writtenLines = decklistText.split(LINE_BREAK);
+  const writtenLines = writtenLinesOf(decklistText);
   const choicesKeys = choicesKeysOf(writtenLines);
 
   /** Resolves the lines not asked for yet in `lang`; `false` when the request failed. */
@@ -161,7 +159,7 @@ export function useGenerator(): Generator {
 
   function writeDecklistText(nextText: string) {
     // A new line break (typed or pasted) completes every line before the last one.
-    const nextWrittenLines = nextText.split(LINE_BREAK);
+    const nextWrittenLines = writtenLinesOf(nextText);
     if (nextWrittenLines.length > writtenLines.length) {
       void resolveInLanguage(nextWrittenLines.slice(0, -1), defaultLang);
     }
