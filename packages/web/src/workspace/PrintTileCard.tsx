@@ -4,23 +4,27 @@ import { NORMAL_IMAGE } from '../scryfall-image-sizes.ts';
 import { Icon } from '../ui/Icon.tsx';
 import type { PrintGridTile } from './grid-tiles.ts';
 import { CARD_SHAPE } from '../card-shape.ts';
+import { COPY_PILE_MAX_DEPTH_PX, CopyPile, copyPileEdgeCount } from './CopyPile.tsx';
 
 /** The space between two tiles in a row, which the link between siblings spans, in CSS px. */
 export const TILE_GAP_PX = 22;
 
 const LINK_BRIDGE = 'absolute top-1/2 z-10 h-3 -translate-y-1/2 bg-link';
 
+/** The space between a tile's card and the line under it, past the deepest pile, in CSS px. */
+const BELOW_CARD_PX = COPY_PILE_MAX_DEPTH_PX + 4;
+
 /**
  * The card's shadow, all of it outside the image (ADR 0007): the ring of the selected tile or of
- * a tile with siblings, then the hard shadow of the board.
+ * a tile with siblings, then the hard shadow of the board, which a pile under the card stands in for.
  */
-function cardShadow(hasSiblings: boolean, isSelected: boolean): string {
+function cardShadow(hasSiblings: boolean, isSelected: boolean, hasPile: boolean): string {
   const ring = isSelected
     ? ['0 0 0 4px var(--color-accent)']
     : hasSiblings
       ? ['0 0 0 3px var(--color-link)']
       : [];
-  return [...ring, '4px 4px 0 var(--color-border)'].join(', ');
+  return [...ring, ...(hasPile ? [] : ['4px 4px 0 var(--color-border)'])].join(', ') || 'none';
 }
 
 interface PrintTileCardProps {
@@ -34,12 +38,11 @@ interface PrintTileCardProps {
 }
 
 const QUANTITY_BUTTON =
-  'size-6 rounded-t-md font-mono text-sm font-bold text-panel hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent';
+  'size-6 rounded-t-md font-mono text-sm font-bold text-panel hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-accent';
 
 /**
  * One `PrintTile` in the card grid: the quantity, with a minus and a plus, on a tab above the
- * card, beside the mark of its
- * print's warning if it has one, the card, and under it
+ * card, beside the mark of its print's warning if it has one, the card on its pile, and under it
  * its set and, among siblings, which of them it is. Siblings are linked by a bridge across the gap
  * to the next one, and by a joint on the row's edge when the next one wraps.
  */
@@ -57,6 +60,7 @@ export function PrintTileCard({
   const frontFace = tile.print.faces[0];
   const warningLabel = tile.warning && t(`tile.printWarning.${tile.warning}`);
   const tabColour = hasSiblings ? 'bg-link' : 'bg-foreground';
+  const hasPile = copyPileEdgeCount(tile.quantity) > 0;
   const quantityLabel = { name: line.card.name, print: setAndNumberOf(tile.print, t) };
   return (
     <li className="relative min-w-0" aria-current={isSelected || undefined}>
@@ -94,27 +98,30 @@ export function PrintTileCard({
           </span>
         )}
       </div>
-      <button
-        type="button"
-        aria-label={t('tile.open', { name: line.card.name })}
-        aria-pressed={isSelected}
-        className="relative z-10 block w-full bg-raised focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-accent"
-        style={{ ...CARD_SHAPE, boxShadow: cardShadow(hasSiblings, isSelected) }}
-        onClick={onSelect}
-      >
-        {frontFace && (
-          <img
-            className="block w-full"
-            style={CARD_SHAPE}
-            src={frontFace.imageUris.normal}
-            alt={t('line.imageAlt', { name: frontFace.name })}
-            width={NORMAL_IMAGE.width}
-            height={NORMAL_IMAGE.height}
-            loading="lazy"
-            draggable={false}
-          />
-        )}
-      </button>
+      <div className="relative">
+        <CopyPile copies={tile.quantity} />
+        <button
+          type="button"
+          aria-label={t('tile.open', { name: line.card.name })}
+          aria-pressed={isSelected}
+          className="relative z-10 block w-full bg-raised focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          style={{ ...CARD_SHAPE, boxShadow: cardShadow(hasSiblings, isSelected, hasPile) }}
+          onClick={onSelect}
+        >
+          {frontFace && (
+            <img
+              className="block w-full"
+              style={CARD_SHAPE}
+              src={frontFace.imageUris.normal}
+              alt={t('line.imageAlt', { name: frontFace.name })}
+              width={NORMAL_IMAGE.width}
+              height={NORMAL_IMAGE.height}
+              loading="lazy"
+              draggable={false}
+            />
+          )}
+        </button>
+      </div>
       {continuesRowAbove && (
         <span
           aria-hidden="true"
@@ -129,7 +136,10 @@ export function PrintTileCard({
           style={{ width: TILE_GAP_PX }}
         />
       )}
-      <p className="mt-2 flex justify-between gap-2 font-mono text-[11px] text-muted-foreground">
+      <p
+        className="flex justify-between gap-2 font-mono text-[11px] text-muted-foreground"
+        style={{ marginTop: BELOW_CARD_PX }}
+      >
         <span className="truncate">{setAndNumberOf(tile.print, t)}</span>
         {hasSiblings && (
           <span className="font-bold text-link">

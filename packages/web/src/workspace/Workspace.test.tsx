@@ -331,6 +331,29 @@ describe('the quantity on a tile', () => {
   });
 });
 
+describe('the pile under a tile', () => {
+  /** How many card edges the pile under each tile of the grid draws. */
+  function pileEdgesPerTile() {
+    return gridTiles().map((tile) => tile.querySelectorAll('[data-copy-pile-edge]').length);
+  }
+
+  it("draws a card edge per copy beyond the first, counting the tile's copies, not the line's", async () => {
+    const user = await mountPageAndWrite('3 Sol Ring{Enter}1 Lightning Bolt{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+
+    expect(pileEdgesPerTile()).toEqual([1, 0, 0]);
+  });
+
+  it('stops growing past five edges', async () => {
+    await mountPageAndWrite('6 Sol Ring{Enter}40 Lightning Bolt{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Lightning Bolt' });
+
+    expect(pileEdgesPerTile()).toEqual([5, 5]);
+  });
+});
+
 describe('copies of a line in another language', () => {
   /** The inspector while a tile is selected. */
   function lineInspector() {
