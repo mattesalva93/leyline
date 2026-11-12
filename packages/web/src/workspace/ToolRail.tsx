@@ -5,8 +5,6 @@ import { Icon } from '../ui/Icon.tsx';
 /** What the centre of the workspace shows: the card grid, or the sheet as it will print. */
 export type CentreView = 'cards' | 'sheet';
 
-const VIEW_ICONS = { cards: 'cards', sheet: 'sheet' } as const;
-
 /** The narrow strip that switches the centre of the workspace between its views. */
 export function ToolRail({
   view,
@@ -31,7 +29,7 @@ export function ToolRail({
           className={`grid size-9 place-items-center rounded-md border-2 ${view === railView ? 'border-border bg-accent text-accent-foreground' : 'border-transparent hover:border-border'}`}
           onClick={() => onViewChange(railView)}
         >
-          <Icon name={VIEW_ICONS[railView]} className="size-5" />
+          <Icon name={railView} className="size-5" />
         </button>
       ))}
     </nav>

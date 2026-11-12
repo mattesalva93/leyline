@@ -35,8 +35,13 @@ export function Inspector({
 }: InspectorProps) {
   const { t } = useTranslation();
   const selectedLine = selectedLineIndex === null ? undefined : generator.lineAt(selectedLineIndex);
+  // Only a resolved line has a panel; the sheet view always shows the sheet options.
+  const panelLine =
+    view === 'cards' && selectedLineIndex !== null && selectedLine?.status === 'resolved'
+      ? { writtenIndex: selectedLineIndex, line: selectedLine }
+      : null;
   const content: InspectorContent =
-    view === 'sheet' ? 'sheetOptions' : selectedLine?.status === 'resolved' ? 'line' : 'summary';
+    view === 'sheet' ? 'sheetOptions' : panelLine ? 'line' : 'summary';
   return (
     <aside
       ref={ref}
@@ -57,22 +62,20 @@ export function Inspector({
             warnAboutPngWeight={warnAboutPngWeight}
           />
         )}
-        {content === 'line' &&
-          selectedLineIndex !== null &&
-          selectedLine?.status === 'resolved' && (
-            <LinePanel
-              // A new line starts its panel afresh: its own prints, scrolled to the top.
-              key={selectedLineIndex}
-              line={selectedLine}
-              onLanguageChange={(lang) => generator.changeLineLanguage(selectedLineIndex, lang)}
-              onQuantityChange={(quantity) =>
-                generator.changeLineQuantity(selectedLineIndex, quantity)
-              }
-              onAllocationChoice={(allocations) =>
-                generator.chooseAllocations(selectedLineIndex, allocations)
-              }
-            />
-          )}
+        {panelLine && (
+          <LinePanel
+            // A new line starts its panel afresh: its own prints, scrolled to the top.
+            key={panelLine.writtenIndex}
+            line={panelLine.line}
+            onLanguageChange={(lang) => generator.changeLineLanguage(panelLine.writtenIndex, lang)}
+            onQuantityChange={(quantity) =>
+              generator.changeLineQuantity(panelLine.writtenIndex, quantity)
+            }
+            onAllocationChoice={(allocations) =>
+              generator.chooseAllocations(panelLine.writtenIndex, allocations)
+            }
+          />
+        )}
         {content === 'summary' && (
           <div className="flex flex-col gap-3">
             <LanguagePicker
