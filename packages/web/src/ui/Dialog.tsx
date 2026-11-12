@@ -8,7 +8,7 @@ export const DialogTrigger = RadixDialog.Trigger;
 export const DialogClose = RadixDialog.Close;
 export const DialogTitle = RadixDialog.Title;
 
-const OVERLAY = 'fixed inset-0 z-40 bg-black/50';
+const OVERLAY = 'fixed inset-0 z-40 bg-overlay';
 
 interface DialogContentProps {
   /** The dialog's accessible name, for a dialog whose title is not shown. */

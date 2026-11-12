@@ -24,6 +24,8 @@
   --color-danger: #b42318;
   --color-link: #c2185b;
   --color-dot: #1b1a1733;
+  --color-overlay: #00000080;
+  --color-shadow: #00000026;
 }
 
 @layer theme {
@@ -42,6 +44,7 @@
     --color-danger: #fca5a5;
     --color-link: #ff7eb6;
     --color-dot: #f1efe826;
+    --color-shadow: #00000099;
   }
 }
 
