@@ -329,6 +329,27 @@ describe('the quantity on a tile', () => {
     );
     expect(vi.mocked(api.resolveDecklistText).mock.calls.length).toBe(requestsBefore);
   });
+
+  it("keeps each line's own choices when its new quantity makes it read like another line", async () => {
+    const user = await mountPageAndWrite('2 Sol Ring{Enter}4 Sol Ring{Enter}');
+    await screen.findAllByRole('button', { name: 'Modifica Sol Ring' });
+    await user.click(tileAt(1).getByRole('button', { name: 'Modifica Sol Ring' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+
+    const onePlusOnFirstLine = () =>
+      user.click(tileAt(0).getByRole('button', { name: 'Una copia in più di Sol Ring (C21 #1)' }));
+    await onePlusOnFirstLine();
+    await onePlusOnFirstLine();
+
+    expect(screen.getByLabelText<HTMLTextAreaElement>('Decklist').value).toBe(
+      '4 Sol Ring\n4 Sol Ring\n',
+    );
+    expect(gridTiles().map(tileSummary)).toEqual([
+      ['Immagine di Sol Ring', '4×', undefined],
+      ['Immagine di Sol Ring', '3×', '1/2'],
+      ['Immagine di Sol Ring', '1×', '2/2'],
+    ]);
+  });
 });
 
 describe('the pile under a tile', () => {
