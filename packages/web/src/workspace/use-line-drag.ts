@@ -38,6 +38,14 @@ function sideUnderPointer(event: React.DragEvent<HTMLElement>): LineSide {
   return event.clientX < box.left + box.width / 2 ? 'before' : 'after';
 }
 
+function isSameDestination(a: LineDestination | null, b: LineDestination): boolean {
+  return (
+    a?.section === b.section &&
+    a.nextTo?.writtenIndex === b.nextTo?.writtenIndex &&
+    a.nextTo?.side === b.nextTo?.side
+  );
+}
+
 /** Lets the mouse drag a line by any of its tiles and drop it to `moveLine` it. */
 export function useLineDrag(
   moveLine: (writtenIndex: number, destination: LineDestination) => void,
@@ -54,7 +62,10 @@ export function useLineDrag(
   function allowDrop(event: React.DragEvent, nextDestination: LineDestination) {
     event.preventDefault();
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
-    setDestination(nextDestination);
+    // `dragover` fires every few milliseconds: the grid renders again only when the bar moves.
+    setDestination((current) =>
+      isSameDestination(current, nextDestination) ? current : nextDestination,
+    );
   }
 
   return {
