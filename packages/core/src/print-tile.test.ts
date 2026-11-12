@@ -114,6 +114,16 @@ describe('printTiles', () => {
     expect(warningsById(await forestLine(2, 'it'))).toEqual([['forest-fdn', 'languageFallback']]);
   });
 
+  it('never warns on the tile of an English print the user chose for an Italian line', async () => {
+    const italian = createInMemoryCatalog([{ card: forest, prints: [forestFdn, forestFdnIt] }]);
+    const line = withCopiesOn(await forestLine(4, 'it', italian), forestFdn, 1);
+
+    expect(warningsById(line)).toEqual([
+      ['forest-fdn-it', null],
+      ['forest-fdn', null],
+    ]);
+  });
+
   it('gives a line with no printable print no tile', async () => {
     const noPrint = { ...(await forestLine(2)), defaultPrint: null };
 

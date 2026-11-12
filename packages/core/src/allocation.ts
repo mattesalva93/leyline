@@ -30,7 +30,9 @@ function worstWarning(line: ResolvedLine): PrintWarning | null {
 
 /** What to warn about `print` used by some of the copies of `line`, if anything. */
 export function warningOfPrint(line: ResolvedLine, print: Print): PrintWarning | null {
-  if (print.lang !== line.lang) return 'languageFallback';
+  // Only a default print stands in for the line's language: any other print the user chose.
+  const standsIn = print.id === line.defaultPrint?.id && print.lang !== line.lang;
+  if (standsIn) return 'languageFallback';
   // A card printed in Italian virtually always has an English print with a real image too,
   // unless the line's warning says it has none.
   return qualityWarning(print, line.printWarning !== 'lowResolutionWithoutEnglish');
