@@ -221,3 +221,48 @@ describe('the workspace', () => {
     expect(tileButton.getAttribute('aria-pressed')).toBe('true');
   });
 });
+
+/** Makes the browser report a narrow screen with touch as the main input, as a phone does. */
+function actAsPhone() {
+  return vi.spyOn(window, 'matchMedia').mockImplementation(
+    (query) =>
+      ({
+        matches: query === '(pointer: coarse)',
+        media: query,
+        addEventListener() {},
+        removeEventListener() {},
+      }) as never,
+  );
+}
+
+/** The bar at the foot of a phone's screen, which picks the step. */
+function stepBar() {
+  return within(screen.getByRole('navigation', { name: 'Passi' }));
+}
+
+describe('the workspace on a phone', () => {
+  beforeEach(() => {
+    const phone = actAsPhone();
+    return () => phone.mockRestore();
+  });
+
+  it('shows one step at a time on the whole screen, picked from the bottom bar', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    expect(screen.queryByRole('list', { name: 'Griglia delle carte' })).toBeNull();
+
+    await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+
+    expect(await screen.findByRole('button', { name: 'Modifica Sol Ring' })).toBeTruthy();
+    expect(screen.queryByLabelText('Decklist')).toBeNull();
+
+    await user.click(stepBar().getByRole('button', { name: 'Foglio' }));
+
+    expect(screen.getByRole('img', { name: 'Pagina 1 di 1 come verrà stampata' })).toBeTruthy();
+    expect(screen.getByLabelText('Formato della pagina')).toBeTruthy();
+    expect(screen.queryByRole('list', { name: 'Griglia delle carte' })).toBeNull();
+
+    await user.click(stepBar().getByRole('button', { name: 'Lista' }));
+
+    expect(screen.getByLabelText<HTMLTextAreaElement>('Decklist').value).toBe('4 Sol Ring\n');
+  });
+});

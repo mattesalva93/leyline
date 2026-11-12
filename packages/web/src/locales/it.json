@@ -28,7 +28,17 @@
       "sheetOptions": "Opzioni del foglio"
     },
     "selectTileHint": "Seleziona una tessera per sceglierne la lingua, le copie e le stampe.",
-    "nothingToPrint": "Nessuna carta da stampare."
+    "nothingToPrint": "Nessuna carta da stampare.",
+    "steps": "Passi",
+    "stepNames": {
+      "list": "Lista",
+      "cards": "Carte",
+      "sheet": "Foglio"
+    }
+  },
+  "boardPanel": {
+    "fold": "Richiudi il pannello «{{title}}»",
+    "unfold": "Riapri il pannello «{{title}}»"
   },
   "info": {
     "title": "Informazioni",
