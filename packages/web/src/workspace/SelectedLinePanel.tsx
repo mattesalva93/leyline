@@ -36,7 +36,6 @@ export function SelectedLinePanel({
       key={writtenIndex}
       line={line}
       printWarning={tileWarning}
-      onLanguageChange={(lang) => generator.changeLineLanguage(writtenIndex, lang)}
       onQuantityChange={(quantity) => generator.changeLineQuantity(writtenIndex, quantity)}
       onAllocationChoice={(allocations) => generator.chooseAllocations(writtenIndex, allocations)}
     />

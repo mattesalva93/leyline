@@ -8,12 +8,12 @@ interface PrintWarningNoteProps {
   readonly line: ResolvedLine;
   /** The warning to explain: the one of the tile the user is looking at. */
   readonly warning: PrintWarning | null;
-  /** Switches the line to English: offered when an English print would look better. */
-  readonly onSwitchLineToEnglish: () => void;
+  /** Shows the English prints in the print picker: offered when one would look better. */
+  readonly onShowEnglishPrints: () => void;
 }
 
 /** What is wrong with a print of the line, if anything, and the way out when there is one. */
-export function PrintWarningNote({ line, warning, onSwitchLineToEnglish }: PrintWarningNoteProps) {
+export function PrintWarningNote({ line, warning, onShowEnglishPrints }: PrintWarningNoteProps) {
   const { t } = useTranslation();
   const lineLanguageName = t(`lang.${line.lang}`).toLowerCase();
 
@@ -33,8 +33,8 @@ export function PrintWarningNote({ line, warning, onSwitchLineToEnglish }: Print
       return (
         <div className={NOTE}>
           <p>{t('line.lowResolution')}</p>
-          <button type="button" className={SECONDARY_BUTTON} onClick={onSwitchLineToEnglish}>
-            {t('line.useEnglish')}
+          <button type="button" className={SECONDARY_BUTTON} onClick={onShowEnglishPrints}>
+            {t('line.showEnglishPrints')}
           </button>
         </div>
       );

@@ -186,19 +186,40 @@ describe('applyAllocationChoice', () => {
     });
   });
 
-  it('keeps warning that an Italian line prints in English when its copies use English prints', async () => {
+  it('never warns about an English print the user chose for copies of an Italian line', async () => {
+    const line = await solRingLine('it');
+
+    expect(applyAllocationChoice(line, allocateEveryCopy(line, solRingC21))).toMatchObject({
+      lang: 'it',
+      printWarning: null,
+    });
+  });
+
+  /** 4 Sol Ring in Italian, from a catalog with English prints only. */
+  async function italianLineWithEnglishOnly() {
     const english2016 = aPrint({ id: 'sol-ring-en-2016', releasedAt: '2016-01-01' });
     const englishOnly = createInMemoryCatalog([
       { card: solRing, prints: [solRingC21, english2016] },
     ]);
-    const line = resolved(
-      (await resolveDecklist('4 Sol Ring', englishOnly, { today, lang: 'it' }))[0],
-    );
+    const [line] = await resolveDecklist('4 Sol Ring', englishOnly, { today, lang: 'it' });
+    return { line: resolved(line), english2016 };
+  }
+
+  it('warns that an Italian line prints in English while copies stay on the English print standing in', async () => {
+    const { line, english2016 } = await italianLineWithEnglishOnly();
+
+    expect(applyAllocationChoice(line, allocatePrintCopies(line, english2016, 3))).toMatchObject({
+      lang: 'it',
+      printWarning: 'languageFallback',
+    });
+  });
+
+  it('stops warning once every copy leaves the English print standing in', async () => {
+    const { line, english2016 } = await italianLineWithEnglishOnly();
 
     expect(applyAllocationChoice(line, allocateEveryCopy(line, english2016))).toMatchObject({
       lang: 'it',
-      printWarning: 'languageFallback',
-      allocations: [{ print: { id: 'sol-ring-en-2016' }, quantity: 4 }],
+      printWarning: null,
     });
   });
 
@@ -211,12 +232,32 @@ describe('applyAllocationChoice', () => {
     });
   });
 
-  it('leaves the line as it is once it asks for another language or card than the choice', async () => {
+  it('allocates copies of an Italian line to English prints, the rest staying Italian', async () => {
+    const line = await solRingLine('it');
+
+    expect(applyAllocationChoice(line, allocatePrintCopies(line, solRingC21, 1))).toMatchObject({
+      lang: 'it',
+      defaultPrint: { id: 'sol-ring-it' },
+      allocations: [{ print: { id: 'sol-ring-c21' }, quantity: 1 }],
+    });
+  });
+
+  it('keeps the allocated copies where they are once the line changes language', async () => {
+    const italian = await solRingLine('it');
     const english = await solRingLine('en');
+    const oneOldItalian = allocatePrintCopies(italian, solRingItOld, 1);
+
+    expect(applyAllocationChoice(english, oneOldItalian)).toMatchObject({
+      lang: 'en',
+      defaultPrint: { id: 'sol-ring-c21' },
+      allocations: [{ print: { id: 'sol-ring-it-old' }, quantity: 1 }],
+    });
+  });
+
+  it('leaves the line as it is once it resolves to another card than the choice', async () => {
     const italian = await solRingLine('it');
     const oldItalian = allocateEveryCopy(italian, solRingItOld);
 
-    expect(applyAllocationChoice(english, oldItalian)).toBe(english);
     expect(applyAllocationChoice(italian, { ...oldItalian, oracleId: 'goblin' })).toBe(italian);
   });
 });

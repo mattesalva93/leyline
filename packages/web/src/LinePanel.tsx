@@ -1,42 +1,40 @@
 import {
   previewPrint,
   type AllocationChoice,
-  type Lang,
   type PrintWarning,
   type ResolvedLine,
 } from '@mtg-suite/core';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LanguagePicker } from './LanguagePicker.tsx';
 import { contentWidthOf, printPageSize } from './print-picker-geometry.ts';
 import { PrintPicker } from './PrintPicker.tsx';
 import { PrintWarningNote } from './PrintWarningNote.tsx';
 import { NORMAL_IMAGE } from './scryfall-image-sizes.ts';
 import { SYMBOL_BUTTON } from './ui/board-styles.ts';
 import { usePrintPages } from './use-print-pages.ts';
+import { usePrintsLanguage } from './use-prints-language.ts';
 import { CARD_SHAPE } from './card-shape.ts';
 
 interface LinePanelProps {
   readonly line: ResolvedLine;
   /** What to warn about the print of the tile the panel was opened from. */
   readonly printWarning: PrintWarning | null;
-  readonly onLanguageChange: (lang: Lang) => void;
   readonly onQuantityChange: (quantity: number) => void;
   /** Called with the allocations the user set in the print picker. */
   readonly onAllocationChoice: (allocations: AllocationChoice) => void;
 }
 
-/** The settings of one line: its language, its quantity and the prints its copies use. */
+/** The settings of one line: its quantity and the prints its copies use, in either language. */
 export function LinePanel({
   line,
   printWarning,
-  onLanguageChange,
   onQuantityChange,
   onAllocationChoice,
 }: LinePanelProps) {
   const { t } = useTranslation();
   const panelRef = useRef<HTMLDivElement>(null);
-  const printPages = usePrintPages(line.card.oracleId, line.lang, () => {
+  const [printsLang, changePrintsLang] = usePrintsLanguage(line.lang);
+  const printPages = usePrintPages(line.card.oracleId, printsLang, () => {
     const panel = panelRef.current;
     const gridWidth = panel ? contentWidthOf(panel) : window.innerWidth;
     return printPageSize(gridWidth, window.innerHeight);
@@ -57,15 +55,10 @@ export function LinePanel({
         )}
         <h3 className="text-lg leading-tight font-bold">{line.card.name}</h3>
       </div>
-      <LanguagePicker
-        label={t('panel.lang')}
-        selectedLang={line.lang}
-        onChange={onLanguageChange}
-      />
       <PrintWarningNote
         line={line}
         warning={printWarning}
-        onSwitchLineToEnglish={() => onLanguageChange('en')}
+        onShowEnglishPrints={() => changePrintsLang('en')}
       />
       <fieldset className="flex items-center gap-2">
         <legend className="float-left mr-3 font-semibold">{t('panel.quantity')}</legend>
@@ -90,7 +83,13 @@ export function LinePanel({
           {t('panel.plus')}
         </button>
       </fieldset>
-      <PrintPicker line={line} printPages={printPages} onAllocationChoice={onAllocationChoice} />
+      <PrintPicker
+        line={line}
+        printsLang={printsLang}
+        onPrintsLangChange={changePrintsLang}
+        printPages={printPages}
+        onAllocationChoice={onAllocationChoice}
+      />
     </div>
   );
 }

@@ -42,10 +42,14 @@ function catalogEntry(oracleId: string, name: string, ...sets: string[]): Catalo
   };
 }
 
-/** A card with Italian prints: the newest has a sharp image, the older one a low-resolution one. */
+/**
+ * A card with Italian prints, the newest with a sharp image and the older one with a
+ * low-resolution one, and an English print.
+ */
 const COUNTERSPELL: CatalogEntry = {
   card: aCard({ oracleId: 'counterspell', name: 'Counterspell' }),
   prints: [
+    printOf('Counterspell', 'counterspell-a25', 'a25', '2018-03-16'),
     { ...printOf('Counterspell', 'counterspell-it-mh2', 'mh2', '2021-06-18'), lang: 'it' },
     {
       ...printOf('Counterspell', 'counterspell-it-ema', 'ema', '2016-06-10'),
@@ -55,8 +59,19 @@ const COUNTERSPELL: CatalogEntry = {
   ],
 };
 
+/** A card with sharp prints in both languages: two Italian ones and an English one. */
+const BRAINSTORM: CatalogEntry = {
+  card: aCard({ oracleId: 'brainstorm', name: 'Brainstorm' }),
+  prints: [
+    { ...printOf('Brainstorm', 'brainstorm-it-ice', 'ice', '2020-01-01'), lang: 'it' },
+    { ...printOf('Brainstorm', 'brainstorm-it-mmq', 'mmq', '2019-01-01'), lang: 'it' },
+    printOf('Brainstorm', 'brainstorm-c21', 'c21', '2021-01-01'),
+  ],
+};
+
 const CATALOG = [
   catalogEntry('sol-ring', 'Sol Ring', 'c21', 'lea'),
+  BRAINSTORM,
   catalogEntry('lightning-bolt', 'Lightning Bolt'),
   catalogEntry('lightning-helix', 'Lightning Helix'),
   COUNTERSPELL,
@@ -171,13 +186,12 @@ describe('the workspace', () => {
     ]);
   });
 
-  it("shows the selected tile's language, quantity and prints in the inspector, beside the grid", async () => {
+  it("shows the selected tile's quantity and prints in the inspector, beside the grid", async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
 
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
 
     const inspector = within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
-    expect(inspector.getByRole('group', { name: 'Lingua di questa carta' })).toBeTruthy();
     expect(inspector.getByRole('group', { name: 'Copie' })).toBeTruthy();
     expect(await inspector.findByRole('region', { name: 'Stampe di Sol Ring' })).toBeTruthy();
     expect(gridTiles()).toHaveLength(1);
@@ -243,6 +257,85 @@ describe('the workspace', () => {
     expect(onlyTile && tileSummary(onlyTile)).toEqual(['Immagine di Sol Ring', '4×', undefined]);
     const tileButton = screen.getByRole('button', { name: 'Modifica Sol Ring' });
     expect(tileButton.getAttribute('aria-pressed')).toBe('true');
+  });
+});
+
+describe('copies of a line in another language', () => {
+  /** The inspector while a tile is selected. */
+  function lineInspector() {
+    return within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
+  }
+
+  /** Opens the tile of the first line, an Italian one on a first visit. */
+  async function openBrainstorm() {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+    return user;
+  }
+
+  it('switches the print picker to English prints, and allocates copies to both languages', async () => {
+    const user = await openBrainstorm();
+    const printsLanguage = () =>
+      within(lineInspector().getByRole('group', { name: 'Lingua delle stampe' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
+
+    await user.click(printsLanguage().getByRole('radio', { name: 'Inglese' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con C21 #1' }));
+
+    expect(screen.queryByRole('button', { name: 'Una copia in più con MMQ #1' })).toBeNull();
+    expect(gridTiles().map(tileSummary)).toEqual([
+      ['Immagine di Brainstorm', '2×', '1/3'],
+      ['Immagine di Brainstorm', '1×', '2/3'],
+      ['Immagine di Brainstorm', '1×', '3/3'],
+    ]);
+    expect(screen.queryByRole('img', { name: 'Stampa in inglese' })).toBeNull();
+  });
+
+  it('counts the copies left unallocated beside the switch, whichever language it shows', async () => {
+    const user = await openBrainstorm();
+    const printsLanguage = within(
+      await lineInspector().findByRole('group', { name: 'Lingua delle stampe' }),
+    );
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
+
+    await user.click(printsLanguage.getByRole('radio', { name: 'Inglese' }));
+    await screen.findByRole('button', { name: 'Una copia in più con C21 #1' });
+
+    expect(lineInspector().getByText('+3 non assegnate')).toBeTruthy();
+  });
+
+  it('sets no language of its own on a line: only the prints of its copies have one', async () => {
+    await openBrainstorm();
+
+    expect(await lineInspector().findByRole('group', { name: 'Lingua delle stampe' })).toBeTruthy();
+    expect(lineInspector().queryByRole('group', { name: 'Lingua di questa carta' })).toBeNull();
+  });
+
+  it('shows the English prints in the print picker as the way out of a low-resolution print', async () => {
+    const user = await mountPageAndWrite('4 Counterspell{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Counterspell' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con EMA #1' }));
+    await user.click(tileAt(1).getByRole('button', { name: 'Modifica Counterspell' }));
+
+    await user.click(lineInspector().getByRole('button', { name: 'Mostra le stampe inglesi' }));
+
+    expect(await screen.findByRole('button', { name: 'Una copia in più con A25 #1' })).toBeTruthy();
+    expect(gridTiles()).toHaveLength(2);
+  });
+
+  it('keeps the allocated copies on their print once the default language changes', async () => {
+    const user = await openBrainstorm();
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
+    await user.click(screen.getByRole('button', { name: 'Modifica Brainstorm', pressed: true }));
+
+    await user.click(summary().getByRole('radio', { name: 'Inglese' }));
+
+    await user.click(tileAt(0).getByRole('button', { name: 'Modifica Brainstorm' }));
+    expect(await screen.findByRole('button', { name: 'Una copia in più con C21 #1' })).toBeTruthy();
+    expect(gridTiles().map(tileSummary)).toEqual([
+      ['Immagine di Brainstorm', '3×', '1/2'],
+      ['Immagine di Brainstorm', '1×', '2/2'],
+    ]);
   });
 });
 
@@ -412,7 +505,7 @@ describe('the workspace on a phone', () => {
     await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
 
     const panel = within(screen.getByRole('dialog', { name: 'Riga selezionata' }));
-    expect(panel.getByRole('group', { name: 'Lingua di questa carta' })).toBeTruthy();
+    expect(panel.getByRole('group', { name: 'Copie' })).toBeTruthy();
     expect(await panel.findByRole('region', { name: 'Stampe di Sol Ring' })).toBeTruthy();
     await user.click(panel.getByRole('button', { name: 'Una copia in più' }));
     await user.click(panel.getByRole('button', { name: 'Fatto' }));

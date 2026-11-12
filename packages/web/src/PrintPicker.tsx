@@ -5,6 +5,7 @@ import {
   copiesByPrint,
   unallocatedCopies,
   type AllocationChoice,
+  type Lang,
   type Print,
   type ResolvedLine,
 } from '@mtg-suite/core';
@@ -16,6 +17,7 @@ import { SMALL_IMAGE } from './scryfall-image-sizes.ts';
 import { SECONDARY_BUTTON } from './ui/board-styles.ts';
 import type { PrintPages } from './use-print-pages.ts';
 import { CARD_SHAPE } from './card-shape.ts';
+import { LanguagePicker } from './LanguagePicker.tsx';
 
 /** Marks the element that scrolls the print picker: more prints load as its end comes near. */
 export const PRINT_PICKER_SCROLL_ROOT = 'data-print-picker-scroll-root';
@@ -29,6 +31,10 @@ const COUNTER_BUTTON =
 interface PrintPickerProps {
   /** The line whose copies the picker allocates: the prints its copies use are marked. */
   readonly line: ResolvedLine;
+  /** The language of the prints shown: copies can go to prints of either language. */
+  readonly printsLang: Lang;
+  readonly onPrintsLangChange: (lang: Lang) => void;
+  /** The prints of the card in `printsLang`. */
   readonly printPages: PrintPages;
   /** Called with the allocations a tap on a print or its +/− counter sets. */
   readonly onAllocationChoice: (allocations: AllocationChoice) => void;
@@ -56,7 +62,13 @@ function byReleaseYear(prints: readonly Print[]): ReleaseYear[] {
  * puts every copy on it; its +/− counter moves one copy at a time between it and the default
  * print. More prints load as the user scrolls near the end of the grid.
  */
-export function PrintPicker({ line, printPages, onAllocationChoice }: PrintPickerProps) {
+export function PrintPicker({
+  line,
+  printsLang,
+  onPrintsLangChange,
+  printPages,
+  onAllocationChoice,
+}: PrintPickerProps) {
   const { t } = useTranslation();
   const endOfGridRef = useRef<HTMLDivElement>(null);
   const { prints, total, hasMore, isLoading, lastRequestFailed, loadMore } = printPages;
@@ -89,6 +101,19 @@ export function PrintPicker({ line, printPages, onAllocationChoice }: PrintPicke
           </span>
         )}
       </h3>
+      <div className="flex flex-wrap items-center justify-between gap-x-4">
+        <LanguagePicker
+          label={t('printPicker.lang')}
+          selectedLang={printsLang}
+          onChange={onPrintsLangChange}
+        />
+        {/* Beside the switch, not on the default print: that one is in a single language. */}
+        {unallocated > 0 && (
+          <span className="text-xs text-muted-foreground">
+            {t('printPicker.unallocated', { count: unallocated })}
+          </span>
+        )}
+      </div>
       {byReleaseYear(prints).map(({ year, prints: printsOfYear }) => (
         <section key={year} aria-label={year}>
           <h4 className="mt-3 mb-1.5 font-mono text-xs font-bold">{year}</h4>
@@ -104,7 +129,6 @@ export function PrintPicker({ line, printPages, onAllocationChoice }: PrintPicke
               const usedByLine = printIdsUsedByLine.has(print.id);
               const setAndNumber = setAndNumberOf(print, t);
               const allocated = copiesAllocatedTo(line, print);
-              const isDefaultPrint = print.id === line.defaultPrint?.id;
               return (
                 <li
                   key={print.id}
@@ -159,11 +183,6 @@ export function PrintPicker({ line, printPages, onAllocationChoice }: PrintPicke
                       {t('panel.plus')}
                     </button>
                   </div>
-                  {isDefaultPrint && unallocated > 0 && (
-                    <span className="text-muted-foreground">
-                      {t('printPicker.unallocated', { count: unallocated })}
-                    </span>
-                  )}
                 </li>
               );
             })}
