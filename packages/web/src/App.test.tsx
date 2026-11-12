@@ -24,14 +24,14 @@ const CATALOG = [
 
 beforeEach(() => {
   localStorage.clear();
-  const server = inMemoryServer(CATALOG);
-  vi.mocked(api.resolveDecklistText).mockImplementation(server.resolveDecklistText);
-  vi.mocked(api.fetchImages).mockImplementation(server.fetchImages);
-  vi.mocked(api.fetchPrintPage).mockImplementation(server.fetchPrintPage);
+  // Every call of `api.ts` is answered in memory: one added later is covered without a new line here.
+  Object.entries(inMemoryServer(CATALOG)).forEach(([call, answer]) => {
+    vi.mocked(api[call as keyof typeof api]).mockImplementation(answer as never);
+  });
 });
 
 /** Mounts the generator page and types `decklistText` into the decklist, as a user would. */
-async function writeDecklist(decklistText: string) {
+async function mountPageAndWrite(decklistText: string) {
   const user = userEvent.setup();
   render(<App />);
   await user.type(screen.getByLabelText('Decklist'), decklistText);
@@ -40,7 +40,7 @@ async function writeDecklist(decklistText: string) {
 
 describe('the generator page', () => {
   it('recognises a line once the user breaks the line', async () => {
-    const user = await writeDecklist('4 Sol Ring');
+    const user = await mountPageAndWrite('4 Sol Ring');
     expect(screen.getByText('Da riconoscere: vai a capo o esci dal campo')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Modifica Sol Ring' })).toBeNull();
 
@@ -50,7 +50,7 @@ describe('the generator page', () => {
   });
 
   it('resolves an ambiguous line to the candidate the user picks', async () => {
-    const user = await writeDecklist('1 Lightning{Enter}');
+    const user = await mountPageAndWrite('1 Lightning{Enter}');
     expect(await screen.findByText('Quale carta intendevi?')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Lightning Helix' })).toBeTruthy();
 
@@ -61,7 +61,7 @@ describe('the generator page', () => {
   });
 
   it('rewrites the decklist text when the quantity changes in the line panel', async () => {
-    const user = await writeDecklist('4 Sol Ring{Enter}1 Lightning Bolt');
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt');
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
 
     await user.click(screen.getByRole('button', { name: 'Una copia in più' }));
@@ -72,7 +72,7 @@ describe('the generator page', () => {
   });
 
   it('keeps the PDF button disabled until every line is resolved', async () => {
-    const user = await writeDecklist('4 Sol Ring{Enter}1 Lightning Bolt');
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
     const pdfButton = screen.getByRole<HTMLButtonElement>('button', { name: 'Scarica il PDF' });
     expect(pdfButton.disabled).toBe(true);

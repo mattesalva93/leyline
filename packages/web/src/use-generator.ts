@@ -84,7 +84,7 @@ export interface Generator {
   readonly changeDefaultLanguage: (lang: Lang) => void;
 
   readonly cardLines: readonly WrittenCardLine[];
-  /** The line written at `writtenIndex`, with the user's choices applied, once it is resolved. */
+  /** The line written at `writtenIndex`, with the user's choices applied; `undefined` until the server has answered for it, or when it names no card. */
   readonly lineAt: (writtenIndex: number) => DecklistLine | undefined;
   readonly pickCandidate: (writtenIndex: number, oracleId: string) => void;
   readonly changeLineLanguage: (writtenIndex: number, lang: Lang) => void;

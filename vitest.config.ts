@@ -1,7 +1,6 @@
 import { readdirSync } from 'node:fs';
 import { configDefaults, defineConfig } from 'vitest/config';
 
-// One project per workspace package, like the `packages/*` glob.
 /** Packages whose tests mount React components: they need a DOM and the browser's entry of `core`. */
 const browserPackages: Record<string, object> = {
   web: {
@@ -10,6 +9,7 @@ const browserPackages: Record<string, object> = {
   },
 };
 
+// One project per workspace package, like the `packages/*` glob.
 const packages = readdirSync('packages', { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name);
