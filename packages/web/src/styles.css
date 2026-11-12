@@ -40,7 +40,7 @@
   :where(.page) textarea {
     width: 100%;
     font: inherit;
-    font-family: ui-monospace, monospace;
+    font-family: var(--font-mono);
     padding: 0.5rem;
     border: 1px solid var(--color-border);
     border-radius: 0.5rem;
