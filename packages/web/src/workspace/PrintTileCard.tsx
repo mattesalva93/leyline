@@ -11,8 +11,10 @@ export const TILE_GAP_PX = 22;
 
 const LINK_BRIDGE = 'absolute top-1/2 z-10 h-3 -translate-y-1/2 bg-link';
 
-/** The space between a tile's card and the line under it, past the deepest pile, in CSS px. */
-const BELOW_CARD_PX = COPY_PILE_MAX_DEPTH_PX + 4;
+/** The space between the deepest pile and the line under the card, in CSS px. */
+const GAP_UNDER_PILE_PX = 4;
+/** The space between a tile's card and the line under it, the same with a pile or without. */
+const BELOW_CARD_PX = COPY_PILE_MAX_DEPTH_PX + GAP_UNDER_PILE_PX;
 
 /**
  * The card's shadow, all of it outside the image (ADR 0007): the ring of the selected tile or of
