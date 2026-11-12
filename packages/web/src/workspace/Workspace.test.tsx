@@ -69,8 +69,19 @@ const BRAINSTORM: CatalogEntry = {
   ],
 };
 
+/** A double-faced card: its print has a front and a back face, each with its own image. */
+const DELVER: CatalogEntry = (() => {
+  const front = printOf('Delver of Secrets', 'delver-isd', 'isd');
+  const back = printOf('Insectile Aberration', 'delver-isd-back', 'isd').faces;
+  return {
+    card: aCard({ oracleId: 'delver', name: 'Delver of Secrets // Insectile Aberration' }),
+    prints: [{ ...front, faces: [...front.faces, ...back] }],
+  };
+})();
+
 const CATALOG = [
   catalogEntry('sol-ring', 'Sol Ring', 'c21', 'lea'),
+  DELVER,
   BRAINSTORM,
   catalogEntry('lightning-bolt', 'Lightning Bolt'),
   catalogEntry('lightning-helix', 'Lightning Helix'),
@@ -349,6 +360,30 @@ describe('the quantity on a tile', () => {
       ['Immagine di Sol Ring', '3×', '1/2'],
       ['Immagine di Sol Ring', '1×', '2/2'],
     ]);
+  });
+});
+
+describe('a double-faced card', () => {
+  it('shows its front on the tile and turns to its back with the flip button', async () => {
+    const user = await mountPageAndWrite('1 Delver of Secrets{Enter}');
+    const tile = within(await screen.findByRole('listitem'));
+    expect(tile.getByRole('img', { name: 'Immagine di Delver of Secrets' })).toBeTruthy();
+
+    await user.click(tile.getByRole('button', { name: 'Gira Delver of Secrets' }));
+
+    expect(tile.getByRole('img', { name: 'Immagine di Insectile Aberration' })).toBeTruthy();
+
+    await user.click(tile.getByRole('button', { name: 'Gira Delver of Secrets' }));
+
+    expect(tile.getByRole('img', { name: 'Immagine di Delver of Secrets' })).toBeTruthy();
+  });
+
+  it('is the only kind of tile with a flip button', async () => {
+    await mountPageAndWrite('1 Delver of Secrets{Enter}4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    expect(tileAt(0).queryByRole('button', { name: /^Gira / })).toBeTruthy();
+    expect(tileAt(1).queryByRole('button', { name: /^Gira / })).toBeNull();
   });
 });
 

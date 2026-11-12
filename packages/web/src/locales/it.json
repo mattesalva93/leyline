@@ -89,6 +89,7 @@
     "decrease": "Una copia in meno di {{name}} ({{print}})",
     "increase": "Una copia in più di {{name}} ({{print}})",
     "siblingMark": "{{index}}/{{count}}",
+    "flip": "Gira {{name}}",
     "imageless": {
       "notFound": "Carta non trovata",
       "ambiguous": "Quale carta intendevi?",

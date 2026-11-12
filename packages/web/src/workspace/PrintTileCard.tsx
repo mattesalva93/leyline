@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { setAndNumberOf } from '../print-label.ts';
 import { NORMAL_IMAGE } from '../scryfall-image-sizes.ts';
@@ -44,7 +45,8 @@ const QUANTITY_BUTTON =
 
 /**
  * One `PrintTile` in the card grid: the quantity, with a minus and a plus, on a tab above the
- * card, beside the mark of its print's warning if it has one, the card on its pile, and under it
+ * card, beside a flip button if its print is double-faced and the mark of its print's warning if it
+ * has one, the card on its pile, and under it
  * its set and, among siblings, which of them it is. Siblings are linked by a bridge across the gap
  * to the next one, and by a joint on the row's edge when the next one wraps.
  */
@@ -59,7 +61,9 @@ export function PrintTileCard({
   const { line, tile, siblingIndex, siblingCount } = gridTile;
   const hasSiblings = siblingCount > 1;
   const isLastSibling = siblingIndex === siblingCount - 1;
-  const frontFace = tile.print.faces[0];
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [frontFace, backFace] = tile.print.faces;
+  const shownFace = (isFlipped && backFace) || frontFace;
   const warningLabel = tile.warning && t(`tile.printWarning.${tile.warning}`);
   const tabColour = hasSiblings ? 'bg-link' : 'bg-foreground';
   const hasPile = copyPileEdgeCount(tile.quantity) > 0;
@@ -88,6 +92,17 @@ export function PrintTileCard({
             {t('panel.plus')}
           </button>
         </div>
+        {backFace && frontFace && (
+          <button
+            type="button"
+            className="ml-1 grid size-6 place-items-center rounded-t-md bg-foreground text-panel hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-accent"
+            aria-label={t('tile.flip', { name: frontFace.name })}
+            aria-pressed={isFlipped}
+            onClick={() => setIsFlipped(!isFlipped)}
+          >
+            <Icon name="flip" className="size-3.5" />
+          </button>
+        )}
         {warningLabel && (
           // On the tab row above the card, so it never covers the artist or copyright line.
           <span
@@ -110,12 +125,12 @@ export function PrintTileCard({
           style={{ ...CARD_SHAPE, boxShadow: cardShadow(hasSiblings, isSelected, hasPile) }}
           onClick={onSelect}
         >
-          {frontFace && (
+          {shownFace && (
             <img
               className="block w-full"
               style={CARD_SHAPE}
-              src={frontFace.imageUris.normal}
-              alt={t('line.imageAlt', { name: frontFace.name })}
+              src={shownFace.imageUris.normal}
+              alt={t('line.imageAlt', { name: shownFace.name })}
               width={NORMAL_IMAGE.width}
               height={NORMAL_IMAGE.height}
               loading="lazy"
