@@ -52,7 +52,7 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
         )}
         {step === 'cards' && (
           <div className="p-3">
-            {/* No zoom slider on a phone, as in the design: the tiles keep their default width. */}
+            {/* No tile width slider on a phone, as in the design: the tiles keep their default width. */}
             <CardsView state={state} tileWidthPx={TILE_WIDTH_PX.default} />
           </div>
         )}

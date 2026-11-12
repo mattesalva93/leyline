@@ -610,7 +610,7 @@ describe('the zoomed card', () => {
   });
 });
 
-describe('the zoom of the tiles', () => {
+describe('the tile width slider', () => {
   /** The narrowest the card grid lets a tile get, as its columns say. */
   function tileMinWidth() {
     const grid = screen.getByRole('list', { name: 'Griglia delle carte' });

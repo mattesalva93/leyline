@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-/** The narrowest a tile gets in the card grid, in CSS px, as the zoom slider sets it. */
+/** The narrowest a tile gets in the card grid, in CSS px, as the tile width slider sets it. */
 export const TILE_WIDTH_PX = { min: 80, max: 280, step: 10, default: 150 } as const;
 
 const STORAGE_KEY = 'mtg-suite.tileWidth';
@@ -27,7 +27,7 @@ function saveTileWidth(width: number): void {
   }
 }
 
-/** The tile width the user picked with the zoom slider, remembered on the device. */
+/** The tile width the user picked with the tile width slider, remembered on the device. */
 export function useTileWidth(): readonly [number, (width: number) => void] {
   const [width, setWidth] = useState(loadTileWidth);
   const pick = (next: number) => {

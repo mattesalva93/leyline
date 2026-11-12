@@ -17,7 +17,7 @@
   "workspace": {
     "decklistPanel": "Lista",
     "cardGrid": "Griglia delle carte",
-    "tileZoom": "Zoom",
+    "tileWidth": "Zoom",
     "toolRail": "Viste",
     "views": {
       "cards": "Carte",

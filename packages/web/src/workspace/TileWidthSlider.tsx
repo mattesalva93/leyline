@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { TILE_WIDTH_PX } from './tile-width.ts';
 
-/** The zoom slider of the card grid: it makes the tiles bigger or smaller. */
+/** The slider that sets the tile width of the card grid: it makes the tiles bigger or smaller. */
 export function TileWidthSlider({
   width,
   onChange,
@@ -14,7 +14,7 @@ export function TileWidthSlider({
   const { t } = useTranslation();
   return (
     <label className={`flex items-center gap-1.5 text-xs text-muted-foreground ${className}`}>
-      <span>{t('workspace.tileZoom')}</span>
+      <span>{t('workspace.tileWidth')}</span>
       <input
         type="range"
         min={TILE_WIDTH_PX.min}
