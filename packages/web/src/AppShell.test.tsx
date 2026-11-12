@@ -47,7 +47,7 @@ function linkNames(container: HTMLElement): string[] {
 describe('the app shell', () => {
   it('links only to the areas that exist: today the generator', async () => {
     mountApp('/proxy');
-    await screen.findByRole('heading', { name: 'Generatore di fogli proxy' });
+    await screen.findByRole('textbox', { name: 'Decklist' });
 
     expect(linkNames(screen.getByRole('navigation', { name: 'Aree' }))).toEqual(['Generatore']);
   });
@@ -88,7 +88,7 @@ describe('the app shell', () => {
 
   it('credits Scryfall on the generator screen, with no footer below it', async () => {
     mountApp('/proxy');
-    await screen.findByRole('heading', { name: 'Generatore di fogli proxy' });
+    await screen.findByRole('textbox', { name: 'Decklist' });
 
     expect(screen.getByRole('link', { name: 'Scryfall' }).getAttribute('href')).toBe(
       'https://scryfall.com',
@@ -209,7 +209,7 @@ describe('the app shell', () => {
   it('takes the main address to the generator, at /proxy', async () => {
     const router = mountApp('/');
 
-    expect(await screen.findByRole('heading', { name: 'Generatore di fogli proxy' })).toBeTruthy();
+    expect(await screen.findByRole('textbox', { name: 'Decklist' })).toBeTruthy();
     expect(router.state.location.pathname).toBe('/proxy');
     expect(screen.getByRole('link', { name: 'Generatore', current: 'page' })).toBeTruthy();
   });

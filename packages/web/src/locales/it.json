@@ -1,6 +1,5 @@
 {
   "app": {
-    "title": "Generatore di fogli proxy",
     "intro": "Incolla o scrivi una decklist, una carta per riga, in inglese o in italiano (es. 4 Sol Ring, anello del sole, 1 Sol Ring (C21) 263). Ogni riga viene riconosciuta quando vai a capo.",
     "defaultLang": "Lingua delle carte"
   },
@@ -14,6 +13,22 @@
   },
   "areas": {
     "generator": "Generatore"
+  },
+  "workspace": {
+    "decklistPanel": "Lista",
+    "cardGrid": "Griglia delle carte",
+    "toolRail": "Viste",
+    "views": {
+      "cards": "Carte",
+      "sheet": "Foglio"
+    },
+    "inspector": {
+      "line": "Riga selezionata",
+      "summary": "Riepilogo",
+      "sheetOptions": "Opzioni del foglio"
+    },
+    "selectTileHint": "Seleziona una tessera per sceglierne la lingua, le copie e le stampe.",
+    "nothingToPrint": "Nessuna carta da stampare."
   },
   "info": {
     "title": "Informazioni",
@@ -34,19 +49,25 @@
   },
   "line": {
     "quantity": "{{count}}×",
-    "notFound": "Carta non trovata: correggi la riga, non verrà stampata",
+    "notFound": "Correggi la riga nella lista: non verrà stampata.",
     "ambiguous": "Quale carta intendevi?",
     "noEnglishPrint": "Nessuna stampa inglese con un'immagine reale: non verrà stampata.",
     "noPrintInLanguageOrEnglish": "Nessuna stampa con un'immagine reale, né in {{lang}} né in inglese: non verrà stampata.",
     "imageAlt": "Immagine di {{name}}",
     "pending": "Da riconoscere: vai a capo o esci dal campo",
-    "open": "Modifica {{name}}",
     "lowResolution": "L'immagine di questa stampa è a bassa risoluzione.",
     "lowResolutionWithoutEnglish": "L'immagine di questa stampa è a bassa risoluzione e non esiste una versione inglese da usare al suo posto.",
     "useEnglish": "Usa la versione inglese",
-    "languageFallback": "Nessuna stampa in {{lang}} con un'immagine: viene usata quella inglese.",
-    "copiesOfPrint": "{{count}}× {{print}}",
-    "copiesOfDefaultPrint": "{{count}}× {{print}} (predefinita)"
+    "languageFallback": "Nessuna stampa in {{lang}} con un'immagine: viene usata quella inglese."
+  },
+  "tile": {
+    "open": "Modifica {{name}}",
+    "siblingMark": "{{index}}/{{count}}",
+    "imageless": {
+      "notFound": "Carta non trovata",
+      "ambiguous": "Quale carta intendevi?",
+      "noPrint": "Nessuna stampa con immagine"
+    }
   },
   "panel": {
     "lang": "Lingua di questa carta",

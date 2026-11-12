@@ -5,7 +5,7 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* `static`: the generator's stylesheet reads tokens through `var()`, which Tailwind does not see. */
+/* `static`: inline styles, such as a tile's ring and shadow, read tokens through `var()`, which Tailwind does not see. */
 @theme static {
   --font-sans: 'Space Grotesk Variable', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
@@ -60,6 +60,14 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
   }
+}
+
+/* A Scryfall image shown whole: only the card's own rounded corners are clipped (ADR 0007). */
+@utility card-shape {
+  display: block;
+  width: 100%;
+  aspect-ratio: 488 / 680;
+  border-radius: 4.75% / 3.5%;
 }
 
 @utility dot-grid {

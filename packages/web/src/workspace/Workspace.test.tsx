@@ -1,18 +1,43 @@
 import type { CatalogEntry } from '@mtg-suite/core';
 import { aCard, aPrint } from '@mtg-suite/core/test-fixtures';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import * as api from './api.ts';
-import { inMemoryServer } from './in-memory-server.ts';
-import { mountApp } from './mount-app.tsx';
+import * as api from '../api.ts';
+import { inMemoryServer } from '../in-memory-server.ts';
+import { mountApp } from '../mount-app.tsx';
 
-vi.mock('./api.ts');
+vi.mock('../api.ts');
 
-function catalogEntry(oracleId: string, name: string): CatalogEntry {
+/** A print of the card `name` from `set`, with its own Scryfall images. */
+function printOf(name: string, id: string, set: string, releasedAt = '2020-01-01') {
+  const image = (size: string) => `https://cards.scryfall.io/${size}/front/${id}.jpg`;
+  return aPrint({
+    id,
+    set,
+    releasedAt,
+    printedName: name,
+    faces: [
+      {
+        name,
+        imageUris: {
+          small: image('small'),
+          normal: image('normal'),
+          large: image('large'),
+          png: `https://cards.scryfall.io/png/front/${id}.png`,
+        },
+      },
+    ],
+  });
+}
+
+function catalogEntry(oracleId: string, name: string, ...sets: string[]): CatalogEntry {
   return {
     card: aCard({ oracleId, name }),
-    prints: [aPrint({ id: `${oracleId}-print`, printedName: name })],
+    // The first set is the newest: the default print.
+    prints: (sets.length > 0 ? sets : ['tst']).map((set, index) =>
+      printOf(name, `${oracleId}-${set}`, set, `${2020 - index}-01-01`),
+    ),
   };
 }
 
@@ -81,5 +106,31 @@ describe('the generator page', () => {
     await screen.findByRole('button', { name: 'Modifica Lightning Bolt' });
 
     expect(pdfButton.disabled).toBe(false);
+  });
+});
+
+/** The tiles of the card grid, in the order the grid shows them. */
+function gridTiles() {
+  return within(screen.getByRole('list', { name: 'Griglia delle carte' })).getAllByRole('listitem');
+}
+
+/** What a tile shows: its image, its quantity and, among siblings, which of them it is. */
+function tileSummary(tile: HTMLElement) {
+  return [
+    within(tile).queryByRole('img')?.getAttribute('alt'),
+    within(tile).queryByText(/×$/)?.textContent,
+    within(tile).queryByText(/^\d+\/\d+$/)?.textContent,
+  ];
+}
+
+describe('the workspace', () => {
+  it('shows the decklist as tiles in the order of the text, each with its image and quantity', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Lightning Bolt' });
+
+    expect(gridTiles().map(tileSummary)).toEqual([
+      ['Immagine di Sol Ring', '4×', undefined],
+      ['Immagine di Lightning Bolt', '1×', undefined],
+    ]);
   });
 });

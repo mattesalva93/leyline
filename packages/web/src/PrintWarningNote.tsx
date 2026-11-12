@@ -1,5 +1,8 @@
 import type { ResolvedLine } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
+import { SECONDARY_BUTTON } from './ui/board-styles.ts';
+
+const NOTE = 'flex flex-col items-start gap-2 text-sm text-warning';
 
 interface PrintWarningNoteProps {
   readonly line: ResolvedLine;
@@ -17,18 +20,18 @@ export function PrintWarningNote({ line, onSwitchLineToEnglish }: PrintWarningNo
       line.lang === 'en'
         ? t('line.noEnglishPrint')
         : t('line.noPrintInLanguageOrEnglish', { lang: lineLanguageName });
-    return <p className="line__note">{message}</p>;
+    return <p className={NOTE}>{message}</p>;
   }
   switch (line.printWarning) {
     case 'languageFallback':
-      return <p className="line__note">{t('line.languageFallback', { lang: lineLanguageName })}</p>;
+      return <p className={NOTE}>{t('line.languageFallback', { lang: lineLanguageName })}</p>;
     case 'lowResolutionWithoutEnglish':
-      return <p className="line__note">{t('line.lowResolutionWithoutEnglish')}</p>;
+      return <p className={NOTE}>{t('line.lowResolutionWithoutEnglish')}</p>;
     case 'lowResolution':
       return (
-        <div className="line__note">
+        <div className={NOTE}>
           <p>{t('line.lowResolution')}</p>
-          <button type="button" className="button--secondary" onClick={onSwitchLineToEnglish}>
+          <button type="button" className={SECONDARY_BUTTON} onClick={onSwitchLineToEnglish}>
             {t('line.useEnglish')}
           </button>
         </div>

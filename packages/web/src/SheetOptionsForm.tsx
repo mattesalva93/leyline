@@ -8,6 +8,9 @@ import {
 } from '@mtg-suite/core';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FIELD } from './ui/board-styles.ts';
+
+const OPTION_FIELD = 'flex items-center justify-between gap-4';
 
 interface SheetOptionsFormProps {
   readonly options: SheetOptions;
@@ -23,11 +26,12 @@ interface SheetOptionsFormProps {
 export function SheetOptionsForm({ options, onChange, warnAboutPngWeight }: SheetOptionsFormProps) {
   const { t } = useTranslation();
   return (
-    <fieldset className="sheet-options">
-      <legend>{t('sheetOptions.title')}</legend>
-      <div className="sheet-options__field">
+    <fieldset className="flex flex-col gap-3">
+      <legend className="sr-only">{t('sheetOptions.title')}</legend>
+      <div className={OPTION_FIELD}>
         <label htmlFor="sheet-page-format">{t('sheetOptions.pageFormat')}</label>
         <select
+          className={FIELD}
           id="sheet-page-format"
           value={options.pageFormat}
           onChange={(event) =>
@@ -41,9 +45,10 @@ export function SheetOptionsForm({ options, onChange, warnAboutPngWeight }: Shee
           ))}
         </select>
       </div>
-      <div className="sheet-options__field">
+      <div className={OPTION_FIELD}>
         <label htmlFor="sheet-image-quality">{t('sheetOptions.imageQuality')}</label>
         <select
+          className={FIELD}
           id="sheet-image-quality"
           value={options.imageQuality}
           onChange={(event) =>
@@ -58,7 +63,7 @@ export function SheetOptionsForm({ options, onChange, warnAboutPngWeight }: Shee
         </select>
       </div>
       {warnAboutPngWeight && options.imageQuality === 'png' && (
-        <p className="sheet-options__png-weight-warning" role="status">
+        <p className="text-sm text-warning" role="status">
           {t('sheetOptions.pngWeightWarning')}
         </p>
       )}
@@ -76,9 +81,10 @@ export function SheetOptionsForm({ options, onChange, warnAboutPngWeight }: Shee
         limits={sheetOptionLimits.spacingMm}
         onChange={(spacingMm) => onChange({ ...options, spacingMm })}
       />
-      <label className="sheet-options__crop-marks">
+      <label className="flex min-h-9 items-center gap-2">
         <input
           type="checkbox"
+          className="accent-foreground"
           checked={options.cropMarks}
           onChange={(event) => onChange({ ...options, cropMarks: event.target.checked })}
         />
@@ -103,9 +109,10 @@ interface MillimetreInputProps {
 function MillimetreInput({ id, label, valueMm, limits, onChange }: MillimetreInputProps) {
   const [typedText, setTypedText] = useState<string | null>(null);
   return (
-    <div className="sheet-options__field">
+    <div className={OPTION_FIELD}>
       <label htmlFor={id}>{label}</label>
       <input
+        className={`${FIELD} w-20`}
         id={id}
         type="number"
         inputMode="decimal"

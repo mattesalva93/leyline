@@ -1,135 +1,81 @@
 import { previewPrint, type AllocationChoice, type Lang, type ResolvedLine } from '@mtg-suite/core';
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LanguagePicker } from './LanguagePicker.tsx';
 import { contentWidthOf, printPageSize } from './print-picker-geometry.ts';
 import { PrintPicker } from './PrintPicker.tsx';
 import { PrintWarningNote } from './PrintWarningNote.tsx';
 import { NORMAL_IMAGE } from './scryfall-image-sizes.ts';
+import { SYMBOL_BUTTON } from './ui/board-styles.ts';
 import { usePrintPages } from './use-print-pages.ts';
 
 interface LinePanelProps {
-  /** The line being edited; `null` keeps the panel closed. */
-  readonly line: ResolvedLine | null;
+  readonly line: ResolvedLine;
   readonly onLanguageChange: (lang: Lang) => void;
   readonly onQuantityChange: (quantity: number) => void;
   /** Called with the allocations the user set in the print picker. */
   readonly onAllocationChoice: (allocations: AllocationChoice) => void;
-  readonly onClose: () => void;
 }
 
-/** The panel that slides up from the bottom when a card is tapped: the settings of that line. */
+/** The settings of one line: its language, its quantity and the prints its copies use. */
 export function LinePanel({
   line,
   onLanguageChange,
   onQuantityChange,
   onAllocationChoice,
-  onClose,
 }: LinePanelProps) {
   const { t } = useTranslation();
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const [isPrintPickerOpen, setIsPrintPickerOpen] = useState(false);
-  const isOpen = line !== null;
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (isOpen && !dialog?.open) dialog?.showModal();
-    if (!isOpen && dialog?.open) dialog.close();
-  }, [isOpen]);
-
-  // Called after the effect above, so its first request measures the panel already open.
-  const printPages = usePrintPages(line?.card.oracleId ?? null, line?.lang ?? 'en', () => {
-    const dialog = dialogRef.current;
-    const gridWidth = dialog?.open ? contentWidthOf(dialog) : window.innerWidth;
+  const panelRef = useRef<HTMLDivElement>(null);
+  const printPages = usePrintPages(line.card.oracleId, line.lang, () => {
+    const panel = panelRef.current;
+    const gridWidth = panel ? contentWidthOf(panel) : window.innerWidth;
     return printPageSize(gridWidth, window.innerHeight);
   });
-
-  function closePanel() {
-    setIsPrintPickerOpen(false);
-    onClose();
-  }
-
-  const shownPrint = line && previewPrint(line);
-  const frontFace = shownPrint?.faces[0];
-  const printCount = printPages.total;
+  const frontFace = previewPrint(line)?.faces[0];
   return (
-    <dialog
-      ref={dialogRef}
-      className="panel"
-      aria-labelledby="panel-title"
-      onClose={closePanel}
-      // A click on the dimmed backdrop lands on the dialog itself, not on its content.
-      onClick={(event) => event.target === event.currentTarget && closePanel()}
-    >
-      {line && isPrintPickerOpen && (
-        <PrintPicker
-          line={line}
-          printPages={printPages}
-          onAllocationChoice={onAllocationChoice}
-          onPrintEveryCopy={(allocations) => {
-            onAllocationChoice(allocations);
-            setIsPrintPickerOpen(false);
-          }}
-          onBack={() => setIsPrintPickerOpen(false)}
-        />
-      )}
-      {line && !isPrintPickerOpen && (
-        <div className="panel__content">
-          <div className="panel__header">
-            {frontFace && (
-              <img
-                className="panel__image"
-                src={frontFace.imageUris.normal}
-                alt={t('line.imageAlt', { name: frontFace.name })}
-                width={NORMAL_IMAGE.width}
-                height={NORMAL_IMAGE.height}
-              />
-            )}
-            <h2 id="panel-title">{line.card.name}</h2>
-          </div>
-          <LanguagePicker
-            label={t('panel.lang')}
-            selectedLang={line.lang}
-            onChange={onLanguageChange}
+    <div ref={panelRef} className="flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        {frontFace && (
+          <img
+            className="w-20 shrink-0 card-shape"
+            src={frontFace.imageUris.normal}
+            alt={t('line.imageAlt', { name: frontFace.name })}
+            width={NORMAL_IMAGE.width}
+            height={NORMAL_IMAGE.height}
           />
-          <PrintWarningNote line={line} onSwitchLineToEnglish={() => onLanguageChange('en')} />
-          <button
-            type="button"
-            className="button--secondary panel__prints"
-            disabled={printCount === null || printCount <= 1}
-            onClick={() => setIsPrintPickerOpen(true)}
-          >
-            {t('panel.prints')}
-            {printCount !== null && (
-              <span className="badge" aria-label={t('panel.printCount', { count: printCount })}>
-                {printCount}
-              </span>
-            )}
-          </button>
-          <fieldset className="quantity">
-            <legend>{t('panel.quantity')}</legend>
-            <button
-              type="button"
-              aria-label={t('panel.decrease')}
-              disabled={line.quantity <= 1}
-              onClick={() => onQuantityChange(line.quantity - 1)}
-            >
-              {t('panel.minus')}
-            </button>
-            <output aria-live="polite">{line.quantity}</output>
-            <button
-              type="button"
-              aria-label={t('panel.increase')}
-              onClick={() => onQuantityChange(line.quantity + 1)}
-            >
-              {t('panel.plus')}
-            </button>
-          </fieldset>
-          <button type="button" className="panel__close" onClick={closePanel}>
-            {t('panel.close')}
-          </button>
-        </div>
-      )}
-    </dialog>
+        )}
+        <h3 className="text-lg leading-tight font-bold">{line.card.name}</h3>
+      </div>
+      <LanguagePicker
+        label={t('panel.lang')}
+        selectedLang={line.lang}
+        onChange={onLanguageChange}
+      />
+      <PrintWarningNote line={line} onSwitchLineToEnglish={() => onLanguageChange('en')} />
+      <fieldset className="flex items-center gap-2">
+        <legend className="float-left mr-3 font-semibold">{t('panel.quantity')}</legend>
+        <button
+          type="button"
+          className={SYMBOL_BUTTON}
+          aria-label={t('panel.decrease')}
+          disabled={line.quantity <= 1}
+          onClick={() => onQuantityChange(line.quantity - 1)}
+        >
+          {t('panel.minus')}
+        </button>
+        <output aria-live="polite" className="min-w-[2ch] text-center font-mono font-bold">
+          {line.quantity}
+        </output>
+        <button
+          type="button"
+          className={SYMBOL_BUTTON}
+          aria-label={t('panel.increase')}
+          onClick={() => onQuantityChange(line.quantity + 1)}
+        >
+          {t('panel.plus')}
+        </button>
+      </fieldset>
+      <PrintPicker line={line} printPages={printPages} onAllocationChoice={onAllocationChoice} />
+    </div>
   );
 }
