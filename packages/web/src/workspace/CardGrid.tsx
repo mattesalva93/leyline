@@ -5,11 +5,10 @@ import { isSelected, type GridTile, type TileSelection } from './grid-tiles.ts';
 import { ImagelessTile } from './ImagelessTile.tsx';
 import { PrintTileCard, TILE_GAP_PX } from './PrintTileCard.tsx';
 
-/** Narrowest a tile gets, in CSS px; the grid stretches tiles to fill its rows. */
-const TILE_MIN_WIDTH_PX = 150;
-
 interface CardGridProps {
   readonly gridTiles: readonly GridTile[];
+  /** The narrowest a tile gets, in CSS px: the grid stretches tiles to fill its rows. */
+  readonly tileWidthPx: number;
   readonly selection: TileSelection | null;
   readonly isResolving: boolean;
   readonly onSelect: (selection: TileSelection | null) => void;
@@ -36,6 +35,7 @@ function useColumnCount(grid: React.RefObject<HTMLElement | null>): number {
 /** The decklist as tiles, in the order of the text, each line's sibling tiles side by side. */
 export function CardGrid({
   gridTiles,
+  tileWidthPx,
   selection,
   isResolving,
   onSelect,
@@ -56,7 +56,7 @@ export function CardGrid({
       className="grid content-start gap-y-3 p-1 pr-6 pb-4 pl-6"
       style={{
         columnGap: TILE_GAP_PX,
-        gridTemplateColumns: `repeat(auto-fill, minmax(${TILE_MIN_WIDTH_PX}px, 1fr))`,
+        gridTemplateColumns: `repeat(auto-fill, minmax(${tileWidthPx}px, 1fr))`,
       }}
     >
       {gridTiles.map((gridTile, index) => {

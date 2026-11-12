@@ -1,6 +1,6 @@
 import type { CatalogEntry } from '@mtg-suite/core';
 import { aCard, aPrint, jpegOfSize } from '@mtg-suite/core/test-fixtures';
-import { act, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
@@ -349,6 +349,35 @@ describe('the quantity on a tile', () => {
       ['Immagine di Sol Ring', '3×', '1/2'],
       ['Immagine di Sol Ring', '1×', '2/2'],
     ]);
+  });
+});
+
+describe('the zoom of the tiles', () => {
+  /** The narrowest the card grid lets a tile get, as its columns say. */
+  function tileMinWidth() {
+    const grid = screen.getByRole('list', { name: 'Griglia delle carte' });
+    return /minmax\((\d+)px/.exec(grid.style.gridTemplateColumns)?.[1];
+  }
+
+  it('makes the tiles bigger or smaller with its slider', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    fireEvent.change(screen.getByRole('slider', { name: 'Zoom' }), { target: { value: '220' } });
+
+    expect(tileMinWidth()).toBe('220');
+  });
+
+  it('comes back as the user left it after a reload', async () => {
+    mountApp('/proxy');
+    fireEvent.change(screen.getByRole('slider', { name: 'Zoom' }), { target: { value: '100' } });
+    cleanup();
+
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    expect(screen.getByRole<HTMLInputElement>('slider', { name: 'Zoom' }).value).toBe('100');
+    expect(tileMinWidth()).toBe('100');
   });
 });
 

@@ -13,6 +13,7 @@ import { lineToFixOf, LineToFixPanel } from './LineToFixPanel.tsx';
 import { panelLineOf, SelectedLinePanel } from './SelectedLinePanel.tsx';
 import { SheetSettings } from './SheetSettings.tsx';
 import { SheetView } from './SheetView.tsx';
+import { TILE_WIDTH_PX } from './tile-width.ts';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 
 const STEPS: readonly WorkspaceStep[] = ['list', 'cards', 'sheet', 'pdf'];
@@ -51,7 +52,8 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
         )}
         {step === 'cards' && (
           <div className="p-3">
-            <CardsView state={state} />
+            {/* No zoom slider on a phone, as in the design: the tiles keep their default width. */}
+            <CardsView state={state} tileWidthPx={TILE_WIDTH_PX.default} />
           </div>
         )}
         {step === 'sheet' && (
