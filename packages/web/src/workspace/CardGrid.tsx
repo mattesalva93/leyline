@@ -1,3 +1,4 @@
+import type { Print } from '@mtg-suite/core';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isSelected, type GridTile, type TileSelection } from './grid-tiles.ts';
@@ -13,6 +14,7 @@ interface CardGridProps {
   readonly isResolving: boolean;
   readonly onSelect: (selection: TileSelection | null) => void;
   readonly onPickCandidate: (writtenIndex: number, oracleId: string) => void;
+  readonly onTileQuantityChange: (writtenIndex: number, print: Print, quantity: number) => void;
 }
 
 /** How many columns `grid` lays its tiles in, updated as its width changes. */
@@ -38,6 +40,7 @@ export function CardGrid({
   isResolving,
   onSelect,
   onPickCandidate,
+  onTileQuantityChange,
 }: CardGridProps) {
   const { t } = useTranslation();
   const gridRef = useRef<HTMLUListElement>(null);
@@ -67,6 +70,9 @@ export function CardGrid({
             isSelected={selected}
             continuesRowAbove={gridTile.siblingIndex > 0 && index % columns === 0}
             onSelect={() => toggleSelection(gridTile.tile.print.id)}
+            onQuantityChange={(quantity) =>
+              onTileQuantityChange(gridTile.writtenIndex, gridTile.tile.print, quantity)
+            }
           />
         ) : (
           <ImagelessTile

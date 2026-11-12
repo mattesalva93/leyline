@@ -85,6 +85,8 @@
   },
   "tile": {
     "open": "Modifica {{name}}",
+    "decrease": "Una copia in meno di {{name}} ({{print}})",
+    "increase": "Una copia in più di {{name}} ({{print}})",
     "siblingMark": "{{index}}/{{count}}",
     "imageless": {
       "notFound": "Carta non trovata",

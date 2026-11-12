@@ -1,6 +1,7 @@
 import {
   applyAllocationChoice,
   applyCandidateChoice,
+  changeTileQuantity as changeTileQuantityInText,
   copyCount,
   defaultSheetOptions,
   fitAllocations,
@@ -11,6 +12,7 @@ import {
   type AllocationChoice,
   type DecklistLine,
   type Lang,
+  type Print,
   type SheetLayout,
   type SheetOptions,
 } from '@mtg-suite/core';
@@ -75,6 +77,8 @@ export interface Generator {
   readonly cardLines: readonly WrittenCardLine[];
   readonly pickCandidate: (writtenIndex: number, oracleId: string) => void;
   readonly changeLineQuantity: (writtenIndex: number, quantity: number) => void;
+  /** Gives the tile of `print` on the line at `writtenIndex` `quantity` copies; at zero it goes. */
+  readonly changeTileQuantity: (writtenIndex: number, print: Print, quantity: number) => void;
   readonly chooseAllocations: (writtenIndex: number, allocations: AllocationChoice) => void;
 
   readonly sheetOptions: SheetOptions;
@@ -179,31 +183,66 @@ export function useGenerator(): Generator {
   }
 
   /**
+   * Moves the resolution and choices of `writtenLine` over to its text rewritten for `quantity`
+   * copies, so the rewritten line needs no new request, and returns that text. The quantity goes
+   * on the resolution as the server sent it, never on the displayed line: the choices are applied
+   * again on top, so nothing they derived goes stale. `fitAllocations` makes the line's
+   * allocations fit the new quantity.
+   */
+  function carryLineOver(
+    writtenLine: string,
+    resolution: DecklistLine,
+    quantity: number,
+    fitAllocations: (allocations: AllocationChoice | undefined) => AllocationChoice | undefined,
+  ): string {
+    const rewritten = setLineQuantity(resolution, quantity);
+    const key = resolutionKey(defaultLang, rewritten.text);
+    requestedKeys.current.add(key);
+    setResolutions((previous) => new Map(previous).set(key, rewritten));
+    const choices = choicesByLine.get(writtenLine);
+    const allocations = fitAllocations(choices?.allocations);
+    if (choices || allocations) {
+      updateChoices(rewritten.text, { ...choices, ...(allocations && { allocations }) });
+    }
+    return rewritten.text;
+  }
+
+  /**
    * Writes the new quantity into the decklist text itself, so the text always says what gets
-   * printed. The rewritten line keeps its resolution and the user's choices: no new request.
-   * The quantity goes on the resolution as the server sent it, never on the displayed line:
-   * the choices are applied again on top, so nothing they derived goes stale. The allocations
-   * are fitted to the new quantity for good, so raising it again leaves the copies taken off on
-   * the default print.
+   * printed. The allocations are fitted to the new quantity for good, so raising it again leaves
+   * the copies taken off on the default print.
    */
   function changeLineQuantity(writtenIndex: number, quantity: number) {
     const writtenLine = writtenLines[writtenIndex];
     if (writtenLine === undefined) return;
     const resolution = resolutions.get(resolutionKey(defaultLang, writtenLine));
     if (!resolution) return;
-    const rewritten = setLineQuantity(resolution, quantity);
-    const key = resolutionKey(defaultLang, rewritten.text);
-    requestedKeys.current.add(key);
-    setResolutions((previous) => new Map(previous).set(key, rewritten));
-    const choices = choicesByLine.get(writtenLine);
-    if (choices) {
-      const { allocations } = choices;
-      updateChoices(rewritten.text, {
-        ...choices,
-        ...(allocations && { allocations: fitAllocations(allocations, quantity) }),
-      });
+    const rewrittenLine = carryLineOver(
+      writtenLine,
+      resolution,
+      quantity,
+      (allocations) => allocations && fitAllocations(allocations, quantity),
+    );
+    setDecklistText(writtenLines.with(writtenIndex, rewrittenLine).join('\n'));
+  }
+
+  /** Rewrites the decklist text for the tile's new quantity, keeping its line's choices. */
+  function changeTileQuantity(writtenIndex: number, print: Print, quantity: number) {
+    const writtenLine = writtenLines[writtenIndex];
+    if (writtenLine === undefined) return;
+    const resolution = resolutions.get(resolutionKey(defaultLang, writtenLine));
+    const line = displayedLine(writtenLine);
+    if (!resolution || line?.status !== 'resolved') return;
+    const change = changeTileQuantityInText(decklistText, { writtenIndex, line, print }, quantity);
+    const changedLine = change.line;
+    if (changedLine) {
+      carryLineOver(writtenLine, resolution, changedLine.quantity, (allocations) =>
+        allocations || changedLine.allocations.length > 0
+          ? { oracleId: changedLine.card.oracleId, allocations: changedLine.allocations }
+          : undefined,
+      );
     }
-    setDecklistText(writtenLines.with(writtenIndex, rewritten.text).join('\n'));
+    setDecklistText(change.text);
   }
 
   /** Applies `change` to the choices of the line written at `writtenIndex`, if there is one. */
@@ -235,6 +274,7 @@ export function useGenerator(): Generator {
     cardLines,
     pickCandidate: (writtenIndex, oracleId) => updateChoicesAt(writtenIndex, { oracleId }),
     changeLineQuantity,
+    changeTileQuantity,
     chooseAllocations: (writtenIndex, allocations) =>
       updateChoicesAt(writtenIndex, { allocations }),
     sheetOptions,

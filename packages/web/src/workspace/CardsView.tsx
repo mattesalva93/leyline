@@ -18,6 +18,7 @@ export function CardsView({
       isResolving={generator.isResolving}
       onSelect={selectTile}
       onPickCandidate={generator.pickCandidate}
+      onTileQuantityChange={generator.changeTileQuantity}
     />
   );
 }

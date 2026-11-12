@@ -29,10 +29,16 @@ interface PrintTileCardProps {
   /** The tile starts a row while its previous sibling ends the row above. */
   readonly continuesRowAbove: boolean;
   readonly onSelect: () => void;
+  /** Gives the tile `quantity` copies of its print; at zero the tile goes. */
+  readonly onQuantityChange: (quantity: number) => void;
 }
 
+const QUANTITY_BUTTON =
+  'size-6 rounded-t-md font-mono text-sm font-bold text-panel hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent';
+
 /**
- * One `PrintTile` in the card grid: the quantity on a tab above the card, beside the mark of its
+ * One `PrintTile` in the card grid: the quantity, with a minus and a plus, on a tab above the
+ * card, beside the mark of its
  * print's warning if it has one, the card, and under it
  * its set and, among siblings, which of them it is. Siblings are linked by a bridge across the gap
  * to the next one, and by a joint on the row's edge when the next one wraps.
@@ -42,6 +48,7 @@ export function PrintTileCard({
   isSelected,
   continuesRowAbove,
   onSelect,
+  onQuantityChange,
 }: PrintTileCardProps) {
   const { t } = useTranslation();
   const { line, tile, siblingIndex, siblingCount } = gridTile;
@@ -49,14 +56,32 @@ export function PrintTileCard({
   const isLastSibling = siblingIndex === siblingCount - 1;
   const frontFace = tile.print.faces[0];
   const warningLabel = tile.warning && t(`tile.printWarning.${tile.warning}`);
+  const tabColour = hasSiblings ? 'bg-link' : 'bg-foreground';
+  const quantityLabel = { name: line.card.name, print: setAndNumberOf(tile.print, t) };
   return (
     <li className="relative min-w-0" aria-current={isSelected || undefined}>
       <div className="flex h-7 items-end pl-2">
-        <span
-          className={`rounded-t-md px-2 py-0.5 font-mono text-sm font-bold text-panel tabular-nums ${hasSiblings ? 'bg-link' : 'bg-foreground'}`}
-        >
-          {t('line.quantity', { count: tile.quantity })}
-        </span>
+        <div className={`flex items-center rounded-t-md ${tabColour}`}>
+          <button
+            type="button"
+            className={QUANTITY_BUTTON}
+            aria-label={t('tile.decrease', quantityLabel)}
+            onClick={() => onQuantityChange(tile.quantity - 1)}
+          >
+            {t('panel.minus')}
+          </button>
+          <span className="px-1 py-0.5 font-mono text-sm font-bold text-panel tabular-nums">
+            {t('line.quantity', { count: tile.quantity })}
+          </span>
+          <button
+            type="button"
+            className={QUANTITY_BUTTON}
+            aria-label={t('tile.increase', quantityLabel)}
+            onClick={() => onQuantityChange(tile.quantity + 1)}
+          >
+            {t('panel.plus')}
+          </button>
+        </div>
         {warningLabel && (
           // On the tab row above the card, so it never covers the artist or copyright line.
           <span
