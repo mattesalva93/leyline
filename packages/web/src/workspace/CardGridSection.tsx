@@ -70,27 +70,35 @@ export function CardGridSection({
           const selected = isSelected(gridTile, selection);
           const toggleSelection = (printId: string | null) =>
             onSelect(selected ? null : { writtenIndex: gridTile.writtenIndex, printId });
-          return gridTile.kind === 'print' ? (
-            <PrintTileCard
+          const tileContent =
+            gridTile.kind === 'print' ? (
+              <PrintTileCard
+                gridTile={gridTile}
+                isSelected={selected}
+                continuesRowAbove={gridTile.siblingIndex > 0 && index % columns === 0}
+                zoomOn={zoomOn}
+                onSelect={() => toggleSelection(gridTile.tile.print.id)}
+                onQuantityChange={(quantity) =>
+                  onTileQuantityChange(gridTile.writtenIndex, gridTile.tile.print, quantity)
+                }
+              />
+            ) : (
+              <ImagelessTile
+                gridTile={gridTile}
+                isResolving={isResolving}
+                isSelected={selected}
+                onSelect={() => toggleSelection(null)}
+                onPickCandidate={(oracleId) => onPickCandidate(gridTile.writtenIndex, oracleId)}
+              />
+            );
+          return (
+            <li
               key={gridTile.key}
-              gridTile={gridTile}
-              isSelected={selected}
-              continuesRowAbove={gridTile.siblingIndex > 0 && index % columns === 0}
-              zoomOn={zoomOn}
-              onSelect={() => toggleSelection(gridTile.tile.print.id)}
-              onQuantityChange={(quantity) =>
-                onTileQuantityChange(gridTile.writtenIndex, gridTile.tile.print, quantity)
-              }
-            />
-          ) : (
-            <ImagelessTile
-              key={gridTile.key}
-              gridTile={gridTile}
-              isResolving={isResolving}
-              isSelected={selected}
-              onSelect={() => toggleSelection(null)}
-              onPickCandidate={(oracleId) => onPickCandidate(gridTile.writtenIndex, oracleId)}
-            />
+              className="relative min-w-0"
+              aria-current={selected || undefined}
+            >
+              {tileContent}
+            </li>
           );
         })}
       </ul>

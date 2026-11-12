@@ -73,7 +73,7 @@ export function PrintTileCard({
   const hasPile = copyPileEdgeCount(tile.quantity) > 0;
   const quantityLabel = { name: line.card.name, print: setAndNumberOf(tile.print, t) };
   return (
-    <li className="relative min-w-0" aria-current={isSelected || undefined}>
+    <div className="relative">
       <div className="flex h-7 items-end pl-2">
         <div className={`flex items-center rounded-t-md ${tabColour}`}>
           <button
@@ -169,6 +169,6 @@ export function PrintTileCard({
           </span>
         )}
       </p>
-    </li>
+    </div>
   );
 }
