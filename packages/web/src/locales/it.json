@@ -4,6 +4,24 @@
     "intro": "Incolla o scrivi una decklist, una carta per riga, in inglese o in italiano (es. 4 Sol Ring, anello del sole, 1 Sol Ring (C21) 263). Ogni riga viene riconosciuta quando vai a capo.",
     "defaultLang": "Lingua delle carte"
   },
+  "shell": {
+    "appName": "mtg-suite",
+    "areas": "Aree",
+    "menu": "Menu",
+    "switchToDark": "Passa al tema scuro",
+    "switchToLight": "Passa al tema chiaro",
+    "scryfallCredit": "Dati e immagini da <scryfall>Scryfall</scryfall>"
+  },
+  "areas": {
+    "generator": "Generatore"
+  },
+  "info": {
+    "title": "Informazioni",
+    "disclaimer": "Progetto non ufficiale, non affiliato a Wizards of the Coast.",
+    "scryfall": "Dati e immagini delle carte da Scryfall.",
+    "report": "Segnala un problema",
+    "close": "Chiudi"
+  },
   "lang": {
     "it": "Italiano",
     "en": "Inglese"
@@ -82,11 +100,6 @@
     "printAtActualSize": "Stampa al 100% («dimensione reale»), senza «adatta alla pagina»: solo così le carte misurano {{width}}×{{height}} mm.",
     "fetchingImages": "Scaricamento delle immagini: {{fetched}} di {{count}}",
     "composingPages": "Composizione delle pagine…"
-  },
-  "footer": {
-    "disclaimer": "Progetto non ufficiale, non affiliato a Wizards of the Coast.",
-    "scryfall": "Dati e immagini delle carte da Scryfall.",
-    "report": "Segnala un problema"
   },
   "printPicker": {
     "title": "Stampe di {{name}}",

@@ -1,497 +1,464 @@
-/* Mobile-first: one column; wider screens only get more room. */
-:root {
-  --bg: #fafaf9;
-  --fg: #1c1917;
-  --muted: #57534e;
-  --accent: #1d4ed8;
-  --border: #d6d3d1;
-  --warning: #b45309;
-  --footer-height: 6.5rem;
-  color-scheme: light dark;
-  font-family: system-ui, sans-serif;
-  line-height: 1.5;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1c1917;
-    --fg: #f5f5f4;
-    --muted: #a8a29e;
-    --accent: #93c5fd;
-    --border: #44403c;
-    --warning: #fbbf24;
+/*
+ * The generator page until its workspace is built in Tailwind: mobile-first, one column.
+ * Colours come from the Tailwind theme (`theme.css`), so the theme switch reaches this page too.
+ * In Tailwind's `components` layer: above its reset, below its utilities, so the shell's
+ * utility classes win. Element rules are scoped to the page with `:where()`, which adds no
+ * specificity, so the class rules below still override them.
+ */
+@layer components {
+  .page {
+    padding: 1rem;
   }
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--fg);
-}
-
-a {
-  color: var(--accent);
-}
-
-.content {
-  max-width: 40rem;
-  margin: 0 auto;
-  padding: 1rem 1rem calc(var(--footer-height) + 1rem);
-}
-
-h1 {
-  font-size: 1.5rem;
-  margin: 0 0 0.5rem;
-}
-
-.decklist-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-textarea {
-  width: 100%;
-  font: inherit;
-  font-family: ui-monospace, monospace;
-  padding: 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  background: transparent;
-  color: inherit;
-}
-
-button {
-  font: inherit;
-  min-height: 2.75rem; /* touch target */
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 0.5rem;
-  background: var(--accent);
-  color: var(--bg);
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.lines {
-  list-style: none;
-  margin: 0 0 1rem;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.line {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-}
-
-.line--pending {
-  flex-direction: row;
-  flex-wrap: wrap;
-  border-style: dashed;
-}
-
-.line__open,
-.line__summary {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  width: 100%;
-  padding: 0;
-  text-align: start;
-}
-
-.line__open {
-  background: transparent;
-  color: inherit;
-}
-
-.line__lang {
-  color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.line__image {
-  width: 4.5rem;
-  height: auto;
-  aspect-ratio: 63 / 88;
-  border-radius: 0.25rem;
-  flex-shrink: 0;
-}
-
-.line__image--empty {
-  background: var(--border);
-}
-
-.line__body {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 0.5rem;
-}
-
-.line__quantity {
-  font-weight: 600;
-}
-
-.line__copies {
-  flex-basis: 100%;
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.875rem;
-}
-
-.line__note {
-  flex-basis: 100%;
-  margin: 0;
-  color: var(--warning);
-  font-size: 0.875rem;
-}
-
-.line__note p {
-  margin: 0 0 0.5rem;
-}
-
-.decklist-form__status {
-  min-height: 1.5em;
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.875rem;
-}
-
-.line__suggestions {
-  flex-basis: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.button--secondary {
-  background: transparent;
-  color: var(--accent);
-  border: 1px solid var(--accent);
-}
-
-.language-picker,
-.quantity {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1rem;
-  align-items: center;
-  margin: 0 0 1rem;
-  padding: 0;
-  border: none;
-}
-
-.language-picker legend,
-.quantity legend {
-  float: left; /* lets the legend sit on the row like a label */
-  font-weight: 600;
-  margin-inline-end: 0.5rem;
-}
-
-.language-picker__option {
-  display: flex;
-  gap: 0.375rem;
-  align-items: center;
-  min-height: 2.75rem; /* touch target */
-}
-
-.quantity output {
-  min-width: 2ch;
-  text-align: center;
-  font-weight: 600;
-}
-
-/* Line panel (bottom sheet): anchored to the bottom edge, full width on phones. */
-.panel {
-  inset: auto 0 0;
-  width: 100%;
-  max-width: 40rem;
-  max-height: 85dvh;
-  margin: 0 auto;
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 1rem 1rem 0 0;
-  background: var(--bg);
-  color: var(--fg);
-}
-
-.panel::backdrop {
-  background: rgb(0 0 0 / 0.5);
-}
-
-.panel__header {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.panel__header h2 {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.panel__image {
-  width: 7rem;
-  height: auto;
-  border-radius: 0.375rem;
-}
-
-.panel__close {
-  width: 100%;
-  margin-top: 0.5rem;
-}
-
-.unprinted {
-  color: var(--warning);
-}
-
-.footer {
-  position: fixed;
-  inset: auto 0 0;
-  min-height: var(--footer-height);
-  padding: 0.5rem 1rem;
-  border-top: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--muted);
-  font-size: 0.8125rem;
-  text-align: center;
-}
-
-.footer p {
-  margin: 0.125rem 0;
-}
-
-.panel__prints {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.badge {
-  min-width: 1.5rem;
-  padding: 0 0.375rem;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--bg);
-  font-size: 0.8125rem;
-  font-weight: 600;
-}
-
-/* Print picker: grid of the prints a line can use, inside the line panel. */
-.print-picker__header {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.print-picker__header h2 {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.print-picker__year h3 {
-  margin: 1rem 0 0.5rem;
-  font-size: 1rem;
-}
-
-.print-picker__grid {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--print-tile-min-width), 1fr));
-  gap: var(--print-tile-gap);
-}
-
-.print-tile {
-  display: flex;
-  flex-direction: column;
-  padding: 0.25rem;
-  border: 2px solid transparent;
-  font-size: 0.75rem;
-  text-align: center;
-}
-
-.print-tile__pick {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-}
-
-.print-tile__counter {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.25rem;
-  margin-top: 0.25rem;
-}
-
-.print-tile__counter button {
-  min-width: 2.25rem; /* two buttons and the count fit the narrowest tile */
-  padding: 0.5rem 0;
-}
-
-.print-tile__counter output {
-  min-width: 2ch;
-  font-weight: 600;
-}
-
-.print-tile__unallocated {
-  color: var(--muted);
-}
-
-.print-tile--used {
-  border-color: var(--accent);
-}
-
-.print-tile__image {
-  width: 100%;
-  height: auto;
-  border-radius: 0.375rem;
-}
-
-.print-tile__quality--lowres {
-  color: var(--warning);
-}
-
-.print-picker__status {
-  min-height: 1.5rem;
-  color: var(--muted);
-}
-
-/* Sheet layout settings, page preview and PDF download. */
-.sheet-options {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin: 0 0 1rem;
-  padding: 0;
-  border: none;
-}
-
-.sheet-options legend {
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.sheet-options__field {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-.sheet-options__field input {
-  width: 5rem;
-  min-height: 2.75rem; /* touch target */
-  font: inherit;
-  padding: 0 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  background: transparent;
-  color: inherit;
-}
-
-/* A value outside the limits never reaches the sheet: show that it is not in use. */
-.sheet-options__field input:invalid {
-  border-color: var(--warning);
-}
-
-.sheet-options__field select {
-  min-height: 2.75rem; /* touch target */
-  font: inherit;
-  padding: 0 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-}
-
-.sheet-options__png-weight-warning {
-  margin: 0;
-  color: var(--warning);
-}
-
-.sheet-options__crop-marks {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  min-height: 2.75rem; /* touch target */
-}
-
-.sheet-preview {
-  margin-bottom: 1rem;
-}
-
-.sheet-preview h2 {
-  margin: 0;
-  font-size: 1.125rem;
-}
-
-.sheet-preview__summary {
-  margin: 0 0 0.5rem;
-  color: var(--muted);
-  font-size: 0.875rem;
-}
-
-.sheet-preview__page {
-  display: block;
-  width: 100%;
-  max-width: 24rem;
-  height: auto;
-  margin: 0 auto;
-  border: 1px solid var(--border);
-  box-shadow: 0 0.125rem 0.5rem rgb(0 0 0 / 0.15);
-}
-
-.sheet-preview__pager {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 0.5rem;
-}
-
-.print-at-actual-size {
-  font-weight: 600;
-}
-
-.pdf-ready {
-  margin: 0.5rem 0 0;
-}
-
-.pdf-progress {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin-top: 0.5rem;
-  color: var(--muted);
-  font-size: 0.875rem;
-}
-
-.pdf-progress progress {
-  width: 100%;
+
+  .content {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 1rem;
+    border: 2px solid var(--color-border);
+    border-radius: 0.5rem;
+    background: var(--color-panel);
+    line-height: 1.5;
+  }
+
+  .content a {
+    color: var(--color-link);
+    text-decoration: underline;
+  }
+
+  :where(.page) h1 {
+    font-size: 1.5rem;
+    margin: 0 0 0.5rem;
+  }
+
+  .decklist-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  :where(.page) textarea {
+    width: 100%;
+    font: inherit;
+    font-family: var(--font-mono);
+    padding: 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background: transparent;
+    color: inherit;
+  }
+
+  :where(.page) button {
+    font: inherit;
+    min-height: 2.75rem; /* touch target */
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: var(--color-accent);
+    color: var(--color-accent-foreground);
+    cursor: pointer;
+  }
+
+  :where(.page) button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  .lines {
+    list-style: none;
+    margin: 0 0 1rem;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .line {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+  }
+
+  .line--pending {
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-style: dashed;
+  }
+
+  .line__open,
+  .line__summary {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    width: 100%;
+    padding: 0;
+    text-align: start;
+  }
+
+  .line__open {
+    background: transparent;
+    color: inherit;
+  }
+
+  .line__lang {
+    color: var(--color-muted-foreground);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .line__image {
+    width: 4.5rem;
+    height: auto;
+    aspect-ratio: 63 / 88;
+    border-radius: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .line__image--empty {
+    background: var(--color-raised);
+  }
+
+  .line__body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.5rem;
+  }
+
+  .line__quantity {
+    font-weight: 600;
+  }
+
+  .line__copies {
+    flex-basis: 100%;
+    margin: 0;
+    color: var(--color-muted-foreground);
+    font-size: 0.875rem;
+  }
+
+  .line__note {
+    flex-basis: 100%;
+    margin: 0;
+    color: var(--color-warning);
+    font-size: 0.875rem;
+  }
+
+  .line__note p {
+    margin: 0 0 0.5rem;
+  }
+
+  .decklist-form__status {
+    min-height: 1.5em;
+    margin: 0;
+    color: var(--color-muted-foreground);
+    font-size: 0.875rem;
+  }
+
+  .line__suggestions {
+    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .button--secondary {
+    background: transparent;
+    color: var(--color-foreground);
+    border: 2px solid var(--color-border);
+  }
+
+  .language-picker,
+  .quantity {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    align-items: center;
+    margin: 0 0 1rem;
+    padding: 0;
+    border: none;
+  }
+
+  .language-picker legend,
+  .quantity legend {
+    float: left; /* lets the legend sit on the row like a label */
+    font-weight: 600;
+    margin-inline-end: 0.5rem;
+  }
+
+  .language-picker__option {
+    display: flex;
+    gap: 0.375rem;
+    align-items: center;
+    min-height: 2.75rem; /* touch target */
+  }
+
+  .quantity output {
+    min-width: 2ch;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  /* Line panel (bottom sheet): anchored to the bottom edge, full width on phones. */
+  .panel {
+    inset: auto 0 0;
+    width: 100%;
+    max-width: 40rem;
+    max-height: 85dvh;
+    margin: 0 auto;
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 1rem 1rem 0 0;
+    background: var(--color-panel);
+    color: var(--color-foreground);
+  }
+
+  .panel::backdrop {
+    background: var(--color-overlay);
+  }
+
+  .panel__header {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .panel__header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  .panel__image {
+    width: 7rem;
+    height: auto;
+    border-radius: 0.375rem;
+  }
+
+  .panel__close {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .unprinted {
+    color: var(--color-warning);
+  }
+
+  .panel__prints {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .badge {
+    min-width: 1.5rem;
+    padding: 0 0.375rem;
+    border-radius: 999px;
+    background: var(--color-accent);
+    color: var(--color-accent-foreground);
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  /* Print picker: grid of the prints a line can use, inside the line panel. */
+  .print-picker__header {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .print-picker__header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  .print-picker__year h3 {
+    margin: 1rem 0 0.5rem;
+    font-size: 1rem;
+  }
+
+  .print-picker__grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--print-tile-min-width), 1fr));
+    gap: var(--print-tile-gap);
+  }
+
+  .print-tile {
+    display: flex;
+    flex-direction: column;
+    padding: 0.25rem;
+    border: 2px solid transparent;
+    font-size: 0.75rem;
+    text-align: center;
+  }
+
+  .print-tile__pick {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+  }
+
+  .print-tile__counter {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+  }
+
+  .print-tile__counter button {
+    min-width: 2.25rem; /* two buttons and the count fit the narrowest tile */
+    padding: 0.5rem 0;
+  }
+
+  .print-tile__counter output {
+    min-width: 2ch;
+    font-weight: 600;
+  }
+
+  .print-tile__unallocated {
+    color: var(--color-muted-foreground);
+  }
+
+  .print-tile--used {
+    border-color: var(--color-link);
+  }
+
+  .print-tile__image {
+    width: 100%;
+    height: auto;
+    border-radius: 0.375rem;
+  }
+
+  .print-tile__quality--lowres {
+    color: var(--color-warning);
+  }
+
+  .print-picker__status {
+    min-height: 1.5rem;
+    color: var(--color-muted-foreground);
+  }
+
+  /* Sheet layout settings, page preview and PDF download. */
+  .sheet-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    padding: 0;
+    border: none;
+  }
+
+  .sheet-options legend {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .sheet-options__field {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .sheet-options__field input {
+    width: 5rem;
+    min-height: 2.75rem; /* touch target */
+    font: inherit;
+    padding: 0 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background: transparent;
+    color: inherit;
+  }
+
+  /* A value outside the limits never reaches the sheet: show that it is not in use. */
+  .sheet-options__field input:invalid {
+    border-color: var(--color-warning);
+  }
+
+  .sheet-options__field select {
+    min-height: 2.75rem; /* touch target */
+    font: inherit;
+    padding: 0 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+  }
+
+  .sheet-options__png-weight-warning {
+    margin: 0;
+    color: var(--color-warning);
+  }
+
+  .sheet-options__crop-marks {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    min-height: 2.75rem; /* touch target */
+  }
+
+  .sheet-preview {
+    margin-bottom: 1rem;
+  }
+
+  .sheet-preview h2 {
+    margin: 0;
+    font-size: 1.125rem;
+  }
+
+  .sheet-preview__summary {
+    margin: 0 0 0.5rem;
+    color: var(--color-muted-foreground);
+    font-size: 0.875rem;
+  }
+
+  .sheet-preview__page {
+    display: block;
+    width: 100%;
+    max-width: 24rem;
+    height: auto;
+    margin: 0 auto;
+    border: 1px solid var(--color-border);
+    box-shadow: 0 0.125rem 0.5rem var(--color-shadow);
+  }
+
+  .sheet-preview__pager {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .print-at-actual-size {
+    font-weight: 600;
+  }
+
+  .pdf-ready {
+    margin: 0.5rem 0 0;
+  }
+
+  .pdf-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+    color: var(--color-muted-foreground);
+    font-size: 0.875rem;
+  }
+
+  .pdf-progress progress {
+    width: 100%;
+  }
 }
