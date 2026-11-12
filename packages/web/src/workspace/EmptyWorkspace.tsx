@@ -3,6 +3,7 @@ import { BoardPanel } from '../ui/BoardPanel.tsx';
 import { PRIMARY_BUTTON } from '../ui/board-styles.ts';
 import type { Generator } from '../use-generator.ts';
 import { DecklistEditor } from './DecklistEditor.tsx';
+import { EXAMPLE_DECKLIST } from './example-decklist.ts';
 
 /**
  * The workspace while no line of the decklist is recognised: what to do, the decklist text and a
@@ -26,8 +27,13 @@ export function EmptyWorkspace({ generator }: { readonly generator: Generator })
         <DecklistEditor generator={generator} className="h-44" />
       </BoardPanel>
       <div>
-        <button type="button" className={PRIMARY_BUTTON}>
+        <button
+          type="button"
+          className={PRIMARY_BUTTON}
+          onClick={() => generator.loadDecklistText(EXAMPLE_DECKLIST)}
+        >
           {t('workspace.emptyState.tryExample')}
+          <span aria-hidden="true">{t('workspace.emptyState.tryExampleArrow')}</span>
         </button>
       </div>
     </div>

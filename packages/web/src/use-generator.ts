@@ -87,6 +87,8 @@ export interface Generator {
   readonly writeDecklistText: (nextText: string) => void;
   /** Resolves every written line not resolved yet, the last one included. */
   readonly resolveEveryLine: () => void;
+  /** Puts a whole decklist in place of the text, every line resolved as if written by hand. */
+  readonly loadDecklistText: (text: string) => void;
   readonly isResolving: boolean;
   readonly lastResolveFailed: boolean;
 
@@ -173,6 +175,11 @@ export function useGenerator(): Generator {
       void resolveInLanguage(nextWrittenLines.slice(0, -1), defaultLang);
     }
     setDecklistText(nextText);
+  }
+
+  function loadDecklistText(text: string) {
+    setDecklistText(text);
+    void resolveInLanguage(writtenLinesOf(text), defaultLang);
   }
 
   // Switched only once every line is resolved in the new language, so no line (and nothing
@@ -355,6 +362,7 @@ export function useGenerator(): Generator {
     writtenLineCount: writtenLines.length,
     writeDecklistText,
     resolveEveryLine: () => void resolveInLanguage(writtenLines, defaultLang),
+    loadDecklistText,
     isResolving: requestsInFlight > 0,
     lastResolveFailed,
     defaultLang,

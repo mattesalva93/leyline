@@ -95,6 +95,11 @@ const CATALOG = [
   catalogEntry('lightning-bolt', 'Lightning Bolt'),
   catalogEntry('lightning-helix', 'Lightning Helix'),
   COUNTERSPELL,
+  // The rest of the example decklist.
+  catalogEntry('ponder', 'Ponder'),
+  catalogEntry('island', 'Island'),
+  catalogEntry('mountain', 'Mountain'),
+  catalogEntry('pyroblast', 'Pyroblast'),
 ];
 
 beforeEach(() => {
@@ -1366,6 +1371,29 @@ describe('the empty workspace', () => {
 
     expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
     expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
+  });
+
+  it('loads the example decklist, recognised to its last line as one written by hand', async () => {
+    const user = userEvent.setup();
+    mountApp('/proxy');
+
+    await user.click(screen.getByRole('button', { name: 'Prova con un esempio' }));
+
+    expect(await screen.findByRole('button', { name: 'Modifica Pyroblast' })).toBeTruthy();
+    expect(decklistValue().split('\n')).toContain('Sideboard');
+    expect(screen.queryByText('Da riconoscere: vai a capo o esci dal campo')).toBeNull();
+    expect(summary().queryByRole('button', { name: /da sistemare$/ })).toBeNull();
+  });
+
+  it('shows in the example a card with more than one print and a double-faced card', async () => {
+    const user = userEvent.setup();
+    mountApp('/proxy');
+
+    await user.click(screen.getByRole('button', { name: 'Prova con un esempio' }));
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+
+    expect(await screen.findByText('2 stampe disponibili')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Gira Delver of Secrets' })).toBeTruthy();
   });
 
   describe('on a phone', () => {
