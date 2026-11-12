@@ -1,7 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import { SECONDARY_BUTTON } from '../ui/board-styles.ts';
 import { Icon } from '../ui/Icon.tsx';
+import { CandidateButtons } from './CandidateButtons.tsx';
 import type { ImagelessGridTile } from './grid-tiles.ts';
+import { LineToFixHint } from './LineToFixHint.tsx';
 import { CARD_SHAPE } from '../card-shape.ts';
 
 interface ImagelessTileProps {
@@ -39,25 +41,9 @@ export function ImagelessTile({
           </p>
         )}
         <p className="font-mono break-words">{writtenLine.trim()}</p>
-        {reason === 'pending' && (
-          <p className="text-muted-foreground">
-            {isResolving ? t('decklist.resolving') : t('line.pending')}
-          </p>
-        )}
-        {reason === 'notFound' && <p className="text-muted-foreground">{t('line.notFound')}</p>}
+        <LineToFixHint reason={reason} isResolving={isResolving} />
         {line?.status === 'ambiguous' && (
-          <div className="flex min-h-0 flex-col gap-1 overflow-y-auto">
-            {line.candidates.map(({ card }) => (
-              <button
-                key={card.oracleId}
-                type="button"
-                className={`${SECONDARY_BUTTON} px-2 py-1 text-left text-xs`}
-                onClick={() => onPickCandidate(card.oracleId)}
-              >
-                {card.name}
-              </button>
-            ))}
-          </div>
+          <CandidateButtons candidates={line.candidates} onPick={onPickCandidate} />
         )}
         {reason === 'noPrint' && line?.status === 'resolved' && (
           <button

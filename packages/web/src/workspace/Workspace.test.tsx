@@ -326,6 +326,29 @@ describe('the decklist summary', () => {
     expect(screen.getByRole('button', { name: 'Modifica Sol Ring' })).toBeTruthy();
   });
 
+  it('shows the line to fix in the inspector, where an ambiguous one picks its card', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning{Enter}');
+    await user.click(await summary().findByRole('button', { name: '1 riga da sistemare' }));
+
+    const lineToFix = within(screen.getByRole('complementary', { name: 'Riga da sistemare' }));
+    expect(lineToFix.getByText('1 Lightning')).toBeTruthy();
+    await user.click(lineToFix.getByRole('button', { name: 'Lightning Bolt' }));
+
+    const inspector = within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
+    expect(inspector.getByRole('heading', { name: 'Lightning Bolt' })).toBeTruthy();
+  });
+
+  it('goes back to the summary from a line to fix', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}2 Nonexistent Card{Enter}');
+    await user.click(await summary().findByRole('button', { name: '1 riga da sistemare' }));
+    const lineToFix = within(screen.getByRole('complementary', { name: 'Riga da sistemare' }));
+    expect(lineToFix.getByText('Correggi la riga nella lista: non verrà stampata.')).toBeTruthy();
+
+    await user.click(lineToFix.getByRole('button', { name: 'Torna al riepilogo' }));
+
+    expect(summary().getByRole('button', { name: '1 riga da sistemare' })).toBeTruthy();
+  });
+
   it('shows no counter once every line is fixed', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning{Enter}');
     await screen.findByText('Quale carta intendevi?');
@@ -438,17 +461,19 @@ describe('the workspace on a phone', () => {
     });
   });
 
-  it('goes to the "Carte" step from the counter of lines to fix, the first one selected', async () => {
+  it('goes to the "Carte" step from the counter of lines to fix, the first one open in its panel', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}2 Nonexistent Card{Enter}');
     await screen.findByRole('button', { name: '1 riga da sistemare' });
 
     await user.click(screen.getByRole('button', { name: '1 riga da sistemare' }));
 
+    const panel = within(screen.getByRole('dialog', { name: 'Riga da sistemare' }));
+    expect(panel.getByText('2 Nonexistent Card')).toBeTruthy();
+    await user.click(panel.getByRole('button', { name: 'Fatto' }));
+
     expect(stepBar().getByRole('button', { name: 'Carte' }).getAttribute('aria-current')).toBe(
       'step',
     );
-    const [, notFound] = gridTiles();
-    expect(notFound?.getAttribute('aria-current')).toBe('true');
   });
 
   it('keeps the place of a banner under the top bar in the "Lista" step only', async () => {

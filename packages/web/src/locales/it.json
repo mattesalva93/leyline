@@ -25,7 +25,8 @@
     "inspector": {
       "line": "Riga selezionata",
       "summary": "Riepilogo",
-      "sheetOptions": "Opzioni del foglio"
+      "sheetOptions": "Opzioni del foglio",
+      "lineToFix": "Riga da sistemare"
     },
     "selectTileHint": "Seleziona una tessera per sceglierne la lingua, le copie e le stampe.",
     "nothingToPrint": "Nessuna carta da stampare.",
@@ -106,7 +107,8 @@
     "close": "Fatto",
     "prints": "Altre stampe",
     "printCount_one": "1 stampa disponibile",
-    "printCount_other": "{{count}} stampe disponibili"
+    "printCount_other": "{{count}} stampe disponibili",
+    "backToSummary": "Torna al riepilogo"
   },
   "sheetOptions": {
     "title": "Opzioni del foglio",
