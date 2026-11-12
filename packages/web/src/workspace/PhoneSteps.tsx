@@ -1,9 +1,11 @@
 import { useTranslation } from 'react-i18next';
+import { InTopBar } from '../shell/top-bar-slot.tsx';
 import { SheetOptionsForm } from '../SheetOptionsForm.tsx';
 import { BoardPanel } from '../ui/BoardPanel.tsx';
 import { LABEL } from '../ui/board-styles.ts';
 import { AdSlot } from './AdSlot.tsx';
 import { CardsView } from './CardsView.tsx';
+import { DeckCount } from './DeckCount.tsx';
 import { DecklistEditor } from './DecklistEditor.tsx';
 import { DecklistSummary } from './DecklistSummary.tsx';
 import { SheetView } from './SheetView.tsx';
@@ -20,6 +22,9 @@ export function PhoneSteps({ workspace }: { readonly workspace: WorkspaceState }
   const { generator, step } = workspace;
   return (
     <div className="flex h-full flex-col">
+      <InTopBar>
+        <DeckCount generator={generator} />
+      </InTopBar>
       <div className="min-h-0 flex-1 overflow-y-auto">
         {step === 'list' && (
           <>

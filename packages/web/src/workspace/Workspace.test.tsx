@@ -265,4 +265,18 @@ describe('the workspace on a phone', () => {
 
     expect(screen.getByLabelText<HTMLTextAreaElement>('Decklist').value).toBe('4 Sol Ring\n');
   });
+
+  it('counts the recognised cards and the pages in the top bar, in every step', async () => {
+    // Nine cards fill an A4 page; the line still to recognise counts for nothing yet.
+    const user = await mountPageAndWrite('9 Sol Ring{Enter}2 Nonexistent Card{Enter}1 Lightning');
+    const topBar = within(screen.getByRole('banner'));
+    expect(await topBar.findByText('11 carte · 1 pagina')).toBeTruthy();
+
+    await user.keyboard('{Enter}');
+    expect(await topBar.findByText('12 carte · 1 pagina')).toBeTruthy();
+    await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+    await user.click(screen.getByRole('button', { name: 'Lightning Bolt' }));
+
+    expect(topBar.getByText('12 carte · 2 pagine')).toBeTruthy();
+  });
 });

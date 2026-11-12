@@ -34,7 +34,12 @@
       "list": "Lista",
       "cards": "Carte",
       "sheet": "Foglio"
-    }
+    },
+    "deckCount": "{{cards}} · {{pages}}",
+    "cardCount_one": "{{count}} carta",
+    "cardCount_other": "{{count}} carte",
+    "pageCount_one": "{{count}} pagina",
+    "pageCount_other": "{{count}} pagine"
   },
   "boardPanel": {
     "fold": "Richiudi il pannello «{{title}}»",

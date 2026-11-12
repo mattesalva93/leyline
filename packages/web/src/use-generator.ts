@@ -88,6 +88,10 @@ export interface Generator {
   readonly sheetLayout: SheetLayout | null;
   /** How many resolved lines will not be printed. */
   readonly unprintedCount: number;
+  /** How many copies the resolved lines ask for, printable or not. */
+  readonly cardCount: number;
+  /** How many pages the sheet prints on. */
+  readonly pageCount: number;
 
   readonly pdf: SheetPdf;
 }
@@ -283,6 +287,8 @@ export function useGenerator(): Generator {
     changeSheetOptions: setSheetOptions,
     sheetLayout,
     unprintedCount: unprintedLines(sheet).length,
+    cardCount: resolvedLines.reduce((count, line) => count + line.quantity, 0),
+    pageCount: sheetLayout?.pages.length ?? 0,
     pdf,
   };
 }
