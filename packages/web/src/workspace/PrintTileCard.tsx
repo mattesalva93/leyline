@@ -11,6 +11,9 @@ import { COPY_PILE_MAX_DEPTH_PX, CopyPile, copyPileEdgeCount } from './CopyPile.
 /** The space between two tiles in a row, which the link between siblings spans, in CSS px. */
 export const TILE_GAP_PX = 22;
 
+/** The height of the tab above a tile's card, which an imageless tile leaves empty, in CSS px. */
+export const TILE_TAB_HEIGHT_PX = 28;
+
 const LINK_BRIDGE = 'absolute top-1/2 z-10 h-3 -translate-y-1/2 bg-link';
 
 /** The space between the deepest pile and the line under the card, in CSS px. */
@@ -74,7 +77,7 @@ export function PrintTileCard({
   const quantityLabel = { name: line.card.name, print: setAndNumberOf(tile.print, t) };
   return (
     <div className="relative">
-      <div className="flex h-7 items-end pl-2">
+      <div className="flex items-end pl-2" style={{ height: TILE_TAB_HEIGHT_PX }}>
         <div className={`flex items-center rounded-t-md ${tabColour}`}>
           <button
             type="button"

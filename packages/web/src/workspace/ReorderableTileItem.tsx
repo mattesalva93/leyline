@@ -1,6 +1,6 @@
 import type { LineSide } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
-import { TILE_GAP_PX } from './PrintTileCard.tsx';
+import { TILE_GAP_PX, TILE_TAB_HEIGHT_PX } from './PrintTileCard.tsx';
 import type { TileDragHandlers } from './use-line-drag.ts';
 
 /** How wide the bar showing where a dragged line lands is, in CSS px. */
@@ -43,8 +43,10 @@ export function ReorderableTileItem({
         <span
           role="separator"
           aria-label={t('workspace.dropMark')}
-          className="absolute top-7 bottom-0 z-20 rounded-full bg-accent"
+          className="absolute bottom-0 z-20 rounded-full bg-accent"
           style={{
+            // Beside the card, below its tab.
+            top: TILE_TAB_HEIGHT_PX,
             width: DROP_MARK_WIDTH_PX,
             [dropMarkSide === 'before' ? 'left' : 'right']: DROP_MARK_OFFSET_PX,
           }}
