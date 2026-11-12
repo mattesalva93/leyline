@@ -101,11 +101,19 @@ export function PrintPicker({
           </span>
         )}
       </h3>
-      <LanguagePicker
-        label={t('printPicker.lang')}
-        selectedLang={printsLang}
-        onChange={onPrintsLangChange}
-      />
+      <div className="flex flex-wrap items-center justify-between gap-x-4">
+        <LanguagePicker
+          label={t('printPicker.lang')}
+          selectedLang={printsLang}
+          onChange={onPrintsLangChange}
+        />
+        {/* Beside the switch, not on the default print: that one is in a single language. */}
+        {unallocated > 0 && (
+          <span className="text-xs text-muted-foreground">
+            {t('printPicker.unallocated', { count: unallocated })}
+          </span>
+        )}
+      </div>
       {byReleaseYear(prints).map(({ year, prints: printsOfYear }) => (
         <section key={year} aria-label={year}>
           <h4 className="mt-3 mb-1.5 font-mono text-xs font-bold">{year}</h4>
@@ -121,7 +129,6 @@ export function PrintPicker({
               const usedByLine = printIdsUsedByLine.has(print.id);
               const setAndNumber = setAndNumberOf(print, t);
               const allocated = copiesAllocatedTo(line, print);
-              const isDefaultPrint = print.id === line.defaultPrint?.id;
               return (
                 <li
                   key={print.id}
@@ -176,11 +183,6 @@ export function PrintPicker({
                       {t('panel.plus')}
                     </button>
                   </div>
-                  {isDefaultPrint && unallocated > 0 && (
-                    <span className="text-muted-foreground">
-                      {t('printPicker.unallocated', { count: unallocated })}
-                    </span>
-                  )}
                 </li>
               );
             })}

@@ -258,7 +258,7 @@ describe('the workspace', () => {
 });
 
 describe('copies of a line in another language', () => {
-  /** The inspector while the tile `name` is selected. */
+  /** The inspector while a tile is selected. */
   function lineInspector() {
     return within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
   }
@@ -287,6 +287,19 @@ describe('copies of a line in another language', () => {
     ]);
     expect(screen.queryByRole('img', { name: 'Stampa in inglese' })).toBeNull();
     expect(lineInspector().getByRole('radio', { name: 'Italiano', checked: true })).toBeTruthy();
+  });
+
+  it('counts the copies left unallocated beside the switch, whichever language it shows', async () => {
+    const user = await openBrainstorm();
+    const printsLanguage = within(
+      await lineInspector().findByRole('group', { name: 'Lingua delle stampe' }),
+    );
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
+
+    await user.click(printsLanguage.getByRole('radio', { name: 'Inglese' }));
+    await screen.findByRole('button', { name: 'Una copia in più con C21 #1' });
+
+    expect(lineInspector().getByText('+3 non assegnate')).toBeTruthy();
   });
 
   it('keeps the allocated copies on their print once the line changes language', async () => {
