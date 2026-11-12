@@ -30,6 +30,14 @@ export interface ImagelessGridTile extends GridTileBase {
 
 export type GridTile = PrintGridTile | ImagelessGridTile;
 
+/**
+ * The lines the user has to fix before they print, in the order of the decklist text: each one
+ * with an imageless tile.
+ */
+export function linesToFixOf(gridTiles: readonly GridTile[]): ImagelessGridTile[] {
+  return gridTiles.filter((gridTile) => gridTile.kind === 'imageless');
+}
+
 /** The tiles of the card grid, in the order of the decklist text: each line's siblings together. */
 export function gridTilesOf(cardLines: readonly WrittenCardLine[]): GridTile[] {
   return cardLines.flatMap(({ writtenIndex, writtenLine, line }): GridTile[] => {

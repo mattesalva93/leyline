@@ -1,6 +1,6 @@
 import type { Generator } from '../use-generator.ts';
 import type { TileSelection } from './CardGrid.tsx';
-import type { GridTile } from './grid-tiles.ts';
+import type { GridTile, ImagelessGridTile } from './grid-tiles.ts';
 import type { CentreView } from './ToolRail.tsx';
 
 /**
@@ -22,6 +22,9 @@ export interface WorkspaceState {
   readonly gridTiles: readonly GridTile[];
   readonly selection: TileSelection | null;
   readonly selectTile: (selection: TileSelection | null) => void;
+  readonly linesToFix: readonly ImagelessGridTile[];
+  /** Selects the first line to fix, in the card grid: a phone goes to the "cards" step. */
+  readonly selectFirstLineToFix: () => void;
   /** Whether to warn that a PNG sheet makes a PDF heavy enough to strain a phone. */
   readonly warnAboutPngWeight: boolean;
 }

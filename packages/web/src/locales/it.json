@@ -42,6 +42,12 @@
     "pageCount_one": "{{count}} pagina",
     "pageCount_other": "{{count}} pagine"
   },
+  "summary": {
+    "cards": "Carte",
+    "pages": "Pagine",
+    "linesToFix_one": "1 riga da sistemare",
+    "linesToFix_other": "{{count}} righe da sistemare"
+  },
   "boardPanel": {
     "fold": "Richiudi il pannello «{{title}}»",
     "unfold": "Riapri il pannello «{{title}}»"

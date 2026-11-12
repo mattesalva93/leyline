@@ -42,10 +42,7 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
               className="shrink-0"
               bodyClassName="p-3"
             >
-              <DecklistSummary
-                defaultLang={generator.defaultLang}
-                onDefaultLangChange={generator.changeDefaultLanguage}
-              />
+              <DecklistSummary state={state} />
             </BoardPanel>
           </div>
         )}

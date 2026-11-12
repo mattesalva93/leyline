@@ -30,12 +30,7 @@ export function Inspector({
       <div className="min-h-0 flex-1 overflow-y-auto p-3" {...PRINT_PICKER_SCROLL_ROOT_PROPS}>
         {content === 'sheetOptions' && <SheetSettings state={state} />}
         {panelLine && <SelectedLinePanel generator={generator} panelLine={panelLine} />}
-        {content === 'summary' && (
-          <DecklistSummary
-            defaultLang={generator.defaultLang}
-            onDefaultLangChange={generator.changeDefaultLanguage}
-          />
-        )}
+        {content === 'summary' && <DecklistSummary state={state} />}
       </div>
     </BoardPanel>
   );

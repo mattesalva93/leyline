@@ -223,6 +223,52 @@ describe('the workspace', () => {
   });
 });
 
+/** The inspector while no tile is selected. */
+function summary() {
+  return within(screen.getByRole('complementary', { name: 'Riepilogo' }));
+}
+
+/** The value the summary gives next to `term`. */
+function summaryValue(term: string) {
+  return summary().getByText(term, { selector: 'dt' }).nextElementSibling?.textContent;
+}
+
+describe('the decklist summary', () => {
+  it('counts the cards, the pages and the lines to fix while no tile is selected', async () => {
+    // Nine cards fill an A4 page; the last line, still to recognise, is a line to fix too.
+    await mountPageAndWrite('9 Sol Ring{Enter}2 Nonexistent Card{Enter}1 Lightning{Enter}1 Sol');
+    await screen.findByText('Carta non trovata');
+
+    expect(summaryValue('Carte')).toBe('12');
+    expect(summaryValue('Pagine')).toBe('1');
+    expect(summary().getByRole('button', { name: '3 righe da sistemare' })).toBeTruthy();
+  });
+
+  it('brings the first line to fix into view and selects it', async () => {
+    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView');
+    const user = await mountPageAndWrite(
+      '4 Sol Ring{Enter}2 Nonexistent Card{Enter}1 Lightning{Enter}',
+    );
+    await screen.findByText('Carta non trovata');
+
+    await user.click(summary().getByRole('button', { name: '2 righe da sistemare' }));
+
+    const [, notFound] = gridTiles();
+    expect(notFound?.getAttribute('aria-current')).toBe('true');
+    expect(scrollIntoView.mock.contexts).toContain(notFound);
+  });
+
+  it('shows no counter once every line is fixed', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning{Enter}');
+    await screen.findByText('Quale carta intendevi?');
+    expect(summary().getByRole('button', { name: '1 riga da sistemare' })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Lightning Bolt' }));
+
+    expect(summary().queryByRole('button', { name: /da sistemare$/ })).toBeNull();
+  });
+});
+
 /** The bar at the foot of a phone's screen, which picks the step. */
 function stepBar() {
   return within(screen.getByRole('navigation', { name: 'Passi' }));
@@ -322,6 +368,19 @@ describe('the workspace on a phone', () => {
     expect(share).toHaveBeenCalledWith({
       files: [expect.objectContaining({ name: 'proxy-mtg-suite.pdf', type: 'application/pdf' })],
     });
+  });
+
+  it('goes to the "Carte" step from the counter of lines to fix, the first one selected', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}2 Nonexistent Card{Enter}');
+    await screen.findByRole('button', { name: '1 riga da sistemare' });
+
+    await user.click(screen.getByRole('button', { name: '1 riga da sistemare' }));
+
+    expect(stepBar().getByRole('button', { name: 'Carte' }).getAttribute('aria-current')).toBe(
+      'step',
+    );
+    const [, notFound] = gridTiles();
+    expect(notFound?.getAttribute('aria-current')).toBe('true');
   });
 
   it('keeps the place of a banner under the top bar in the "Lista" step only', async () => {

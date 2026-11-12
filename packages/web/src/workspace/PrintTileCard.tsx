@@ -47,7 +47,7 @@ export function PrintTileCard({
   const isLastSibling = siblingIndex === siblingCount - 1;
   const frontFace = tile.print.faces[0];
   return (
-    <li className="relative min-w-0">
+    <li className="relative min-w-0" aria-current={isSelected || undefined}>
       <div className="flex h-7 items-end pl-2">
         <span
           className={`rounded-t-md px-2 py-0.5 font-mono text-sm font-bold text-panel tabular-nums ${hasSiblings ? 'bg-link' : 'bg-foreground'}`}

@@ -53,6 +53,10 @@ export function CardGrid({
   const { t } = useTranslation();
   const gridRef = useRef<HTMLUListElement>(null);
   const columns = useColumnCount(gridRef);
+  // A tile can be selected from outside the grid, such as the first line to fix: bring it in.
+  useEffect(() => {
+    gridRef.current?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'nearest' });
+  }, [selection?.writtenIndex, selection?.printId]);
   return (
     <ul
       ref={gridRef}
