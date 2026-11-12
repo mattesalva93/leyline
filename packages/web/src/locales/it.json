@@ -153,6 +153,7 @@
   },
   "printPicker": {
     "title": "Stampe di {{name}}",
+    "lang": "Lingua delle stampe",
     "back": "Indietro",
     "setAndNumber": "{{set}} #{{number}}",
     "quality": {

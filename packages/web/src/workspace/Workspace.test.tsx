@@ -55,8 +55,19 @@ const COUNTERSPELL: CatalogEntry = {
   ],
 };
 
+/** A card with sharp prints in both languages: two Italian ones and an English one. */
+const BRAINSTORM: CatalogEntry = {
+  card: aCard({ oracleId: 'brainstorm', name: 'Brainstorm' }),
+  prints: [
+    { ...printOf('Brainstorm', 'brainstorm-it-ice', 'ice', '2020-01-01'), lang: 'it' },
+    { ...printOf('Brainstorm', 'brainstorm-it-mmq', 'mmq', '2019-01-01'), lang: 'it' },
+    printOf('Brainstorm', 'brainstorm-c21', 'c21', '2021-01-01'),
+  ],
+};
+
 const CATALOG = [
   catalogEntry('sol-ring', 'Sol Ring', 'c21', 'lea'),
+  BRAINSTORM,
   catalogEntry('lightning-bolt', 'Lightning Bolt'),
   catalogEntry('lightning-helix', 'Lightning Helix'),
   COUNTERSPELL,
@@ -243,6 +254,39 @@ describe('the workspace', () => {
     expect(onlyTile && tileSummary(onlyTile)).toEqual(['Immagine di Sol Ring', '4×', undefined]);
     const tileButton = screen.getByRole('button', { name: 'Modifica Sol Ring' });
     expect(tileButton.getAttribute('aria-pressed')).toBe('true');
+  });
+});
+
+describe('copies of a line in another language', () => {
+  /** The inspector while the tile `name` is selected. */
+  function lineInspector() {
+    return within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
+  }
+
+  /** Opens the tile of the first line, an Italian one on a first visit. */
+  async function openBrainstorm() {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+    return user;
+  }
+
+  it('switches the print picker to English prints, and allocates copies to both languages', async () => {
+    const user = await openBrainstorm();
+    const printsLanguage = () =>
+      within(lineInspector().getByRole('group', { name: 'Lingua delle stampe' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
+
+    await user.click(printsLanguage().getByRole('radio', { name: 'Inglese' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con C21 #1' }));
+
+    expect(screen.queryByRole('button', { name: 'Una copia in più con MMQ #1' })).toBeNull();
+    expect(gridTiles().map(tileSummary)).toEqual([
+      ['Immagine di Brainstorm', '2×', '1/3'],
+      ['Immagine di Brainstorm', '1×', '2/3'],
+      ['Immagine di Brainstorm', '1×', '3/3'],
+    ]);
+    expect(screen.queryByRole('img', { name: 'Stampa in inglese' })).toBeNull();
+    expect(lineInspector().getByRole('radio', { name: 'Italiano', checked: true })).toBeTruthy();
   });
 });
 
