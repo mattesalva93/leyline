@@ -42,10 +42,14 @@ function catalogEntry(oracleId: string, name: string, ...sets: string[]): Catalo
   };
 }
 
-/** A card with Italian prints: the newest has a sharp image, the older one a low-resolution one. */
+/**
+ * A card with Italian prints, the newest with a sharp image and the older one with a
+ * low-resolution one, and an English print.
+ */
 const COUNTERSPELL: CatalogEntry = {
   card: aCard({ oracleId: 'counterspell', name: 'Counterspell' }),
   prints: [
+    printOf('Counterspell', 'counterspell-a25', 'a25', '2018-03-16'),
     { ...printOf('Counterspell', 'counterspell-it-mh2', 'mh2', '2021-06-18'), lang: 'it' },
     {
       ...printOf('Counterspell', 'counterspell-it-ema', 'ema', '2016-06-10'),
@@ -182,13 +186,12 @@ describe('the workspace', () => {
     ]);
   });
 
-  it("shows the selected tile's language, quantity and prints in the inspector, beside the grid", async () => {
+  it("shows the selected tile's quantity and prints in the inspector, beside the grid", async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
 
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
 
     const inspector = within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
-    expect(inspector.getByRole('group', { name: 'Lingua di questa carta' })).toBeTruthy();
     expect(inspector.getByRole('group', { name: 'Copie' })).toBeTruthy();
     expect(await inspector.findByRole('region', { name: 'Stampe di Sol Ring' })).toBeTruthy();
     expect(gridTiles()).toHaveLength(1);
@@ -286,7 +289,6 @@ describe('copies of a line in another language', () => {
       ['Immagine di Brainstorm', '1×', '3/3'],
     ]);
     expect(screen.queryByRole('img', { name: 'Stampa in inglese' })).toBeNull();
-    expect(lineInspector().getByRole('radio', { name: 'Italiano', checked: true })).toBeTruthy();
   });
 
   it('counts the copies left unallocated beside the switch, whichever language it shows', async () => {
@@ -302,21 +304,23 @@ describe('copies of a line in another language', () => {
     expect(lineInspector().getByText('+3 non assegnate')).toBeTruthy();
   });
 
-  it('keeps the allocated copies on their print once the line changes language', async () => {
-    const user = await openBrainstorm();
-    await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
-    const lineLanguage = within(
-      lineInspector().getByRole('group', { name: 'Lingua di questa carta' }),
-    );
+  it('sets no language of its own on a line: only the prints of its copies have one', async () => {
+    await openBrainstorm();
 
-    await user.click(lineLanguage.getByRole('radio', { name: 'Inglese' }));
+    expect(await lineInspector().findByRole('group', { name: 'Lingua delle stampe' })).toBeTruthy();
+    expect(lineInspector().queryByRole('group', { name: 'Lingua di questa carta' })).toBeNull();
+  });
 
-    expect(await screen.findByRole('button', { name: 'Una copia in più con C21 #1' })).toBeTruthy();
-    expect(lineInspector().getByText('+3 non assegnate')).toBeTruthy();
-    expect(gridTiles().map(tileSummary)).toEqual([
-      ['Immagine di Brainstorm', '3×', '1/2'],
-      ['Immagine di Brainstorm', '1×', '2/2'],
-    ]);
+  it('shows the English prints in the print picker as the way out of a low-resolution print', async () => {
+    const user = await mountPageAndWrite('4 Counterspell{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Counterspell' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con EMA #1' }));
+    await user.click(tileAt(1).getByRole('button', { name: 'Modifica Counterspell' }));
+
+    await user.click(lineInspector().getByRole('button', { name: 'Mostra le stampe inglesi' }));
+
+    expect(await screen.findByRole('button', { name: 'Una copia in più con A25 #1' })).toBeTruthy();
+    expect(gridTiles()).toHaveLength(2);
   });
 
   it('keeps the allocated copies on their print once the default language changes', async () => {
@@ -501,7 +505,7 @@ describe('the workspace on a phone', () => {
     await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
 
     const panel = within(screen.getByRole('dialog', { name: 'Riga selezionata' }));
-    expect(panel.getByRole('group', { name: 'Lingua di questa carta' })).toBeTruthy();
+    expect(panel.getByRole('group', { name: 'Copie' })).toBeTruthy();
     expect(await panel.findByRole('region', { name: 'Stampe di Sol Ring' })).toBeTruthy();
     await user.click(panel.getByRole('button', { name: 'Una copia in più' }));
     await user.click(panel.getByRole('button', { name: 'Fatto' }));

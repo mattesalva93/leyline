@@ -80,7 +80,7 @@
     "pending": "Da riconoscere: vai a capo o esci dal campo",
     "lowResolution": "L'immagine di questa stampa è a bassa risoluzione.",
     "lowResolutionWithoutEnglish": "L'immagine di questa stampa è a bassa risoluzione e non esiste una versione inglese da usare al suo posto.",
-    "useEnglish": "Usa la versione inglese",
+    "showEnglishPrints": "Mostra le stampe inglesi",
     "languageFallback": "Nessuna stampa in {{lang}} con un'immagine: viene usata quella inglese."
   },
   "tile": {
@@ -98,7 +98,6 @@
     }
   },
   "panel": {
-    "lang": "Lingua di questa carta",
     "quantity": "Copie",
     "decrease": "Una copia in meno",
     "increase": "Una copia in più",

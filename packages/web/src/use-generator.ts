@@ -5,7 +5,6 @@ import {
   defaultSheetOptions,
   fitAllocations,
   hasPrintableCopies,
-  LANGS,
   layoutSheet,
   setLineQuantity,
   unprintedLines,
@@ -37,8 +36,6 @@ function resolutionKey(lang: Lang, writtenLine: string): string {
  * survive resolving the line again.
  */
 interface LineChoices {
-  /** Set when the line uses another language than the default one. */
-  readonly lang?: Lang;
   /** The card picked among an ambiguous line's candidates. */
   readonly oracleId?: string;
   /** The copies allocated to prints in the print picker. */
@@ -77,7 +74,6 @@ export interface Generator {
 
   readonly cardLines: readonly WrittenCardLine[];
   readonly pickCandidate: (writtenIndex: number, oracleId: string) => void;
-  readonly changeLineLanguage: (writtenIndex: number, lang: Lang) => void;
   readonly changeLineQuantity: (writtenIndex: number, quantity: number) => void;
   readonly chooseAllocations: (writtenIndex: number, allocations: AllocationChoice) => void;
 
@@ -108,7 +104,6 @@ export function useGenerator(): Generator {
   const requestedKeys = useRef(new Set<string>());
 
   const writtenLines = decklistText.split(LINE_BREAK);
-  const languageOf = (writtenLine: string) => choicesByLine.get(writtenLine)?.lang ?? defaultLang;
 
   /** Resolves the lines not asked for yet in `lang`; `false` when the request failed. */
   async function resolveInLanguage(
@@ -144,21 +139,11 @@ export function useGenerator(): Generator {
     }
   }
 
-  /** Resolves each written line in its own language: one request per language. */
-  function resolveEachInItsLanguage(linesToResolve: readonly string[]) {
-    for (const lang of LANGS) {
-      void resolveInLanguage(
-        linesToResolve.filter((writtenLine) => languageOf(writtenLine) === lang),
-        lang,
-      );
-    }
-  }
-
   function writeDecklistText(nextText: string) {
     // A new line break (typed or pasted) completes every line before the last one.
     const nextWrittenLines = nextText.split(LINE_BREAK);
     if (nextWrittenLines.length > writtenLines.length) {
-      resolveEachInItsLanguage(nextWrittenLines.slice(0, -1));
+      void resolveInLanguage(nextWrittenLines.slice(0, -1), defaultLang);
     }
     setDecklistText(nextText);
   }
@@ -169,31 +154,21 @@ export function useGenerator(): Generator {
     );
   }
 
-  // Like a line's own language, switched only once the lines that follow it are resolved: a
-  // failed request keeps them as they were. Allocated copies stay on their prints either way.
+  // Switched only once every line is resolved in the new language, so no line (and nothing
+  // that shows it) goes back to unresolved; a failed request keeps the lines as they were.
+  // Allocated copies stay on their prints either way.
   async function changeDefaultLanguage(lang: Lang) {
-    const followingLines = writtenLines.filter(
-      (writtenLine) => !choicesByLine.get(writtenLine)?.lang,
-    );
-    if (!(await resolveInLanguage(followingLines, lang))) return;
+    if (!(await resolveInLanguage(writtenLines, lang))) return;
     setDefaultLang(lang);
     saveDefaultLang(lang);
   }
 
-  // Switched only once resolved, so the line (and whatever shows it) never goes back to unresolved.
-  async function changeLineLanguage(writtenIndex: number, lang: Lang) {
-    const writtenLine = writtenLines[writtenIndex];
-    if (writtenLine === undefined || lang === languageOf(writtenLine)) return;
-    if (!(await resolveInLanguage([writtenLine], lang))) return;
-    updateChoices(writtenLine, { lang });
-  }
-
   /**
-   * The line to show for `writtenLine`: its resolution in its language with the user's picks
+   * The line to show for `writtenLine`: its resolution in the default language with the user's picks
    * (candidate, allocations) applied; `null` when it names no card, `undefined` while not resolved yet.
    */
   function displayedLine(writtenLine: string): DecklistLine | null | undefined {
-    const resolution = resolutions.get(resolutionKey(languageOf(writtenLine), writtenLine));
+    const resolution = resolutions.get(resolutionKey(defaultLang, writtenLine));
     if (!resolution) return resolution;
     const { oracleId, allocations } = choicesByLine.get(writtenLine) ?? {};
     const withCandidate =
@@ -214,11 +189,10 @@ export function useGenerator(): Generator {
   function changeLineQuantity(writtenIndex: number, quantity: number) {
     const writtenLine = writtenLines[writtenIndex];
     if (writtenLine === undefined) return;
-    const lang = languageOf(writtenLine);
-    const resolution = resolutions.get(resolutionKey(lang, writtenLine));
+    const resolution = resolutions.get(resolutionKey(defaultLang, writtenLine));
     if (!resolution) return;
     const rewritten = setLineQuantity(resolution, quantity);
-    const key = resolutionKey(lang, rewritten.text);
+    const key = resolutionKey(defaultLang, rewritten.text);
     requestedKeys.current.add(key);
     setResolutions((previous) => new Map(previous).set(key, rewritten));
     const choices = choicesByLine.get(writtenLine);
@@ -253,14 +227,13 @@ export function useGenerator(): Generator {
     decklistText,
     writtenLineCount: writtenLines.length,
     writeDecklistText,
-    resolveEveryLine: () => resolveEachInItsLanguage(writtenLines),
+    resolveEveryLine: () => void resolveInLanguage(writtenLines, defaultLang),
     isResolving: requestsInFlight > 0,
     lastResolveFailed,
     defaultLang,
     changeDefaultLanguage: (lang) => void changeDefaultLanguage(lang),
     cardLines,
     pickCandidate: (writtenIndex, oracleId) => updateChoicesAt(writtenIndex, { oracleId }),
-    changeLineLanguage: (writtenIndex, lang) => void changeLineLanguage(writtenIndex, lang),
     changeLineQuantity,
     chooseAllocations: (writtenIndex, allocations) =>
       updateChoicesAt(writtenIndex, { allocations }),
