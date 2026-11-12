@@ -28,7 +28,23 @@
       "sheetOptions": "Opzioni del foglio"
     },
     "selectTileHint": "Seleziona una tessera per sceglierne la lingua, le copie e le stampe.",
-    "nothingToPrint": "Nessuna carta da stampare."
+    "nothingToPrint": "Nessuna carta da stampare.",
+    "steps": "Passi",
+    "stepNames": {
+      "list": "Lista",
+      "cards": "Carte",
+      "sheet": "Foglio",
+      "pdf": "PDF"
+    },
+    "decklistCount": "{{cards}} · {{pages}}",
+    "cardCount_one": "{{count}} carta",
+    "cardCount_other": "{{count}} carte",
+    "pageCount_one": "{{count}} pagina",
+    "pageCount_other": "{{count}} pagine"
+  },
+  "boardPanel": {
+    "fold": "Richiudi il pannello «{{title}}»",
+    "unfold": "Riapri il pannello «{{title}}»"
   },
   "info": {
     "title": "Informazioni",

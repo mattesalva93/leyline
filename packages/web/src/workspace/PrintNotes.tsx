@@ -1,0 +1,19 @@
+import { CARD_MM } from '@mtg-suite/core';
+import { useTranslation } from 'react-i18next';
+
+/** What to know before printing: print at actual size, and how many lines will be left out. */
+export function PrintNotes({ unprintedCount }: { readonly unprintedCount: number }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <p className="font-semibold" role="note">
+        {t('pdf.printAtActualSize', { width: CARD_MM.width, height: CARD_MM.height })}
+      </p>
+      {unprintedCount > 0 && (
+        <p className="text-warning" role="status">
+          {t('pdf.unprinted', { count: unprintedCount })}
+        </p>
+      )}
+    </>
+  );
+}

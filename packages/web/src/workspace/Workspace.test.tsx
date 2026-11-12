@@ -1,11 +1,12 @@
 import type { CatalogEntry } from '@mtg-suite/core';
-import { aCard, aPrint } from '@mtg-suite/core/test-fixtures';
-import { screen, within } from '@testing-library/react';
+import { aCard, aPrint, jpegOfSize } from '@mtg-suite/core/test-fixtures';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
 import { inMemoryServer } from '../in-memory-server.ts';
 import { mountApp } from '../mount-app.tsx';
+import { DESKTOP, PHONE, stubScreen } from '../test-screen.ts';
 
 vi.mock('../api.ts');
 
@@ -219,5 +220,134 @@ describe('the workspace', () => {
     expect(onlyTile && tileSummary(onlyTile)).toEqual(['Immagine di Sol Ring', '4×', undefined]);
     const tileButton = screen.getByRole('button', { name: 'Modifica Sol Ring' });
     expect(tileButton.getAttribute('aria-pressed')).toBe('true');
+  });
+});
+
+/** The bar at the foot of a phone's screen, which picks the step. */
+function stepBar() {
+  return within(screen.getByRole('navigation', { name: 'Passi' }));
+}
+
+describe('the workspace on a phone', () => {
+  beforeEach(() => {
+    stubScreen(PHONE);
+    return () => vi.unstubAllGlobals();
+  });
+
+  it('shows one step at a time on the whole screen, picked from the bottom bar', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    expect(screen.queryByRole('list', { name: 'Griglia delle carte' })).toBeNull();
+
+    await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+
+    expect(await screen.findByRole('button', { name: 'Modifica Sol Ring' })).toBeTruthy();
+    expect(screen.queryByLabelText('Decklist')).toBeNull();
+
+    await user.click(stepBar().getByRole('button', { name: 'Foglio' }));
+
+    expect(screen.getByRole('img', { name: 'Pagina 1 di 1 come verrà stampata' })).toBeTruthy();
+    expect(screen.getByLabelText('Formato della pagina')).toBeTruthy();
+    expect(screen.queryByRole('list', { name: 'Griglia delle carte' })).toBeNull();
+
+    await user.click(stepBar().getByRole('button', { name: 'Lista' }));
+
+    expect(screen.getByLabelText<HTMLTextAreaElement>('Decklist').value).toBe('4 Sol Ring\n');
+  });
+
+  it('counts the recognised cards and the pages in the top bar, in every step', async () => {
+    // Nine cards fill an A4 page; the line still to recognise counts for nothing yet.
+    const user = await mountPageAndWrite('9 Sol Ring{Enter}2 Nonexistent Card{Enter}1 Lightning');
+    const topBar = within(screen.getByRole('banner'));
+    expect(await topBar.findByText('11 carte · 1 pagina')).toBeTruthy();
+
+    await user.keyboard('{Enter}');
+    expect(await topBar.findByText('12 carte · 1 pagina')).toBeTruthy();
+    await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+    await user.click(screen.getByRole('button', { name: 'Lightning Bolt' }));
+
+    expect(topBar.getByText('12 carte · 2 pagine')).toBeTruthy();
+  });
+
+  it("raises the tapped tile's line panel from the bottom, with the inspector's settings", async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+
+    await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+
+    const panel = within(screen.getByRole('dialog', { name: 'Riga selezionata' }));
+    expect(panel.getByRole('group', { name: 'Lingua di questa carta' })).toBeTruthy();
+    expect(await panel.findByRole('region', { name: 'Stampe di Sol Ring' })).toBeTruthy();
+    await user.click(panel.getByRole('button', { name: 'Una copia in più' }));
+    await user.click(panel.getByRole('button', { name: 'Fatto' }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(gridTiles().map(tileSummary)).toEqual([['Immagine di Sol Ring', '5×', undefined]]);
+    const tileButton = screen.getByRole('button', { name: 'Modifica Sol Ring' });
+    expect(tileButton.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('folds the "Lista" and "Riepilogo" panels down to their title, and opens them again', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const decklist = screen.getByRole('textbox', { name: 'Decklist' });
+
+    await user.click(screen.getByRole('button', { name: 'Richiudi il pannello «Lista»' }));
+    await user.click(screen.getByRole('button', { name: 'Richiudi il pannello «Riepilogo»' }));
+
+    expect(screen.getByRole('region', { name: 'Lista' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Riepilogo' })).toBeTruthy();
+    expect(screen.queryByRole('textbox', { name: 'Decklist' })).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Lingua delle carte' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Riapri il pannello «Lista»' }));
+
+    expect(screen.getByRole('textbox', { name: 'Decklist' })).toBe(decklist);
+    expect(screen.queryByRole('group', { name: 'Lingua delle carte' })).toBeNull();
+  });
+
+  it('makes the PDF in a step of its own and hands it to the share menu of a phone that can', async () => {
+    const share = vi.fn(async () => {});
+    vi.stubGlobal('navigator', { ...navigator, canShare: () => true, share });
+    vi.mocked(api.fetchImages).mockImplementation(
+      async (urls) => new Map(urls.map((url) => [url, jpegOfSize(488, 680)])),
+    );
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+
+    await user.click(stepBar().getByRole('button', { name: 'PDF' }));
+
+    expect(screen.getByRole('note').textContent).toContain('Stampa al 100%');
+    expect(screen.queryByLabelText('Decklist')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Crea il PDF' }));
+    await user.click(await screen.findByRole('button', { name: 'Salva o condividi' }));
+
+    expect(share).toHaveBeenCalledWith({
+      files: [expect.objectContaining({ name: 'proxy-mtg-suite.pdf', type: 'application/pdf' })],
+    });
+  });
+
+  it('keeps the place of a banner under the top bar in the "Lista" step only', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    expect(document.querySelectorAll('[data-ad-slot]')).toHaveLength(1);
+
+    await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+
+    expect(document.querySelectorAll('[data-ad-slot]')).toHaveLength(0);
+  });
+});
+
+describe('the workspace across screen sizes', () => {
+  it('keeps the text and the selected tile when a wide screen narrows to a phone, open in its line panel', async () => {
+    const screenSize = stubScreen(DESKTOP);
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Lightning Bolt' }));
+
+    act(() => screenSize.resize(false));
+
+    const panel = within(screen.getByRole('dialog', { name: 'Riga selezionata' }));
+    expect(panel.getByRole('heading', { name: 'Lightning Bolt' })).toBeTruthy();
+    await user.click(panel.getByRole('button', { name: 'Fatto' }));
+    await user.click(stepBar().getByRole('button', { name: 'Lista' }));
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Decklist' }).value).toBe(
+      '4 Sol Ring\n1 Lightning Bolt\n',
+    );
   });
 });

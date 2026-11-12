@@ -5,6 +5,9 @@
 
 const PDF_TYPE = 'application/pdf';
 
+/** Matches when a touch screen is the main input. */
+export const COARSE_POINTER_QUERY = '(pointer: coarse)';
+
 export function toPdfFile(bytes: Uint8Array, fileName: string): File {
   return new File([bytes as BlobPart], fileName, { type: PDF_TYPE });
 }
@@ -21,7 +24,7 @@ export function deviceSharesPdf(): boolean {
 
 /** Whether a touch screen is the main input: a phone or a tablet, as far as the browser tells. */
 export function touchIsMainInput(): boolean {
-  return matchMedia('(pointer: coarse)').matches;
+  return matchMedia(COARSE_POINTER_QUERY).matches;
 }
 
 /** Whether the browser can put `file` in the native share menu; `canShare` needs no tap. */

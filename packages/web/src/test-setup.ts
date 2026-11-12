@@ -1,10 +1,9 @@
 import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import { afterEach, beforeEach } from 'vitest';
 import './i18n.ts';
+import { DESKTOP, stubScreen } from './test-screen.ts';
 
-// jsdom has no media queries: the tests run as a desktop browser, where a mouse is the main input.
-window.matchMedia = (query) =>
-  ({ matches: false, media: query, addEventListener() {}, removeEventListener() {} }) as never;
+beforeEach(() => stubScreen(DESKTOP));
 
 // jsdom does not open or close a <dialog>: these do the part the page relies on.
 HTMLDialogElement.prototype.showModal = function () {

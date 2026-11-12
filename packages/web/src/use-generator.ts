@@ -1,6 +1,7 @@
 import {
   applyAllocationChoice,
   applyCandidateChoice,
+  copyCount,
   defaultSheetOptions,
   fitAllocations,
   hasPrintableCopies,
@@ -88,6 +89,10 @@ export interface Generator {
   readonly sheetLayout: SheetLayout | null;
   /** How many resolved lines will not be printed. */
   readonly unprintedCount: number;
+  /** How many copies the lines the server recognised ask for, printable or not. */
+  readonly cardCount: number;
+  /** How many pages the sheet prints on. */
+  readonly pageCount: number;
 
   readonly pdf: SheetPdf;
 }
@@ -254,9 +259,9 @@ export function useGenerator(): Generator {
     if (line === null || (line === undefined && writtenLine.trim() === '')) return [];
     return [{ writtenIndex, writtenLine, line }];
   });
-  const resolvedLines = cardLines.flatMap((cardLine) => cardLine.line ?? []);
-  const unresolvedCount = cardLines.length - resolvedLines.length;
-  const sheet = { options: sheetOptions, lines: resolvedLines };
+  const recognisedLines = cardLines.flatMap((cardLine) => cardLine.line ?? []);
+  const unresolvedCount = cardLines.length - recognisedLines.length;
+  const sheet = { options: sheetOptions, lines: recognisedLines };
   const sheetLayout = hasPrintableCopies(sheet) ? layoutSheet(sheet) : null;
   const pdf = useSheetPdf(sheet, sheetLayout, unresolvedCount === 0);
 
@@ -283,6 +288,8 @@ export function useGenerator(): Generator {
     changeSheetOptions: setSheetOptions,
     sheetLayout,
     unprintedCount: unprintedLines(sheet).length,
+    cardCount: copyCount(recognisedLines),
+    pageCount: sheetLayout?.pages.length ?? 0,
     pdf,
   };
 }

@@ -17,6 +17,7 @@ export { printTiles, type PrintTile } from './print-tile.ts';
 export {
   applyCandidateChoice,
   chooseCandidate,
+  copyCount,
   previewPrint,
   resolveDecklist,
   setLineQuantity,

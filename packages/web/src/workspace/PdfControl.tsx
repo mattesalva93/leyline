@@ -11,6 +11,22 @@ export function PdfControl({
   readonly pdf: SheetPdf;
   readonly className?: string;
 }) {
+  return (
+    <div className={`flex flex-wrap items-center justify-end gap-3 text-sm ${className}`}>
+      <PdfNotes pdf={pdf} />
+      <PdfButton pdf={pdf} className={PRIMARY_BUTTON} />
+    </div>
+  );
+}
+
+/** The button that makes the PDF, or shares the one waiting to be shared. */
+export function PdfButton({
+  pdf,
+  className,
+}: {
+  readonly pdf: SheetPdf;
+  readonly className: string;
+}) {
   const { t } = useTranslation();
 
   function buttonLabel(): string {
@@ -20,7 +36,23 @@ export function PdfControl({
   }
 
   return (
-    <div className={`flex flex-wrap items-center justify-end gap-3 text-sm ${className}`}>
+    <button
+      type="button"
+      className={className}
+      disabled={!pdf.isAvailable}
+      onClick={pdf.makeOrShare}
+    >
+      <Icon name="download" />
+      {buttonLabel()}
+    </button>
+  );
+}
+
+/** How far the PDF has got: its progress, the PDF waiting to be shared, or its failure. */
+export function PdfNotes({ pdf }: { readonly pdf: SheetPdf }) {
+  const { t } = useTranslation();
+  return (
+    <>
       {pdf.isGenerating && <PdfProgress status={pdf.status} />}
       {pdf.fileToShare && (
         <p className="max-w-xs text-xs" role="status">
@@ -32,16 +64,7 @@ export function PdfControl({
           {t('pdf.error')}
         </p>
       )}
-      <button
-        type="button"
-        className={PRIMARY_BUTTON}
-        disabled={!pdf.isAvailable}
-        onClick={pdf.makeOrShare}
-      >
-        <Icon name="download" />
-        {buttonLabel()}
-      </button>
-    </div>
+    </>
   );
 }
 
