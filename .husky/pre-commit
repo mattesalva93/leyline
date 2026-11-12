@@ -3,5 +3,6 @@ if [ "$(git symbolic-ref --short -q HEAD)" = "main" ]; then
   exit 1
 fi
 node scripts/check-adrs.js
-pnpm exec lint-staged
+# --quiet: print only when a task fails.
+pnpm exec lint-staged --quiet
 pnpm typecheck
