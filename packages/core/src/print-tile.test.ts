@@ -48,9 +48,9 @@ describe('printTiles', () => {
     const line = withCopiesOn(withCopiesOn(await forestLine(10), forestM21, 3), forestZnr, 2);
 
     expect(tilesById(line)).toEqual([
+      ['forest-fdn', 5],
       ['forest-m21', 3],
       ['forest-znr', 2],
-      ['forest-fdn', 5],
     ]);
   });
 
@@ -58,8 +58,8 @@ describe('printTiles', () => {
     const line = withCopiesOn(withCopiesOn(await forestLine(4), forestM21, 1), forestFdn, 2);
 
     expect(tilesById(line)).toEqual([
-      ['forest-m21', 1],
       ['forest-fdn', 3],
+      ['forest-m21', 1],
     ]);
   });
 
@@ -69,13 +69,13 @@ describe('printTiles', () => {
     expect(tilesById(line)).toEqual([['forest-m21', 3]]);
   });
 
-  it('keeps the tiles in the order their copies print', async () => {
+  it("puts the default print tile first, then the other prints in the order of the line's allocations", async () => {
     const line = withCopiesOn(withCopiesOn(await forestLine(6), forestZnr, 1), forestM21, 1);
 
     expect(tilesById(line)).toEqual([
+      ['forest-fdn', 4],
       ['forest-znr', 1],
       ['forest-m21', 1],
-      ['forest-fdn', 4],
     ]);
   });
 

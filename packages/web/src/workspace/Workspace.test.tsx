@@ -141,8 +141,8 @@ describe('the workspace', () => {
     await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
 
     expect(gridTiles().map(tileSummary)).toEqual([
-      ['Immagine di Sol Ring', '1×', '1/2'],
-      ['Immagine di Sol Ring', '3×', '2/2'],
+      ['Immagine di Sol Ring', '3×', '1/2'],
+      ['Immagine di Sol Ring', '1×', '2/2'],
       ['Immagine di Lightning Bolt', '1×', undefined],
     ]);
   });
