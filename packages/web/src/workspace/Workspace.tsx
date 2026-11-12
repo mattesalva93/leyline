@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { touchIsMainInput } from '../pdf-delivery.ts';
 import { useIsWideScreen } from '../screen-size.ts';
 import { useGenerator } from '../use-generator.ts';
-import type { TileSelection } from './CardGrid.tsx';
 import { DesktopWorkspace } from './DesktopWorkspace.tsx';
-import { gridTilesOf, type GridTile } from './grid-tiles.ts';
+import { gridTilesOf, linesToFixOf, type GridTile, type TileSelection } from './grid-tiles.ts';
 import { PhoneWorkspace } from './PhoneWorkspace.tsx';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 
@@ -45,16 +44,23 @@ export function Workspace() {
   const [selectionInText, setSelectionInText] = useState<SelectionInText | null>(null);
   const [touchIsMain] = useState(touchIsMainInput);
   const gridTiles = gridTilesOf(generator.cardLines);
+  const linesToFix = linesToFixOf(gridTiles);
+  const selectTile = (selection: TileSelection | null) =>
+    setSelectionInText(selection && { ...selection, writtenLineCount: generator.writtenLineCount });
   const state: WorkspaceState = {
     generator,
     step,
     goToStep: setStep,
     gridTiles,
     selection: currentSelection(selectionInText, generator.writtenLineCount, gridTiles),
-    selectTile: (selection) =>
-      setSelectionInText(
-        selection && { ...selection, writtenLineCount: generator.writtenLineCount },
-      ),
+    selectTile,
+    linesToFix,
+    selectFirstLineToFix: () => {
+      const [first] = linesToFix;
+      if (!first) return;
+      setStep('cards');
+      selectTile({ writtenIndex: first.writtenIndex, printId: null });
+    },
     warnAboutPngWeight: touchIsMain,
   };
   return isWideScreen ? <DesktopWorkspace state={state} /> : <PhoneWorkspace state={state} />;

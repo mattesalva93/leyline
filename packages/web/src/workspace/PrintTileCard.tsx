@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { setAndNumberOf } from '../print-label.ts';
 import { NORMAL_IMAGE } from '../scryfall-image-sizes.ts';
+import { Icon } from '../ui/Icon.tsx';
 import type { PrintGridTile } from './grid-tiles.ts';
 import { CARD_SHAPE } from '../card-shape.ts';
 
@@ -31,7 +32,8 @@ interface PrintTileCardProps {
 }
 
 /**
- * One `PrintTile` in the card grid: the quantity on a tab above the card, the card, and under it
+ * One `PrintTile` in the card grid: the quantity on a tab above the card, beside the mark of its
+ * print's warning if it has one, the card, and under it
  * its set and, among siblings, which of them it is. Siblings are linked by a bridge across the gap
  * to the next one, and by a joint on the row's edge when the next one wraps.
  */
@@ -46,14 +48,26 @@ export function PrintTileCard({
   const hasSiblings = siblingCount > 1;
   const isLastSibling = siblingIndex === siblingCount - 1;
   const frontFace = tile.print.faces[0];
+  const warningLabel = tile.warning && t(`tile.printWarning.${tile.warning}`);
   return (
-    <li className="relative min-w-0">
+    <li className="relative min-w-0" aria-current={isSelected || undefined}>
       <div className="flex h-7 items-end pl-2">
         <span
           className={`rounded-t-md px-2 py-0.5 font-mono text-sm font-bold text-panel tabular-nums ${hasSiblings ? 'bg-link' : 'bg-foreground'}`}
         >
           {t('line.quantity', { count: tile.quantity })}
         </span>
+        {warningLabel && (
+          // On the tab row above the card, so it never covers the artist or copyright line.
+          <span
+            role="img"
+            aria-label={warningLabel}
+            title={warningLabel}
+            className="mr-2 ml-auto rounded-t-md bg-warning px-1.5 py-0.5 text-panel"
+          >
+            <Icon name="warning" />
+          </span>
+        )}
       </div>
       <button
         type="button"

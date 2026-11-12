@@ -9,7 +9,8 @@ import { DecklistEditor } from './DecklistEditor.tsx';
 import { DecklistSummary } from './DecklistSummary.tsx';
 import { PdfStep } from './PdfStep.tsx';
 import { PhoneLinePanel } from './PhoneLinePanel.tsx';
-import { panelLineAt } from './SelectedLinePanel.tsx';
+import { lineToFixOf, LineToFixPanel } from './LineToFixPanel.tsx';
+import { panelLineOf, SelectedLinePanel } from './SelectedLinePanel.tsx';
 import { SheetSettings } from './SheetSettings.tsx';
 import { SheetView } from './SheetView.tsx';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
@@ -23,6 +24,8 @@ const STEPS: readonly WorkspaceStep[] = ['list', 'cards', 'sheet', 'pdf'];
 export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
   const { t } = useTranslation();
   const { generator, step } = state;
+  const panelLine = step === 'cards' ? panelLineOf(state.gridTiles, state.selection) : null;
+  const lineToFix = step === 'cards' ? lineToFixOf(state.gridTiles, state.selection) : null;
   return (
     <div className="flex h-full flex-col">
       <InTopBar>
@@ -42,10 +45,7 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
               className="shrink-0"
               bodyClassName="p-3"
             >
-              <DecklistSummary
-                defaultLang={generator.defaultLang}
-                onDefaultLangChange={generator.changeDefaultLanguage}
-              />
+              <DecklistSummary state={state} />
             </BoardPanel>
           </div>
         )}
@@ -86,12 +86,15 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
         ))}
       </nav>
       <PhoneLinePanel
-        generator={generator}
-        panelLine={
-          step === 'cards' ? panelLineAt(generator, state.selection?.writtenIndex ?? null) : null
-        }
+        title={t(panelLine ? 'workspace.inspector.line' : 'workspace.inspector.lineToFix')}
         onClose={() => state.selectTile(null)}
-      />
+      >
+        {panelLine ? (
+          <SelectedLinePanel generator={generator} panelLine={panelLine} />
+        ) : lineToFix ? (
+          <LineToFixPanel generator={generator} lineToFix={lineToFix} />
+        ) : null}
+      </PhoneLinePanel>
     </div>
   );
 }

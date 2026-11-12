@@ -1,6 +1,6 @@
 import type { CatalogEntry } from '@mtg-suite/core';
 import { aCard, aPrint, jpegOfSize } from '@mtg-suite/core/test-fixtures';
-import { act, screen, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
@@ -42,10 +42,24 @@ function catalogEntry(oracleId: string, name: string, ...sets: string[]): Catalo
   };
 }
 
+/** A card with Italian prints: the newest has a sharp image, the older one a low-resolution one. */
+const COUNTERSPELL: CatalogEntry = {
+  card: aCard({ oracleId: 'counterspell', name: 'Counterspell' }),
+  prints: [
+    { ...printOf('Counterspell', 'counterspell-it-mh2', 'mh2', '2021-06-18'), lang: 'it' },
+    {
+      ...printOf('Counterspell', 'counterspell-it-ema', 'ema', '2016-06-10'),
+      lang: 'it',
+      imageStatus: 'lowres',
+    },
+  ],
+};
+
 const CATALOG = [
   catalogEntry('sol-ring', 'Sol Ring', 'c21', 'lea'),
   catalogEntry('lightning-bolt', 'Lightning Bolt'),
   catalogEntry('lightning-helix', 'Lightning Helix'),
+  COUNTERSPELL,
 ];
 
 beforeEach(() => {
@@ -115,10 +129,19 @@ function gridTiles() {
   return within(screen.getByRole('list', { name: 'Griglia delle carte' })).getAllByRole('listitem');
 }
 
+/** The tile at `index` in the card grid, to query inside it. */
+function tileAt(index: number) {
+  const tile = gridTiles()[index];
+  if (!tile) throw new Error(`no tile at ${index}`);
+  return within(tile);
+}
+
 /** What a tile shows: its image, its quantity and, among siblings, which of them it is. */
 function tileSummary(tile: HTMLElement) {
   return [
-    within(tile).queryByRole('img')?.getAttribute('alt'),
+    within(tile)
+      .queryByRole('img', { name: /^Immagine di / })
+      ?.getAttribute('alt'),
     within(tile).queryByText(/×$/)?.textContent,
     within(tile).queryByText(/^\d+\/\d+$/)?.textContent,
   ];
@@ -223,6 +246,120 @@ describe('the workspace', () => {
   });
 });
 
+/** The inspector while no tile is selected. */
+function summary() {
+  return within(screen.getByRole('complementary', { name: 'Riepilogo' }));
+}
+
+/** The value the summary gives next to `term`. */
+function summaryValue(term: string) {
+  return summary().getByText(term, { selector: 'dt' }).nextElementSibling?.textContent;
+}
+
+describe('the decklist summary', () => {
+  it('counts the cards, the pages and the lines to fix while no tile is selected', async () => {
+    // Nine cards fill an A4 page; the last line, still to recognise, is a line to fix too.
+    await mountPageAndWrite('9 Sol Ring{Enter}2 Nonexistent Card{Enter}1 Lightning{Enter}1 Sol');
+    await screen.findByText('Carta non trovata');
+
+    expect(summaryValue('Carte')).toBe('12');
+    expect(summaryValue('Pagine')).toBe('1');
+    expect(summary().getByRole('button', { name: '3 righe da sistemare' })).toBeTruthy();
+  });
+
+  it('brings the first line to fix into view and selects it', async () => {
+    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView');
+    const user = await mountPageAndWrite(
+      '4 Sol Ring{Enter}2 Nonexistent Card{Enter}1 Lightning{Enter}',
+    );
+    await screen.findByText('Carta non trovata');
+
+    await user.click(summary().getByRole('button', { name: '2 righe da sistemare' }));
+
+    const [, notFound] = gridTiles();
+    expect(notFound?.getAttribute('aria-current')).toBe('true');
+    expect(scrollIntoView.mock.contexts).toContain(notFound);
+  });
+
+  it('marks a tile whose print has a warning, outside its image, and the line panel says what', async () => {
+    // A first visit asks for Italian cards, and the catalog holds no Italian print.
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const tileButton = await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    const mark = screen.getByRole('img', { name: 'Stampa in inglese' });
+    expect(tileButton.contains(mark)).toBe(false);
+    await user.click(tileButton);
+    const inspector = within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
+    expect(
+      inspector.getByText(
+        "Nessuna stampa in italiano con un'immagine: viene usata quella inglese.",
+      ),
+    ).toBeTruthy();
+  });
+
+  it('says in the line panel the warning of the tile it was opened from', async () => {
+    const lowResolutionNote = "L'immagine di questa stampa è a bassa risoluzione.";
+    const user = await mountPageAndWrite('4 Counterspell{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Counterspell' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con EMA #1' }));
+    const inspector = () => within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
+
+    const lowResolutionMark = { name: 'Immagine a bassa risoluzione' };
+    expect(tileAt(0).queryByRole('img', lowResolutionMark)).toBeNull();
+    expect(inspector().queryByText(lowResolutionNote)).toBeNull();
+
+    await user.click(tileAt(1).getByRole('button', { name: 'Modifica Counterspell' }));
+
+    expect(tileAt(1).getByRole('img', lowResolutionMark)).toBeTruthy();
+    expect(inspector().getByText(lowResolutionNote)).toBeTruthy();
+  });
+
+  it('switches every line to the language picked in the summary', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    expect(await screen.findByRole('img', { name: 'Stampa in inglese' })).toBeTruthy();
+
+    await user.click(summary().getByRole('radio', { name: 'Inglese' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('img', { name: 'Stampa in inglese' })).toBeNull(),
+    );
+    expect(screen.getByRole('button', { name: 'Modifica Sol Ring' })).toBeTruthy();
+  });
+
+  it('shows the line to fix in the inspector, where an ambiguous one picks its card', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning{Enter}');
+    await user.click(await summary().findByRole('button', { name: '1 riga da sistemare' }));
+
+    const lineToFix = within(screen.getByRole('complementary', { name: 'Riga da sistemare' }));
+    expect(lineToFix.getByText('1 Lightning')).toBeTruthy();
+    await user.click(lineToFix.getByRole('button', { name: 'Lightning Bolt' }));
+
+    const inspector = within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
+    expect(inspector.getByRole('heading', { name: 'Lightning Bolt' })).toBeTruthy();
+  });
+
+  it('goes back to the summary from a line to fix', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}2 Nonexistent Card{Enter}');
+    await user.click(await summary().findByRole('button', { name: '1 riga da sistemare' }));
+    const lineToFix = within(screen.getByRole('complementary', { name: 'Riga da sistemare' }));
+    expect(lineToFix.getByText('Correggi la riga nella lista: non verrà stampata.')).toBeTruthy();
+
+    await user.click(lineToFix.getByRole('button', { name: 'Torna al riepilogo' }));
+
+    expect(summary().getByRole('button', { name: '1 riga da sistemare' })).toBeTruthy();
+  });
+
+  it('shows no counter once every line is fixed', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning{Enter}');
+    await screen.findByText('Quale carta intendevi?');
+    expect(summary().getByRole('button', { name: '1 riga da sistemare' })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Lightning Bolt' }));
+
+    expect(summary().queryByRole('button', { name: /da sistemare$/ })).toBeNull();
+  });
+});
+
 /** The bar at the foot of a phone's screen, which picks the step. */
 function stepBar() {
   return within(screen.getByRole('navigation', { name: 'Passi' }));
@@ -322,6 +459,21 @@ describe('the workspace on a phone', () => {
     expect(share).toHaveBeenCalledWith({
       files: [expect.objectContaining({ name: 'proxy-mtg-suite.pdf', type: 'application/pdf' })],
     });
+  });
+
+  it('goes to the "Carte" step from the counter of lines to fix, the first one open in its panel', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}2 Nonexistent Card{Enter}');
+    await screen.findByRole('button', { name: '1 riga da sistemare' });
+
+    await user.click(screen.getByRole('button', { name: '1 riga da sistemare' }));
+
+    const panel = within(screen.getByRole('dialog', { name: 'Riga da sistemare' }));
+    expect(panel.getByText('2 Nonexistent Card')).toBeTruthy();
+    await user.click(panel.getByRole('button', { name: 'Fatto' }));
+
+    expect(stepBar().getByRole('button', { name: 'Carte' }).getAttribute('aria-current')).toBe(
+      'step',
+    );
   });
 
   it('keeps the place of a banner under the top bar in the "Lista" step only', async () => {

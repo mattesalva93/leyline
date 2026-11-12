@@ -1,4 +1,4 @@
-import type { ResolvedLine } from '@mtg-suite/core';
+import type { PrintWarning, ResolvedLine } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
 import { SECONDARY_BUTTON } from './ui/board-styles.ts';
 
@@ -6,12 +6,14 @@ const NOTE = 'flex flex-col items-start gap-2 text-sm text-warning';
 
 interface PrintWarningNoteProps {
   readonly line: ResolvedLine;
+  /** The warning to explain: the one of the tile the user is looking at. */
+  readonly warning: PrintWarning | null;
   /** Switches the line to English: offered when an English print would look better. */
   readonly onSwitchLineToEnglish: () => void;
 }
 
-/** What is wrong with the prints a line's copies use, if anything, and the way out when there is one. */
-export function PrintWarningNote({ line, onSwitchLineToEnglish }: PrintWarningNoteProps) {
+/** What is wrong with a print of the line, if anything, and the way out when there is one. */
+export function PrintWarningNote({ line, warning, onSwitchLineToEnglish }: PrintWarningNoteProps) {
   const { t } = useTranslation();
   const lineLanguageName = t(`lang.${line.lang}`).toLowerCase();
 
@@ -22,7 +24,7 @@ export function PrintWarningNote({ line, onSwitchLineToEnglish }: PrintWarningNo
         : t('line.noPrintInLanguageOrEnglish', { lang: lineLanguageName });
     return <p className={NOTE}>{message}</p>;
   }
-  switch (line.printWarning) {
+  switch (warning) {
     case 'languageFallback':
       return <p className={NOTE}>{t('line.languageFallback', { lang: lineLanguageName })}</p>;
     case 'lowResolutionWithoutEnglish':

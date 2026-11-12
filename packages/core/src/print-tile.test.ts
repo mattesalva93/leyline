@@ -6,6 +6,7 @@ import {
   printTiles,
   resolveDecklist,
   type DecklistLine,
+  type Lang,
   type ResolvedLine,
 } from './index.ts';
 import { aCard, aPrint } from './test-fixtures.ts';
@@ -18,20 +19,38 @@ const forestZnr = aPrint({ id: 'forest-znr', set: 'znr', releasedAt: '2020-09-25
 const catalog = createInMemoryCatalog([
   { card: forest, prints: [forestFdn, forestM21, forestZnr] },
 ]);
+const forestFdnIt = aPrint({
+  id: 'forest-fdn-it',
+  set: 'fdn',
+  lang: 'it',
+  releasedAt: '2024-11-15',
+});
+const forestM21ItLowres = aPrint({
+  id: 'forest-m21-it-lowres',
+  set: 'm21',
+  lang: 'it',
+  releasedAt: '2020-07-03',
+  imageStatus: 'lowres',
+});
 
 function resolved(line: DecklistLine | undefined): ResolvedLine {
   if (line?.status !== 'resolved') throw new Error('expected a resolved line');
   return line;
 }
 
-async function forestLine(quantity: number): Promise<ResolvedLine> {
-  const [line] = await resolveDecklist(`${quantity} Forest`, catalog, { today, lang: 'en' });
+async function forestLine(quantity: number, lang: Lang = 'en', prints = catalog) {
+  const [line] = await resolveDecklist(`${quantity} Forest`, prints, { today, lang });
   return resolved(line);
 }
 
 /** The line with `copies` more of its copies moved onto `print`. */
 function withCopiesOn(line: ResolvedLine, print: typeof forestM21, copies: number): ResolvedLine {
   return resolved(applyAllocationChoice(line, allocatePrintCopies(line, print, copies)));
+}
+
+/** The tiles as (print id, warning) pairs. */
+function warningsById(line: ResolvedLine) {
+  return printTiles(line).map(({ print, warning }) => [print.id, warning]);
 }
 
 /** The tiles as (print id, quantity) pairs. */
@@ -77,6 +96,22 @@ describe('printTiles', () => {
       ['forest-znr', 1],
       ['forest-m21', 1],
     ]);
+  });
+
+  it('warns only on the tile whose own print has a low-resolution image', async () => {
+    const italian = createInMemoryCatalog([
+      { card: forest, prints: [forestFdn, forestFdnIt, forestM21ItLowres] },
+    ]);
+    const line = withCopiesOn(await forestLine(4, 'it', italian), forestM21ItLowres, 1);
+
+    expect(warningsById(line)).toEqual([
+      ['forest-fdn-it', null],
+      ['forest-m21-it-lowres', 'lowResolution'],
+    ]);
+  });
+
+  it('warns on the tile of an Italian line that prints in English for want of an Italian image', async () => {
+    expect(warningsById(await forestLine(2, 'it'))).toEqual([['forest-fdn', 'languageFallback']]);
   });
 
   it('gives a line with no printable print no tile', async () => {
