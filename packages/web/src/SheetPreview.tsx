@@ -1,6 +1,7 @@
 import { CARD_CORNER_RADIUS_MM, type SheetLayout } from '@mtg-suite/core';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SYMBOL_BUTTON } from './ui/board-styles.ts';
 
 interface SheetPreviewProps {
   readonly layout: SheetLayout;
@@ -21,13 +22,16 @@ export function SheetPreview({ layout }: SheetPreviewProps) {
   const slots = layout.pages[shownIndex] ?? [];
   const { width, height } = layout.pageMm;
   return (
-    <section className="sheet-preview" aria-labelledby="sheet-preview-title">
-      <h2 id="sheet-preview-title">{t('sheetPreview.title')}</h2>
-      <p className="sheet-preview__summary">
-        {t('sheetPreview.cardsPerPage', { columns: layout.columns, rows: layout.rows })}
-      </p>
+    <section
+      className="flex h-full min-h-0 flex-col items-center gap-3"
+      aria-labelledby="sheet-preview-title"
+    >
+      <h2 id="sheet-preview-title" className="sr-only">
+        {t('sheetPreview.title')}
+      </h2>
       <svg
-        className="sheet-preview__page"
+        className="min-h-0 w-full flex-1 border-2 border-border shadow-[6px_6px_0_var(--color-border)]"
+        style={{ aspectRatio: `${width} / ${height}`, maxWidth: '100%' }}
         viewBox={`0 0 ${width} ${height}`}
         role="img"
         aria-label={t('sheetPreview.pageLabel', { page: shownIndex + 1, count: pageCount })}
@@ -63,31 +67,36 @@ export function SheetPreview({ layout }: SheetPreviewProps) {
           />
         ))}
       </svg>
-      {pageCount > 1 && (
-        <div className="sheet-preview__pager">
+      <div className="flex shrink-0 items-center gap-3 font-mono text-sm tabular-nums">
+        {pageCount > 1 && (
           <button
             type="button"
-            className="button--secondary"
+            className={SYMBOL_BUTTON}
             aria-label={t('sheetPreview.previous')}
             disabled={shownIndex === 0}
             onClick={() => setPageIndex(shownIndex - 1)}
           >
             {t('sheetPreview.previousSymbol')}
           </button>
-          <span aria-live="polite">
-            {t('sheetPreview.page', { page: shownIndex + 1, count: pageCount })}
-          </span>
+        )}
+        <span aria-live="polite">
+          {t('sheetPreview.page', { page: shownIndex + 1, count: pageCount })}
+        </span>
+        <span className="text-muted-foreground">
+          {t('sheetPreview.cardsPerPage', { columns: layout.columns, rows: layout.rows })}
+        </span>
+        {pageCount > 1 && (
           <button
             type="button"
-            className="button--secondary"
+            className={SYMBOL_BUTTON}
             aria-label={t('sheetPreview.next')}
             disabled={shownIndex === pageCount - 1}
             onClick={() => setPageIndex(shownIndex + 1)}
           >
             {t('sheetPreview.nextSymbol')}
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }

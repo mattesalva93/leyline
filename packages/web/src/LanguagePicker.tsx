@@ -13,12 +13,13 @@ export function LanguagePicker({ label, selectedLang, onChange }: LanguagePicker
   const { t } = useTranslation();
   const radioGroupName = useId();
   return (
-    <fieldset className="language-picker">
-      <legend>{label}</legend>
+    <fieldset className="flex flex-wrap items-center gap-x-4 gap-y-1">
+      <legend className="float-left mr-2 font-semibold">{label}</legend>
       {LANGS.map((lang) => (
-        <label key={lang} className="language-picker__option">
+        <label key={lang} className="flex min-h-9 items-center gap-1.5">
           <input
             type="radio"
+            className="accent-foreground"
             name={radioGroupName}
             value={lang}
             checked={selectedLang === lang}

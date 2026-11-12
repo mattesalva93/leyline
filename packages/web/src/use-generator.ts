@@ -62,6 +62,8 @@ export interface WrittenCardLine {
  */
 export interface Generator {
   readonly decklistText: string;
+  /** How many lines the decklist text has, blank ones included. */
+  readonly writtenLineCount: number;
   /** Takes the text as the user left it; a new line break resolves the lines before the last. */
   readonly writeDecklistText: (nextText: string) => void;
   /** Resolves every written line not resolved yet, the last one included. */
@@ -260,6 +262,7 @@ export function useGenerator(): Generator {
 
   return {
     decklistText,
+    writtenLineCount: writtenLines.length,
     writeDecklistText,
     resolveEveryLine: () => resolveEachInItsLanguage(writtenLines),
     isResolving: requestsInFlight > 0,

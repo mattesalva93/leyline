@@ -16,3 +16,13 @@ HTMLDialogElement.prototype.close = function () {
 };
 
 afterEach(cleanup);
+
+// jsdom lays nothing out, so nothing ever comes into sight or changes size: these never report.
+window.IntersectionObserver = class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
+} as never;

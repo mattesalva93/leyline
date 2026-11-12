@@ -5,7 +5,7 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* `static`: the generator's stylesheet reads tokens through `var()`, which Tailwind does not see. */
+/* `static`: inline styles, such as a tile's ring and shadow, read tokens through `var()`, which Tailwind does not see. */
 @theme static {
   --font-sans: 'Space Grotesk Variable', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;

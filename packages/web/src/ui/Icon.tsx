@@ -3,6 +3,11 @@ const ICON_PATHS = {
   sun: 'M12 4V2m0 20v-2m8-8h2M2 12h2m13.7-5.7 1.4-1.4M4.9 19.1l1.4-1.4m11.4 0 1.4 1.4M4.9 4.9l1.4 1.4M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z',
   moon: 'M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z',
   info: 'M12 11v6m0-9h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+  warning:
+    'M12 9v4m0 4h.01M10.3 3.9 2.6 17.5A2 2 0 0 0 4.3 20.5h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z',
+  download: 'M12 4v11m0 0-4-4m4 4 4-4M5 20h14',
+  cards: 'M4 5h7v14H4zM13 5h7v14h-7z',
+  sheet: 'M6 3h9l4 4v14H6zM9 11h7M9 15h7',
 } as const;
 
 export type IconName = keyof typeof ICON_PATHS;
