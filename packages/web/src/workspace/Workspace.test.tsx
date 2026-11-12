@@ -192,4 +192,32 @@ describe('the workspace', () => {
 
     expect(screen.getByRole('button', { name: 'Scarica il PDF' })).toBeTruthy();
   });
+
+  it('lets go of the selected tile when a line is written above it, never showing another line', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Lightning Bolt' }));
+    expect(screen.getByRole('complementary', { name: 'Riga selezionata' })).toBeTruthy();
+
+    const decklist = screen.getByLabelText<HTMLTextAreaElement>('Decklist');
+    decklist.setSelectionRange(0, 0);
+    await user.type(decklist, '2 Lightning Helix{Enter}', {
+      initialSelectionStart: 0,
+      initialSelectionEnd: 0,
+    });
+
+    expect(screen.getByRole('complementary', { name: 'Riepilogo' })).toBeTruthy();
+  });
+
+  it('keeps the selection on its line when every copy leaves the selected print', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+
+    const oneMoreOnLea = await screen.findByRole('button', { name: 'Una copia in più con LEA #1' });
+    for (let copy = 0; copy < 4; copy += 1) await user.click(oneMoreOnLea);
+
+    const [onlyTile] = gridTiles();
+    expect(onlyTile && tileSummary(onlyTile)).toEqual(['Immagine di Sol Ring', '4×', undefined]);
+    const tileButton = screen.getByRole('button', { name: 'Modifica Sol Ring' });
+    expect(tileButton.getAttribute('aria-pressed')).toBe('true');
+  });
 });

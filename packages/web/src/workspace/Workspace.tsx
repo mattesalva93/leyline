@@ -4,7 +4,7 @@ import { touchIsMainInput } from '../pdf-delivery.ts';
 import { useGenerator } from '../use-generator.ts';
 import { CardGrid, type TileSelection } from './CardGrid.tsx';
 import { DecklistPanel } from './DecklistPanel.tsx';
-import { gridTilesOf } from './grid-tiles.ts';
+import { gridTilesOf, type GridTile } from './grid-tiles.ts';
 import { Inspector } from './Inspector.tsx';
 import { PdfControl } from './PdfControl.tsx';
 import { SheetView } from './SheetView.tsx';
@@ -12,6 +12,32 @@ import { ToolRail, type CentreView } from './ToolRail.tsx';
 
 /** The width from which the zones stand side by side and fill the screen: Tailwind's `lg`. */
 const SIDE_BY_SIDE_QUERY = '(min-width: 64rem)';
+
+/** A tile selected while the decklist text had `writtenLineCount` lines. */
+interface SelectionInText extends TileSelection {
+  readonly writtenLineCount: number;
+}
+
+/**
+ * The selection as the grid shows it now. A line written or removed in the text moves the lines
+ * after it, so the selection is let go rather than landing on another line. When its print has
+ * no copies left, the line's first tile takes the selection.
+ */
+function currentSelection(
+  selection: SelectionInText | null,
+  writtenLineCount: number,
+  gridTiles: readonly GridTile[],
+): TileSelection | null {
+  if (!selection || selection.writtenLineCount !== writtenLineCount) return null;
+  const tilesOfLine = gridTiles.filter((tile) => tile.writtenIndex === selection.writtenIndex);
+  const [firstTile] = tilesOfLine;
+  if (!firstTile) return null;
+  const printIdOf = (tile: GridTile) => (tile.kind === 'print' ? tile.tile.print.id : null);
+  const printId = tilesOfLine.some((tile) => printIdOf(tile) === selection.printId)
+    ? selection.printId
+    : printIdOf(firstTile);
+  return { writtenIndex: selection.writtenIndex, printId };
+}
 
 /**
  * The generator's screen: from left to right the tool rail, the decklist text, the centre (the
@@ -22,13 +48,16 @@ export function Workspace() {
   const { t } = useTranslation();
   const generator = useGenerator();
   const [view, setView] = useState<CentreView>('cards');
-  const [selection, setSelection] = useState<TileSelection | null>(null);
+  const [selectionInText, setSelectionInText] = useState<SelectionInText | null>(null);
   const [touchIsMain] = useState(touchIsMainInput);
   const inspectorRef = useRef<HTMLElement>(null);
   const gridTiles = gridTilesOf(generator.cardLines);
+  const selection = currentSelection(selectionInText, generator.writtenLineCount, gridTiles);
 
   function selectTile(nextSelection: TileSelection | null) {
-    setSelection(nextSelection);
+    setSelectionInText(
+      nextSelection && { ...nextSelection, writtenLineCount: generator.writtenLineCount },
+    );
     // In a column the inspector sits below the grid: bring the line's settings into sight.
     if (nextSelection && !window.matchMedia(SIDE_BY_SIDE_QUERY).matches) {
       inspectorRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
