@@ -29,7 +29,7 @@ export function useTheme(): { readonly theme: Theme; readonly switchTheme: () =>
   const [pickedTheme, setPickedTheme] = useState(loadThemeChoice);
   const theme = pickedTheme ?? systemThemeNow;
 
-  // Before the browser paints, so a dark page never flashes light.
+  // Before the browser paints, so switching theme never shows one frame in the old colours.
   useLayoutEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
