@@ -251,10 +251,15 @@ export function useGenerator(): Generator {
    */
   function keepResolutionOfRewrittenLine(resolution: DecklistLine, quantity: number): string {
     const rewritten = setLineQuantity(resolution, quantity);
-    const key = resolutionKey(defaultLang, rewritten.text);
-    requestedKeys.current.add(key);
-    setResolutions((previous) => new Map(previous).set(key, rewritten));
+    keepResolution(rewritten.text, rewritten);
     return rewritten.text;
+  }
+
+  /** Keeps `resolution` as what `writtenLine` resolves to, so it needs no request. */
+  function keepResolution(writtenLine: string, resolution: DecklistLine | null) {
+    const key = resolutionKey(defaultLang, writtenLine);
+    requestedKeys.current.add(key);
+    setResolutions((previous) => new Map(previous).set(key, resolution));
   }
 
   /**
