@@ -1,6 +1,5 @@
 import type { Generator } from '../use-generator.ts';
-import type { TileSelection } from './CardGrid.tsx';
-import type { GridTile, ImagelessGridTile } from './grid-tiles.ts';
+import type { GridTile, ImagelessGridTile, TileSelection } from './grid-tiles.ts';
 import type { CentreView } from './ToolRail.tsx';
 
 /**

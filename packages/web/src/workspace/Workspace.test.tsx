@@ -42,10 +42,24 @@ function catalogEntry(oracleId: string, name: string, ...sets: string[]): Catalo
   };
 }
 
+/** A card with Italian prints: the newest has a sharp image, the older one a low-resolution one. */
+const COUNTERSPELL: CatalogEntry = {
+  card: aCard({ oracleId: 'counterspell', name: 'Counterspell' }),
+  prints: [
+    { ...printOf('Counterspell', 'counterspell-it-mh2', 'mh2', '2021-06-18'), lang: 'it' },
+    {
+      ...printOf('Counterspell', 'counterspell-it-ema', 'ema', '2016-06-10'),
+      lang: 'it',
+      imageStatus: 'lowres',
+    },
+  ],
+};
+
 const CATALOG = [
   catalogEntry('sol-ring', 'Sol Ring', 'c21', 'lea'),
   catalogEntry('lightning-bolt', 'Lightning Bolt'),
   catalogEntry('lightning-helix', 'Lightning Helix'),
+  COUNTERSPELL,
 ];
 
 beforeEach(() => {
@@ -113,6 +127,13 @@ describe('the generator page', () => {
 /** The tiles of the card grid, in the order the grid shows them. */
 function gridTiles() {
   return within(screen.getByRole('list', { name: 'Griglia delle carte' })).getAllByRole('listitem');
+}
+
+/** The tile at `index` in the card grid, to query inside it. */
+function tileAt(index: number) {
+  const tile = gridTiles()[index];
+  if (!tile) throw new Error(`no tile at ${index}`);
+  return within(tile);
 }
 
 /** What a tile shows: its image, its quantity and, among siblings, which of them it is. */
@@ -274,6 +295,23 @@ describe('the decklist summary', () => {
         "Nessuna stampa in italiano con un'immagine: viene usata quella inglese.",
       ),
     ).toBeTruthy();
+  });
+
+  it('says in the line panel the warning of the tile it was opened from', async () => {
+    const lowResolutionNote = "L'immagine di questa stampa è a bassa risoluzione.";
+    const user = await mountPageAndWrite('4 Counterspell{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Counterspell' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con EMA #1' }));
+    const inspector = () => within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
+
+    const lowResolutionMark = { name: 'Immagine a bassa risoluzione' };
+    expect(tileAt(0).queryByRole('img', lowResolutionMark)).toBeNull();
+    expect(inspector().queryByText(lowResolutionNote)).toBeNull();
+
+    await user.click(tileAt(1).getByRole('button', { name: 'Modifica Counterspell' }));
+
+    expect(tileAt(1).getByRole('img', lowResolutionMark)).toBeTruthy();
+    expect(inspector().getByText(lowResolutionNote)).toBeTruthy();
   });
 
   it('switches every line to the language picked in the summary', async () => {

@@ -30,6 +30,17 @@ export interface ImagelessGridTile extends GridTileBase {
 
 export type GridTile = PrintGridTile | ImagelessGridTile;
 
+/** Which tile is selected: its line, and the print it shows (`null` for an imageless tile). */
+export interface TileSelection {
+  readonly writtenIndex: number;
+  readonly printId: string | null;
+}
+
+export function isSelected(gridTile: GridTile, selection: TileSelection | null): boolean {
+  if (selection?.writtenIndex !== gridTile.writtenIndex) return false;
+  return gridTile.kind === 'print' ? gridTile.tile.print.id === selection.printId : true;
+}
+
 /**
  * The lines the user has to fix before they print, in the order of the decklist text: each one
  * with an imageless tile.

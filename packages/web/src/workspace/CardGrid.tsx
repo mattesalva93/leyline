@@ -1,17 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { GridTile } from './grid-tiles.ts';
+import { isSelected, type GridTile, type TileSelection } from './grid-tiles.ts';
 import { ImagelessTile } from './ImagelessTile.tsx';
 import { PrintTileCard, TILE_GAP_PX } from './PrintTileCard.tsx';
 
 /** Narrowest a tile gets, in CSS px; the grid stretches tiles to fill its rows. */
 const TILE_MIN_WIDTH_PX = 150;
-
-/** Which tile is selected: its line, and the print it shows (`null` for an imageless tile). */
-export interface TileSelection {
-  readonly writtenIndex: number;
-  readonly printId: string | null;
-}
 
 interface CardGridProps {
   readonly gridTiles: readonly GridTile[];
@@ -35,11 +29,6 @@ function useColumnCount(grid: React.RefObject<HTMLElement | null>): number {
     return () => observer.disconnect();
   }, [grid]);
   return columns;
-}
-
-function isSelected(gridTile: GridTile, selection: TileSelection | null): boolean {
-  if (selection?.writtenIndex !== gridTile.writtenIndex) return false;
-  return gridTile.kind === 'print' ? gridTile.tile.print.id === selection.printId : true;
 }
 
 /** The decklist as tiles, in the order of the text, each line's sibling tiles side by side. */

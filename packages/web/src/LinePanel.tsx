@@ -1,4 +1,10 @@
-import { previewPrint, type AllocationChoice, type Lang, type ResolvedLine } from '@mtg-suite/core';
+import {
+  previewPrint,
+  type AllocationChoice,
+  type Lang,
+  type PrintWarning,
+  type ResolvedLine,
+} from '@mtg-suite/core';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LanguagePicker } from './LanguagePicker.tsx';
@@ -12,6 +18,8 @@ import { CARD_SHAPE } from './card-shape.ts';
 
 interface LinePanelProps {
   readonly line: ResolvedLine;
+  /** What to warn about the print of the tile the panel was opened from. */
+  readonly printWarning: PrintWarning | null;
   readonly onLanguageChange: (lang: Lang) => void;
   readonly onQuantityChange: (quantity: number) => void;
   /** Called with the allocations the user set in the print picker. */
@@ -21,6 +29,7 @@ interface LinePanelProps {
 /** The settings of one line: its language, its quantity and the prints its copies use. */
 export function LinePanel({
   line,
+  printWarning,
   onLanguageChange,
   onQuantityChange,
   onAllocationChoice,
@@ -53,7 +62,11 @@ export function LinePanel({
         selectedLang={line.lang}
         onChange={onLanguageChange}
       />
-      <PrintWarningNote line={line} onSwitchLineToEnglish={() => onLanguageChange('en')} />
+      <PrintWarningNote
+        line={line}
+        warning={printWarning}
+        onSwitchLineToEnglish={() => onLanguageChange('en')}
+      />
       <fieldset className="flex items-center gap-2">
         <legend className="float-left mr-3 font-semibold">{t('panel.quantity')}</legend>
         <button

@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { PRINT_PICKER_SCROLL_ROOT_PROPS } from '../PrintPicker.tsx';
 import { BoardPanel } from '../ui/BoardPanel.tsx';
 import { DecklistSummary } from './DecklistSummary.tsx';
-import { panelLineAt, SelectedLinePanel } from './SelectedLinePanel.tsx';
+import { panelLineOf, SelectedLinePanel } from './SelectedLinePanel.tsx';
 import { SheetSettings } from './SheetSettings.tsx';
 import type { CentreView } from './ToolRail.tsx';
 import type { WorkspaceState } from './workspace-state.ts';
@@ -22,8 +22,7 @@ export function Inspector({
 }) {
   const { t } = useTranslation();
   const { generator } = state;
-  const panelLine =
-    view === 'cards' ? panelLineAt(generator, state.selection?.writtenIndex ?? null) : null;
+  const panelLine = view === 'cards' ? panelLineOf(state.gridTiles, state.selection) : null;
   const content = view === 'sheet' ? 'sheetOptions' : panelLine ? 'line' : 'summary';
   return (
     <BoardPanel as="aside" title={t(`workspace.inspector.${content}`)} className={className}>

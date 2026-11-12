@@ -9,7 +9,7 @@ import { DecklistEditor } from './DecklistEditor.tsx';
 import { DecklistSummary } from './DecklistSummary.tsx';
 import { PdfStep } from './PdfStep.tsx';
 import { PhoneLinePanel } from './PhoneLinePanel.tsx';
-import { panelLineAt } from './SelectedLinePanel.tsx';
+import { panelLineOf } from './SelectedLinePanel.tsx';
 import { SheetSettings } from './SheetSettings.tsx';
 import { SheetView } from './SheetView.tsx';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
@@ -84,9 +84,7 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
       </nav>
       <PhoneLinePanel
         generator={generator}
-        panelLine={
-          step === 'cards' ? panelLineAt(generator, state.selection?.writtenIndex ?? null) : null
-        }
+        panelLine={step === 'cards' ? panelLineOf(state.gridTiles, state.selection) : null}
         onClose={() => state.selectTile(null)}
       />
     </div>

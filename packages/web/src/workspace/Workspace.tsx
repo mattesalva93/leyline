@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { touchIsMainInput } from '../pdf-delivery.ts';
 import { useIsWideScreen } from '../screen-size.ts';
 import { useGenerator } from '../use-generator.ts';
-import type { TileSelection } from './CardGrid.tsx';
 import { DesktopWorkspace } from './DesktopWorkspace.tsx';
-import { gridTilesOf, linesToFixOf, type GridTile } from './grid-tiles.ts';
+import { gridTilesOf, linesToFixOf, type GridTile, type TileSelection } from './grid-tiles.ts';
 import { PhoneWorkspace } from './PhoneWorkspace.tsx';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 
