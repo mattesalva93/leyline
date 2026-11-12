@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { CARD_SHAPE } from './card-shape.ts';
 import { LARGE_IMAGE } from './scryfall-image-sizes.ts';
+import { HARD_SHADOW } from './ui/board-styles.ts';
 import { ZOOMED_CARD_PX, zoomedCardPlacement } from './zoomed-card-placement.ts';
 
 /** How long the pointer rests on a tile of the card grid before its card shows enlarged. */
@@ -86,7 +87,7 @@ export function useZoomedCard(waitMs: number): {
     // On the page itself, so no scrolling or clipping zone it was opened from can cut it.
     createPortal(
       <img
-        className="pointer-events-none fixed z-50 shadow-[0_0_0_3px_var(--color-border),10px_10px_0_var(--color-border)]"
+        className={`pointer-events-none fixed z-50 ring-3 ring-border ${HARD_SHADOW}`}
         style={{ ...CARD_SHAPE, left: zoom.left, top: zoom.top, ...ZOOMED_CARD_PX }}
         src={zoom.face.imageUris.large}
         alt={t('zoomedCard.alt', { name: zoom.face.name })}
