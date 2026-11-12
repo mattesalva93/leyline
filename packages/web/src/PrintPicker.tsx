@@ -16,11 +16,15 @@ import { PRINT_TILE_GAP, PRINT_TILE_MIN_WIDTH } from './print-picker-geometry.ts
 import { SMALL_IMAGE } from './scryfall-image-sizes.ts';
 import { SECONDARY_BUTTON } from './ui/board-styles.ts';
 import type { PrintPages } from './use-print-pages.ts';
+import { PRINT_PICKER_ZOOM_WAIT_MS, useZoomedCard } from './use-zoomed-card.tsx';
 import { CARD_SHAPE } from './card-shape.ts';
 import { LanguagePicker } from './LanguagePicker.tsx';
 
 /** Marks the element that scrolls the print picker: more prints load as its end comes near. */
 export const PRINT_PICKER_SCROLL_ROOT = 'data-print-picker-scroll-root';
+
+/** Marks the whole print picker, which a zoomed print stands beside. */
+const PRINT_PICKER = 'data-print-picker';
 
 /** Spread on the element that scrolls the print picker, to mark it. */
 export const PRINT_PICKER_SCROLL_ROOT_PROPS = { [PRINT_PICKER_SCROLL_ROOT]: '' };
@@ -60,7 +64,8 @@ function byReleaseYear(prints: readonly Print[]): ReleaseYear[] {
 /**
  * The grid of the prints a line can use, grouped by release year, newest first. Tapping a print
  * puts every copy on it; its +/− counter moves one copy at a time between it and the default
- * print. More prints load as the user scrolls near the end of the grid.
+ * print. More prints load as the user scrolls near the end of the grid. A print the pointer
+ * rests on shows enlarged beside the picker.
  */
 export function PrintPicker({
   line,
@@ -71,6 +76,7 @@ export function PrintPicker({
 }: PrintPickerProps) {
   const { t } = useTranslation();
   const endOfGridRef = useRef<HTMLDivElement>(null);
+  const { zoomOn, zoomedCard } = useZoomedCard(PRINT_PICKER_ZOOM_WAIT_MS);
   const { prints, total, hasMore, isLoading, lastRequestFailed, loadMore } = printPages;
 
   useEffect(() => {
@@ -92,7 +98,10 @@ export function PrintPicker({
     onAllocationChoice(allocatePrintCopies(line, print, copies));
 
   return (
-    <section aria-label={t('printPicker.title', { name: line.card.name })}>
+    <section
+      {...{ [PRINT_PICKER]: '' }}
+      aria-label={t('printPicker.title', { name: line.card.name })}
+    >
       <h3 className="flex items-baseline justify-between font-semibold">
         {t('panel.prints')}
         {total !== null && (
@@ -139,6 +148,8 @@ export function PrintPicker({
                     className="flex flex-col"
                     aria-pressed={usedByLine}
                     onClick={() => onAllocationChoice(allocateEveryCopy(line, print))}
+                    // Beside the whole picker, so the zoomed card hides none of the other prints.
+                    {...zoomOn(frontFace, `[${PRINT_PICKER}]`)}
                   >
                     {frontFace && (
                       <img
@@ -200,6 +211,7 @@ export function PrintPicker({
           </button>
         </div>
       )}
+      {zoomedCard}
     </section>
   );
 }

@@ -21,12 +21,10 @@ export interface ZoomHandlers {
 
 /**
  * The handlers that zoom `face` once the pointer rests on the element they are spread on.
- * `besideOf` names what the zoomed card must stand beside, when that is more than the element.
+ * `besideClosest` is a selector of the element's ancestor the zoomed card must stand beside, when
+ * that is more than the element itself.
  */
-export type ZoomOn = (
-  face: PrintFace | undefined,
-  besideOf?: (element: Element) => Element | null,
-) => ZoomHandlers;
+export type ZoomOn = (face: PrintFace | undefined, besideClosest?: string) => ZoomHandlers;
 
 interface Zoom {
   readonly face: PrintFace;
@@ -63,7 +61,7 @@ export function useZoomedCard(waitMs: number): {
     };
   }, [hide]);
 
-  const zoomOn: ZoomOn = (face, besideOf) => ({
+  const zoomOn: ZoomOn = (face, besideClosest) => ({
     onPointerEnter(event) {
       if (!face || event.pointerType === 'touch') return;
       const element = event.currentTarget;
@@ -72,7 +70,8 @@ export function useZoomedCard(waitMs: number): {
         const hovered = element.getBoundingClientRect();
         const placement = zoomedCardPlacement({
           hovered,
-          beside: besideOf?.(element)?.getBoundingClientRect() ?? hovered,
+          beside:
+            (besideClosest && element.closest(besideClosest)?.getBoundingClientRect()) || hovered,
           viewport: { width: window.innerWidth, height: window.innerHeight },
         });
         setZoom(placement && { face, ...placement });

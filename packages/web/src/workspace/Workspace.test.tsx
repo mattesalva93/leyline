@@ -7,7 +7,8 @@ import * as api from '../api.ts';
 import { inMemoryServer } from '../in-memory-server.ts';
 import { mountApp } from '../mount-app.tsx';
 import { DESKTOP, PHONE, stubScreen } from '../test-screen.ts';
-import { TILE_ZOOM_WAIT_MS } from '../use-zoomed-card.tsx';
+import { PRINT_PICKER_ZOOM_WAIT_MS, TILE_ZOOM_WAIT_MS } from '../use-zoomed-card.tsx';
+import { ZOOMED_CARD_GAP_PX, ZOOMED_CARD_PX } from '../zoomed-card-placement.ts';
 
 vi.mock('../api.ts');
 
@@ -474,6 +475,44 @@ describe('the zoomed card', () => {
       act(() => vi.advanceTimersByTime(TILE_ZOOM_WAIT_MS));
 
       expect(zoomedCard()).toBeNull();
+    });
+  });
+
+  describe('in the print picker', () => {
+    /** Opens Sol Ring's print picker and returns it, with the button of its LEA print. */
+    async function openThePicker() {
+      const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+      await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+      const picker = await screen.findByRole('region', { name: 'Stampe di Sol Ring' });
+      const [, leaPrint] = await within(picker).findAllByRole('button', {
+        name: /^Immagine di Sol Ring/,
+      });
+      if (!leaPrint) throw new Error('no LEA print in the picker');
+      return { user, picker, leaPrint };
+    }
+
+    it('shows the hovered print enlarged sooner than on a tile', async () => {
+      const { user, leaPrint } = await openThePicker();
+
+      await user.hover(leaPrint);
+      act(() => vi.advanceTimersByTime(PRINT_PICKER_ZOOM_WAIT_MS));
+
+      expect(PRINT_PICKER_ZOOM_WAIT_MS).toBeLessThan(TILE_ZOOM_WAIT_MS);
+      expect(zoomedCard()?.getAttribute('src')).toBe(
+        'https://cards.scryfall.io/large/front/sol-ring-lea.jpg',
+      );
+    });
+
+    it('stands beside the whole picker, covering none of its prints', async () => {
+      const { user, picker, leaPrint } = await openThePicker();
+      const pickerBox = { left: 600, right: 1000, top: 0, bottom: 700, width: 400, height: 700 };
+      vi.spyOn(picker, 'getBoundingClientRect').mockReturnValue(pickerBox as DOMRect);
+
+      await user.hover(leaPrint);
+      act(() => vi.advanceTimersByTime(PRINT_PICKER_ZOOM_WAIT_MS));
+
+      // The screen under test is 1024 px wide: no room on the right, so on the left.
+      expect(zoomedCard()?.style.left).toBe(`${600 - ZOOMED_CARD_GAP_PX - ZOOMED_CARD_PX.width}px`);
     });
   });
 
