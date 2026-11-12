@@ -84,6 +84,9 @@
     "showEnglishPrints": "Mostra le stampe inglesi",
     "languageFallback": "Nessuna stampa in {{lang}} con un'immagine: viene usata quella inglese."
   },
+  "zoomedCard": {
+    "alt": "{{name}}, ingrandita"
+  },
   "tile": {
     "open": "Modifica {{name}}",
     "decrease": "Una copia in meno di {{name}} ({{print}})",

@@ -7,6 +7,7 @@ import * as api from '../api.ts';
 import { inMemoryServer } from '../in-memory-server.ts';
 import { mountApp } from '../mount-app.tsx';
 import { DESKTOP, PHONE, stubScreen } from '../test-screen.ts';
+import { TILE_ZOOM_WAIT_MS } from '../use-zoomed-card.tsx';
 
 vi.mock('../api.ts');
 
@@ -384,6 +385,107 @@ describe('a double-faced card', () => {
 
     expect(tileAt(0).queryByRole('button', { name: /^Gira / })).toBeTruthy();
     expect(tileAt(1).queryByRole('button', { name: /^Gira / })).toBeNull();
+  });
+});
+
+describe('the zoomed card', () => {
+  beforeEach(() => {
+    // Real time still flows, so the user's typing goes on; the waits are stepped by hand.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    return () => vi.useRealTimers();
+  });
+
+  /** The card shown enlarged, if any. */
+  function zoomedCard() {
+    return screen.queryByRole('img', { name: /, ingrandita$/ });
+  }
+
+  it('shows the card enlarged once the pointer has rested on its tile for a while', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const tile = await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    await user.hover(tile);
+    act(() => vi.advanceTimersByTime(TILE_ZOOM_WAIT_MS - 100));
+    expect(zoomedCard()).toBeNull();
+    act(() => vi.advanceTimersByTime(100));
+
+    expect(zoomedCard()?.getAttribute('alt')).toBe('Sol Ring, ingrandita');
+  });
+
+  it('shows the face the tile is turned to', async () => {
+    const user = await mountPageAndWrite('1 Delver of Secrets{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Gira Delver of Secrets' }));
+
+    await user.hover(screen.getByRole('button', { name: /^Modifica Delver/ }));
+    act(() => vi.advanceTimersByTime(TILE_ZOOM_WAIT_MS));
+
+    expect(zoomedCard()?.getAttribute('alt')).toBe('Insectile Aberration, ingrandita');
+  });
+
+  describe('goes away', () => {
+    /** Mounts a grid of one tile and rests the pointer on it until its card shows enlarged. */
+    async function zoomTheTile() {
+      const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+      const tile = await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+      await user.hover(tile);
+      act(() => vi.advanceTimersByTime(TILE_ZOOM_WAIT_MS));
+      expect(zoomedCard()).toBeTruthy();
+      return { user, tile };
+    }
+
+    it('when the pointer leaves the tile', async () => {
+      const { user, tile } = await zoomTheTile();
+
+      await user.unhover(tile);
+
+      expect(zoomedCard()).toBeNull();
+    });
+
+    it('when anything scrolls', async () => {
+      await zoomTheTile();
+
+      fireEvent.scroll(screen.getByRole('list', { name: 'Griglia delle carte' }));
+
+      expect(zoomedCard()).toBeNull();
+    });
+
+    it('when the user clicks', async () => {
+      const { user, tile } = await zoomTheTile();
+
+      await user.click(tile);
+
+      expect(zoomedCard()).toBeNull();
+    });
+
+    it('when a drag starts', async () => {
+      const { tile } = await zoomTheTile();
+
+      fireEvent.dragStart(tile);
+
+      expect(zoomedCard()).toBeNull();
+    });
+
+    it('before it shows, when the pointer leaves during the wait', async () => {
+      const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+      const tile = await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+      await user.hover(tile);
+
+      await user.unhover(tile);
+      act(() => vi.advanceTimersByTime(TILE_ZOOM_WAIT_MS));
+
+      expect(zoomedCard()).toBeNull();
+    });
+  });
+
+  it('never shows on a touch', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    const tile = await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    // A finger landing on the tile, before it presses: user-event sends no enter for a touch.
+    fireEvent.pointerEnter(tile, { pointerType: 'touch' });
+    act(() => vi.advanceTimersByTime(TILE_ZOOM_WAIT_MS));
+
+    expect(zoomedCard()).toBeNull();
   });
 });
 

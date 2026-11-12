@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { setAndNumberOf } from '../print-label.ts';
 import { NORMAL_IMAGE } from '../scryfall-image-sizes.ts';
 import { Icon } from '../ui/Icon.tsx';
+import type { ZoomOn } from '../use-zoomed-card.tsx';
 import type { PrintGridTile } from './grid-tiles.ts';
 import { CARD_SHAPE } from '../card-shape.ts';
 import { COPY_PILE_MAX_DEPTH_PX, CopyPile, copyPileEdgeCount } from './CopyPile.tsx';
@@ -35,6 +36,8 @@ interface PrintTileCardProps {
   readonly isSelected: boolean;
   /** The tile starts a row while its previous sibling ends the row above. */
   readonly continuesRowAbove: boolean;
+  /** Zooms the card the tile shows once the pointer rests on it. */
+  readonly zoomOn: ZoomOn;
   readonly onSelect: () => void;
   /** Gives the tile `quantity` copies of its print; at zero the tile goes. */
   readonly onQuantityChange: (quantity: number) => void;
@@ -54,6 +57,7 @@ export function PrintTileCard({
   gridTile,
   isSelected,
   continuesRowAbove,
+  zoomOn,
   onSelect,
   onQuantityChange,
 }: PrintTileCardProps) {
@@ -124,6 +128,7 @@ export function PrintTileCard({
           className="relative z-10 block w-full bg-raised focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-accent"
           style={{ ...CARD_SHAPE, boxShadow: cardShadow(hasSiblings, isSelected, hasPile) }}
           onClick={onSelect}
+          {...zoomOn(shownFace)}
         >
           {shownFace && (
             <img

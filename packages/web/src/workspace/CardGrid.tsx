@@ -1,6 +1,7 @@
 import type { Print } from '@mtg-suite/core';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { TILE_ZOOM_WAIT_MS, useZoomedCard } from '../use-zoomed-card.tsx';
 import { isSelected, type GridTile, type TileSelection } from './grid-tiles.ts';
 import { ImagelessTile } from './ImagelessTile.tsx';
 import { PrintTileCard, TILE_GAP_PX } from './PrintTileCard.tsx';
@@ -32,7 +33,10 @@ function useColumnCount(grid: React.RefObject<HTMLElement | null>): number {
   return columns;
 }
 
-/** The decklist as tiles, in the order of the text, each line's sibling tiles side by side. */
+/**
+ * The decklist as tiles, in the order of the text, each line's sibling tiles side by side. A tile
+ * the pointer rests on shows its card enlarged.
+ */
 export function CardGrid({
   gridTiles,
   tileWidthPx,
@@ -45,46 +49,51 @@ export function CardGrid({
   const { t } = useTranslation();
   const gridRef = useRef<HTMLUListElement>(null);
   const columns = useColumnCount(gridRef);
+  const { zoomOn, zoomedCard } = useZoomedCard(TILE_ZOOM_WAIT_MS);
   // A tile can be selected from outside the grid, such as the first line to fix: bring it in.
   useEffect(() => {
     gridRef.current?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'nearest' });
   }, [selection?.writtenIndex, selection?.printId]);
   return (
-    <ul
-      ref={gridRef}
-      aria-label={t('workspace.cardGrid')}
-      className="grid content-start gap-y-3 p-1 pr-6 pb-4 pl-6"
-      style={{
-        columnGap: TILE_GAP_PX,
-        gridTemplateColumns: `repeat(auto-fill, minmax(${tileWidthPx}px, 1fr))`,
-      }}
-    >
-      {gridTiles.map((gridTile, index) => {
-        const selected = isSelected(gridTile, selection);
-        const toggleSelection = (printId: string | null) =>
-          onSelect(selected ? null : { writtenIndex: gridTile.writtenIndex, printId });
-        return gridTile.kind === 'print' ? (
-          <PrintTileCard
-            key={gridTile.key}
-            gridTile={gridTile}
-            isSelected={selected}
-            continuesRowAbove={gridTile.siblingIndex > 0 && index % columns === 0}
-            onSelect={() => toggleSelection(gridTile.tile.print.id)}
-            onQuantityChange={(quantity) =>
-              onTileQuantityChange(gridTile.writtenIndex, gridTile.tile.print, quantity)
-            }
-          />
-        ) : (
-          <ImagelessTile
-            key={gridTile.key}
-            gridTile={gridTile}
-            isResolving={isResolving}
-            isSelected={selected}
-            onSelect={() => toggleSelection(null)}
-            onPickCandidate={(oracleId) => onPickCandidate(gridTile.writtenIndex, oracleId)}
-          />
-        );
-      })}
-    </ul>
+    <>
+      <ul
+        ref={gridRef}
+        aria-label={t('workspace.cardGrid')}
+        className="grid content-start gap-y-3 p-1 pr-6 pb-4 pl-6"
+        style={{
+          columnGap: TILE_GAP_PX,
+          gridTemplateColumns: `repeat(auto-fill, minmax(${tileWidthPx}px, 1fr))`,
+        }}
+      >
+        {gridTiles.map((gridTile, index) => {
+          const selected = isSelected(gridTile, selection);
+          const toggleSelection = (printId: string | null) =>
+            onSelect(selected ? null : { writtenIndex: gridTile.writtenIndex, printId });
+          return gridTile.kind === 'print' ? (
+            <PrintTileCard
+              key={gridTile.key}
+              gridTile={gridTile}
+              isSelected={selected}
+              continuesRowAbove={gridTile.siblingIndex > 0 && index % columns === 0}
+              zoomOn={zoomOn}
+              onSelect={() => toggleSelection(gridTile.tile.print.id)}
+              onQuantityChange={(quantity) =>
+                onTileQuantityChange(gridTile.writtenIndex, gridTile.tile.print, quantity)
+              }
+            />
+          ) : (
+            <ImagelessTile
+              key={gridTile.key}
+              gridTile={gridTile}
+              isResolving={isResolving}
+              isSelected={selected}
+              onSelect={() => toggleSelection(null)}
+              onPickCandidate={(oracleId) => onPickCandidate(gridTile.writtenIndex, oracleId)}
+            />
+          );
+        })}
+      </ul>
+      {zoomedCard}
+    </>
   );
 }
