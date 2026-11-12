@@ -6,6 +6,8 @@ import { DecklistEditor } from './DecklistEditor.tsx';
 import { Inspector } from './Inspector.tsx';
 import { PdfControl } from './PdfControl.tsx';
 import { SheetView } from './SheetView.tsx';
+import { TileWidthSlider } from './TileWidthSlider.tsx';
+import { useTileWidth } from './tile-width.ts';
 import { ToolRail } from './ToolRail.tsx';
 import { centreViewAt, type WorkspaceState } from './workspace-state.ts';
 
@@ -18,6 +20,7 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
   const { t } = useTranslation();
   const { generator } = state;
   const view = centreViewAt(state.step);
+  const [tileWidth, setTileWidth] = useTileWidth();
   return (
     <div className="flex h-full gap-4 overflow-hidden p-4">
       <ToolRail view={view} onViewChange={state.goToStep} />
@@ -30,11 +33,12 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
           <h1 className="text-3xl leading-none font-bold tracking-tight">
             {t(`workspace.views.${view}`)}
           </h1>
+          {view === 'cards' && <TileWidthSlider width={tileWidth} onChange={setTileWidth} />}
           <PdfControl pdf={generator.pdf} className="mr-1 ml-auto" />
         </div>
         {view === 'cards' ? (
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <CardsView state={state} />
+            <CardsView state={state} tileWidthPx={tileWidth} />
           </div>
         ) : (
           <SheetView generator={generator} />

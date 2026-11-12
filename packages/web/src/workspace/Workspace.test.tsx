@@ -1,12 +1,13 @@
 import type { CatalogEntry } from '@mtg-suite/core';
 import { aCard, aPrint, jpegOfSize } from '@mtg-suite/core/test-fixtures';
-import { act, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
 import { inMemoryServer } from '../in-memory-server.ts';
 import { mountApp } from '../mount-app.tsx';
 import { DESKTOP, PHONE, stubScreen } from '../test-screen.ts';
+import { PRINT_PICKER_ZOOM_WAIT_MS, TILE_ZOOM_WAIT_MS } from '../use-zoomed-card.tsx';
 
 vi.mock('../api.ts');
 
@@ -69,8 +70,19 @@ const BRAINSTORM: CatalogEntry = {
   ],
 };
 
+/** A double-faced card: its print has a front and a back face, each with its own image. */
+const DELVER: CatalogEntry = (() => {
+  const front = printOf('Delver of Secrets', 'delver-isd', 'isd');
+  const back = printOf('Insectile Aberration', 'delver-isd-back', 'isd').faces;
+  return {
+    card: aCard({ oracleId: 'delver', name: 'Delver of Secrets // Insectile Aberration' }),
+    prints: [{ ...front, faces: [...front.faces, ...back] }],
+  };
+})();
+
 const CATALOG = [
   catalogEntry('sol-ring', 'Sol Ring', 'c21', 'lea'),
+  DELVER,
   BRAINSTORM,
   catalogEntry('lightning-bolt', 'Lightning Bolt'),
   catalogEntry('lightning-helix', 'Lightning Helix'),
@@ -349,6 +361,281 @@ describe('the quantity on a tile', () => {
       ['Immagine di Sol Ring', '3×', '1/2'],
       ['Immagine di Sol Ring', '1×', '2/2'],
     ]);
+  });
+});
+
+describe('a double-faced card', () => {
+  it('shows its front on the tile and turns to its back with the flip button', async () => {
+    const user = await mountPageAndWrite('1 Delver of Secrets{Enter}');
+    const tile = within(await screen.findByRole('listitem'));
+    expect(tile.getByRole('img', { name: 'Immagine di Delver of Secrets' })).toBeTruthy();
+
+    await user.click(tile.getByRole('button', { name: 'Gira Delver of Secrets' }));
+
+    expect(tile.getByRole('img', { name: 'Immagine di Insectile Aberration' })).toBeTruthy();
+
+    await user.click(tile.getByRole('button', { name: 'Gira Delver of Secrets' }));
+
+    expect(tile.getByRole('img', { name: 'Immagine di Delver of Secrets' })).toBeTruthy();
+  });
+
+  it('is the only kind of tile with a flip button', async () => {
+    await mountPageAndWrite('1 Delver of Secrets{Enter}4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    expect(tileAt(0).queryByRole('button', { name: /^Gira / })).toBeTruthy();
+    expect(tileAt(1).queryByRole('button', { name: /^Gira / })).toBeNull();
+  });
+});
+
+describe('the zoomed card', () => {
+  beforeEach(() => {
+    // Real time still flows, so the user's typing goes on; the waits are stepped by hand.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    return () => vi.useRealTimers();
+  });
+
+  /** The card shown enlarged, if any. */
+  function zoomedCard() {
+    return screen.queryByRole('img', { name: /, ingrandita$/ });
+  }
+
+  /** Makes `element` stand on screen in the box from `left` and `top`, `width` by `height` px. */
+  function placeOnScreen(
+    element: Element,
+    left: number,
+    top: number,
+    width: number,
+    height: number,
+  ) {
+    const box = { left, top, width, height, right: left + width, bottom: top + height };
+    vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({
+      ...box,
+      x: left,
+      y: top,
+    } as DOMRect);
+  }
+
+  /** Where the zoomed card stands on screen. */
+  function zoomedCardBox() {
+    const card = zoomedCard();
+    if (!card) throw new Error('no zoomed card');
+    const [left, top, width, height] = [
+      card.style.left,
+      card.style.top,
+      card.style.width,
+      card.style.height,
+    ].map(parseFloat) as [number, number, number, number];
+    return { left, top, right: left + width, bottom: top + height };
+  }
+
+  /** The screen under test: jsdom's window. */
+  const screenBox = () => ({ width: window.innerWidth, height: window.innerHeight });
+
+  describe('beside a tile', () => {
+    /** Mounts a grid of one tile standing in `box`, and zooms it. */
+    async function zoomTheTileAt(...box: [number, number, number, number]) {
+      const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+      const tile = await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+      placeOnScreen(tile, ...box);
+      await user.hover(tile);
+      act(() => vi.advanceTimersByTime(TILE_ZOOM_WAIT_MS));
+      return zoomedCardBox();
+    }
+
+    it('stands to the right of its tile, when the screen has room there', async () => {
+      const card = await zoomTheTileAt(100, 200, 150, 210);
+
+      expect(card.left).toBeGreaterThan(250);
+      expect(card.right).toBeLessThanOrEqual(screenBox().width);
+    });
+
+    it('goes to the left of its tile when the right has no room', async () => {
+      const card = await zoomTheTileAt(800, 200, 150, 210);
+
+      expect(card.right).toBeLessThan(800);
+      expect(card.left).toBeGreaterThanOrEqual(0);
+    });
+
+    it('centres on its tile in height', async () => {
+      const card = await zoomTheTileAt(100, 200, 150, 210);
+
+      expect((card.top + card.bottom) / 2).toBeCloseTo(305);
+    });
+
+    it('stays inside the screen when its tile is near the top or the bottom', async () => {
+      const nearTop = await zoomTheTileAt(100, 0, 150, 210);
+      expect(nearTop.top).toBeGreaterThanOrEqual(0);
+      cleanup();
+
+      const nearBottom = await zoomTheTileAt(100, screenBox().height - 210, 150, 210);
+      expect(nearBottom.bottom).toBeLessThanOrEqual(screenBox().height);
+    });
+  });
+
+  it('shows the card enlarged once the pointer has rested on its tile for a while', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const tile = await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    await user.hover(tile);
+    act(() => vi.advanceTimersByTime(TILE_ZOOM_WAIT_MS - 100));
+    expect(zoomedCard()).toBeNull();
+    act(() => vi.advanceTimersByTime(100));
+
+    expect(zoomedCard()?.getAttribute('alt')).toBe('Sol Ring, ingrandita');
+  });
+
+  it('shows the face the tile is turned to', async () => {
+    const user = await mountPageAndWrite('1 Delver of Secrets{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Gira Delver of Secrets' }));
+
+    await user.hover(screen.getByRole('button', { name: /^Modifica Delver/ }));
+    act(() => vi.advanceTimersByTime(TILE_ZOOM_WAIT_MS));
+
+    expect(zoomedCard()?.getAttribute('alt')).toBe('Insectile Aberration, ingrandita');
+  });
+
+  describe('goes away', () => {
+    /** Mounts a grid of one tile and rests the pointer on it until its card shows enlarged. */
+    async function zoomTheTile() {
+      const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+      const tile = await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+      await user.hover(tile);
+      act(() => vi.advanceTimersByTime(TILE_ZOOM_WAIT_MS));
+      expect(zoomedCard()).toBeTruthy();
+      return { user, tile };
+    }
+
+    it('when the pointer leaves the tile', async () => {
+      const { user, tile } = await zoomTheTile();
+
+      await user.unhover(tile);
+
+      expect(zoomedCard()).toBeNull();
+    });
+
+    it('when anything scrolls', async () => {
+      await zoomTheTile();
+
+      fireEvent.scroll(screen.getByRole('list', { name: 'Griglia delle carte' }));
+
+      expect(zoomedCard()).toBeNull();
+    });
+
+    it('when the user clicks', async () => {
+      const { user, tile } = await zoomTheTile();
+
+      await user.click(tile);
+
+      expect(zoomedCard()).toBeNull();
+    });
+
+    it('when a drag starts', async () => {
+      const { tile } = await zoomTheTile();
+
+      fireEvent.dragStart(tile);
+
+      expect(zoomedCard()).toBeNull();
+    });
+
+    it('before it shows, when the pointer leaves during the wait', async () => {
+      const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+      const tile = await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+      await user.hover(tile);
+
+      await user.unhover(tile);
+      act(() => vi.advanceTimersByTime(TILE_ZOOM_WAIT_MS));
+
+      expect(zoomedCard()).toBeNull();
+    });
+  });
+
+  describe('in the print picker', () => {
+    /** Opens Sol Ring's print picker and returns it, with the button of its LEA print. */
+    async function openThePicker() {
+      const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+      await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+      const picker = await screen.findByRole('region', { name: 'Stampe di Sol Ring' });
+      const [, leaPrint] = await within(picker).findAllByRole('button', {
+        name: /^Immagine di Sol Ring/,
+      });
+      if (!leaPrint) throw new Error('no LEA print in the picker');
+      return { user, picker, leaPrint };
+    }
+
+    it('shows the hovered print enlarged sooner than on a tile', async () => {
+      const { user, leaPrint } = await openThePicker();
+
+      await user.hover(leaPrint);
+      act(() => vi.advanceTimersByTime(PRINT_PICKER_ZOOM_WAIT_MS));
+
+      expect(PRINT_PICKER_ZOOM_WAIT_MS).toBeLessThan(TILE_ZOOM_WAIT_MS);
+      expect(zoomedCard()?.getAttribute('src')).toBe(
+        'https://cards.scryfall.io/large/front/sol-ring-lea.jpg',
+      );
+    });
+
+    it('stands beside the whole picker, covering none of its prints', async () => {
+      const { user, picker, leaPrint } = await openThePicker();
+      placeOnScreen(picker, 600, 0, 400, 700);
+
+      await user.hover(leaPrint);
+      act(() => vi.advanceTimersByTime(PRINT_PICKER_ZOOM_WAIT_MS));
+
+      expect(zoomedCardBox().right).toBeLessThan(600);
+    });
+
+    it('covers the picker rather than leave the screen, when neither side has room', async () => {
+      const { user, picker, leaPrint } = await openThePicker();
+      placeOnScreen(picker, 100, 0, 900, 700);
+
+      await user.hover(leaPrint);
+      act(() => vi.advanceTimersByTime(PRINT_PICKER_ZOOM_WAIT_MS));
+
+      const card = zoomedCardBox();
+      expect(card.left).toBeGreaterThanOrEqual(0);
+      expect(card.right).toBeLessThanOrEqual(screenBox().width);
+    });
+  });
+
+  it('never shows on a touch', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    const tile = await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    // A finger landing on the tile, before it presses: user-event sends no enter for a touch.
+    fireEvent.pointerEnter(tile, { pointerType: 'touch' });
+    act(() => vi.advanceTimersByTime(TILE_ZOOM_WAIT_MS));
+
+    expect(zoomedCard()).toBeNull();
+  });
+});
+
+describe('the tile width slider', () => {
+  /** The narrowest the card grid lets a tile get, as its columns say. */
+  function tileMinWidth() {
+    const grid = screen.getByRole('list', { name: 'Griglia delle carte' });
+    return /minmax\((\d+)px/.exec(grid.style.gridTemplateColumns)?.[1];
+  }
+
+  it('makes the tiles bigger or smaller with its slider', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    fireEvent.change(screen.getByRole('slider', { name: 'Zoom' }), { target: { value: '220' } });
+
+    expect(tileMinWidth()).toBe('220');
+  });
+
+  it('comes back as the user left it after a reload', async () => {
+    mountApp('/proxy');
+    fireEvent.change(screen.getByRole('slider', { name: 'Zoom' }), { target: { value: '100' } });
+    cleanup();
+
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    expect(screen.getByRole<HTMLInputElement>('slider', { name: 'Zoom' }).value).toBe('100');
+    expect(tileMinWidth()).toBe('100');
   });
 });
 

@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { setAndNumberOf } from '../print-label.ts';
 import { NORMAL_IMAGE } from '../scryfall-image-sizes.ts';
 import { Icon } from '../ui/Icon.tsx';
+import type { ZoomOn } from '../use-zoomed-card.tsx';
 import type { PrintGridTile } from './grid-tiles.ts';
 import { CARD_SHAPE } from '../card-shape.ts';
 import { COPY_PILE_MAX_DEPTH_PX, CopyPile, copyPileEdgeCount } from './CopyPile.tsx';
@@ -34,6 +36,8 @@ interface PrintTileCardProps {
   readonly isSelected: boolean;
   /** The tile starts a row while its previous sibling ends the row above. */
   readonly continuesRowAbove: boolean;
+  /** Zooms the card the tile shows once the pointer rests on it. */
+  readonly zoomOn: ZoomOn;
   readonly onSelect: () => void;
   /** Gives the tile `quantity` copies of its print; at zero the tile goes. */
   readonly onQuantityChange: (quantity: number) => void;
@@ -44,7 +48,8 @@ const QUANTITY_BUTTON =
 
 /**
  * One `PrintTile` in the card grid: the quantity, with a minus and a plus, on a tab above the
- * card, beside the mark of its print's warning if it has one, the card on its pile, and under it
+ * card, beside a flip button if its print is double-faced and the mark of its print's warning if it
+ * has one, the card on its pile, and under it
  * its set and, among siblings, which of them it is. Siblings are linked by a bridge across the gap
  * to the next one, and by a joint on the row's edge when the next one wraps.
  */
@@ -52,6 +57,7 @@ export function PrintTileCard({
   gridTile,
   isSelected,
   continuesRowAbove,
+  zoomOn,
   onSelect,
   onQuantityChange,
 }: PrintTileCardProps) {
@@ -59,7 +65,9 @@ export function PrintTileCard({
   const { line, tile, siblingIndex, siblingCount } = gridTile;
   const hasSiblings = siblingCount > 1;
   const isLastSibling = siblingIndex === siblingCount - 1;
-  const frontFace = tile.print.faces[0];
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [frontFace, backFace] = tile.print.faces;
+  const shownFace = (isFlipped && backFace) || frontFace;
   const warningLabel = tile.warning && t(`tile.printWarning.${tile.warning}`);
   const tabColour = hasSiblings ? 'bg-link' : 'bg-foreground';
   const hasPile = copyPileEdgeCount(tile.quantity) > 0;
@@ -88,6 +96,17 @@ export function PrintTileCard({
             {t('panel.plus')}
           </button>
         </div>
+        {backFace && frontFace && (
+          <button
+            type="button"
+            className="ml-1 grid size-6 place-items-center rounded-t-md bg-foreground text-panel hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-accent"
+            aria-label={t('tile.flip', { name: frontFace.name })}
+            aria-pressed={isFlipped}
+            onClick={() => setIsFlipped(!isFlipped)}
+          >
+            <Icon name="flip" className="size-3.5" />
+          </button>
+        )}
         {warningLabel && (
           // On the tab row above the card, so it never covers the artist or copyright line.
           <span
@@ -109,13 +128,14 @@ export function PrintTileCard({
           className="relative z-10 block w-full bg-raised focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-accent"
           style={{ ...CARD_SHAPE, boxShadow: cardShadow(hasSiblings, isSelected, hasPile) }}
           onClick={onSelect}
+          {...zoomOn(shownFace)}
         >
-          {frontFace && (
+          {shownFace && (
             <img
               className="block w-full"
               style={CARD_SHAPE}
-              src={frontFace.imageUris.normal}
-              alt={t('line.imageAlt', { name: frontFace.name })}
+              src={shownFace.imageUris.normal}
+              alt={t('line.imageAlt', { name: shownFace.name })}
               width={NORMAL_IMAGE.width}
               height={NORMAL_IMAGE.height}
               loading="lazy"

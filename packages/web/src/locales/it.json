@@ -17,6 +17,7 @@
   "workspace": {
     "decklistPanel": "Lista",
     "cardGrid": "Griglia delle carte",
+    "tileWidth": "Zoom",
     "toolRail": "Viste",
     "views": {
       "cards": "Carte",
@@ -83,11 +84,15 @@
     "showEnglishPrints": "Mostra le stampe inglesi",
     "languageFallback": "Nessuna stampa in {{lang}} con un'immagine: viene usata quella inglese."
   },
+  "zoomedCard": {
+    "alt": "{{name}}, ingrandita"
+  },
   "tile": {
     "open": "Modifica {{name}}",
     "decrease": "Una copia in meno di {{name}} ({{print}})",
     "increase": "Una copia in più di {{name}} ({{print}})",
     "siblingMark": "{{index}}/{{count}}",
+    "flip": "Gira {{name}}",
     "imageless": {
       "notFound": "Carta non trovata",
       "ambiguous": "Quale carta intendevi?",
