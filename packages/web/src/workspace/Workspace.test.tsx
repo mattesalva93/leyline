@@ -243,7 +243,10 @@ function stepBar() {
 describe('the workspace on a phone', () => {
   beforeEach(() => {
     const phone = actAsPhone();
-    return () => phone.mockRestore();
+    return () => {
+      phone.mockRestore();
+      vi.unstubAllGlobals();
+    };
   });
 
   it('shows one step at a time on the whole screen, picked from the bottom bar', async () => {
@@ -314,5 +317,28 @@ describe('the workspace on a phone', () => {
 
     expect(screen.getByRole('textbox', { name: 'Decklist' })).toBe(decklist);
     expect(screen.queryByRole('group', { name: 'Lingua delle carte' })).toBeNull();
+  });
+
+  it('puts the PDF button in the bottom bar, handing the PDF to the share menu on a phone that can', async () => {
+    vi.stubGlobal('navigator', { ...navigator, canShare: () => true, share: vi.fn() });
+    const user = await mountPageAndWrite('4 Sol Ring');
+    const pdfButton = stepBar().getByRole<HTMLButtonElement>('button', { name: 'Crea il PDF' });
+    expect(pdfButton.disabled).toBe(true);
+
+    await user.keyboard('{Enter}');
+    await user.click(stepBar().getByRole('button', { name: 'Foglio' }));
+
+    expect(stepBar().getByRole<HTMLButtonElement>('button', { name: 'Crea il PDF' }).disabled).toBe(
+      false,
+    );
+  });
+
+  it('keeps the place of a banner under the top bar in the "Lista" step only', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    expect(document.querySelectorAll('[data-ad-slot]')).toHaveLength(1);
+
+    await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+
+    expect(document.querySelectorAll('[data-ad-slot]')).toHaveLength(0);
   });
 });

@@ -8,6 +8,7 @@ import { CardsView } from './CardsView.tsx';
 import { DeckCount } from './DeckCount.tsx';
 import { DecklistEditor } from './DecklistEditor.tsx';
 import { DecklistSummary } from './DecklistSummary.tsx';
+import { PdfButton, PdfNotes } from './PdfControl.tsx';
 import { PhoneLinePanel } from './PhoneLinePanel.tsx';
 import { lineWithPanel } from './SelectedLinePanel.tsx';
 import { SheetView } from './SheetView.tsx';
@@ -17,7 +18,8 @@ const STEPS: readonly WorkspaceStep[] = ['list', 'cards', 'sheet'];
 
 /**
  * The workspace on a phone: one step at a time on the whole screen (the decklist, the cards, the
- * sheet), picked from the bar at the foot of the screen.
+ * sheet), picked from the bar at the foot of the screen, which ends with the PDF button. The
+ * PDF's progress shows just above that bar.
  */
 export function PhoneSteps({ workspace }: { readonly workspace: WorkspaceState }) {
   const { t } = useTranslation();
@@ -72,6 +74,9 @@ export function PhoneSteps({ workspace }: { readonly workspace: WorkspaceState }
           </div>
         )}
       </div>
+      <div className="flex shrink-0 flex-col items-center gap-1 border-t-2 border-border bg-panel px-3 py-2 text-sm empty:hidden">
+        <PdfNotes pdf={generator.pdf} />
+      </div>
       <nav
         aria-label={t('workspace.steps')}
         className="grid h-14 shrink-0 grid-cols-4 border-t-2 border-border bg-panel"
@@ -87,6 +92,10 @@ export function PhoneSteps({ workspace }: { readonly workspace: WorkspaceState }
             {t(`workspace.stepNames.${name}`)}
           </button>
         ))}
+        <PdfButton
+          pdf={generator.pdf}
+          className={`${LABEL} flex items-center justify-center gap-1 bg-accent px-1 text-accent-foreground disabled:opacity-40`}
+        />
       </nav>
       <PhoneLinePanel
         generator={generator}
