@@ -7,6 +7,7 @@ import { CardsView } from './CardsView.tsx';
 import { DecklistCount } from './DecklistCount.tsx';
 import { DecklistEditor } from './DecklistEditor.tsx';
 import { DecklistSummary } from './DecklistSummary.tsx';
+import { EmptyWorkspace } from './EmptyWorkspace.tsx';
 import { PdfStep } from './PdfStep.tsx';
 import { PhoneLinePanel } from './PhoneLinePanel.tsx';
 import { lineToFixOf, LineToFixPanel } from './LineToFixPanel.tsx';
@@ -20,7 +21,8 @@ const STEPS: readonly WorkspaceStep[] = ['list', 'cards', 'sheet', 'pdf'];
 
 /**
  * The workspace on a phone: one step at a time on the whole screen (the decklist, the cards, the
- * sheet, the PDF), picked from the bar at the foot of the screen.
+ * sheet, the PDF), picked from the bar at the foot of the screen. Empty, the decklist step shows
+ * how to start and the other steps wait for a card.
  */
 export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
   const { t } = useTranslation();
@@ -33,9 +35,12 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
         <DecklistCount cardCount={generator.cardCount} pageCount={generator.pageCount} />
       </InTopBar>
       {/* Outside the scrolling step, so the banner stays put under the top bar. */}
-      {step === 'list' && <AdSlot className="shrink-0 border-b-2 border-border bg-panel p-1.5" />}
+      {step === 'list' && !state.isEmpty && (
+        <AdSlot className="shrink-0 border-b-2 border-border bg-panel p-1.5" />
+      )}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {step === 'list' && (
+        {step === 'list' && state.isEmpty && <EmptyWorkspace generator={generator} />}
+        {step === 'list' && !state.isEmpty && (
           <div className="flex flex-col gap-4 p-3 pr-4">
             <BoardPanel title={t('workspace.decklistPanel')} isFoldable className="shrink-0">
               <DecklistEditor generator={generator} className="h-[38dvh]" />
@@ -80,7 +85,8 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
             key={name}
             type="button"
             aria-current={step === name ? 'step' : undefined}
-            className={`${LABEL} border-border not-last:border-r-2 ${step === name ? 'bg-foreground text-panel' : ''}`}
+            disabled={state.isEmpty && name !== 'list'}
+            className={`${LABEL} border-border not-last:border-r-2 disabled:opacity-40 ${step === name ? 'bg-foreground text-panel' : ''}`}
             onClick={() => state.goToStep(name)}
           >
             {t(`workspace.stepNames.${name}`)}

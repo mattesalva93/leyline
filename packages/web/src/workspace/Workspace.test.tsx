@@ -1367,4 +1367,47 @@ describe('the empty workspace', () => {
     expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
     expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
   });
+
+  describe('on a phone', () => {
+    beforeEach(() => {
+      stubScreen(PHONE);
+      return () => vi.unstubAllGlobals();
+    });
+
+    it('shows the explanation, the decklist text and the example button, the other steps waiting for a card', async () => {
+      const user = await mountPageAndWrite('4 Sol Ring');
+
+      expect(screen.getByText(/^Incolla o scrivi una decklist, una carta per riga/)).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
+      expect(screen.queryByRole('region', { name: 'Riepilogo' })).toBeNull();
+      for (const step of ['Carte', 'Foglio', 'PDF']) {
+        expect(stepBar().getByRole<HTMLButtonElement>('button', { name: step }).disabled).toBe(
+          true,
+        );
+      }
+
+      await user.keyboard('{Enter}');
+
+      expect(await screen.findByRole('region', { name: 'Riepilogo' })).toBeTruthy();
+      expect(stepBar().getByRole<HTMLButtonElement>('button', { name: 'Carte' }).disabled).toBe(
+        false,
+      );
+      await user.keyboard('1 Brainstorm');
+      expect(decklistValue()).toBe('4 Sol Ring\n1 Brainstorm');
+    });
+
+    it('comes back on the list step when the last card goes from another step', async () => {
+      const user = await mountPageAndWrite('1 Sol Ring{Enter}');
+      await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+
+      await user.click(
+        screen.getByRole('button', { name: 'Una copia in meno di Sol Ring (C21 #1)' }),
+      );
+
+      expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
+      expect(stepBar().getByRole('button', { name: 'Lista' }).getAttribute('aria-current')).toBe(
+        'step',
+      );
+    });
+  });
 });
