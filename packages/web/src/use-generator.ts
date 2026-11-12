@@ -3,12 +3,10 @@ import {
   applyCandidateChoice,
   defaultSheetOptions,
   fitAllocations,
-  generateSheetPdf,
   hasPrintableCopies,
   LANGS,
   layoutSheet,
   setLineQuantity,
-  sheetImageUrls,
   unprintedLines,
   type AllocationChoice,
   type DecklistLine,
@@ -17,18 +15,9 @@ import {
   type SheetOptions,
 } from '@mtg-suite/core';
 import { useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { fetchImages, resolveDecklistText } from './api.ts';
+import { resolveDecklistText } from './api.ts';
 import { loadDefaultLang, saveDefaultLang } from './default-lang.ts';
-import { canShareFile, deviceSharesPdf, downloadPdf, sharePdf, toPdfFile } from './pdf-delivery.ts';
-
-/** How far the PDF has got: images arrive one by one, then the pages are put together. */
-export type PdfStatus =
-  | { readonly step: 'idle' }
-  | { readonly step: 'fetchingImages'; readonly fetchedCount: number; readonly imageCount: number }
-  | { readonly step: 'composingPages' }
-  | { readonly step: 'readyToShare'; readonly file: File; readonly madeFrom: string }
-  | { readonly step: 'failed' };
+import { useSheetPdf, type SheetPdf } from './use-sheet-pdf.ts';
 
 const LINE_BREAK = /\r?\n/;
 
@@ -98,20 +87,10 @@ export interface Generator {
   /** How many resolved lines will not be printed. */
   readonly unprintedCount: number;
 
-  readonly pdfStatus: PdfStatus;
-  readonly isGeneratingPdf: boolean;
-  /** Whether this device hands the PDF to the share menu instead of downloading it. */
-  readonly sharesPdf: boolean;
-  /** The PDF waiting to be shared; `null` once the sheet has changed since it was made. */
-  readonly pdfToShare: File | null;
-  /** Whether a PDF can be made or shared now: every line resolved, something to print, none under way. */
-  readonly isPdfAvailable: boolean;
-  /** Shares the waiting PDF, or makes a new one: downloaded, or kept waiting for a tap to share it. */
-  readonly makeOrSharePdf: () => void;
+  readonly pdf: SheetPdf;
 }
 
 export function useGenerator(): Generator {
-  const { t } = useTranslation();
   const [decklistText, setDecklistText] = useState('');
   const [defaultLang, setDefaultLang] = useState(loadDefaultLang);
   const [resolutions, setResolutions] = useState<ResolutionsByLanguage>(new Map());
@@ -119,9 +98,6 @@ export function useGenerator(): Generator {
   const [requestsInFlight, setRequestsInFlight] = useState(0);
   const [lastResolveFailed, setLastResolveFailed] = useState(false);
   const [sheetOptions, setSheetOptions] = useState<SheetOptions>(defaultSheetOptions);
-  const [pdfStatus, setPdfStatus] = useState<PdfStatus>({ step: 'idle' });
-  const [sharesPdf] = useState(deviceSharesPdf);
-  const [isSharingPdf, setIsSharingPdf] = useState(false);
   // Every `resolutionKey` already asked for, so a line is sent once per language however often
   // the decklist text changes.
   const requestedKeys = useRef(new Set<string>());
@@ -280,48 +256,7 @@ export function useGenerator(): Generator {
   const unresolvedCount = cardLines.length - resolvedLines.length;
   const sheet = { options: sheetOptions, lines: resolvedLines };
   const sheetLayout = hasPrintableCopies(sheet) ? layoutSheet(sheet) : null;
-  const isGeneratingPdf =
-    pdfStatus.step === 'fetchingImages' || pdfStatus.step === 'composingPages';
-
-  /** Differs exactly when the PDF would: the options, and where each image goes on paper. */
-  const pdfIdentity = () => JSON.stringify({ options: sheetOptions, layout: sheetLayout });
-  const pdfToShare =
-    pdfStatus.step === 'readyToShare' && pdfStatus.madeFrom === pdfIdentity()
-      ? pdfStatus.file
-      : null;
-
-  async function createPdf() {
-    const madeFrom = pdfIdentity();
-    const urls = sheetImageUrls(sheet);
-    setPdfStatus({ step: 'fetchingImages', fetchedCount: 0, imageCount: urls.length });
-    try {
-      const images = await fetchImages(urls, (fetchedCount) =>
-        setPdfStatus({ step: 'fetchingImages', fetchedCount, imageCount: urls.length }),
-      );
-      setPdfStatus({ step: 'composingPages' });
-      const file = toPdfFile(await generateSheetPdf(sheet, images), t('pdf.fileName'));
-      // The browser opens the share menu only within a few seconds of a tap, and fetching the
-      // images outlasts that: sharing waits for a tap of its own. The real file is checked again:
-      // the browser may refuse one that the stand-in passed, such as a too large one.
-      if (sharesPdf && canShareFile(file)) {
-        setPdfStatus({ step: 'readyToShare', file, madeFrom });
-      } else {
-        downloadPdf(file);
-        setPdfStatus({ step: 'idle' });
-      }
-    } catch {
-      setPdfStatus({ step: 'failed' });
-    }
-  }
-
-  async function openShareMenu(file: File) {
-    setIsSharingPdf(true);
-    try {
-      await sharePdf(file);
-    } finally {
-      setIsSharingPdf(false);
-    }
-  }
+  const pdf = useSheetPdf(sheet, sheetLayout, unresolvedCount === 0);
 
   return {
     decklistText,
@@ -345,12 +280,6 @@ export function useGenerator(): Generator {
     changeSheetOptions: setSheetOptions,
     sheetLayout,
     unprintedCount: unprintedLines(sheet).length,
-    pdfStatus,
-    isGeneratingPdf,
-    sharesPdf,
-    pdfToShare,
-    isPdfAvailable:
-      !isGeneratingPdf && !isSharingPdf && unresolvedCount === 0 && sheetLayout !== null,
-    makeOrSharePdf: () => (pdfToShare ? void openShareMenu(pdfToShare) : void createPdf()),
+    pdf,
   };
 }

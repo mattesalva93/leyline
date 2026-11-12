@@ -8,7 +8,8 @@ import { LinePanel } from './LinePanel.tsx';
 import { touchIsMainInput } from './pdf-delivery.ts';
 import { SheetOptionsForm } from './SheetOptionsForm.tsx';
 import { SheetPreview } from './SheetPreview.tsx';
-import { useGenerator, type PdfStatus } from './use-generator.ts';
+import { useGenerator } from './use-generator.ts';
+import type { PdfStatus } from './use-sheet-pdf.ts';
 
 export function App() {
   const { t } = useTranslation();
@@ -17,12 +18,12 @@ export function App() {
   const [panelLineIndex, setPanelLineIndex] = useState<number | null>(null);
   const [touchIsMain] = useState(touchIsMainInput);
   const panelLine = panelLineIndex === null ? undefined : generator.lineAt(panelLineIndex);
-  const { cardLines, sheetLayout, pdfStatus, pdfToShare, isGeneratingPdf } = generator;
+  const { cardLines, sheetLayout, pdf } = generator;
 
   function pdfButtonLabel(): string {
-    if (isGeneratingPdf) return t('pdf.generating');
-    if (pdfToShare) return t('pdf.saveOrShare');
-    return generator.sharesPdf ? t('pdf.create') : t('pdf.download');
+    if (pdf.isGenerating) return t('pdf.generating');
+    if (pdf.fileToShare) return t('pdf.saveOrShare');
+    return pdf.sharesPdf ? t('pdf.create') : t('pdf.download');
   }
 
   return (
@@ -86,20 +87,16 @@ export function App() {
             <p className="print-at-actual-size" role="note">
               {t('pdf.printAtActualSize', { width: CARD_MM.width, height: CARD_MM.height })}
             </p>
-            <button
-              type="button"
-              disabled={!generator.isPdfAvailable}
-              onClick={generator.makeOrSharePdf}
-            >
+            <button type="button" disabled={!pdf.isAvailable} onClick={pdf.makeOrShare}>
               {pdfButtonLabel()}
             </button>
-            {pdfToShare && (
+            {pdf.fileToShare && (
               <p className="pdf-ready" role="status">
                 {t('pdf.readyToShare')}
               </p>
             )}
-            {isGeneratingPdf && <PdfProgress status={pdfStatus} />}
-            {pdfStatus.step === 'failed' && <p role="alert">{t('pdf.error')}</p>}
+            {pdf.isGenerating && <PdfProgress status={pdf.status} />}
+            {pdf.status.step === 'failed' && <p role="alert">{t('pdf.error')}</p>}
           </>
         )}
       </main>
