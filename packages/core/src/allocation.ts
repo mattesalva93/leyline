@@ -29,14 +29,15 @@ export function applyAllocationChoice(
 
 /** The most serious warning among the prints the line's copies use. */
 function worstWarning(line: ResolvedLine): PrintWarning | null {
+  return mostSeriousWarning(copiesByPrint(line).map(({ print }) => warningOfPrint(line, print)));
+}
+
+/** What to warn about `print` used by some of the copies of `line`, if anything. */
+export function warningOfPrint(line: ResolvedLine, print: Print): PrintWarning | null {
+  if (print.lang !== line.lang) return 'languageFallback';
   // A card printed in Italian virtually always has an English print with a real image too,
-  // unless the default print's warning says it has none.
-  const englishExists = line.printWarning !== 'lowResolutionWithoutEnglish';
-  return mostSeriousWarning(
-    copiesByPrint(line).map(({ print }) =>
-      print.lang === line.lang ? qualityWarning(print, englishExists) : 'languageFallback',
-    ),
-  );
+  // unless the line's warning says it has none.
+  return qualityWarning(print, line.printWarning !== 'lowResolutionWithoutEnglish');
 }
 
 /**
