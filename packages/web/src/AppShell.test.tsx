@@ -45,6 +45,13 @@ function linkNames(container: HTMLElement): string[] {
 }
 
 describe('the app shell', () => {
+  it('links only to the areas that exist: today the generator', async () => {
+    mountApp('/proxy');
+    await screen.findByRole('heading', { name: 'Generatore di fogli proxy' });
+
+    expect(linkNames(screen.getByRole('navigation', { name: 'Aree' }))).toEqual(['Generatore']);
+  });
+
   it('lists four areas in the top bar, in order, and marks the current one', () => {
     mountShellWithFourAreas();
 
