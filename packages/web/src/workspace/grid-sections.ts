@@ -1,10 +1,10 @@
-import { DECKLIST_SECTIONS, copyCount, type DecklistSectionName } from '@mtg-suite/core';
+import { DECKLIST_SECTIONS, copyCount, type DecklistSection } from '@mtg-suite/core';
 import type { WrittenCardLine } from '../use-generator.ts';
 import { gridTilesOf, type GridTile } from './grid-tiles.ts';
 
 /** A `DecklistSection` as the card grid shows it: its tiles under its title. */
 export interface GridSection {
-  readonly name: DecklistSectionName;
+  readonly name: DecklistSection;
   /** How many copies the section's lines ask for, counting the lines the server recognised. */
   readonly cardCount: number;
   /** In the order of the decklist text. */

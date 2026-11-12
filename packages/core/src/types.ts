@@ -145,8 +145,8 @@ export type DecklistLine = ResolvedLine | AmbiguousLine | NotFoundLine;
 /** The `DecklistSection`s a decklist can have, in the order the card grid shows them. */
 export const DECKLIST_SECTIONS = ['commander', 'mainDeck', 'lands', 'sideboard', 'tokens'] as const;
 
-/** Names a `DecklistSection`: the part of the decklist a written line belongs to. */
-export type DecklistSectionName = (typeof DECKLIST_SECTIONS)[number];
+/** The part of the decklist a written line belongs to, such as the main deck or the sideboard. */
+export type DecklistSection = (typeof DECKLIST_SECTIONS)[number];
 
 /** Which Scryfall image a `Sheet` prints: the JPG "large" one, or the PNG. */
 export type ImageQuality = 'large' | 'png';

@@ -13,7 +13,7 @@ import {
   unprintedLines,
   type AllocationChoice,
   type DecklistLine,
-  type DecklistSectionName,
+  type DecklistSection,
   type Lang,
   type Print,
   type SheetLayout,
@@ -63,7 +63,7 @@ export interface WrittenCardLine {
   /** Where the line sits in the decklist text, counting blank lines too. */
   readonly writtenIndex: number;
   readonly writtenLine: string;
-  readonly section: DecklistSectionName;
+  readonly section: DecklistSection;
   /**
    * `undefined` while the server has not resolved the line yet: it is shown as typed, and it
    * holds the PDF back.

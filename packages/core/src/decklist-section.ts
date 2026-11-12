@@ -1,5 +1,5 @@
 import { nameKey } from './name-match.ts';
-import type { DecklistSectionName } from './types.ts';
+import type { DecklistSection } from './types.ts';
 
 /** MTGO and some deckbuilders mark sideboard cards with an "SB:" prefix. */
 export const SIDEBOARD_PREFIX = /^SB:\s*/i;
@@ -8,7 +8,7 @@ export const SIDEBOARD_PREFIX = /^SB:\s*/i;
  * Section names deckbuilders write on a line of their own; no card has one as its name. Each
  * one opens the section it maps to.
  */
-const SECTIONS = new Map<string, DecklistSectionName>([
+const SECTIONS = new Map<string, DecklistSection>([
   ['about', 'mainDeck'],
   ['artifacts', 'mainDeck'],
   ['battles', 'mainDeck'],
@@ -36,7 +36,7 @@ const SECTIONS = new Map<string, DecklistSectionName>([
 const SECTION_HEADER = /^(.+?)\s*(\(\d+\))?\s*:?$/;
 
 /** The section a header line opens, or `null` when the line is no header. */
-export function sectionOpenedBy(writtenLine: string): DecklistSectionName | null {
+export function sectionOpenedBy(writtenLine: string): DecklistSection | null {
   const name = SECTION_HEADER.exec(writtenLine.trim())?.[1];
   return name === undefined ? null : (SECTIONS.get(nameKey(name)) ?? null);
 }
@@ -46,8 +46,8 @@ export function sectionOpenedBy(writtenLine: string): DecklistSectionName | null
  * above it opened (a header belongs to the section it opens), the main deck before any header.
  * A line with the sideboard prefix is in the sideboard wherever it is written.
  */
-export function sectionOfEachWrittenLine(writtenLines: readonly string[]): DecklistSectionName[] {
-  let current: DecklistSectionName = 'mainDeck';
+export function sectionOfEachWrittenLine(writtenLines: readonly string[]): DecklistSection[] {
+  let current: DecklistSection = 'mainDeck';
   return writtenLines.map((writtenLine) => {
     current = sectionOpenedBy(writtenLine) ?? current;
     return SIDEBOARD_PREFIX.test(writtenLine.trim()) ? 'sideboard' : current;
