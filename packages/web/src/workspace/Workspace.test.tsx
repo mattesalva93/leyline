@@ -279,4 +279,22 @@ describe('the workspace on a phone', () => {
 
     expect(topBar.getByText('12 carte · 2 pagine')).toBeTruthy();
   });
+
+  it("raises the tapped tile's line panel from the bottom, with the inspector's settings", async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+
+    await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+
+    const panel = within(screen.getByRole('dialog', { name: 'Riga selezionata' }));
+    expect(panel.getByRole('group', { name: 'Lingua di questa carta' })).toBeTruthy();
+    expect(await panel.findByRole('region', { name: 'Stampe di Sol Ring' })).toBeTruthy();
+    await user.click(panel.getByRole('button', { name: 'Una copia in più' }));
+    await user.click(panel.getByRole('button', { name: 'Fatto' }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(gridTiles().map(tileSummary)).toEqual([['Immagine di Sol Ring', '5×', undefined]]);
+    const tileButton = screen.getByRole('button', { name: 'Modifica Sol Ring' });
+    expect(tileButton.getAttribute('aria-pressed')).toBe('false');
+  });
 });

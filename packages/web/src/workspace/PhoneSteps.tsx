@@ -8,6 +8,8 @@ import { CardsView } from './CardsView.tsx';
 import { DeckCount } from './DeckCount.tsx';
 import { DecklistEditor } from './DecklistEditor.tsx';
 import { DecklistSummary } from './DecklistSummary.tsx';
+import { PhoneLinePanel } from './PhoneLinePanel.tsx';
+import { lineWithPanel } from './SelectedLinePanel.tsx';
 import { SheetView } from './SheetView.tsx';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 
@@ -86,6 +88,15 @@ export function PhoneSteps({ workspace }: { readonly workspace: WorkspaceState }
           </button>
         ))}
       </nav>
+      <PhoneLinePanel
+        generator={generator}
+        lineInText={
+          step === 'cards'
+            ? lineWithPanel(generator, workspace.selection?.writtenIndex ?? null)
+            : null
+        }
+        onClose={() => workspace.select(null)}
+      />
     </div>
   );
 }
