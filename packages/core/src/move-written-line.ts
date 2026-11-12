@@ -7,7 +7,7 @@ import {
 } from './decklist-section.ts';
 import { writtenLinesOf } from './decklist-text.ts';
 import { namesACard } from './decklist.ts';
-import type { DecklistSection } from './types.ts';
+import type { DecklistLine, DecklistSection } from './types.ts';
 
 /** Which side of a line another one is written on. */
 export type LineSide = 'before' | 'after';
@@ -114,4 +114,21 @@ export function moveWrittenLine(
     text: writtenLines.with(at, writtenInSection(writtenLines, at, section)).join('\n'),
     previousWrittenIndexes: placed.map(({ previousWrittenIndex }) => previousWrittenIndex),
   };
+}
+
+/** The written line as a move may rewrite it at will: without the sideboard prefix and indentation. */
+function movableText(writtenLine: string): string {
+  return withoutSideboardPrefix(writtenLine).trim();
+}
+
+/**
+ * `line` once a move rewrote its text as `writtenLine`. A move only adds or takes off the
+ * sideboard prefix, which names the same card in the same quantity: the line needs no new
+ * resolution, only its new text.
+ */
+export function lineRewrittenByMove(line: DecklistLine, writtenLine: string): DecklistLine {
+  if (movableText(line.text) !== movableText(writtenLine)) {
+    throw new Error(`A move rewrote "${line.text}" as "${writtenLine}", not just its prefix`);
+  }
+  return { ...line, text: writtenLine };
 }

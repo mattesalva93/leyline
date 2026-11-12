@@ -1,5 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { moveWrittenLine, sectionOfEachWrittenLine, writtenLinesOf } from './index.ts';
+import {
+  createInMemoryCatalog,
+  lineRewrittenByMove,
+  moveWrittenLine,
+  resolveDecklist,
+  sectionOfEachWrittenLine,
+  writtenLinesOf,
+} from './index.ts';
+import { aCard, aPrint } from './test-fixtures.ts';
+
+const catalog = createInMemoryCatalog([
+  { card: aCard({ oracleId: 'forest', name: 'Forest' }), prints: [aPrint({ id: 'forest-fdn' })] },
+]);
+
+/** What the server resolves `writtenLine` to. */
+async function resolutionOf(writtenLine: string) {
+  const [line] = await resolveDecklist(writtenLine, catalog, { today: '2026-11-12', lang: 'en' });
+  if (!line) throw new Error(`"${writtenLine}" names no card`);
+  return line;
+}
 
 describe('moveWrittenLine', () => {
   it('writes the line right after the line it is dropped after, every other line as it was', () => {
@@ -106,5 +125,25 @@ describe('moveWrittenLine', () => {
     });
 
     expect(move.text).toBe('Sideboard\n4 Forest\n// none yet\nLands\n1 Sol Ring');
+  });
+});
+
+describe('lineRewrittenByMove', () => {
+  it.each([
+    ['2 Forest', 'SB: 2 Forest'],
+    ['  sb:2 Forest', '  2 Forest'],
+  ])(
+    'resolves "%s" moved as "%s" just as the server resolves the rewritten line',
+    async (writtenLine, rewritten) => {
+      const line = lineRewrittenByMove(await resolutionOf(writtenLine), rewritten);
+
+      expect(line).toEqual(await resolutionOf(rewritten));
+    },
+  );
+
+  it('refuses a rewrite that changes more than the sideboard prefix', async () => {
+    const line = await resolutionOf('2 Forest');
+
+    expect(() => lineRewrittenByMove(line, 'SB: 3 Forest')).toThrow();
   });
 });

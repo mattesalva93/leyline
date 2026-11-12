@@ -8,6 +8,7 @@ import {
   fitAllocations,
   hasPrintableCopies,
   layoutSheet,
+  lineRewrittenByMove,
   moveWrittenLine,
   sectionOfEachWrittenLine,
   setLineQuantity,
@@ -324,7 +325,7 @@ export function useGenerator(): Generator {
       if (previousIndex === null) keepResolution(writtenLine, null);
       if (previousIndex !== writtenIndex) return;
       // A line not resolved yet is one the user is done with once they move it.
-      if (resolution) keepResolution(writtenLine, { ...resolution, text: writtenLine });
+      if (resolution) keepResolution(writtenLine, lineRewrittenByMove(resolution, writtenLine));
       else void resolveInLanguage([writtenLine], defaultLang);
     });
     writeRewrittenLines(

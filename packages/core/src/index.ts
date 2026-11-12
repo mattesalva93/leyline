@@ -15,6 +15,7 @@ export {
 } from './allocation.ts';
 export { sectionOfEachWrittenLine } from './decklist-section.ts';
 export {
+  lineRewrittenByMove,
   moveWrittenLine,
   type LineDestination,
   type LineMove,
