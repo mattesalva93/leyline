@@ -71,6 +71,11 @@ function parseLine(text: string): ParsedLine | null {
   };
 }
 
+/** Whether a written line names a card: it is no blank line, comment or section header. */
+export function namesACard(writtenLine: string): boolean {
+  return parseLine(writtenLine) !== null;
+}
+
 /**
  * Parses a decklist ("quantity name" lines, or just a name for one copy, maybe followed by set
  * and collector number as Arena and MTGO export them; blank lines, comments and section headers
