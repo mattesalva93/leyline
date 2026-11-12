@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { setAndNumberOf } from '../print-label.ts';
 import { NORMAL_IMAGE } from '../scryfall-image-sizes.ts';
+import { Icon } from '../ui/Icon.tsx';
 import type { PrintGridTile } from './grid-tiles.ts';
 import { CARD_SHAPE } from '../card-shape.ts';
 
@@ -31,7 +32,8 @@ interface PrintTileCardProps {
 }
 
 /**
- * One `PrintTile` in the card grid: the quantity on a tab above the card, the card, and under it
+ * One `PrintTile` in the card grid: the quantity on a tab above the card, beside the mark of its
+ * print's warning if it has one, the card, and under it
  * its set and, among siblings, which of them it is. Siblings are linked by a bridge across the gap
  * to the next one, and by a joint on the row's edge when the next one wraps.
  */
@@ -54,6 +56,17 @@ export function PrintTileCard({
         >
           {t('line.quantity', { count: tile.quantity })}
         </span>
+        {tile.warning && (
+          // On the tab row above the card, so it never covers the artist or copyright line.
+          <span
+            role="img"
+            aria-label={t(`tile.printWarning.${tile.warning}`)}
+            title={t(`tile.printWarning.${tile.warning}`)}
+            className="mr-2 ml-auto rounded-t-md bg-warning px-1.5 py-0.5 text-panel"
+          >
+            <Icon name="warning" />
+          </span>
+        )}
       </div>
       <button
         type="button"

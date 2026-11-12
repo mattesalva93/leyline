@@ -1,6 +1,6 @@
 import type { CatalogEntry } from '@mtg-suite/core';
 import { aCard, aPrint, jpegOfSize } from '@mtg-suite/core/test-fixtures';
-import { act, screen, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
@@ -118,7 +118,9 @@ function gridTiles() {
 /** What a tile shows: its image, its quantity and, among siblings, which of them it is. */
 function tileSummary(tile: HTMLElement) {
   return [
-    within(tile).queryByRole('img')?.getAttribute('alt'),
+    within(tile)
+      .queryByRole('img', { name: /^Immagine di / })
+      ?.getAttribute('alt'),
     within(tile).queryByText(/×$/)?.textContent,
     within(tile).queryByText(/^\d+\/\d+$/)?.textContent,
   ];
@@ -256,6 +258,34 @@ describe('the decklist summary', () => {
     const [, notFound] = gridTiles();
     expect(notFound?.getAttribute('aria-current')).toBe('true');
     expect(scrollIntoView.mock.contexts).toContain(notFound);
+  });
+
+  it('marks a tile whose print has a warning, outside its image, and the line panel says what', async () => {
+    // A first visit asks for Italian cards, and the catalog holds no Italian print.
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const tileButton = await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    const mark = screen.getByRole('img', { name: 'Stampa in inglese' });
+    expect(tileButton.contains(mark)).toBe(false);
+    await user.click(tileButton);
+    const inspector = within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
+    expect(
+      inspector.getByText(
+        "Nessuna stampa in italiano con un'immagine: viene usata quella inglese.",
+      ),
+    ).toBeTruthy();
+  });
+
+  it('switches every line to the language picked in the summary', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    expect(await screen.findByRole('img', { name: 'Stampa in inglese' })).toBeTruthy();
+
+    await user.click(summary().getByRole('radio', { name: 'Inglese' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('img', { name: 'Stampa in inglese' })).toBeNull(),
+    );
+    expect(screen.getByRole('button', { name: 'Modifica Sol Ring' })).toBeTruthy();
   });
 
   it('shows no counter once every line is fixed', async () => {

@@ -89,6 +89,11 @@
       "notFound": "Carta non trovata",
       "ambiguous": "Quale carta intendevi?",
       "noPrint": "Nessuna stampa con immagine"
+    },
+    "printWarning": {
+      "lowResolution": "Immagine a bassa risoluzione",
+      "lowResolutionWithoutEnglish": "Immagine a bassa risoluzione",
+      "languageFallback": "Stampa in inglese"
     }
   },
   "panel": {
