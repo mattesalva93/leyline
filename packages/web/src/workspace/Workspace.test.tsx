@@ -115,7 +115,8 @@ async function mountPageAndWrite(decklistText: string) {
 
 describe('the generator page', () => {
   it('recognises a line once the user breaks the line', async () => {
-    const user = await mountPageAndWrite('4 Sol Ring');
+    const user = await mountPageAndWrite('1 Lightning Bolt{Enter}4 Sol Ring');
+    await screen.findByRole('button', { name: 'Modifica Lightning Bolt' });
     expect(screen.getByText('Da riconoscere: vai a capo o esci dal campo')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Modifica Sol Ring' })).toBeNull();
 
@@ -692,7 +693,8 @@ describe('the tile width slider', () => {
   });
 
   it('comes back as the user left it after a reload', async () => {
-    mountApp('/proxy');
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
     fireEvent.change(screen.getByRole('slider', { name: 'Zoom' }), { target: { value: '100' } });
     cleanup();
 
@@ -1329,5 +1331,40 @@ describe('reordering the decklist by dragging tiles', () => {
       expect(tile.getAttribute('draggable')).not.toBe('true');
       expect(tile.className).not.toContain('cursor-grab');
     }
+  });
+});
+
+describe('the empty workspace', () => {
+  it('puts the explanation, the decklist text and the example button at the centre, with no other zone', () => {
+    mountApp('/proxy');
+
+    expect(screen.getByText(/^Incolla o scrivi una decklist, una carta per riga/)).toBeTruthy();
+    expect(screen.getByLabelText('Decklist')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
+    expect(screen.queryByRole('navigation', { name: 'Viste' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
+    expect(screen.queryByRole('complementary')).toBeNull();
+  });
+
+  it('gives way to the grid as soon as the first line is recognised, the user still typing in the decklist', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring');
+    expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
+
+    await user.keyboard('{Enter}');
+
+    expect(await screen.findByRole('button', { name: 'Modifica Sol Ring' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Prova con un esempio' })).toBeNull();
+    await user.keyboard('1 Brainstorm');
+    expect(decklistValue()).toBe('4 Sol Ring\n1 Brainstorm');
+  });
+
+  it('comes back once the decklist text is emptied', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    await user.clear(screen.getByLabelText('Decklist'));
+
+    expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
   });
 });

@@ -52,6 +52,7 @@ export function Workspace() {
   const selection = currentSelection(selectionInText, generator.writtenLineCount, gridTiles);
   const state: WorkspaceState = {
     generator,
+    isEmpty: generator.cardLines.every((cardLine) => cardLine.line === undefined),
     step,
     goToStep: setStep,
     gridSections,
