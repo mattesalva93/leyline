@@ -1,39 +1,6 @@
-import { useLayoutEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Generator } from '../use-generator.ts';
-
-/** Where the caret was in a decklist editor that went away while the user was in it. */
-let caretOfEditorGoneWhileFocused: { readonly start: number; readonly end: number } | null = null;
-
-/**
- * Hands the focus and the caret on from the editor that goes away to the one that takes its place,
- * as the workspace changes layout (the first recognised line, a resized screen), so the user can
- * keep typing.
- */
-function useFocusKeptAcrossLayouts() {
-  const ref = useRef<HTMLTextAreaElement>(null);
-  useLayoutEffect(() => {
-    const textarea = ref.current;
-    if (textarea && caretOfEditorGoneWhileFocused) {
-      textarea.focus();
-      textarea.setSelectionRange(
-        caretOfEditorGoneWhileFocused.start,
-        caretOfEditorGoneWhileFocused.end,
-      );
-    }
-    caretOfEditorGoneWhileFocused = null;
-    return () => {
-      // Runs while the textarea is still in the page, before React removes it.
-      if (textarea && document.activeElement === textarea) {
-        caretOfEditorGoneWhileFocused = {
-          start: textarea.selectionStart,
-          end: textarea.selectionEnd,
-        };
-      }
-    };
-  }, []);
-  return ref;
-}
+import { useFocusKeptAcrossLayouts } from './use-focus-kept-across-layouts.ts';
 
 /** The decklist text, always the source of what the grid shows, with how its recognition went. */
 export function DecklistEditor({

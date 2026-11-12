@@ -35,7 +35,7 @@ function currentSelection(
 }
 
 /** The step a workspace starts from: the cards on a wide screen, the decklist on a phone. */
-function firstStep(isWideScreen: boolean): WorkspaceStep {
+function startingStepFor(isWideScreen: boolean): WorkspaceStep {
   return isWideScreen ? 'cards' : 'list';
 }
 
@@ -46,7 +46,7 @@ function firstStep(isWideScreen: boolean): WorkspaceStep {
 export function Workspace() {
   const generator = useGenerator();
   const isWideScreen = useIsWideScreen();
-  const [step, setStep] = useState(() => firstStep(isWideScreen));
+  const [step, setStep] = useState(() => startingStepFor(isWideScreen));
   const [selectionInText, setSelectionInText] = useState<SelectionInText | null>(null);
   const [touchIsMain] = useState(touchIsMainInput);
   const gridSections = gridSectionsOf(generator.cardLines);
@@ -57,7 +57,7 @@ export function Workspace() {
   const [wasEmpty, setWasEmpty] = useState(isEmpty);
   if (isEmpty !== wasEmpty) {
     setWasEmpty(isEmpty);
-    if (isEmpty) setStep(firstStep(isWideScreen));
+    if (isEmpty) setStep(startingStepFor(isWideScreen));
   }
   const selectTile = (selection: TileSelection | null) =>
     setSelectionInText(selection && { ...selection, writtenLineCount: generator.writtenLineCount });

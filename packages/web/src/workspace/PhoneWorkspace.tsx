@@ -29,18 +29,18 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
   const { generator, step } = state;
   const panelLine = step === 'cards' ? panelLineOf(state.gridTiles, state.selection) : null;
   const lineToFix = step === 'cards' ? lineToFixOf(state.gridTiles, state.selection) : null;
+  const showsEmptyWorkspace = step === 'list' && state.isEmpty;
+  const showsDecklist = step === 'list' && !state.isEmpty;
   return (
     <div className="flex h-full flex-col">
       <InTopBar>
         <DecklistCount cardCount={generator.cardCount} pageCount={generator.pageCount} />
       </InTopBar>
       {/* Outside the scrolling step, so the banner stays put under the top bar. */}
-      {step === 'list' && !state.isEmpty && (
-        <AdSlot className="shrink-0 border-b-2 border-border bg-panel p-1.5" />
-      )}
+      {showsDecklist && <AdSlot className="shrink-0 border-b-2 border-border bg-panel p-1.5" />}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {step === 'list' && state.isEmpty && <EmptyWorkspace generator={generator} />}
-        {step === 'list' && !state.isEmpty && (
+        {showsEmptyWorkspace && <EmptyWorkspace generator={generator} />}
+        {showsDecklist && (
           <div className="flex flex-col gap-4 p-3 pr-4">
             <BoardPanel title={t('workspace.decklistPanel')} isFoldable className="shrink-0">
               <DecklistEditor generator={generator} className="h-[38dvh]" />
