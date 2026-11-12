@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { LanguagePicker } from '../LanguagePicker.tsx';
 import { BoardPanel } from '../ui/BoardPanel.tsx';
 import { PRIMARY_BUTTON } from '../ui/board-styles.ts';
 import type { Generator } from '../use-generator.ts';
@@ -6,8 +7,9 @@ import { DecklistEditor } from './DecklistEditor.tsx';
 import { EXAMPLE_DECKLIST } from './example-decklist.ts';
 
 /**
- * The workspace while no line of the decklist is recognised: what to do, the decklist text and a
- * way to try the generator on an example, at the centre in place of every other zone.
+ * The workspace while no line of the decklist is recognised: what to do, the decklist text, the
+ * language of the cards and a way to try the generator on an example, at the centre in place of
+ * every other zone.
  */
 export function EmptyWorkspace({ generator }: { readonly generator: Generator }) {
   const { t } = useTranslation();
@@ -26,7 +28,12 @@ export function EmptyWorkspace({ generator }: { readonly generator: Generator })
       <BoardPanel title={t('workspace.decklistPanel')} className="shrink-0">
         <DecklistEditor generator={generator} className="h-44" />
       </BoardPanel>
-      <div>
+      <div className="flex flex-wrap items-end justify-between gap-5">
+        <LanguagePicker
+          label={t('app.defaultLang')}
+          selectedLang={generator.defaultLang}
+          onChange={generator.changeDefaultLanguage}
+        />
         <button
           type="button"
           className={PRIMARY_BUTTON}

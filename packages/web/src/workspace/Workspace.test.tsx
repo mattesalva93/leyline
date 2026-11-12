@@ -1396,10 +1396,42 @@ describe('the empty workspace', () => {
     expect(screen.getByRole('button', { name: 'Gira Delver of Secrets' })).toBeTruthy();
   });
 
+  it('lets the user choose the language of the cards before writing the decklist', async () => {
+    const user = userEvent.setup();
+    mountApp('/proxy');
+
+    await user.click(
+      within(screen.getByRole('group', { name: 'Lingua delle carte' })).getByRole('radio', {
+        name: 'Italiano',
+      }),
+    );
+    await user.type(screen.getByLabelText('Decklist'), '1 Counterspell{Enter}');
+
+    const image = await screen.findByRole('img', { name: 'Immagine di Counterspell' });
+    expect(image.getAttribute('src')).toContain('counterspell-it-mh2');
+  });
+
   describe('on a phone', () => {
     beforeEach(() => {
       stubScreen(PHONE);
       return () => vi.unstubAllGlobals();
+    });
+
+    it('lets the user choose the language of the cards before writing the decklist on a phone', async () => {
+      const user = userEvent.setup();
+      mountApp('/proxy');
+
+      await user.click(
+        within(screen.getByRole('group', { name: 'Lingua delle carte' })).getByRole('radio', {
+          name: 'Italiano',
+        }),
+      );
+      await user.type(screen.getByLabelText('Decklist'), '1 Counterspell{Enter}');
+      await screen.findByRole('region', { name: 'Riepilogo' });
+      await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+
+      const image = await screen.findByRole('img', { name: 'Immagine di Counterspell' });
+      expect(image.getAttribute('src')).toContain('counterspell-it-mh2');
     });
 
     it('shows the explanation, the decklist text and the example button, the other steps waiting for a card', async () => {
