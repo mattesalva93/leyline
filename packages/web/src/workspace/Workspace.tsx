@@ -3,7 +3,8 @@ import { touchIsMainInput } from '../pdf-delivery.ts';
 import { useIsWideScreen } from '../screen-size.ts';
 import { useGenerator } from '../use-generator.ts';
 import { DesktopWorkspace } from './DesktopWorkspace.tsx';
-import { gridTilesOf, linesToFixOf, type GridTile, type TileSelection } from './grid-tiles.ts';
+import { gridSectionsOf } from './grid-sections.ts';
+import { linesToFixOf, type GridTile, type TileSelection } from './grid-tiles.ts';
 import { PhoneWorkspace } from './PhoneWorkspace.tsx';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 
@@ -43,7 +44,8 @@ export function Workspace() {
   const [step, setStep] = useState<WorkspaceStep>(isWideScreen ? 'cards' : 'list');
   const [selectionInText, setSelectionInText] = useState<SelectionInText | null>(null);
   const [touchIsMain] = useState(touchIsMainInput);
-  const gridTiles = gridTilesOf(generator.cardLines);
+  const gridSections = gridSectionsOf(generator.cardLines);
+  const gridTiles = gridSections.flatMap((section) => section.gridTiles);
   const linesToFix = linesToFixOf(gridTiles);
   const selectTile = (selection: TileSelection | null) =>
     setSelectionInText(selection && { ...selection, writtenLineCount: generator.writtenLineCount });
@@ -51,6 +53,7 @@ export function Workspace() {
     generator,
     step,
     goToStep: setStep,
+    gridSections,
     gridTiles,
     selection: currentSelection(selectionInText, generator.writtenLineCount, gridTiles),
     selectTile,

@@ -1,4 +1,5 @@
 import type { Generator } from '../use-generator.ts';
+import type { GridSection } from './grid-sections.ts';
 import type { GridTile, ImagelessGridTile, TileSelection } from './grid-tiles.ts';
 import type { CentreView } from './ToolRail.tsx';
 
@@ -18,6 +19,8 @@ export interface WorkspaceState {
   readonly generator: Generator;
   readonly step: WorkspaceStep;
   readonly goToStep: (step: WorkspaceStep) => void;
+  readonly gridSections: readonly GridSection[];
+  /** Every tile of the grid, section after section, in the order the grid shows them. */
   readonly gridTiles: readonly GridTile[];
   readonly selection: TileSelection | null;
   readonly selectTile: (selection: TileSelection | null) => void;
