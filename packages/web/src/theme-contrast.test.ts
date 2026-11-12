@@ -26,6 +26,7 @@ const TEXT_PAIRS = [
 const NON_TEXT_PAIRS = [
   ['border', 'background'],
   ['border', 'panel'],
+  ['border', 'raised'],
   ['accent', 'chrome'],
 ] as const;
 
@@ -37,15 +38,15 @@ function colourTokens(block: string): Map<string, string> {
   );
 }
 
-function blockAfter(marker: RegExp): string {
-  const start = themeCss.search(marker);
-  if (start < 0) throw new Error(`No ${marker} in theme.css`);
-  const open = themeCss.indexOf('{', start);
-  return themeCss.slice(open, themeCss.indexOf('}', open));
+/** The body of the rule that opens with `opening` (its selector or at-rule, then `{`). */
+function ruleBody(opening: string): string {
+  const start = themeCss.indexOf(opening);
+  if (start < 0) throw new Error(`No "${opening}" in theme.css`);
+  return themeCss.slice(start + opening.length, themeCss.indexOf('}', start));
 }
 
-const lightTokens = colourTokens(blockAfter(/@theme\b/));
-const darkTokens = new Map([...lightTokens, ...colourTokens(blockAfter(/\.dark\s*\{/))]);
+const lightTokens = colourTokens(ruleBody('@theme static {'));
+const darkTokens = new Map([...lightTokens, ...colourTokens(ruleBody('@layer theme {'))]);
 
 function relativeLuminance(hex: string): number {
   const [red, green, blue] = [1, 3, 5].map((offset) => {
