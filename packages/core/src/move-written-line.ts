@@ -1,6 +1,7 @@
 import {
   HEADER_OF_SECTION,
   sectionOfEachWrittenLine,
+  sectionOpenedBy,
   withSideboardPrefix,
   withoutSideboardPrefix,
 } from './decklist-section.ts';
@@ -35,13 +36,18 @@ interface PlacedLine {
 
 /**
  * Where to write a line at the end of `section` among `lines`: after the last line of the
- * section that names a card, or `null` when the section has none.
+ * section that names a card, or right under its last header when it has none; `null` when the
+ * text has no header of it either.
  */
 function endOfSection(lines: readonly PlacedLine[], section: DecklistSection): number | null {
   const sections = sectionOfEachWrittenLine(lines.map(({ writtenLine }) => writtenLine));
-  const last = lines.findLastIndex(
+  const lastCard = lines.findLastIndex(
     ({ writtenLine }, index) => sections[index] === section && namesACard(writtenLine),
   );
+  const lastHeader = lines.findLastIndex(
+    ({ writtenLine }) => sectionOpenedBy(writtenLine) === section,
+  );
+  const last = lastCard === -1 ? lastHeader : lastCard;
   return last === -1 ? null : last + 1;
 }
 

@@ -98,4 +98,13 @@ describe('moveWrittenLine', () => {
       expect(sections.at(-1)).toBe(section);
     },
   );
+
+  it('writes the line under the header of a section that has no card left, opening no other', () => {
+    const move = moveWrittenLine('4 Forest\nSideboard\n// none yet\nLands\n1 Sol Ring', 0, {
+      section: 'sideboard',
+      nextTo: null,
+    });
+
+    expect(move.text).toBe('Sideboard\n4 Forest\n// none yet\nLands\n1 Sol Ring');
+  });
 });
