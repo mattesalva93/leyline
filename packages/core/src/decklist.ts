@@ -250,3 +250,8 @@ export function setLineQuantity(line: DecklistLine, quantity: number): DecklistL
     WRITTEN_QUANTITY.exec(line.text) ?? [];
   return { ...line, quantity, text: `${beforeQuantity}${quantity}${timesMark} ${rest}` };
 }
+
+/** How many copies `lines` ask for in all, printable or not. */
+export function copyCount(lines: readonly DecklistLine[]): number {
+  return lines.reduce((count, line) => count + line.quantity, 0);
+}

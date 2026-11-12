@@ -3,6 +3,7 @@ import {
   applyCandidateChoice,
   previewPrint,
   chooseCandidate,
+  copyCount,
   createInMemoryCatalog,
   resolveDecklist,
   setLineQuantity,
@@ -615,5 +616,22 @@ describe('previewPrint', () => {
 
     expect(previewPrint(resolved)?.id).toBe('sol-ring-c21');
     expect(previewPrint(notFound)).toBeNull();
+  });
+});
+
+describe('copyCount', () => {
+  it('counts the copies every line asks for, whether it found its card or not', async () => {
+    const solRingAgain = aCard({ oracleId: 'sol-rind', name: 'Sol Rind' });
+    const catalog = createInMemoryCatalog([
+      { card: solRing, prints: [solRingC21] },
+      { card: solRingAgain, prints: [aPrint({ id: 'sol-rind-tst' })] },
+    ]);
+    const lines = await resolveDecklist('4 Sol Ring\n2 Xyzzy Plover\n3 Sol Rin', catalog, {
+      today,
+      lang: 'en',
+    });
+    expect(lines.map((line) => line.status)).toEqual(['resolved', 'notFound', 'ambiguous']);
+
+    expect(copyCount(lines)).toBe(9);
   });
 });
