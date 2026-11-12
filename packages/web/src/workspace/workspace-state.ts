@@ -4,14 +4,14 @@ import type { GridTile } from './grid-tiles.ts';
 import type { CentreView } from './ToolRail.tsx';
 
 /**
- * Where the user is in the workspace: on a phone, the step on screen; on a wide screen, where the
- * decklist text is always in sight, the view of the centre (`list` shows the cards).
+ * Where the user is in the workspace: on a phone, the step on screen; on a wide screen, where
+ * every zone is in sight, only the view of the centre follows it.
  */
-export type WorkspaceStep = 'list' | CentreView;
+export type WorkspaceStep = 'list' | CentreView | 'pdf';
 
-/** What the centre of a wide screen shows at `step`. */
+/** What the centre of a wide screen shows at `step`: the PDF is made from the sheet view. */
 export function centreViewAt(step: WorkspaceStep): CentreView {
-  return step === 'sheet' ? 'sheet' : 'cards';
+  return step === 'sheet' || step === 'pdf' ? 'sheet' : 'cards';
 }
 
 /** The state both layouts of the workspace show, each in its own arrangement of the zones. */

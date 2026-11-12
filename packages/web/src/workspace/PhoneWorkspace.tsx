@@ -7,19 +7,18 @@ import { CardsView } from './CardsView.tsx';
 import { DecklistCount } from './DecklistCount.tsx';
 import { DecklistEditor } from './DecklistEditor.tsx';
 import { DecklistSummary } from './DecklistSummary.tsx';
-import { PdfButton, PdfNotes } from './PdfControl.tsx';
+import { PdfStep } from './PdfStep.tsx';
 import { PhoneLinePanel } from './PhoneLinePanel.tsx';
 import { panelLineAt } from './SelectedLinePanel.tsx';
 import { SheetSettings } from './SheetSettings.tsx';
 import { SheetView } from './SheetView.tsx';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 
-const STEPS: readonly WorkspaceStep[] = ['list', 'cards', 'sheet'];
+const STEPS: readonly WorkspaceStep[] = ['list', 'cards', 'sheet', 'pdf'];
 
 /**
  * The workspace on a phone: one step at a time on the whole screen (the decklist, the cards, the
- * sheet), picked from the bar at the foot of the screen, which ends with the PDF button. The
- * PDF's progress shows just above that bar.
+ * sheet, the PDF), picked from the bar at the foot of the screen.
  */
 export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
   const { t } = useTranslation();
@@ -67,29 +66,24 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
             </BoardPanel>
           </div>
         )}
-      </div>
-      <div className="flex shrink-0 flex-col items-center gap-1 border-t-2 border-border bg-panel px-3 py-2 text-sm empty:hidden">
-        <PdfNotes pdf={generator.pdf} />
+        {step === 'pdf' && <PdfStep generator={generator} />}
       </div>
       <nav
         aria-label={t('workspace.steps')}
-        className="grid h-14 shrink-0 grid-cols-4 border-t-2 border-border bg-panel"
+        className="grid h-14 shrink-0 border-t-2 border-border bg-panel"
+        style={{ gridTemplateColumns: `repeat(${STEPS.length}, 1fr)` }}
       >
         {STEPS.map((name) => (
           <button
             key={name}
             type="button"
             aria-current={step === name ? 'step' : undefined}
-            className={`${LABEL} border-r-2 border-border ${step === name ? 'bg-foreground text-panel' : ''}`}
+            className={`${LABEL} border-border not-last:border-r-2 ${step === name ? 'bg-foreground text-panel' : ''}`}
             onClick={() => state.goToStep(name)}
           >
             {t(`workspace.stepNames.${name}`)}
           </button>
         ))}
-        <PdfButton
-          pdf={generator.pdf}
-          className={`${LABEL} flex items-center justify-center gap-1 bg-accent px-1 text-accent-foreground disabled:opacity-40`}
-        />
       </nav>
       <PhoneLinePanel
         generator={generator}

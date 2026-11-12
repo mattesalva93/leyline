@@ -33,7 +33,8 @@
     "stepNames": {
       "list": "Lista",
       "cards": "Carte",
-      "sheet": "Foglio"
+      "sheet": "Foglio",
+      "pdf": "PDF"
     },
     "decklistCount": "{{cards}} · {{pages}}",
     "cardCount_one": "{{count}} carta",

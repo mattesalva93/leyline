@@ -1,5 +1,5 @@
 import type { CatalogEntry } from '@mtg-suite/core';
-import { aCard, aPrint } from '@mtg-suite/core/test-fixtures';
+import { aCard, aPrint, jpegOfSize } from '@mtg-suite/core/test-fixtures';
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -304,18 +304,24 @@ describe('the workspace on a phone', () => {
     expect(screen.queryByRole('group', { name: 'Lingua delle carte' })).toBeNull();
   });
 
-  it('puts the PDF button in the bottom bar, handing the PDF to the share menu on a phone that can', async () => {
-    vi.stubGlobal('navigator', { ...navigator, canShare: () => true, share: vi.fn() });
-    const user = await mountPageAndWrite('4 Sol Ring');
-    const pdfButton = stepBar().getByRole<HTMLButtonElement>('button', { name: 'Crea il PDF' });
-    expect(pdfButton.disabled).toBe(true);
-
-    await user.keyboard('{Enter}');
-    await user.click(stepBar().getByRole('button', { name: 'Foglio' }));
-
-    expect(stepBar().getByRole<HTMLButtonElement>('button', { name: 'Crea il PDF' }).disabled).toBe(
-      false,
+  it('makes the PDF in a step of its own and hands it to the share menu of a phone that can', async () => {
+    const share = vi.fn(async () => {});
+    vi.stubGlobal('navigator', { ...navigator, canShare: () => true, share });
+    vi.mocked(api.fetchImages).mockImplementation(
+      async (urls) => new Map(urls.map((url) => [url, jpegOfSize(488, 680)])),
     );
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+
+    await user.click(stepBar().getByRole('button', { name: 'PDF' }));
+
+    expect(screen.getByRole('note').textContent).toContain('Stampa al 100%');
+    expect(screen.queryByLabelText('Decklist')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Crea il PDF' }));
+    await user.click(await screen.findByRole('button', { name: 'Salva o condividi' }));
+
+    expect(share).toHaveBeenCalledWith({
+      files: [expect.objectContaining({ name: 'proxy-mtg-suite.pdf', type: 'application/pdf' })],
+    });
   });
 
   it('keeps the place of a banner under the top bar in the "Lista" step only', async () => {
