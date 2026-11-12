@@ -30,7 +30,8 @@ export function CardGrid({
   const gridRef = useRef<HTMLDivElement>(null);
   const { zoomOn, zoomedCard } = useZoomedCard(TILE_ZOOM_WAIT_MS);
   const lineDrag = useLineDrag(onMoveLine);
-  const draggableLineDrag = tilesAreDraggable ? lineDrag : null;
+  // `null` where touch is the main input: there no tile can be dragged.
+  const mouseLineDrag = tilesAreDraggable ? lineDrag : null;
   const hasSideboard = sections.some((section) => section.name === 'sideboard');
   // A tile can be selected from outside the grid, such as the first line to fix: bring it in.
   useEffect(() => {
@@ -42,7 +43,7 @@ export function CardGrid({
         ref={gridRef}
         role="region"
         aria-label={t('workspace.cardGrid')}
-        {...(draggableLineDrag?.gridDropHandlers ?? {})}
+        {...(mouseLineDrag?.gridDropHandlers ?? {})}
       >
         {sections.map((section) => (
           <CardGridSection
@@ -50,15 +51,15 @@ export function CardGrid({
             section={section}
             selection={selection}
             zoomOn={zoomOn}
-            lineDrag={draggableLineDrag}
+            lineDrag={mouseLineDrag}
             {...sectionProps}
           />
         ))}
         {/* A line can open the sideboard only by a drop: there is no tile of it to drop on yet. */}
-        {draggableLineDrag?.draggedWrittenIndex != null && !hasSideboard && (
+        {mouseLineDrag?.draggedWrittenIndex != null && !hasSideboard && (
           <SideboardDropZone
-            isTarget={draggableLineDrag.destination?.section === 'sideboard'}
-            onDragOver={draggableLineDrag.sectionEndDragOver('sideboard')}
+            isTarget={mouseLineDrag.destination?.section === 'sideboard'}
+            onDragOver={mouseLineDrag.sectionEndDragOver('sideboard')}
           />
         )}
       </div>

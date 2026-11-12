@@ -83,7 +83,7 @@ export function CardGridSection({
           const selected = isSelected(gridTile, selection);
           const toggleSelection = (printId: string | null) =>
             onSelect(selected ? null : { writtenIndex: gridTile.writtenIndex, printId });
-          const tile =
+          const tileContent =
             gridTile.kind === 'print' ? (
               <PrintTileCard
                 gridTile={gridTile}
@@ -112,7 +112,7 @@ export function CardGridSection({
               isDragged={lineDrag?.draggedWrittenIndex === gridTile.writtenIndex}
               dropMarkSide={dropMarkOf(gridTile, lineDrag)}
             >
-              {tile}
+              {tileContent}
             </ReorderableTileItem>
           );
         })}
