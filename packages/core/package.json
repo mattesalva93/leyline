@@ -9,6 +9,11 @@
       "source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./test-fixtures": {
+      "source": "./src/test-fixtures.ts",
+      "types": "./dist/test-fixtures.d.ts",
+      "default": "./dist/test-fixtures.js"
     }
   },
   "dependencies": {
