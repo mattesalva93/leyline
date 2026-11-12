@@ -8,10 +8,12 @@ import {
   fitAllocations,
   hasPrintableCopies,
   layoutSheet,
+  sectionOfEachWrittenLine,
   setLineQuantity,
   unprintedLines,
   type AllocationChoice,
   type DecklistLine,
+  type DecklistSection,
   type Lang,
   type Print,
   type SheetLayout,
@@ -61,6 +63,7 @@ export interface WrittenCardLine {
   /** Where the line sits in the decklist text, counting blank lines too. */
   readonly writtenIndex: number;
   readonly writtenLine: string;
+  readonly section: DecklistSection;
   /**
    * `undefined` while the server has not resolved the line yet: it is shown as typed, and it
    * holds the PDF back.
@@ -295,10 +298,14 @@ export function useGenerator(): Generator {
     );
   }
 
+  const sectionOfEachLine = sectionOfEachWrittenLine(writtenLines);
   const cardLines = writtenLines.flatMap((writtenLine, writtenIndex): WrittenCardLine[] => {
     const line = displayedLine(writtenIndex);
+    // Never missing: there is a section for every written line.
+    const section = sectionOfEachLine[writtenIndex];
+    if (!section) return [];
     if (line === null || (line === undefined && writtenLine.trim() === '')) return [];
-    return [{ writtenIndex, writtenLine, line }];
+    return [{ writtenIndex, writtenLine, section, line }];
   });
   const recognisedLines = cardLines.flatMap((cardLine) => cardLine.line ?? []);
   const unresolvedCount = cardLines.length - recognisedLines.length;

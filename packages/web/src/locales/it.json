@@ -17,6 +17,13 @@
   "workspace": {
     "decklistPanel": "Lista",
     "cardGrid": "Griglia delle carte",
+    "sections": {
+      "commander": "Comandante",
+      "mainDeck": "Mazzo",
+      "lands": "Terre",
+      "sideboard": "Sideboard",
+      "tokens": "Token"
+    },
     "tileWidth": "Zoom",
     "toolRail": "Viste",
     "views": {

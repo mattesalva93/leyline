@@ -1,5 +1,6 @@
 import { copiesByPrint } from './allocation.ts';
 import { defaultPrintFor, hasRealImage, qualityWarning } from './default-print.ts';
+import { SIDEBOARD_PREFIX, sectionOpenedBy } from './decklist-section.ts';
 import { cardKeys, nameKey, trigramSimilarity, trigrams } from './name-match.ts';
 import type {
   AmbiguousLine,
@@ -43,47 +44,20 @@ interface ParsedLine {
 const QUANTITY_NAME = /^(\d+)x?\s+(.+)$/i;
 /** "Sol Ring (C21) 263", maybe with a finish marker such as "*F*" (foil) after the number. */
 const NAME_SET_NUMBER = /^(.+?)\s+\(([A-Za-z0-9]+)\)\s+(\S+)(?:\s+\*[A-Za-z]+\*)?$/;
-/** MTGO and some deckbuilders mark sideboard cards with an "SB:" prefix. */
-const SIDEBOARD_PREFIX = /^SB:\s*/i;
 const COMMENT = /^(\/\/|#)/;
-/** Section names deckbuilders write on a line of their own; no card has one as its name. */
-const SECTIONS = new Set([
-  'about',
-  'artifacts',
-  'battles',
-  'commander',
-  'commanders',
-  'companion',
-  'considering',
-  'creatures',
-  'deck',
-  'enchantments',
-  'instants',
-  'lands',
-  'main',
-  'main deck',
-  'mainboard',
-  'maybeboard',
-  'other',
-  'planeswalkers',
-  'sideboard',
-  'sorceries',
-  'spells',
-  'tokens',
-]);
-/** A section header: a section name, maybe followed by a card count and a colon. */
-const SECTION_HEADER = /^(.+?)\s*(\(\d+\))?\s*:?$/;
 
 function isIgnored(trimmed: string): boolean {
-  if (trimmed === '' || COMMENT.test(trimmed)) return true;
-  const section = SECTION_HEADER.exec(trimmed)?.[1];
-  return section !== undefined && SECTIONS.has(nameKey(section));
+  return trimmed === '' || COMMENT.test(trimmed) || sectionOpenedBy(trimmed) !== null;
 }
 
-/** The card a line asks for, or `null` for blank lines, comments and section headers. */
+/**
+ * The card a line asks for, or `null` for blank lines, comments and section headers. The
+ * sideboard prefix marks a card: a header is a line of its own, so a prefixed one is a card name.
+ */
 function parseLine(text: string): ParsedLine | null {
-  const trimmed = text.trim().replace(SIDEBOARD_PREFIX, '');
-  if (isIgnored(trimmed)) return null;
+  const written = text.trim();
+  const trimmed = written.replace(SIDEBOARD_PREFIX, '');
+  if (isIgnored(written) || trimmed === '') return null;
   const quantityMatch = QUANTITY_NAME.exec(trimmed);
   const quantity = quantityMatch?.[1] ? Number(quantityMatch[1]) : 1;
   const rest = quantityMatch?.[2] ?? trimmed;

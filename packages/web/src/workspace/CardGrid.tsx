@@ -1,54 +1,20 @@
-import type { Print } from '@mtg-suite/core';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TILE_ZOOM_WAIT_MS, useZoomedCard } from '../use-zoomed-card.tsx';
-import { isSelected, type GridTile, type TileSelection } from './grid-tiles.ts';
-import { ImagelessTile } from './ImagelessTile.tsx';
-import { PrintTileCard, TILE_GAP_PX } from './PrintTileCard.tsx';
+import { CardGridSection, type CardGridSectionProps } from './CardGridSection.tsx';
+import type { GridSection } from './grid-sections.ts';
 
-interface CardGridProps {
-  readonly gridTiles: readonly GridTile[];
-  /** The narrowest a tile gets, in CSS px: the grid stretches tiles to fill its rows. */
-  readonly tileWidthPx: number;
-  readonly selection: TileSelection | null;
-  readonly isResolving: boolean;
-  readonly onSelect: (selection: TileSelection | null) => void;
-  readonly onPickCandidate: (writtenIndex: number, oracleId: string) => void;
-  readonly onTileQuantityChange: (writtenIndex: number, print: Print, quantity: number) => void;
-}
-
-/** How many columns `grid` lays its tiles in, updated as its width changes. */
-function useColumnCount(grid: React.RefObject<HTMLElement | null>): number {
-  const [columns, setColumns] = useState(1);
-  useEffect(() => {
-    const element = grid.current;
-    if (!element || typeof ResizeObserver === 'undefined') return;
-    // The grid changes width with the window and the side panels.
-    const observer = new ResizeObserver(() =>
-      setColumns(getComputedStyle(element).gridTemplateColumns.split(' ').length),
-    );
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [grid]);
-  return columns;
+interface CardGridProps extends Omit<CardGridSectionProps, 'section' | 'zoomOn'> {
+  readonly sections: readonly GridSection[];
 }
 
 /**
- * The decklist as tiles, in the order of the text, each line's sibling tiles side by side. A tile
- * the pointer rests on shows its card enlarged.
+ * The decklist as tiles, section by section, in the order of the text within each, each line's
+ * sibling tiles side by side. A tile the pointer rests on shows its card enlarged.
  */
-export function CardGrid({
-  gridTiles,
-  tileWidthPx,
-  selection,
-  isResolving,
-  onSelect,
-  onPickCandidate,
-  onTileQuantityChange,
-}: CardGridProps) {
+export function CardGrid({ sections, selection, ...sectionProps }: CardGridProps) {
   const { t } = useTranslation();
-  const gridRef = useRef<HTMLUListElement>(null);
-  const columns = useColumnCount(gridRef);
+  const gridRef = useRef<HTMLDivElement>(null);
   const { zoomOn, zoomedCard } = useZoomedCard(TILE_ZOOM_WAIT_MS);
   // A tile can be selected from outside the grid, such as the first line to fix: bring it in.
   useEffect(() => {
@@ -56,43 +22,17 @@ export function CardGrid({
   }, [selection?.writtenIndex, selection?.printId]);
   return (
     <>
-      <ul
-        ref={gridRef}
-        aria-label={t('workspace.cardGrid')}
-        className="grid content-start gap-y-3 p-1 pr-6 pb-4 pl-6"
-        style={{
-          columnGap: TILE_GAP_PX,
-          gridTemplateColumns: `repeat(auto-fill, minmax(${tileWidthPx}px, 1fr))`,
-        }}
-      >
-        {gridTiles.map((gridTile, index) => {
-          const selected = isSelected(gridTile, selection);
-          const toggleSelection = (printId: string | null) =>
-            onSelect(selected ? null : { writtenIndex: gridTile.writtenIndex, printId });
-          return gridTile.kind === 'print' ? (
-            <PrintTileCard
-              key={gridTile.key}
-              gridTile={gridTile}
-              isSelected={selected}
-              continuesRowAbove={gridTile.siblingIndex > 0 && index % columns === 0}
-              zoomOn={zoomOn}
-              onSelect={() => toggleSelection(gridTile.tile.print.id)}
-              onQuantityChange={(quantity) =>
-                onTileQuantityChange(gridTile.writtenIndex, gridTile.tile.print, quantity)
-              }
-            />
-          ) : (
-            <ImagelessTile
-              key={gridTile.key}
-              gridTile={gridTile}
-              isResolving={isResolving}
-              isSelected={selected}
-              onSelect={() => toggleSelection(null)}
-              onPickCandidate={(oracleId) => onPickCandidate(gridTile.writtenIndex, oracleId)}
-            />
-          );
-        })}
-      </ul>
+      <div ref={gridRef} role="region" aria-label={t('workspace.cardGrid')}>
+        {sections.map((section) => (
+          <CardGridSection
+            key={section.name}
+            section={section}
+            selection={selection}
+            zoomOn={zoomOn}
+            {...sectionProps}
+          />
+        ))}
+      </div>
       {zoomedCard}
     </>
   );

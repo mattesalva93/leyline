@@ -4,18 +4,18 @@ import type { WorkspaceState } from './workspace-state.ts';
 
 /** The centre of the workspace in the "cards" view: the card grid, or how to start one. */
 export function CardsView({
-  state: { generator, gridTiles, selection, selectTile },
+  state: { generator, gridSections, selection, selectTile },
   tileWidthPx,
 }: {
   readonly state: WorkspaceState;
   readonly tileWidthPx: number;
 }) {
   const { t } = useTranslation();
-  return gridTiles.length === 0 ? (
+  return gridSections.length === 0 ? (
     <p className="max-w-xl p-4 text-sm text-muted-foreground">{t('app.intro')}</p>
   ) : (
     <CardGrid
-      gridTiles={gridTiles}
+      sections={gridSections}
       tileWidthPx={tileWidthPx}
       selection={selection}
       isResolving={generator.isResolving}

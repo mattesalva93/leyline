@@ -151,9 +151,26 @@ describe('the generator page', () => {
   });
 });
 
+/** The card grid, every section of it. */
+function cardGrid() {
+  return screen.getByRole('region', { name: 'Griglia delle carte' });
+}
+
 /** The tiles of the card grid, in the order the grid shows them. */
 function gridTiles() {
-  return within(screen.getByRole('list', { name: 'Griglia delle carte' })).getAllByRole('listitem');
+  return within(cardGrid()).getAllByRole('listitem');
+}
+
+/** Each section of the card grid: its title with its card count, and the images of its tiles. */
+function gridSections() {
+  return within(cardGrid())
+    .getAllByRole('region')
+    .map((section) => [
+      within(section).getByRole('heading').textContent,
+      within(section)
+        .getAllByRole('listitem')
+        .map((tile) => tileSummary(tile)[0]),
+    ]);
 }
 
 /** The tile at `index` in the card grid, to query inside it. */
@@ -198,6 +215,46 @@ describe('the workspace', () => {
     ]);
   });
 
+  it('shows each section under its title with its card count, in a fixed order, its tiles in the order of the text', async () => {
+    await mountPageAndWrite(
+      '4 Sol Ring{Enter}SB: 1 Lightning Bolt{Enter}Sideboard{Enter}2 Counterspell{Enter}Commander{Enter}1 Brainstorm{Enter}',
+    );
+    await screen.findByRole('button', { name: 'Modifica Brainstorm' });
+
+    expect(gridSections()).toEqual([
+      ['Comandante 1 carta', ['Immagine di Brainstorm']],
+      ['Mazzo 4 carte', ['Immagine di Sol Ring']],
+      ['Sideboard 3 carte', ['Immagine di Lightning Bolt', 'Immagine di Counterspell']],
+    ]);
+  });
+
+  it('shows no title for a section with no cards in it', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}Sideboard{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    expect(gridSections()).toEqual([['Mazzo 4 carte', ['Immagine di Sol Ring']]]);
+  });
+
+  it('shows the lands section between the main deck and the sideboard', async () => {
+    await mountPageAndWrite('Sideboard{Enter}2 Counterspell{Enter}Lands{Enter}4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    expect(gridSections()).toEqual([
+      ['Terre 4 carte', ['Immagine di Sol Ring']],
+      ['Sideboard 2 carte', ['Immagine di Counterspell']],
+    ]);
+  });
+
+  it('shows a section of cards it could not find under its title, counting them as the summary does', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}Sideboard{Enter}2 Nonexistent Card{Enter}');
+    await screen.findByText('Carta non trovata');
+
+    expect(gridSections()).toEqual([
+      ['Mazzo 4 carte', ['Immagine di Sol Ring']],
+      ['Sideboard 2 carte', [undefined]],
+    ]);
+  });
+
   it("shows the selected tile's quantity and prints in the inspector, beside the grid", async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
 
@@ -230,7 +287,7 @@ describe('the workspace', () => {
     expect(screen.getByText(/^1 riga non verrà stampata/)).toBeTruthy();
     const inspector = within(screen.getByRole('complementary', { name: 'Opzioni del foglio' }));
     expect(inspector.getByLabelText('Formato della pagina')).toBeTruthy();
-    expect(screen.queryByRole('list', { name: 'Griglia delle carte' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
   });
 
   it('keeps the PDF button in reach in both views', async () => {
@@ -517,7 +574,7 @@ describe('the zoomed card', () => {
     it('when anything scrolls', async () => {
       await zoomTheTile();
 
-      fireEvent.scroll(screen.getByRole('list', { name: 'Griglia delle carte' }));
+      fireEvent.scroll(cardGrid());
 
       expect(zoomedCard()).toBeNull();
     });
@@ -613,7 +670,7 @@ describe('the zoomed card', () => {
 describe('the tile width slider', () => {
   /** The narrowest the card grid lets a tile get, as its columns say. */
   function tileMinWidth() {
-    const grid = screen.getByRole('list', { name: 'Griglia delle carte' });
+    const grid = within(cardGrid()).getByRole('list');
     return /minmax\((\d+)px/.exec(grid.style.gridTemplateColumns)?.[1];
   }
 
@@ -762,6 +819,15 @@ describe('the decklist summary', () => {
     expect(summary().getByRole('button', { name: '3 righe da sistemare' })).toBeTruthy();
   });
 
+  it('prints every section: the sideboard counts towards the cards and the pages', async () => {
+    // Eight main-deck cards fill most of an A4 page: the sideboard's two need a second one.
+    await mountPageAndWrite('8 Sol Ring{Enter}Sideboard{Enter}2 Counterspell{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Counterspell' });
+
+    expect(summaryValue('Carte')).toBe('10');
+    expect(summaryValue('Pagine')).toBe('2');
+  });
+
   it('brings the first line to fix into view and selects it', async () => {
     const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView');
     const user = await mountPageAndWrite(
@@ -774,6 +840,18 @@ describe('the decklist summary', () => {
     const [, notFound] = gridTiles();
     expect(notFound?.getAttribute('aria-current')).toBe('true');
     expect(scrollIntoView.mock.contexts).toContain(notFound);
+  });
+
+  it('takes the lines to fix in the order of the text, whatever section the grid shows them in', async () => {
+    const user = await mountPageAndWrite(
+      '2 Nonexistent Card{Enter}Commander{Enter}1 Nonexistent Commander{Enter}',
+    );
+    await screen.findAllByText('Carta non trovata');
+
+    await user.click(summary().getByRole('button', { name: '2 righe da sistemare' }));
+
+    const selected = gridTiles().find((tile) => tile.getAttribute('aria-current') === 'true');
+    expect(selected?.textContent).toContain('2 Nonexistent Card');
   });
 
   it('marks a tile whose print has a warning, outside its image, and the line panel says what', async () => {
@@ -868,7 +946,7 @@ describe('the workspace on a phone', () => {
 
   it('shows one step at a time on the whole screen, picked from the bottom bar', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
-    expect(screen.queryByRole('list', { name: 'Griglia delle carte' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
 
     await user.click(stepBar().getByRole('button', { name: 'Carte' }));
 
@@ -879,7 +957,7 @@ describe('the workspace on a phone', () => {
 
     expect(screen.getByRole('img', { name: 'Pagina 1 di 1 come verrà stampata' })).toBeTruthy();
     expect(screen.getByLabelText('Formato della pagina')).toBeTruthy();
-    expect(screen.queryByRole('list', { name: 'Griglia delle carte' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
 
     await user.click(stepBar().getByRole('button', { name: 'Lista' }));
 

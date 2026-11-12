@@ -3,6 +3,7 @@ import { touchIsMainInput } from '../pdf-delivery.ts';
 import { useIsWideScreen } from '../screen-size.ts';
 import { useGenerator } from '../use-generator.ts';
 import { DesktopWorkspace } from './DesktopWorkspace.tsx';
+import { gridSectionsOf } from './grid-sections.ts';
 import { gridTilesOf, linesToFixOf, type GridTile, type TileSelection } from './grid-tiles.ts';
 import { PhoneWorkspace } from './PhoneWorkspace.tsx';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
@@ -43,6 +44,7 @@ export function Workspace() {
   const [step, setStep] = useState<WorkspaceStep>(isWideScreen ? 'cards' : 'list');
   const [selectionInText, setSelectionInText] = useState<SelectionInText | null>(null);
   const [touchIsMain] = useState(touchIsMainInput);
+  const gridSections = gridSectionsOf(generator.cardLines);
   const gridTiles = gridTilesOf(generator.cardLines);
   const linesToFix = linesToFixOf(gridTiles);
   const selectTile = (selection: TileSelection | null) =>
@@ -51,6 +53,7 @@ export function Workspace() {
     generator,
     step,
     goToStep: setStep,
+    gridSections,
     gridTiles,
     selection: currentSelection(selectionInText, generator.writtenLineCount, gridTiles),
     selectTile,
