@@ -1,20 +1,11 @@
-import type { Print } from '@mtg-suite/core';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TILE_ZOOM_WAIT_MS, useZoomedCard } from '../use-zoomed-card.tsx';
-import { CardGridSection } from './CardGridSection.tsx';
+import { CardGridSection, type CardGridSectionProps } from './CardGridSection.tsx';
 import type { GridSection } from './grid-sections.ts';
-import type { TileSelection } from './grid-tiles.ts';
 
-interface CardGridProps {
+interface CardGridProps extends Omit<CardGridSectionProps, 'section' | 'zoomOn'> {
   readonly sections: readonly GridSection[];
-  /** The narrowest a tile gets, in CSS px: the grid stretches tiles to fill its rows. */
-  readonly tileWidthPx: number;
-  readonly selection: TileSelection | null;
-  readonly isResolving: boolean;
-  readonly onSelect: (selection: TileSelection | null) => void;
-  readonly onPickCandidate: (writtenIndex: number, oracleId: string) => void;
-  readonly onTileQuantityChange: (writtenIndex: number, print: Print, quantity: number) => void;
 }
 
 /**

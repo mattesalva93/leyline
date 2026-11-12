@@ -7,7 +7,7 @@ import { isSelected, type TileSelection } from './grid-tiles.ts';
 import { ImagelessTile } from './ImagelessTile.tsx';
 import { PrintTileCard, TILE_GAP_PX } from './PrintTileCard.tsx';
 
-interface CardGridSectionProps {
+export interface CardGridSectionProps {
   readonly section: GridSection;
   /** The narrowest a tile gets, in CSS px: the grid stretches tiles to fill its rows. */
   readonly tileWidthPx: number;

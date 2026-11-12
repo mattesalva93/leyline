@@ -298,11 +298,13 @@ export function useGenerator(): Generator {
     );
   }
 
-  const sections = sectionOfEachWrittenLine(writtenLines);
+  const sectionOfEachLine = sectionOfEachWrittenLine(writtenLines);
   const cardLines = writtenLines.flatMap((writtenLine, writtenIndex): WrittenCardLine[] => {
     const line = displayedLine(writtenIndex);
-    const section = sections[writtenIndex];
-    if (line === null || (line === undefined && writtenLine.trim() === '') || !section) return [];
+    // Never missing: there is a section for every written line.
+    const section = sectionOfEachLine[writtenIndex];
+    if (!section) return [];
+    if (line === null || (line === undefined && writtenLine.trim() === '')) return [];
     return [{ writtenIndex, writtenLine, section, line }];
   });
   const recognisedLines = cardLines.flatMap((cardLine) => cardLine.line ?? []);
