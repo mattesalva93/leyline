@@ -9,19 +9,15 @@ import type {
 } from './types.ts';
 
 /**
- * The line with the copies the user allocated to prints. Like the candidate choice, the choice
- * is kept apart from the line: it applies only while the line resolves to the chosen card, and
- * any other line comes back as it is.
+ * The line with the copies the user allocated to prints, in whatever language the prints are.
+ * Like the candidate choice, the choice is kept apart from the line: it applies only while the
+ * line resolves to the chosen card, whatever its language, and any other line comes back as it is.
  */
 export function applyAllocationChoice(
   line: DecklistLine,
   { oracleId, allocations }: AllocationChoice,
 ): DecklistLine {
-  const applies =
-    line.status === 'resolved' &&
-    line.card.oracleId === oracleId &&
-    allocations.every((allocation) => allocation.print.lang === line.defaultPrint?.lang);
-  if (!applies) return line;
+  if (line.status !== 'resolved' || line.card.oracleId !== oracleId) return line;
   const fitted = fitAllocations({ oracleId, allocations }, line.quantity).allocations;
   const allocated = { ...line, allocations: fitted };
   return { ...allocated, printWarning: worstWarning(allocated) };

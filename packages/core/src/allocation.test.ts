@@ -211,12 +211,32 @@ describe('applyAllocationChoice', () => {
     });
   });
 
-  it('leaves the line as it is once it asks for another language or card than the choice', async () => {
+  it('allocates copies of an Italian line to English prints, the rest staying Italian', async () => {
+    const line = await solRingLine('it');
+
+    expect(applyAllocationChoice(line, allocatePrintCopies(line, solRingC21, 1))).toMatchObject({
+      lang: 'it',
+      defaultPrint: { id: 'sol-ring-it' },
+      allocations: [{ print: { id: 'sol-ring-c21' }, quantity: 1 }],
+    });
+  });
+
+  it('keeps the allocated copies where they are once the line changes language', async () => {
+    const italian = await solRingLine('it');
     const english = await solRingLine('en');
+    const oneOldItalian = allocatePrintCopies(italian, solRingItOld, 1);
+
+    expect(applyAllocationChoice(english, oneOldItalian)).toMatchObject({
+      lang: 'en',
+      defaultPrint: { id: 'sol-ring-c21' },
+      allocations: [{ print: { id: 'sol-ring-it-old' }, quantity: 1 }],
+    });
+  });
+
+  it('leaves the line as it is once it resolves to another card than the choice', async () => {
     const italian = await solRingLine('it');
     const oldItalian = allocateEveryCopy(italian, solRingItOld);
 
-    expect(applyAllocationChoice(english, oldItalian)).toBe(english);
     expect(applyAllocationChoice(italian, { ...oldItalian, oracleId: 'goblin' })).toBe(italian);
   });
 });
