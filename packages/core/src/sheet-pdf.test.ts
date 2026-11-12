@@ -13,7 +13,7 @@ import {
   type Sheet,
   type SheetOptions,
 } from './index.ts';
-import { aCard, aPrint } from './test-fixtures.ts';
+import { aCard, aPrint, JPEG_COMMENT, jpegOfSize } from './test-fixtures.ts';
 
 const MM_PER_PT = 25.4 / 72;
 /** Tolerance for geometry read back from the PDF: 0.01 mm. */
@@ -225,25 +225,6 @@ function drawnContent(content: string): { images: DrawnImage[]; lines: Segment[]
     operands = [];
   }
   return { images, lines };
-}
-
-const JPEG_COMMENT = [0xff, 0xfe];
-
-/**
- * A header-only baseline JPEG: enough for a PDF writer to read its size, not a real picture.
- * `label` goes in a comment segment, so the test can tell embedded images apart.
- */
-function jpegOfSize(width: number, height: number, label = ''): Uint8Array {
-  const text = [...label].map((char) => char.charCodeAt(0));
-  const length = text.length + 2;
-  return new Uint8Array([
-    0xff, 0xd8, // SOI
-    ...JPEG_COMMENT, length >> 8, length & 0xff, ...text, // COM
-    0xff, 0xc0, 0x00, 0x11, 0x08, // SOF0, length 17, 8 bits per sample
-    height >> 8, height & 0xff, width >> 8, width & 0xff,
-    0x03, 0x01, 0x22, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01, // 3 components
-    0xff, 0xd9, // EOI
-  ]); // prettier-ignore
 }
 
 /** Reads back the label `jpegOfSize` wrote. PDF writers embed JPEG bytes as they are. */
