@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
 import { inMemoryServer } from '../in-memory-server.ts';
 import { mountApp } from '../mount-app.tsx';
-import { WIDE_SCREEN_QUERY } from '../screen-size.ts';
+import { DESKTOP, PHONE, stubScreen } from '../test-screen.ts';
 
 vi.mock('../api.ts');
 
@@ -223,19 +223,6 @@ describe('the workspace', () => {
   });
 });
 
-/** Makes the browser report a narrow screen with touch as the main input, as a phone does. */
-function actAsPhone() {
-  return vi.spyOn(window, 'matchMedia').mockImplementation(
-    (query) =>
-      ({
-        matches: query === '(pointer: coarse)',
-        media: query,
-        addEventListener() {},
-        removeEventListener() {},
-      }) as never,
-  );
-}
-
 /** The bar at the foot of a phone's screen, which picks the step. */
 function stepBar() {
   return within(screen.getByRole('navigation', { name: 'Passi' }));
@@ -243,11 +230,8 @@ function stepBar() {
 
 describe('the workspace on a phone', () => {
   beforeEach(() => {
-    const phone = actAsPhone();
-    return () => {
-      phone.mockRestore();
-      vi.unstubAllGlobals();
-    };
+    stubScreen(PHONE);
+    return () => vi.unstubAllGlobals();
   });
 
   it('shows one step at a time on the whole screen, picked from the bottom bar', async () => {
@@ -346,25 +330,11 @@ describe('the workspace on a phone', () => {
 
 describe('the workspace across screen sizes', () => {
   it('keeps the text and the selected tile when a wide screen narrows to a phone, open in its line panel', async () => {
-    let isWide = true;
-    const onWidthChange = new Set<() => void>();
-    const screenSize = vi.spyOn(window, 'matchMedia').mockImplementation(
-      (query) =>
-        ({
-          get matches() {
-            return query === WIDE_SCREEN_QUERY && isWide;
-          },
-          media: query,
-          addEventListener: (_type: string, listener: () => void) => onWidthChange.add(listener),
-          removeEventListener: (_type: string, listener: () => void) =>
-            onWidthChange.delete(listener),
-        }) as never,
-    );
+    const screenSize = stubScreen(DESKTOP);
     const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Modifica Lightning Bolt' }));
 
-    isWide = false;
-    act(() => onWidthChange.forEach((listener) => listener()));
+    act(() => screenSize.resize(false));
 
     const panel = within(screen.getByRole('dialog', { name: 'Riga selezionata' }));
     expect(panel.getByRole('heading', { name: 'Lightning Bolt' })).toBeTruthy();
@@ -373,6 +343,5 @@ describe('the workspace across screen sizes', () => {
     expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Decklist' }).value).toBe(
       '4 Sol Ring\n1 Lightning Bolt\n',
     );
-    screenSize.mockRestore();
   });
 });
