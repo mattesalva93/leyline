@@ -15,6 +15,12 @@ export {
 } from './allocation.ts';
 export { printTiles, type PrintTile } from './print-tile.ts';
 export {
+  changeTileQuantity,
+  writtenLinesOf,
+  type TileInText,
+  type TileQuantityChange,
+} from './decklist-text.ts';
+export {
   applyCandidateChoice,
   chooseCandidate,
   copyCount,

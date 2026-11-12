@@ -260,6 +260,121 @@ describe('the workspace', () => {
   });
 });
 
+describe('the quantity on a tile', () => {
+  it("adds a copy to the tile's print with its plus, and the decklist text says so", async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+
+    await user.click(screen.getByRole('button', { name: 'Una copia in più di Sol Ring (LEA #1)' }));
+
+    expect(gridTiles().map(tileSummary)).toEqual([
+      ['Immagine di Sol Ring', '3×', '1/2'],
+      ['Immagine di Sol Ring', '2×', '2/2'],
+      ['Immagine di Lightning Bolt', '1×', undefined],
+    ]);
+    expect(screen.getByLabelText<HTMLTextAreaElement>('Decklist').value).toBe(
+      '5 Sol Ring\n1 Lightning Bolt\n',
+    );
+  });
+
+  it('takes a tile brought to zero off the grid and keeps its siblings', async () => {
+    const user = await mountPageAndWrite('2 Sol Ring{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+
+    await user.click(
+      screen.getByRole('button', { name: 'Una copia in meno di Sol Ring (C21 #1)' }),
+    );
+
+    expect(gridTiles().map(tileSummary)).toEqual([['Immagine di Sol Ring', '1×', undefined]]);
+    expect(screen.getByLabelText<HTMLTextAreaElement>('Decklist').value).toBe('1 Sol Ring\n');
+  });
+
+  it('removes the line from the decklist text with its last tile', async () => {
+    const user = await mountPageAndWrite(
+      '// my deck{Enter}1 Sol Ring{Enter}{Enter}1 Lightning Bolt{Enter}',
+    );
+    await screen.findByRole('button', { name: 'Modifica Lightning Bolt' });
+
+    await user.click(
+      screen.getByRole('button', { name: 'Una copia in meno di Sol Ring (C21 #1)' }),
+    );
+
+    expect(gridTiles().map(tileSummary)).toEqual([['Immagine di Lightning Bolt', '1×', undefined]]);
+    expect(screen.getByLabelText<HTMLTextAreaElement>('Decklist').value).toBe(
+      '// my deck\n\n1 Lightning Bolt\n',
+    );
+  });
+
+  it("keeps the line's picked card and its other tiles through a change of quantity, asking the server nothing", async () => {
+    const user = await mountPageAndWrite('2 Lightning{Enter}2 Sol Ring{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Lightning Bolt' }));
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+    const requestsBefore = vi.mocked(api.resolveDecklistText).mock.calls.length;
+
+    await user.click(
+      screen.getByRole('button', { name: 'Una copia in più di Lightning Bolt (TST #1)' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Una copia in più di Sol Ring (C21 #1)' }));
+
+    expect(gridTiles().map(tileSummary)).toEqual([
+      ['Immagine di Lightning Bolt', '3×', undefined],
+      ['Immagine di Sol Ring', '2×', '1/2'],
+      ['Immagine di Sol Ring', '1×', '2/2'],
+    ]);
+    expect(screen.getByLabelText<HTMLTextAreaElement>('Decklist').value).toBe(
+      '3 Lightning\n3 Sol Ring\n',
+    );
+    expect(vi.mocked(api.resolveDecklistText).mock.calls.length).toBe(requestsBefore);
+  });
+
+  it("keeps each line's own choices when its new quantity makes it read like another line", async () => {
+    const user = await mountPageAndWrite('2 Sol Ring{Enter}4 Sol Ring{Enter}');
+    await screen.findAllByRole('button', { name: 'Modifica Sol Ring' });
+    await user.click(tileAt(1).getByRole('button', { name: 'Modifica Sol Ring' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+
+    const onePlusOnFirstLine = () =>
+      user.click(tileAt(0).getByRole('button', { name: 'Una copia in più di Sol Ring (C21 #1)' }));
+    await onePlusOnFirstLine();
+    await onePlusOnFirstLine();
+
+    expect(screen.getByLabelText<HTMLTextAreaElement>('Decklist').value).toBe(
+      '4 Sol Ring\n4 Sol Ring\n',
+    );
+    expect(gridTiles().map(tileSummary)).toEqual([
+      ['Immagine di Sol Ring', '4×', undefined],
+      ['Immagine di Sol Ring', '3×', '1/2'],
+      ['Immagine di Sol Ring', '1×', '2/2'],
+    ]);
+  });
+});
+
+describe('the pile under a tile', () => {
+  /** How many card edges the pile under each tile of the grid draws. */
+  function pileEdgesPerTile() {
+    return gridTiles().map((tile) => tile.querySelectorAll('[data-copy-pile-edge]').length);
+  }
+
+  it("draws a card edge per copy beyond the first, counting the tile's copies, not the line's", async () => {
+    const user = await mountPageAndWrite('3 Sol Ring{Enter}1 Lightning Bolt{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+
+    expect(pileEdgesPerTile()).toEqual([1, 0, 0]);
+  });
+
+  it('stops growing past five edges', async () => {
+    await mountPageAndWrite('6 Sol Ring{Enter}40 Lightning Bolt{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Lightning Bolt' });
+
+    expect(pileEdgesPerTile()).toEqual([5, 5]);
+  });
+});
+
 describe('copies of a line in another language', () => {
   /** The inspector while a tile is selected. */
   function lineInspector() {
