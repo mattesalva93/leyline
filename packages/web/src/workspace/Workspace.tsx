@@ -4,7 +4,7 @@ import { useIsWideScreen } from '../screen-size.ts';
 import { useGenerator } from '../use-generator.ts';
 import { DesktopWorkspace } from './DesktopWorkspace.tsx';
 import { gridSectionsOf } from './grid-sections.ts';
-import { linesToFixOf, type GridTile, type TileSelection } from './grid-tiles.ts';
+import { gridTilesOf, linesToFixOf, type GridTile, type TileSelection } from './grid-tiles.ts';
 import { PhoneWorkspace } from './PhoneWorkspace.tsx';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 
@@ -45,7 +45,7 @@ export function Workspace() {
   const [selectionInText, setSelectionInText] = useState<SelectionInText | null>(null);
   const [touchIsMain] = useState(touchIsMainInput);
   const gridSections = gridSectionsOf(generator.cardLines);
-  const gridTiles = gridSections.flatMap((section) => section.gridTiles);
+  const gridTiles = gridTilesOf(generator.cardLines);
   const linesToFix = linesToFixOf(gridTiles);
   const selectTile = (selection: TileSelection | null) =>
     setSelectionInText(selection && { ...selection, writtenLineCount: generator.writtenLineCount });

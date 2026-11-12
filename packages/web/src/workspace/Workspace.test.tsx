@@ -822,6 +822,18 @@ describe('the decklist summary', () => {
     expect(scrollIntoView.mock.contexts).toContain(notFound);
   });
 
+  it('takes the lines to fix in the order of the text, whatever section the grid shows them in', async () => {
+    const user = await mountPageAndWrite(
+      '2 Nonexistent Card{Enter}Commander{Enter}1 Nonexistent Commander{Enter}',
+    );
+    await screen.findAllByText('Carta non trovata');
+
+    await user.click(summary().getByRole('button', { name: '2 righe da sistemare' }));
+
+    const selected = gridTiles().find((tile) => tile.getAttribute('aria-current') === 'true');
+    expect(selected?.textContent).toContain('2 Nonexistent Card');
+  });
+
   it('marks a tile whose print has a warning, outside its image, and the line panel says what', async () => {
     // A first visit asks for Italian cards, and the catalog holds no Italian print.
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');

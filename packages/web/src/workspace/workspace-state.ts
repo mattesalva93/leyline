@@ -20,7 +20,7 @@ export interface WorkspaceState {
   readonly step: WorkspaceStep;
   readonly goToStep: (step: WorkspaceStep) => void;
   readonly gridSections: readonly GridSection[];
-  /** Every tile of the grid, section after section, in the order the grid shows them. */
+  /** Every tile of the grid, in the order of the decklist text whatever its section. */
   readonly gridTiles: readonly GridTile[];
   readonly selection: TileSelection | null;
   readonly selectTile: (selection: TileSelection | null) => void;
