@@ -1,15 +1,9 @@
-import type { Print } from '@mtg-suite/core';
+import type { LineSide, Print } from '@mtg-suite/core';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ZoomOn } from '../use-zoomed-card.tsx';
 import type { GridSection } from './grid-sections.ts';
-import {
-  isFirstOfLine,
-  isLastOfLine,
-  isSelected,
-  type GridTile,
-  type TileSelection,
-} from './grid-tiles.ts';
+import { dropMarkSideOf, isSelected, type GridTile, type TileSelection } from './grid-tiles.ts';
 import { ImagelessTile } from './ImagelessTile.tsx';
 import { PrintTileCard, TILE_GAP_PX } from './PrintTileCard.tsx';
 import { ReorderableTileItem } from './ReorderableTileItem.tsx';
@@ -45,12 +39,12 @@ function useColumnCount(grid: React.RefObject<HTMLElement | null>): number {
   return columns;
 }
 
-/** The side of `gridTile` where the dragged line lands, if it lands by the tile. */
-function dropMarkSideOf(gridTile: GridTile, lineDrag: LineDrag | null): 'before' | 'after' | null {
+/** The side of `gridTile` where the bar of the dragged line stands, if it lands by the tile. */
+function dropMarkOf(gridTile: GridTile, lineDrag: LineDrag | null): LineSide | null {
   const nextTo = lineDrag?.destination?.nextTo;
-  if (nextTo?.writtenIndex !== gridTile.writtenIndex) return null;
-  const isOnSide = nextTo.side === 'before' ? isFirstOfLine(gridTile) : isLastOfLine(gridTile);
-  return isOnSide ? nextTo.side : null;
+  return nextTo?.writtenIndex === gridTile.writtenIndex
+    ? dropMarkSideOf(gridTile, nextTo.side)
+    : null;
 }
 
 /** One section of the card grid: its title with its card count, then its tiles. */
@@ -114,9 +108,9 @@ export function CardGridSection({
             <ReorderableTileItem
               key={gridTile.key}
               isSelected={selected}
-              dragHandlers={lineDrag?.tileDragHandlers(gridTile.writtenIndex, section.name) ?? null}
+              dragHandlers={lineDrag?.tileDragHandlers(gridTile, section.name) ?? null}
               isDragged={lineDrag?.draggedWrittenIndex === gridTile.writtenIndex}
-              dropMarkSide={dropMarkSideOf(gridTile, lineDrag)}
+              dropMarkSide={dropMarkOf(gridTile, lineDrag)}
             >
               {tile}
             </ReorderableTileItem>

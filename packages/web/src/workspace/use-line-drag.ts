@@ -1,5 +1,6 @@
-import type { DecklistSection, LineDestination } from '@mtg-suite/core';
+import type { DecklistSection, LineDestination, LineSide } from '@mtg-suite/core';
 import { useState } from 'react';
+import { landingSideOf, type GridTile } from './grid-tiles.ts';
 
 /**
  * What a dragged line carries for the browser. A type of the app's own, so no text field takes
@@ -7,7 +8,7 @@ import { useState } from 'react';
  */
 const LINE_DRAG_TYPE = 'application/x-mtg-suite-line';
 
-/** The handlers a draggable tile of the line written at `writtenIndex` takes. */
+/** The handlers a draggable tile takes. */
 export interface TileDragHandlers {
   readonly onDragStart: (event: React.DragEvent) => void;
   readonly onDragOver: (event: React.DragEvent<HTMLElement>) => void;
@@ -20,7 +21,7 @@ export interface LineDrag {
   readonly draggedWrittenIndex: number | null;
   /** Where the dragged line lands if dropped now, `null` while nowhere. */
   readonly destination: LineDestination | null;
-  readonly tileDragHandlers: (writtenIndex: number, section: DecklistSection) => TileDragHandlers;
+  readonly tileDragHandlers: (gridTile: GridTile, section: DecklistSection) => TileDragHandlers;
   /** Makes the end of `section` where the dragged line lands while the pointer is over it. */
   readonly sectionEndDragOver: (section: DecklistSection) => (event: React.DragEvent) => void;
   /** The handlers of the whole grid: a drop anywhere on it lands where the bar shows. */
@@ -32,7 +33,7 @@ export interface LineDrag {
 }
 
 /** Which half of the tile under the pointer it is over: the line lands on that side of it. */
-function sideUnderPointer(event: React.DragEvent<HTMLElement>): 'before' | 'after' {
+function sideUnderPointer(event: React.DragEvent<HTMLElement>): LineSide {
   const box = event.currentTarget.getBoundingClientRect();
   return event.clientX < box.left + box.width / 2 ? 'before' : 'after';
 }
@@ -59,24 +60,25 @@ export function useLineDrag(
   return {
     draggedWrittenIndex,
     destination,
-    tileDragHandlers: (writtenIndex, section) => ({
+    tileDragHandlers: (gridTile, section) => ({
       onDragStart: (event) => {
         // jsdom has no `dataTransfer`; Firefox starts no drag without data in it.
         if (event.dataTransfer) {
-          event.dataTransfer.setData(LINE_DRAG_TYPE, `${writtenIndex}`);
+          event.dataTransfer.setData(LINE_DRAG_TYPE, `${gridTile.writtenIndex}`);
           event.dataTransfer.effectAllowed = 'move';
         }
-        setDraggedWrittenIndex(writtenIndex);
+        setDraggedWrittenIndex(gridTile.writtenIndex);
       },
       onDragOver: (event) => {
         if (draggedWrittenIndex === null) return;
         // Over the dragged line itself the line stays put: no bar, and the grid takes no drop.
         event.stopPropagation();
-        if (draggedWrittenIndex === writtenIndex) {
+        if (draggedWrittenIndex === gridTile.writtenIndex) {
           setDestination(null);
           return;
         }
-        allowDrop(event, { section, nextTo: { writtenIndex, side: sideUnderPointer(event) } });
+        const side = landingSideOf(gridTile, sideUnderPointer(event));
+        allowDrop(event, { section, nextTo: { writtenIndex: gridTile.writtenIndex, side } });
       },
       onDragEnd: endDrag,
     }),

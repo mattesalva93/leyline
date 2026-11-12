@@ -1,3 +1,4 @@
+import type { LineSide } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
 import { TILE_GAP_PX } from './PrintTileCard.tsx';
 import type { TileDragHandlers } from './use-line-drag.ts';
@@ -14,7 +15,7 @@ interface ReorderableTileItemProps {
   /** Its line is the one being dragged. */
   readonly isDragged: boolean;
   /** The side of the tile where the dragged line lands, if it lands by it. */
-  readonly dropMarkSide: 'before' | 'after' | null;
+  readonly dropMarkSide: LineSide | null;
   readonly children: React.ReactNode;
 }
 

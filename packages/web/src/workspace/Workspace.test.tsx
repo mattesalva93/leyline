@@ -1162,7 +1162,22 @@ describe('reordering the decklist by dragging tiles', () => {
     ]);
   });
 
-  it('shows a bar where the line will land while it is dragged, at the edge of the line it lands by', async () => {
+  it('shows a bar where the line will land while it is dragged, on the side of the pointer', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
+    const solRing = tileOf(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+    const lightningBolt = tileOf(screen.getByRole('button', { name: 'Modifica Lightning Bolt' }));
+
+    dragOver(lightningBolt, solRing, 'before');
+
+    expect(within(solRing).getByRole('separator', { name: 'Punto di arrivo' })).toBeTruthy();
+
+    fireEvent.drop(solRing);
+    fireEvent.dragEnd(lightningBolt);
+
+    expect(dropMark()).toBeNull();
+  });
+
+  it('lands a line by the nearer edge of a line of sibling tiles, and shows the bar there', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
     await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
@@ -1171,18 +1186,19 @@ describe('reordering the decklist by dragging tiles', () => {
 
     dragOver(lightningBolt, firstSibling, 'after');
 
-    expect(within(lastSibling).getByRole('separator', { name: 'Punto di arrivo' })).toBeTruthy();
-    expect(within(firstSibling).queryByRole('separator')).toBeNull();
-
-    holdOver(firstSibling, 'before');
-
     expect(within(firstSibling).getByRole('separator', { name: 'Punto di arrivo' })).toBeTruthy();
     expect(within(lastSibling).queryByRole('separator')).toBeNull();
 
+    holdOver(lastSibling, 'before');
+
+    expect(within(lastSibling).getByRole('separator', { name: 'Punto di arrivo' })).toBeTruthy();
+    expect(within(firstSibling).queryByRole('separator')).toBeNull();
+
+    holdOver(firstSibling, 'after');
     fireEvent.drop(firstSibling);
     fireEvent.dragEnd(lightningBolt);
 
-    expect(dropMark()).toBeNull();
+    expect(decklistValue()).toBe('1 Lightning Bolt\n4 Sol Ring\n');
   });
 
   it('shows no bar over the dragged line itself, and dropping there changes nothing', async () => {

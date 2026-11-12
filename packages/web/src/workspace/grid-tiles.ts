@@ -1,4 +1,10 @@
-import { printTiles, type DecklistLine, type PrintTile, type ResolvedLine } from '@mtg-suite/core';
+import {
+  printTiles,
+  type DecklistLine,
+  type LineSide,
+  type PrintTile,
+  type ResolvedLine,
+} from '@mtg-suite/core';
 import type { WrittenCardLine } from '../use-generator.ts';
 
 /** Why a line shows an imageless tile instead of its prints. */
@@ -41,14 +47,27 @@ export function isSelected(gridTile: GridTile, selection: TileSelection | null):
   return gridTile.kind === 'print' ? gridTile.tile.print.id === selection.printId : true;
 }
 
-/** Whether the tile is the first of its line's tiles in the grid: a line dropped before it lands there. */
-export function isFirstOfLine(gridTile: GridTile): boolean {
-  return gridTile.kind === 'imageless' || gridTile.siblingIndex === 0;
+/**
+ * The side of its line where a line dropped on `gridTile` lands: the side of the tile the pointer
+ * is on, unless the tile has siblings on that side; then the end of its line the tile is nearer.
+ * The bar stands where the line lands, never on a far row.
+ */
+export function landingSideOf(gridTile: GridTile, pointerSide: LineSide): LineSide {
+  if (gridTile.kind === 'imageless' || gridTile.siblingCount === 1) return pointerSide;
+  const { siblingIndex, siblingCount } = gridTile;
+  if (siblingIndex === 0) return 'before';
+  if (siblingIndex === siblingCount - 1) return 'after';
+  return siblingIndex < (siblingCount - 1) / 2 ? 'before' : 'after';
 }
 
-/** Whether the tile is the last of its line's tiles in the grid: a line dropped after it lands there. */
-export function isLastOfLine(gridTile: GridTile): boolean {
-  return gridTile.kind === 'imageless' || gridTile.siblingIndex === gridTile.siblingCount - 1;
+/** The side of `gridTile` that the bar of a line landing on `side` of its line stands on, if any. */
+export function dropMarkSideOf(gridTile: GridTile, side: LineSide): LineSide | null {
+  if (gridTile.kind === 'imageless') return side;
+  const isAtThatEnd =
+    side === 'before'
+      ? gridTile.siblingIndex === 0
+      : gridTile.siblingIndex === gridTile.siblingCount - 1;
+  return isAtThatEnd ? side : null;
 }
 
 /**

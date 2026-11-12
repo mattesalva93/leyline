@@ -9,13 +9,16 @@ import { writtenLinesOf } from './decklist-text.ts';
 import { namesACard } from './decklist.ts';
 import type { DecklistSection } from './types.ts';
 
+/** Which side of a line another one is written on. */
+export type LineSide = 'before' | 'after';
+
 /**
  * Where a moved line goes: into `section`, right before or after the line written at
  * `nextTo.writtenIndex`, or at the end of the section when `nextTo` is `null`.
  */
 export interface LineDestination {
   readonly section: DecklistSection;
-  readonly nextTo: { readonly writtenIndex: number; readonly side: 'before' | 'after' } | null;
+  readonly nextTo: { readonly writtenIndex: number; readonly side: LineSide } | null;
 }
 
 /** What moving a line makes of the decklist text. */
