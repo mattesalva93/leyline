@@ -34,6 +34,11 @@ function currentSelection(
   return { writtenIndex: selection.writtenIndex, printId };
 }
 
+/** The step a workspace starts from: the cards on a wide screen, the decklist on a phone. */
+function startingStepFor(isWideScreen: boolean): WorkspaceStep {
+  return isWideScreen ? 'cards' : 'list';
+}
+
 /**
  * The generator's screen. A wide screen shows its zones side by side; a phone shows them as
  * steps. Both show the same state: switching from one to the other loses nothing.
@@ -41,17 +46,25 @@ function currentSelection(
 export function Workspace() {
   const generator = useGenerator();
   const isWideScreen = useIsWideScreen();
-  const [step, setStep] = useState<WorkspaceStep>(isWideScreen ? 'cards' : 'list');
+  const [step, setStep] = useState(() => startingStepFor(isWideScreen));
   const [selectionInText, setSelectionInText] = useState<SelectionInText | null>(null);
   const [touchIsMain] = useState(touchIsMainInput);
   const gridSections = gridSectionsOf(generator.cardLines);
   const gridTiles = gridTilesOf(generator.cardLines);
   const linesToFix = linesToFixOf(gridTiles);
+  const isEmpty = generator.cardLines.every((cardLine) => cardLine.line === undefined);
+  // An emptied workspace starts over: on a phone, the decklist is where to start again.
+  const [wasEmpty, setWasEmpty] = useState(isEmpty);
+  if (isEmpty !== wasEmpty) {
+    setWasEmpty(isEmpty);
+    if (isEmpty) setStep(startingStepFor(isWideScreen));
+  }
   const selectTile = (selection: TileSelection | null) =>
     setSelectionInText(selection && { ...selection, writtenLineCount: generator.writtenLineCount });
   const selection = currentSelection(selectionInText, generator.writtenLineCount, gridTiles);
   const state: WorkspaceState = {
     generator,
+    isEmpty,
     step,
     goToStep: setStep,
     gridSections,

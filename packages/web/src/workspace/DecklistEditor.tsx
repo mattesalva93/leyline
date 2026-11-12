@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { Generator } from '../use-generator.ts';
+import { useFocusKeptAcrossLayouts } from './use-focus-kept-across-layouts.ts';
 
 /** The decklist text, always the source of what the grid shows, with how its recognition went. */
 export function DecklistEditor({
@@ -10,9 +11,11 @@ export function DecklistEditor({
   readonly className?: string;
 }) {
   const { t } = useTranslation();
+  const ref = useFocusKeptAcrossLayouts();
   return (
     <>
       <textarea
+        ref={ref}
         id="decklist"
         aria-label={t('decklist.label')}
         spellCheck={false}

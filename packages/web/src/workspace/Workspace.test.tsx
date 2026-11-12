@@ -92,9 +92,14 @@ const CATALOG = [
   catalogEntry('sol-ring', 'Sol Ring', 'c21', 'lea'),
   DELVER,
   BRAINSTORM,
-  catalogEntry('lightning-bolt', 'Lightning Bolt'),
+  catalogEntry('lightning-bolt', 'Lightning Bolt', 'tst', 'm10', '2x2'),
   catalogEntry('lightning-helix', 'Lightning Helix'),
   COUNTERSPELL,
+  // The rest of the example decklist.
+  catalogEntry('ponder', 'Ponder'),
+  catalogEntry('island', 'Island'),
+  catalogEntry('mountain', 'Mountain'),
+  catalogEntry('pyroblast', 'Pyroblast'),
 ];
 
 beforeEach(() => {
@@ -115,7 +120,8 @@ async function mountPageAndWrite(decklistText: string) {
 
 describe('the generator page', () => {
   it('recognises a line once the user breaks the line', async () => {
-    const user = await mountPageAndWrite('4 Sol Ring');
+    const user = await mountPageAndWrite('1 Lightning Bolt{Enter}4 Sol Ring');
+    await screen.findByRole('button', { name: 'Modifica Lightning Bolt' });
     expect(screen.getByText('Da riconoscere: vai a capo o esci dal campo')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Modifica Sol Ring' })).toBeNull();
 
@@ -692,7 +698,8 @@ describe('the tile width slider', () => {
   });
 
   it('comes back as the user left it after a reload', async () => {
-    mountApp('/proxy');
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
     fireEvent.change(screen.getByRole('slider', { name: 'Zoom' }), { target: { value: '100' } });
     cleanup();
 
@@ -1329,5 +1336,150 @@ describe('reordering the decklist by dragging tiles', () => {
       expect(tile.getAttribute('draggable')).not.toBe('true');
       expect(tile.className).not.toContain('cursor-grab');
     }
+  });
+});
+
+describe('the empty workspace', () => {
+  it('puts the explanation, the decklist text and the example button at the centre, with no other zone', () => {
+    mountApp('/proxy');
+
+    expect(screen.getByText(/^Incolla o scrivi una decklist, una carta per riga/)).toBeTruthy();
+    expect(screen.getByLabelText('Decklist')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
+    expect(screen.queryByRole('navigation', { name: 'Viste' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
+    expect(screen.queryByRole('complementary')).toBeNull();
+  });
+
+  it('gives way to the grid as soon as the first line is recognised, the user still typing in the decklist', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring');
+    expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
+
+    await user.keyboard('{Enter}');
+
+    expect(await screen.findByRole('button', { name: 'Modifica Sol Ring' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Prova con un esempio' })).toBeNull();
+    await user.keyboard('1 Brainstorm');
+    expect(decklistValue()).toBe('4 Sol Ring\n1 Brainstorm');
+  });
+
+  it('comes back once the decklist text is emptied', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    await user.clear(screen.getByLabelText('Decklist'));
+
+    expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
+  });
+
+  it('loads the example decklist, recognised to its last line as one written by hand', async () => {
+    const user = userEvent.setup();
+    mountApp('/proxy');
+
+    await user.click(screen.getByRole('button', { name: 'Prova con un esempio' }));
+
+    expect(await screen.findByRole('button', { name: 'Modifica Pyroblast' })).toBeTruthy();
+    expect(decklistValue().split('\n')).toContain('Sideboard');
+    expect(screen.queryByText('Da riconoscere: vai a capo o esci dal campo')).toBeNull();
+    expect(summary().queryByRole('button', { name: /da sistemare$/ })).toBeNull();
+  });
+
+  it('shows in the example a line split over several prints and a double-faced card', async () => {
+    const user = userEvent.setup();
+    mountApp('/proxy');
+
+    await user.click(screen.getByRole('button', { name: 'Prova con un esempio' }));
+
+    await waitFor(() =>
+      expect(
+        gridTiles()
+          .map(tileSummary)
+          .filter(([image]) => image === 'Immagine di Lightning Bolt'),
+      ).toEqual([
+        ['Immagine di Lightning Bolt', '2×', '1/3'],
+        ['Immagine di Lightning Bolt', '1×', '2/3'],
+        ['Immagine di Lightning Bolt', '1×', '3/3'],
+      ]),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Una copia in meno di Lightning Bolt (M10 #1)' }),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Gira Delver of Secrets' })).toBeTruthy();
+  });
+
+  it('lets the user choose the language of the cards before writing the decklist', async () => {
+    const user = userEvent.setup();
+    mountApp('/proxy');
+
+    await user.click(
+      within(screen.getByRole('group', { name: 'Lingua delle carte' })).getByRole('radio', {
+        name: 'Italiano',
+      }),
+    );
+    await user.type(screen.getByLabelText('Decklist'), '1 Counterspell{Enter}');
+
+    const image = await screen.findByRole('img', { name: 'Immagine di Counterspell' });
+    expect(image.getAttribute('src')).toContain('counterspell-it-mh2');
+  });
+
+  describe('on a phone', () => {
+    beforeEach(() => {
+      stubScreen(PHONE);
+      return () => vi.unstubAllGlobals();
+    });
+
+    it('lets the user choose the language of the cards before writing the decklist on a phone', async () => {
+      const user = userEvent.setup();
+      mountApp('/proxy');
+
+      await user.click(
+        within(screen.getByRole('group', { name: 'Lingua delle carte' })).getByRole('radio', {
+          name: 'Italiano',
+        }),
+      );
+      await user.type(screen.getByLabelText('Decklist'), '1 Counterspell{Enter}');
+      await screen.findByRole('region', { name: 'Riepilogo' });
+      await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+
+      const image = await screen.findByRole('img', { name: 'Immagine di Counterspell' });
+      expect(image.getAttribute('src')).toContain('counterspell-it-mh2');
+    });
+
+    it('shows the explanation, the decklist text and the example button, the other steps waiting for a card', async () => {
+      const user = await mountPageAndWrite('4 Sol Ring');
+
+      expect(screen.getByText(/^Incolla o scrivi una decklist, una carta per riga/)).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
+      expect(screen.queryByRole('region', { name: 'Riepilogo' })).toBeNull();
+      for (const step of ['Carte', 'Foglio', 'PDF']) {
+        expect(stepBar().getByRole<HTMLButtonElement>('button', { name: step }).disabled).toBe(
+          true,
+        );
+      }
+
+      await user.keyboard('{Enter}');
+
+      expect(await screen.findByRole('region', { name: 'Riepilogo' })).toBeTruthy();
+      expect(stepBar().getByRole<HTMLButtonElement>('button', { name: 'Carte' }).disabled).toBe(
+        false,
+      );
+      await user.keyboard('1 Brainstorm');
+      expect(decklistValue()).toBe('4 Sol Ring\n1 Brainstorm');
+    });
+
+    it('comes back on the list step when the last card goes from another step', async () => {
+      const user = await mountPageAndWrite('1 Sol Ring{Enter}');
+      await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+
+      await user.click(
+        screen.getByRole('button', { name: 'Una copia in meno di Sol Ring (C21 #1)' }),
+      );
+
+      expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
+      expect(stepBar().getByRole('button', { name: 'Lista' }).getAttribute('aria-current')).toBe(
+        'step',
+      );
+    });
   });
 });
