@@ -57,7 +57,7 @@ export function CardGrid({
     <ul
       ref={gridRef}
       aria-label={t('workspace.cardGrid')}
-      className="grid content-start gap-y-3 p-1 pr-6 pb-4 pl-4"
+      className="grid content-start gap-y-3 p-1 pr-6 pb-4 pl-6"
       style={{
         columnGap: TILE_GAP_PX,
         gridTemplateColumns: `repeat(auto-fill, minmax(${TILE_MIN_WIDTH_PX}px, 1fr))`,
