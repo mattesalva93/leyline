@@ -42,7 +42,7 @@ function catalogEntry(oracleId: string, name: string, ...sets: string[]): Catalo
 }
 
 const CATALOG = [
-  catalogEntry('sol-ring', 'Sol Ring'),
+  catalogEntry('sol-ring', 'Sol Ring', 'c21', 'lea'),
   catalogEntry('lightning-bolt', 'Lightning Bolt'),
   catalogEntry('lightning-helix', 'Lightning Helix'),
 ];
@@ -132,5 +132,64 @@ describe('the workspace', () => {
       ['Immagine di Sol Ring', '4×', undefined],
       ['Immagine di Lightning Bolt', '1×', undefined],
     ]);
+  });
+
+  it('shows a new sibling tile next to its origin as soon as copies move onto another print', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+
+    expect(gridTiles().map(tileSummary)).toEqual([
+      ['Immagine di Sol Ring', '1×', '1/2'],
+      ['Immagine di Sol Ring', '3×', '2/2'],
+      ['Immagine di Lightning Bolt', '1×', undefined],
+    ]);
+  });
+
+  it("shows the selected tile's language, quantity and prints in the inspector, beside the grid", async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+
+    const inspector = within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
+    expect(inspector.getByRole('group', { name: 'Lingua di questa carta' })).toBeTruthy();
+    expect(inspector.getByRole('group', { name: 'Copie' })).toBeTruthy();
+    expect(await inspector.findByRole('region', { name: 'Stampe di Sol Ring' })).toBeTruthy();
+    expect(gridTiles()).toHaveLength(1);
+  });
+
+  it('gives a line that names no card an imageless tile that says so', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}2 Nonexistent Card{Enter}');
+
+    await screen.findByText('Carta non trovata');
+
+    const [, notFound] = gridTiles();
+    expect(notFound && tileSummary(notFound)).toEqual([undefined, undefined, undefined]);
+    expect(notFound?.textContent).toContain('2 Nonexistent Card');
+  });
+
+  it('switches to the sheet view, with the page, the 100% reminder and the sheet options', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}2 Nonexistent Card{Enter}');
+    await screen.findByText('Carta non trovata');
+
+    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+
+    expect(screen.getByRole('img', { name: 'Pagina 1 di 1 come verrà stampata' })).toBeTruthy();
+    expect(screen.getByRole('note').textContent).toContain('Stampa al 100%');
+    expect(screen.getByText(/^1 riga non verrà stampata/)).toBeTruthy();
+    const inspector = within(screen.getByRole('complementary', { name: 'Opzioni del foglio' }));
+    expect(inspector.getByLabelText('Formato della pagina')).toBeTruthy();
+    expect(screen.queryByRole('list', { name: 'Griglia delle carte' })).toBeNull();
+  });
+
+  it('keeps the PDF button in reach in both views', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    expect(screen.getByRole('button', { name: 'Scarica il PDF' })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+
+    expect(screen.getByRole('button', { name: 'Scarica il PDF' })).toBeTruthy();
   });
 });
