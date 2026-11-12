@@ -4,9 +4,9 @@ import type { WorkspaceState } from './workspace-state.ts';
 
 /** The centre of the workspace in the "cards" view: the card grid, or how to start one. */
 export function CardsView({
-  workspace: { generator, gridTiles, selection, select },
+  state: { generator, gridTiles, selection, selectTile },
 }: {
-  readonly workspace: WorkspaceState;
+  readonly state: WorkspaceState;
 }) {
   const { t } = useTranslation();
   return gridTiles.length === 0 ? (
@@ -16,7 +16,7 @@ export function CardsView({
       gridTiles={gridTiles}
       selection={selection}
       isResolving={generator.isResolving}
-      onSelect={select}
+      onSelect={selectTile}
       onPickCandidate={generator.pickCandidate}
     />
   );

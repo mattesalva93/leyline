@@ -35,7 +35,7 @@
       "cards": "Carte",
       "sheet": "Foglio"
     },
-    "deckCount": "{{cards}} · {{pages}}",
+    "decklistCount": "{{cards}} · {{pages}}",
     "cardCount_one": "{{count}} carta",
     "cardCount_other": "{{count}} carte",
     "pageCount_one": "{{count}} pagina",

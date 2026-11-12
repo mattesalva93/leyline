@@ -1,54 +1,42 @@
 import { useTranslation } from 'react-i18next';
-import { PRINT_PICKER_SCROLL_ROOT } from '../PrintPicker.tsx';
-import { SheetOptionsForm } from '../SheetOptionsForm.tsx';
+import { PRINT_PICKER_SCROLL_ROOT_PROPS } from '../PrintPicker.tsx';
 import { BoardPanel } from '../ui/BoardPanel.tsx';
-import type { Generator } from '../use-generator.ts';
 import { DecklistSummary } from './DecklistSummary.tsx';
-import { lineWithPanel, SelectedLinePanel } from './SelectedLinePanel.tsx';
+import { panelLineAt, SelectedLinePanel } from './SelectedLinePanel.tsx';
+import { SheetSettings } from './SheetSettings.tsx';
 import type { CentreView } from './ToolRail.tsx';
-
-interface InspectorProps {
-  readonly generator: Generator;
-  readonly view: CentreView;
-  /** The `writtenIndex` of the line of the selected tile; `null` when no tile is selected. */
-  readonly selectedLineIndex: number | null;
-  /** Whether to warn that a PNG sheet makes a PDF heavy enough to strain a phone. */
-  readonly warnAboutPngWeight: boolean;
-  readonly className?: string;
-}
+import type { WorkspaceState } from './workspace-state.ts';
 
 /**
  * The side zone of the workspace: the sheet options in the "sheet" view; otherwise the panel of
  * the selected tile's line, or, with no tile selected, the settings of the whole decklist.
  */
 export function Inspector({
-  generator,
+  state,
   view,
-  selectedLineIndex,
-  warnAboutPngWeight,
   className = '',
-}: InspectorProps) {
+}: {
+  readonly state: WorkspaceState;
+  readonly view: CentreView;
+  readonly className?: string;
+}) {
   const { t } = useTranslation();
-  // The sheet view always shows the sheet options.
-  const panelLine = view === 'cards' ? lineWithPanel(generator, selectedLineIndex) : null;
+  const { generator } = state;
+  const panelLine =
+    view === 'cards' ? panelLineAt(generator, state.selection?.writtenIndex ?? null) : null;
   const content = view === 'sheet' ? 'sheetOptions' : panelLine ? 'line' : 'summary';
   return (
-    <BoardPanel
-      as="aside"
-      title={t(`workspace.inspector.${content}`)}
-      className={className}
-      bodyClassName="overflow-y-auto p-3"
-      bodyProps={{ [PRINT_PICKER_SCROLL_ROOT]: '' }}
-    >
-      {content === 'sheetOptions' && (
-        <SheetOptionsForm
-          options={generator.sheetOptions}
-          onChange={generator.changeSheetOptions}
-          warnAboutPngWeight={warnAboutPngWeight}
-        />
-      )}
-      {panelLine && <SelectedLinePanel generator={generator} lineInText={panelLine} />}
-      {content === 'summary' && <DecklistSummary generator={generator} />}
+    <BoardPanel as="aside" title={t(`workspace.inspector.${content}`)} className={className}>
+      <div className="min-h-0 flex-1 overflow-y-auto p-3" {...PRINT_PICKER_SCROLL_ROOT_PROPS}>
+        {content === 'sheetOptions' && <SheetSettings state={state} />}
+        {panelLine && <SelectedLinePanel generator={generator} panelLine={panelLine} />}
+        {content === 'summary' && (
+          <DecklistSummary
+            defaultLang={generator.defaultLang}
+            onDefaultLangChange={generator.changeDefaultLanguage}
+          />
+        )}
+      </div>
     </BoardPanel>
   );
 }

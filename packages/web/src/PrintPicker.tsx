@@ -20,6 +20,9 @@ import { CARD_SHAPE } from './card-shape.ts';
 /** Marks the element that scrolls the print picker: more prints load as its end comes near. */
 export const PRINT_PICKER_SCROLL_ROOT = 'data-print-picker-scroll-root';
 
+/** Spread on the element that scrolls the print picker, to mark it. */
+export const PRINT_PICKER_SCROLL_ROOT_PROPS = { [PRINT_PICKER_SCROLL_ROOT]: '' };
+
 const COUNTER_BUTTON =
   'grid size-7 place-items-center rounded-sm border-2 border-border bg-panel font-mono font-bold leading-none disabled:opacity-40';
 

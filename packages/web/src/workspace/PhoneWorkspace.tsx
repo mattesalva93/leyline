@@ -1,16 +1,16 @@
 import { useTranslation } from 'react-i18next';
 import { InTopBar } from '../shell/top-bar-slot.tsx';
-import { SheetOptionsForm } from '../SheetOptionsForm.tsx';
 import { BoardPanel } from '../ui/BoardPanel.tsx';
 import { LABEL } from '../ui/board-styles.ts';
 import { AdSlot } from './AdSlot.tsx';
 import { CardsView } from './CardsView.tsx';
-import { DeckCount } from './DeckCount.tsx';
+import { DecklistCount } from './DecklistCount.tsx';
 import { DecklistEditor } from './DecklistEditor.tsx';
 import { DecklistSummary } from './DecklistSummary.tsx';
 import { PdfButton, PdfNotes } from './PdfControl.tsx';
 import { PhoneLinePanel } from './PhoneLinePanel.tsx';
-import { lineWithPanel } from './SelectedLinePanel.tsx';
+import { panelLineAt } from './SelectedLinePanel.tsx';
+import { SheetSettings } from './SheetSettings.tsx';
 import { SheetView } from './SheetView.tsx';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 
@@ -21,13 +21,13 @@ const STEPS: readonly WorkspaceStep[] = ['list', 'cards', 'sheet'];
  * sheet), picked from the bar at the foot of the screen, which ends with the PDF button. The
  * PDF's progress shows just above that bar.
  */
-export function PhoneSteps({ workspace }: { readonly workspace: WorkspaceState }) {
+export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
   const { t } = useTranslation();
-  const { generator, step } = workspace;
+  const { generator, step } = state;
   return (
     <div className="flex h-full flex-col">
       <InTopBar>
-        <DeckCount generator={generator} />
+        <DecklistCount cardCount={generator.cardCount} pageCount={generator.pageCount} />
       </InTopBar>
       <div className="min-h-0 flex-1 overflow-y-auto">
         {step === 'list' && (
@@ -43,33 +43,28 @@ export function PhoneSteps({ workspace }: { readonly workspace: WorkspaceState }
                 className="shrink-0"
                 bodyClassName="p-3"
               >
-                <DecklistSummary generator={generator} />
+                <DecklistSummary
+                  defaultLang={generator.defaultLang}
+                  onDefaultLangChange={generator.changeDefaultLanguage}
+                />
               </BoardPanel>
             </div>
           </>
         )}
         {step === 'cards' && (
           <div className="p-3">
-            <h1 className="mb-2 text-2xl leading-none font-bold">{t('workspace.views.cards')}</h1>
-            <CardsView workspace={workspace} />
+            <CardsView state={state} />
           </div>
         )}
         {step === 'sheet' && (
           <div className="flex flex-col gap-4 p-3 pr-4">
-            <SheetView
-              sheetLayout={generator.sheetLayout}
-              unprintedCount={generator.unprintedCount}
-            />
+            <SheetView generator={generator} />
             <BoardPanel
               title={t('workspace.inspector.sheetOptions')}
               className="shrink-0"
               bodyClassName="p-3"
             >
-              <SheetOptionsForm
-                options={generator.sheetOptions}
-                onChange={generator.changeSheetOptions}
-                warnAboutPngWeight={workspace.warnAboutPngWeight}
-              />
+              <SheetSettings state={state} />
             </BoardPanel>
           </div>
         )}
@@ -87,7 +82,7 @@ export function PhoneSteps({ workspace }: { readonly workspace: WorkspaceState }
             type="button"
             aria-current={step === name ? 'step' : undefined}
             className={`${LABEL} border-r-2 border-border ${step === name ? 'bg-foreground text-panel' : ''}`}
-            onClick={() => workspace.goToStep(name)}
+            onClick={() => state.goToStep(name)}
           >
             {t(`workspace.stepNames.${name}`)}
           </button>
@@ -99,12 +94,10 @@ export function PhoneSteps({ workspace }: { readonly workspace: WorkspaceState }
       </nav>
       <PhoneLinePanel
         generator={generator}
-        lineInText={
-          step === 'cards'
-            ? lineWithPanel(generator, workspace.selection?.writtenIndex ?? null)
-            : null
+        panelLine={
+          step === 'cards' ? panelLineAt(generator, state.selection?.writtenIndex ?? null) : null
         }
-        onClose={() => workspace.select(null)}
+        onClose={() => state.selectTile(null)}
       />
     </div>
   );

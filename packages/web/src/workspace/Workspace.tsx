@@ -5,7 +5,7 @@ import { useGenerator } from '../use-generator.ts';
 import type { TileSelection } from './CardGrid.tsx';
 import { DesktopWorkspace } from './DesktopWorkspace.tsx';
 import { gridTilesOf, type GridTile } from './grid-tiles.ts';
-import { PhoneSteps } from './PhoneSteps.tsx';
+import { PhoneWorkspace } from './PhoneWorkspace.tsx';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 
 /** A tile selected while the decklist text had `writtenLineCount` lines. */
@@ -45,21 +45,17 @@ export function Workspace() {
   const [selectionInText, setSelectionInText] = useState<SelectionInText | null>(null);
   const [touchIsMain] = useState(touchIsMainInput);
   const gridTiles = gridTilesOf(generator.cardLines);
-  const workspace: WorkspaceState = {
+  const state: WorkspaceState = {
     generator,
     step,
     goToStep: setStep,
     gridTiles,
     selection: currentSelection(selectionInText, generator.writtenLineCount, gridTiles),
-    select: (selection) =>
+    selectTile: (selection) =>
       setSelectionInText(
         selection && { ...selection, writtenLineCount: generator.writtenLineCount },
       ),
     warnAboutPngWeight: touchIsMain,
   };
-  return isWideScreen ? (
-    <DesktopWorkspace workspace={workspace} />
-  ) : (
-    <PhoneSteps workspace={workspace} />
-  );
+  return isWideScreen ? <DesktopWorkspace state={state} /> : <PhoneWorkspace state={state} />;
 }

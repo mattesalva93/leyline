@@ -8,8 +8,6 @@ interface BoardPanelProps {
   readonly as?: 'section' | 'aside';
   /** Gives the title bar a button that folds the panel down to its title, and opens it again. */
   readonly isFoldable?: boolean;
-  /** Marks the element that scrolls the panel's content. */
-  readonly bodyProps?: Record<string, string>;
   readonly className?: string;
   readonly bodyClassName?: string;
   readonly children: ReactNode;
@@ -20,7 +18,6 @@ export function BoardPanel({
   title,
   as: Landmark = 'section',
   isFoldable = false,
-  bodyProps,
   className = '',
   bodyClassName = '',
   children,
@@ -57,7 +54,6 @@ export function BoardPanel({
         id={bodyId}
         hidden={!isOpen}
         className={`min-h-0 flex-1 flex-col ${isOpen ? 'flex' : ''} ${bodyClassName}`}
-        {...bodyProps}
       >
         {children}
       </div>

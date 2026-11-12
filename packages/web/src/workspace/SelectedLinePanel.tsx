@@ -2,32 +2,26 @@ import type { ResolvedLine } from '@mtg-suite/core';
 import { LinePanel } from '../LinePanel.tsx';
 import type { Generator } from '../use-generator.ts';
 
-/** A resolved line of the decklist, with where it is written. */
-export interface LineInText {
+/** A line that has a `LinePanel`: a resolved one, with where it is written. */
+export interface PanelLine {
   readonly writtenIndex: number;
   readonly line: ResolvedLine;
 }
 
-/**
- * The line of the tile at `selectedLineIndex`, when it has a panel: only a resolved line does.
- * `null` when no tile is selected.
- */
-export function lineWithPanel(
-  generator: Generator,
-  selectedLineIndex: number | null,
-): LineInText | null {
-  if (selectedLineIndex === null) return null;
-  const line = generator.lineAt(selectedLineIndex);
-  return line?.status === 'resolved' ? { writtenIndex: selectedLineIndex, line } : null;
+/** The line written at `writtenIndex` when it has a panel; `null` for no index or no panel. */
+export function panelLineAt(generator: Generator, writtenIndex: number | null): PanelLine | null {
+  if (writtenIndex === null) return null;
+  const line = generator.lineAt(writtenIndex);
+  return line?.status === 'resolved' ? { writtenIndex, line } : null;
 }
 
-/** The `LinePanel` of `lineInText`, its changes going to the generator. */
+/** The `LinePanel` of `panelLine`, its changes going to the generator. */
 export function SelectedLinePanel({
   generator,
-  lineInText: { writtenIndex, line },
+  panelLine: { writtenIndex, line },
 }: {
   readonly generator: Generator;
-  readonly lineInText: LineInText;
+  readonly panelLine: PanelLine;
 }) {
   return (
     <LinePanel

@@ -49,8 +49,8 @@ export function SideDrawerContent({ ariaLabel, className = '', children }: Dialo
   );
 }
 
-/** A panel that rises from the bottom edge, full width, as a phone's sheet does. */
-export function BottomSheetContent({ ariaLabel, className = '', children }: DialogContentProps) {
+/** A panel that rises from the bottom edge of the screen, full width. */
+export function BottomPanelContent({ ariaLabel, className = '', children }: DialogContentProps) {
   return (
     <RadixDialog.Portal>
       <RadixDialog.Overlay className={OVERLAY} />

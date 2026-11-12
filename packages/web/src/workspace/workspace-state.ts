@@ -21,7 +21,7 @@ export interface WorkspaceState {
   readonly goToStep: (step: WorkspaceStep) => void;
   readonly gridTiles: readonly GridTile[];
   readonly selection: TileSelection | null;
-  readonly select: (selection: TileSelection | null) => void;
+  readonly selectTile: (selection: TileSelection | null) => void;
   /** Whether to warn that a PNG sheet makes a PDF heavy enough to strain a phone. */
   readonly warnAboutPngWeight: boolean;
 }

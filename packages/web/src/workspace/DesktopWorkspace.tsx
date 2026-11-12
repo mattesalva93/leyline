@@ -14,13 +14,13 @@ import { centreViewAt, type WorkspaceState } from './workspace-state.ts';
  * text with a banner's place at its foot, the centre (the card grid or the sheet, with the PDF
  * button) and the inspector. Each zone scrolls on its own.
  */
-export function DesktopWorkspace({ workspace }: { readonly workspace: WorkspaceState }) {
+export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) {
   const { t } = useTranslation();
-  const { generator, selection } = workspace;
-  const view = centreViewAt(workspace.step);
+  const { generator } = state;
+  const view = centreViewAt(state.step);
   return (
     <div className="flex h-full gap-4 overflow-hidden p-4">
-      <ToolRail view={view} onViewChange={workspace.goToStep} />
+      <ToolRail view={view} onViewChange={state.goToStep} />
       <BoardPanel title={t('workspace.decklistPanel')} className="w-60 shrink-0">
         <DecklistEditor generator={generator} className="min-h-48 flex-1" />
         <AdSlot className="shrink-0 border-t-2 border-border p-2" />
@@ -34,22 +34,13 @@ export function DesktopWorkspace({ workspace }: { readonly workspace: WorkspaceS
         </div>
         {view === 'cards' ? (
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <CardsView workspace={workspace} />
+            <CardsView state={state} />
           </div>
         ) : (
-          <SheetView
-            sheetLayout={generator.sheetLayout}
-            unprintedCount={generator.unprintedCount}
-          />
+          <SheetView generator={generator} />
         )}
       </div>
-      <Inspector
-        generator={generator}
-        view={view}
-        selectedLineIndex={selection?.writtenIndex ?? null}
-        warnAboutPngWeight={workspace.warnAboutPngWeight}
-        className="mr-1 mb-1 w-[340px] shrink-0"
-      />
+      <Inspector state={state} view={view} className="mr-1 mb-1 w-[340px] shrink-0" />
     </div>
   );
 }
