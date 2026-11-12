@@ -23,9 +23,10 @@ import {
   type SheetLayout,
   type SheetOptions,
 } from '@mtg-suite/core';
-import { useRef, useState } from 'react';
-import { resolveDecklistText } from './api.ts';
+import { useEffect, useRef, useState } from 'react';
+import { fetchPrintPage, resolveDecklistText } from './api.ts';
 import { loadDefaultLang, saveDefaultLang } from './default-lang.ts';
+import { allocationsSplitOverPrints, type LineSplitOverPrints } from './line-split.ts';
 import { useSheetPdf, type SheetPdf } from './use-sheet-pdf.ts';
 
 /**
@@ -87,8 +88,11 @@ export interface Generator {
   readonly writeDecklistText: (nextText: string) => void;
   /** Resolves every written line not resolved yet, the last one included. */
   readonly resolveEveryLine: () => void;
-  /** Puts a whole decklist in place of the text, every line resolved as if written by hand. */
-  readonly loadDecklistText: (text: string) => void;
+  /**
+   * Puts a whole decklist in place of the text, every line resolved as if written by hand; with
+   * `split`, that line's copies then spread over its newest prints, as if the user picked them.
+   */
+  readonly loadDecklistText: (text: string, split?: LineSplitOverPrints) => void;
   readonly isResolving: boolean;
   readonly lastResolveFailed: boolean;
 
@@ -130,6 +134,12 @@ export function useGenerator(): Generator {
   // Every `resolutionKey` already asked for, so a line is sent once per language however often
   // the decklist text changes.
   const requestedKeys = useRef(new Set<string>());
+  // The line `loadDecklistText` splits once it is resolved, named by its `choicesKeysOf` key so
+  // that a later edit of the text cannot hand the split to another line.
+  const [pendingSplit, setPendingSplit] = useState<{
+    readonly choicesKey: string;
+    readonly printCount: number;
+  } | null>(null);
 
   const writtenLines = writtenLinesOf(decklistText);
   const choicesKeys = choicesKeysOf(writtenLines);
@@ -177,9 +187,12 @@ export function useGenerator(): Generator {
     setDecklistText(nextText);
   }
 
-  function loadDecklistText(text: string) {
+  function loadDecklistText(text: string, split?: LineSplitOverPrints) {
+    const loadedLines = writtenLinesOf(text);
+    const choicesKey = split && choicesKeysOf(loadedLines)[split.writtenIndex];
+    setPendingSplit(choicesKey ? { choicesKey, printCount: split.printCount } : null);
     setDecklistText(text);
-    void resolveInLanguage(writtenLinesOf(text), defaultLang);
+    void resolveInLanguage(loadedLines, defaultLang);
   }
 
   // Switched only once every line is resolved in the new language, so no line (and nothing
@@ -341,6 +354,26 @@ export function useGenerator(): Generator {
     );
     return move;
   }
+
+  useEffect(() => {
+    if (!pendingSplit) return;
+    const { choicesKey, printCount } = pendingSplit;
+    const writtenIndex = choicesKeys.indexOf(choicesKey);
+    const line = writtenIndex === -1 ? null : displayedLine(writtenIndex);
+    if (line === undefined) return; // Not resolved yet.
+    setPendingSplit(null);
+    if (line?.status !== 'resolved') return;
+    // A failed request leaves every copy on the default print, as a line written by hand.
+    fetchPrintPage(line.card.oracleId, line.lang, printCount, null).then(
+      ({ prints }) => {
+        const allocations = allocationsSplitOverPrints(line, prints, printCount);
+        setChoicesByLine((previous) =>
+          new Map(previous).set(choicesKey, { ...previous.get(choicesKey), allocations }),
+        );
+      },
+      () => {},
+    );
+  });
 
   const sectionOfEachLine = sectionOfEachWrittenLine(writtenLines);
   const cardLines = writtenLines.flatMap((writtenLine, writtenIndex): WrittenCardLine[] => {

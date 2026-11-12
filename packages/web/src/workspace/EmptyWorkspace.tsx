@@ -37,7 +37,7 @@ export function EmptyWorkspace({ generator }: { readonly generator: Generator })
         <button
           type="button"
           className={PRIMARY_BUTTON}
-          onClick={() => generator.loadDecklistText(EXAMPLE_DECKLIST)}
+          onClick={() => generator.loadDecklistText(EXAMPLE_DECKLIST.text, EXAMPLE_DECKLIST.split)}
         >
           {t('workspace.emptyState.tryExample')}
           <span aria-hidden="true">{t('workspace.emptyState.tryExampleArrow')}</span>

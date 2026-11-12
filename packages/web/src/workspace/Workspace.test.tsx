@@ -92,7 +92,7 @@ const CATALOG = [
   catalogEntry('sol-ring', 'Sol Ring', 'c21', 'lea'),
   DELVER,
   BRAINSTORM,
-  catalogEntry('lightning-bolt', 'Lightning Bolt'),
+  catalogEntry('lightning-bolt', 'Lightning Bolt', 'tst', 'm10', '2x2'),
   catalogEntry('lightning-helix', 'Lightning Helix'),
   COUNTERSPELL,
   // The rest of the example decklist.
@@ -1385,14 +1385,26 @@ describe('the empty workspace', () => {
     expect(summary().queryByRole('button', { name: /da sistemare$/ })).toBeNull();
   });
 
-  it('shows in the example a card with more than one print and a double-faced card', async () => {
+  it('shows in the example a line split over several prints and a double-faced card', async () => {
     const user = userEvent.setup();
     mountApp('/proxy');
 
     await user.click(screen.getByRole('button', { name: 'Prova con un esempio' }));
-    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
 
-    expect(await screen.findByText('2 stampe disponibili')).toBeTruthy();
+    await waitFor(() =>
+      expect(
+        gridTiles()
+          .map(tileSummary)
+          .filter(([image]) => image === 'Immagine di Lightning Bolt'),
+      ).toEqual([
+        ['Immagine di Lightning Bolt', '2×', '1/3'],
+        ['Immagine di Lightning Bolt', '1×', '2/3'],
+        ['Immagine di Lightning Bolt', '1×', '3/3'],
+      ]),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Una copia in meno di Lightning Bolt (M10 #1)' }),
+    ).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Gira Delver of Secrets' })).toBeTruthy();
   });
 
