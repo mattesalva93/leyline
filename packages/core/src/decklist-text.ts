@@ -44,10 +44,10 @@ export function changeTileQuantity(
   const lineQuantity = line.quantity + added;
   if (lineQuantity <= 0) return { text: withoutWrittenLine(text, writtenIndex), line: null };
   const isDefault = print.id === line.defaultPrint?.id;
-  const takenOffAllocation = isDefault ? Math.min(added + unallocatedCopies(line), 0) : added;
+  const printAllocationChange = isDefault ? Math.min(added + unallocatedCopies(line), 0) : added;
   const allocations = line.allocations.flatMap((allocation): Allocation[] => {
     if (allocation.print.id !== print.id) return [allocation];
-    const copies = allocation.quantity + takenOffAllocation;
+    const copies = allocation.quantity + printAllocationChange;
     return copies > 0 ? [{ ...allocation, quantity: copies }] : [];
   });
   const rewritten = setLineQuantity(line, lineQuantity);
