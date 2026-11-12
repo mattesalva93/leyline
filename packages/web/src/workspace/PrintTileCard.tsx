@@ -48,6 +48,7 @@ export function PrintTileCard({
   const hasSiblings = siblingCount > 1;
   const isLastSibling = siblingIndex === siblingCount - 1;
   const frontFace = tile.print.faces[0];
+  const warningLabel = tile.warning && t(`tile.printWarning.${tile.warning}`);
   return (
     <li className="relative min-w-0" aria-current={isSelected || undefined}>
       <div className="flex h-7 items-end pl-2">
@@ -56,12 +57,12 @@ export function PrintTileCard({
         >
           {t('line.quantity', { count: tile.quantity })}
         </span>
-        {tile.warning && (
+        {warningLabel && (
           // On the tab row above the card, so it never covers the artist or copyright line.
           <span
             role="img"
-            aria-label={t(`tile.printWarning.${tile.warning}`)}
-            title={t(`tile.printWarning.${tile.warning}`)}
+            aria-label={warningLabel}
+            title={warningLabel}
             className="mr-2 ml-auto rounded-t-md bg-warning px-1.5 py-0.5 text-panel"
           >
             <Icon name="warning" />
