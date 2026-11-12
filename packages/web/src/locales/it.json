@@ -4,6 +4,14 @@
     "intro": "Incolla o scrivi una decklist, una carta per riga, in inglese o in italiano (es. 4 Sol Ring, anello del sole, 1 Sol Ring (C21) 263). Ogni riga viene riconosciuta quando vai a capo.",
     "defaultLang": "Lingua delle carte"
   },
+  "shell": {
+    "appName": "mtg-suite",
+    "areas": "Aree",
+    "menu": "Menu"
+  },
+  "areas": {
+    "generator": "Generatore"
+  },
   "lang": {
     "it": "Italiano",
     "en": "Inglese"

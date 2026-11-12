@@ -1,11 +1,11 @@
 import type { CatalogEntry } from '@mtg-suite/core';
 import { aCard, aPrint } from '@mtg-suite/core/test-fixtures';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from './api.ts';
-import { App } from './App.tsx';
 import { inMemoryServer } from './in-memory-server.ts';
+import { mountApp } from './mount-app.tsx';
 
 vi.mock('./api.ts');
 
@@ -33,7 +33,7 @@ beforeEach(() => {
 /** Mounts the generator page and types `decklistText` into the decklist, as a user would. */
 async function mountPageAndWrite(decklistText: string) {
   const user = userEvent.setup();
-  render(<App />);
+  mountApp('/proxy');
   await user.type(screen.getByLabelText('Decklist'), decklistText);
   return user;
 }
