@@ -5,7 +5,12 @@ import { configDefaults, defineConfig } from 'vitest/config';
 const browserPackages: Record<string, object> = {
   web: {
     resolve: { conditions: ['source', 'module', 'browser', 'development|production'] },
-    test: { environment: 'jsdom', setupFiles: ['src/test-setup.ts'] },
+    test: {
+      environment: 'jsdom',
+      setupFiles: ['src/test-setup.ts'],
+      // Read stylesheets as written: the theme's contrast check parses `theme.css`.
+      css: { include: [/\/theme\.css/] },
+    },
   },
 };
 
