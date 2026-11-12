@@ -195,19 +195,28 @@ describe('applyAllocationChoice', () => {
     });
   });
 
-  it('warns that an Italian line prints in English while copies stay on the English print standing in', async () => {
+  /** 4 Sol Ring in Italian, from a catalog with English prints only. */
+  async function italianLineWithEnglishOnly() {
     const english2016 = aPrint({ id: 'sol-ring-en-2016', releasedAt: '2016-01-01' });
     const englishOnly = createInMemoryCatalog([
       { card: solRing, prints: [solRingC21, english2016] },
     ]);
-    const line = resolved(
-      (await resolveDecklist('4 Sol Ring', englishOnly, { today, lang: 'it' }))[0],
-    );
+    const [line] = await resolveDecklist('4 Sol Ring', englishOnly, { today, lang: 'it' });
+    return { line: resolved(line), english2016 };
+  }
+
+  it('warns that an Italian line prints in English while copies stay on the English print standing in', async () => {
+    const { line, english2016 } = await italianLineWithEnglishOnly();
 
     expect(applyAllocationChoice(line, allocatePrintCopies(line, english2016, 3))).toMatchObject({
       lang: 'it',
       printWarning: 'languageFallback',
     });
+  });
+
+  it('stops warning once every copy leaves the English print standing in', async () => {
+    const { line, english2016 } = await italianLineWithEnglishOnly();
+
     expect(applyAllocationChoice(line, allocateEveryCopy(line, english2016))).toMatchObject({
       lang: 'it',
       printWarning: null,
