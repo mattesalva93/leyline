@@ -8,6 +8,8 @@ import {
   fitAllocations,
   hasPrintableCopies,
   layoutSheet,
+  lineRewrittenByMove,
+  moveWrittenLine,
   sectionOfEachWrittenLine,
   setLineQuantity,
   unprintedLines,
@@ -15,6 +17,8 @@ import {
   type DecklistLine,
   type DecklistSection,
   type Lang,
+  type LineDestination,
+  type LineMove,
   type Print,
   type SheetLayout,
   type SheetOptions,
@@ -95,6 +99,8 @@ export interface Generator {
   /** Gives the tile of `print` on the line at `writtenIndex` `quantity` copies; at zero it goes. */
   readonly changeTileQuantity: (writtenIndex: number, print: Print, quantity: number) => void;
   readonly chooseAllocations: (writtenIndex: number, allocations: AllocationChoice) => void;
+  /** Moves the line at `writtenIndex` to `destination` in the decklist text, with its choices. */
+  readonly moveLine: (writtenIndex: number, destination: LineDestination) => LineMove;
 
   readonly sheetOptions: SheetOptions;
   readonly changeSheetOptions: (options: SheetOptions) => void;
@@ -251,10 +257,15 @@ export function useGenerator(): Generator {
    */
   function keepResolutionOfRewrittenLine(resolution: DecklistLine, quantity: number): string {
     const rewritten = setLineQuantity(resolution, quantity);
-    const key = resolutionKey(defaultLang, rewritten.text);
-    requestedKeys.current.add(key);
-    setResolutions((previous) => new Map(previous).set(key, rewritten));
+    keepResolution(rewritten.text, rewritten);
     return rewritten.text;
+  }
+
+  /** Keeps `resolution` as what `writtenLine` resolves to, so it needs no request. */
+  function keepResolution(writtenLine: string, resolution: DecklistLine | null) {
+    const key = resolutionKey(defaultLang, writtenLine);
+    requestedKeys.current.add(key);
+    setResolutions((previous) => new Map(previous).set(key, resolution));
   }
 
   /**
@@ -298,6 +309,32 @@ export function useGenerator(): Generator {
     );
   }
 
+  /**
+   * Moves the line in the decklist text, its choices with it. A move that rewrites the line (to
+   * join or leave the sideboard) keeps its resolution, and the lines the move writes (a section
+   * header) name no card: the move asks the server nothing, but for a moved line it has not
+   * resolved yet.
+   */
+  function moveLine(writtenIndex: number, destination: LineDestination): LineMove {
+    const move = moveWrittenLine(decklistText, writtenIndex, destination);
+    const nextWrittenLines = writtenLinesOf(move.text);
+    const resolution = resolutionAt(writtenIndex);
+    const choices = choicesOfEveryLine();
+    move.previousWrittenIndexes.forEach((previousIndex, nextIndex) => {
+      const writtenLine = nextWrittenLines[nextIndex] ?? '';
+      if (previousIndex === null) keepResolution(writtenLine, null);
+      if (previousIndex !== writtenIndex) return;
+      // A line not resolved yet is one the user is done with once they move it.
+      if (resolution) keepResolution(writtenLine, lineRewrittenByMove(resolution, writtenLine));
+      else void resolveInLanguage([writtenLine], defaultLang);
+    });
+    writeRewrittenLines(
+      nextWrittenLines,
+      move.previousWrittenIndexes.map((index) => (index === null ? undefined : choices[index])),
+    );
+    return move;
+  }
+
   const sectionOfEachLine = sectionOfEachWrittenLine(writtenLines);
   const cardLines = writtenLines.flatMap((writtenLine, writtenIndex): WrittenCardLine[] => {
     const line = displayedLine(writtenIndex);
@@ -328,6 +365,7 @@ export function useGenerator(): Generator {
     changeTileQuantity,
     chooseAllocations: (writtenIndex, allocations) =>
       updateChoicesAt(writtenIndex, { allocations }),
+    moveLine,
     sheetOptions,
     changeSheetOptions: setSheetOptions,
     sheetLayout,

@@ -32,6 +32,28 @@ const SECTIONS = new Map<string, DecklistSection>([
   ['spells', 'mainDeck'],
   ['tokens', 'tokens'],
 ]);
+/** The header the app writes to open each section: deckbuilders' usual name for it. */
+export const HEADER_OF_SECTION: Readonly<Record<DecklistSection, string>> = {
+  commander: 'Commander',
+  mainDeck: 'Deck',
+  lands: 'Lands',
+  sideboard: 'Sideboard',
+  tokens: 'Tokens',
+};
+
+/** Indentation, then the sideboard prefix. */
+const INDENTED_SIDEBOARD_PREFIX = /^(\s*)SB:\s*/i;
+
+/** The written line marked as a sideboard card. */
+export function withSideboardPrefix(writtenLine: string): string {
+  return `SB: ${writtenLine.trimStart()}`;
+}
+
+/** The written line without the sideboard prefix, if it has one. */
+export function withoutSideboardPrefix(writtenLine: string): string {
+  return writtenLine.replace(INDENTED_SIDEBOARD_PREFIX, '$1');
+}
+
 /** A section header: a section name, maybe followed by a card count and a colon. */
 const SECTION_HEADER = /^(.+?)\s*(\(\d+\))?\s*:?$/;
 

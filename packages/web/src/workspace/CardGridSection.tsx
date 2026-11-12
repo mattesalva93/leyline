@@ -1,11 +1,13 @@
-import type { Print } from '@mtg-suite/core';
+import type { LineSide, Print } from '@mtg-suite/core';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ZoomOn } from '../use-zoomed-card.tsx';
 import type { GridSection } from './grid-sections.ts';
-import { isSelected, type TileSelection } from './grid-tiles.ts';
+import { dropMarkSideOf, isSelected, type GridTile, type TileSelection } from './grid-tiles.ts';
 import { ImagelessTile } from './ImagelessTile.tsx';
 import { PrintTileCard, TILE_GAP_PX } from './PrintTileCard.tsx';
+import { ReorderableTileItem } from './ReorderableTileItem.tsx';
+import type { LineDrag } from './use-line-drag.ts';
 
 export interface CardGridSectionProps {
   readonly section: GridSection;
@@ -14,6 +16,8 @@ export interface CardGridSectionProps {
   readonly selection: TileSelection | null;
   readonly isResolving: boolean;
   readonly zoomOn: ZoomOn;
+  /** `null` where touch is the main input: there no tile can be dragged. */
+  readonly lineDrag: LineDrag | null;
   readonly onSelect: (selection: TileSelection | null) => void;
   readonly onPickCandidate: (writtenIndex: number, oracleId: string) => void;
   readonly onTileQuantityChange: (writtenIndex: number, print: Print, quantity: number) => void;
@@ -35,6 +39,14 @@ function useColumnCount(grid: React.RefObject<HTMLElement | null>): number {
   return columns;
 }
 
+/** The side of `gridTile` where the bar of the dragged line stands, if it lands by the tile. */
+function dropMarkOf(gridTile: GridTile, lineDrag: LineDrag | null): LineSide | null {
+  const nextTo = lineDrag?.destination?.nextTo;
+  return nextTo?.writtenIndex === gridTile.writtenIndex
+    ? dropMarkSideOf(gridTile, nextTo.side)
+    : null;
+}
+
 /** One section of the card grid: its title with its card count, then its tiles. */
 export function CardGridSection({
   section,
@@ -42,6 +54,7 @@ export function CardGridSection({
   selection,
   isResolving,
   zoomOn,
+  lineDrag,
   onSelect,
   onPickCandidate,
   onTileQuantityChange,
@@ -70,27 +83,37 @@ export function CardGridSection({
           const selected = isSelected(gridTile, selection);
           const toggleSelection = (printId: string | null) =>
             onSelect(selected ? null : { writtenIndex: gridTile.writtenIndex, printId });
-          return gridTile.kind === 'print' ? (
-            <PrintTileCard
+          const tileContent =
+            gridTile.kind === 'print' ? (
+              <PrintTileCard
+                gridTile={gridTile}
+                isSelected={selected}
+                continuesRowAbove={gridTile.siblingIndex > 0 && index % columns === 0}
+                zoomOn={zoomOn}
+                onSelect={() => toggleSelection(gridTile.tile.print.id)}
+                onQuantityChange={(quantity) =>
+                  onTileQuantityChange(gridTile.writtenIndex, gridTile.tile.print, quantity)
+                }
+              />
+            ) : (
+              <ImagelessTile
+                gridTile={gridTile}
+                isResolving={isResolving}
+                isSelected={selected}
+                onSelect={() => toggleSelection(null)}
+                onPickCandidate={(oracleId) => onPickCandidate(gridTile.writtenIndex, oracleId)}
+              />
+            );
+          return (
+            <ReorderableTileItem
               key={gridTile.key}
-              gridTile={gridTile}
               isSelected={selected}
-              continuesRowAbove={gridTile.siblingIndex > 0 && index % columns === 0}
-              zoomOn={zoomOn}
-              onSelect={() => toggleSelection(gridTile.tile.print.id)}
-              onQuantityChange={(quantity) =>
-                onTileQuantityChange(gridTile.writtenIndex, gridTile.tile.print, quantity)
-              }
-            />
-          ) : (
-            <ImagelessTile
-              key={gridTile.key}
-              gridTile={gridTile}
-              isResolving={isResolving}
-              isSelected={selected}
-              onSelect={() => toggleSelection(null)}
-              onPickCandidate={(oracleId) => onPickCandidate(gridTile.writtenIndex, oracleId)}
-            />
+              dragHandlers={lineDrag?.tileDragHandlers(gridTile, section.name) ?? null}
+              isDragged={lineDrag?.draggedWrittenIndex === gridTile.writtenIndex}
+              dropMarkSide={dropMarkOf(gridTile, lineDrag)}
+            >
+              {tileContent}
+            </ReorderableTileItem>
           );
         })}
       </ul>

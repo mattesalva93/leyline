@@ -49,14 +49,25 @@ export function Workspace() {
   const linesToFix = linesToFixOf(gridTiles);
   const selectTile = (selection: TileSelection | null) =>
     setSelectionInText(selection && { ...selection, writtenLineCount: generator.writtenLineCount });
+  const selection = currentSelection(selectionInText, generator.writtenLineCount, gridTiles);
   const state: WorkspaceState = {
     generator,
     step,
     goToStep: setStep,
     gridSections,
     gridTiles,
-    selection: currentSelection(selectionInText, generator.writtenLineCount, gridTiles),
+    selection,
     selectTile,
+    moveLine: (writtenIndex, destination) => {
+      const move = generator.moveLine(writtenIndex, destination);
+      if (!selection) return;
+      setSelectionInText({
+        ...selection,
+        writtenIndex: move.previousWrittenIndexes.indexOf(selection.writtenIndex),
+        writtenLineCount: move.previousWrittenIndexes.length,
+      });
+    },
+    tilesAreDraggable: !touchIsMain,
     linesToFix,
     selectFirstLineToFix: () => {
       const [first] = linesToFix;

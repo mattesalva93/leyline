@@ -14,6 +14,13 @@ export {
   unallocatedCopies,
 } from './allocation.ts';
 export { sectionOfEachWrittenLine } from './decklist-section.ts';
+export {
+  lineRewrittenByMove,
+  moveWrittenLine,
+  type LineDestination,
+  type LineMove,
+  type LineSide,
+} from './move-written-line.ts';
 export { printTiles, type PrintTile } from './print-tile.ts';
 export {
   changeTileQuantity,

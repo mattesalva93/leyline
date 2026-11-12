@@ -1,3 +1,4 @@
+import type { LineDestination } from '@mtg-suite/core';
 import type { Generator } from '../use-generator.ts';
 import type { GridSection } from './grid-sections.ts';
 import type { GridTile, ImagelessGridTile, TileSelection } from './grid-tiles.ts';
@@ -24,6 +25,10 @@ export interface WorkspaceState {
   readonly gridTiles: readonly GridTile[];
   readonly selection: TileSelection | null;
   readonly selectTile: (selection: TileSelection | null) => void;
+  /** Moves the line in the decklist text; a selected tile of it stays selected. */
+  readonly moveLine: (writtenIndex: number, destination: LineDestination) => void;
+  /** Whether the mouse can drag tiles to reorder the decklist: not where touch is the main input. */
+  readonly tilesAreDraggable: boolean;
   readonly linesToFix: readonly ImagelessGridTile[];
   /** Selects the first line to fix, in the card grid: a phone goes to the "cards" step. */
   readonly selectFirstLineToFix: () => void;

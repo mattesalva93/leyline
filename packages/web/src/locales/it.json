@@ -17,6 +17,8 @@
   "workspace": {
     "decklistPanel": "Lista",
     "cardGrid": "Griglia delle carte",
+    "dropMark": "Punto di arrivo",
+    "sideboardDrop": "Rilascia qui per il sideboard",
     "sections": {
       "commander": "Comandante",
       "mainDeck": "Mazzo",
