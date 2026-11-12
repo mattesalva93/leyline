@@ -311,7 +311,8 @@ export function useGenerator(): Generator {
   /**
    * Moves the line in the decklist text, its choices with it. A move that rewrites the line (to
    * join or leave the sideboard) keeps its resolution, and the lines the move writes (a section
-   * header) name no card: the move asks the server nothing.
+   * header) name no card: the move asks the server nothing, but for a moved line it has not
+   * resolved yet.
    */
   function moveLine(writtenIndex: number, destination: LineDestination): LineMove {
     const move = moveWrittenLine(decklistText, writtenIndex, destination);
@@ -321,9 +322,10 @@ export function useGenerator(): Generator {
     move.previousWrittenIndexes.forEach((previousIndex, nextIndex) => {
       const writtenLine = nextWrittenLines[nextIndex] ?? '';
       if (previousIndex === null) keepResolution(writtenLine, null);
-      else if (previousIndex === writtenIndex && resolution) {
-        keepResolution(writtenLine, { ...resolution, text: writtenLine });
-      }
+      if (previousIndex !== writtenIndex) return;
+      // A line not resolved yet is one the user is done with once they move it.
+      if (resolution) keepResolution(writtenLine, { ...resolution, text: writtenLine });
+      else void resolveInLanguage([writtenLine], defaultLang);
     });
     writeRewrittenLines(
       nextWrittenLines,

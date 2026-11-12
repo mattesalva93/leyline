@@ -1268,6 +1268,17 @@ describe('reordering the decklist by dragging tiles', () => {
     expect(vi.mocked(api.resolveDecklistText).mock.calls.length).toBe(requestsBefore);
   });
 
+  it('recognises a line not recognised yet once it is moved', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}SB: 1 Lightning Bolt');
+    const solRing = tileOf(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+    const [, lightningBolt] = gridTiles();
+
+    dragAndDrop(tileOf(lightningBolt), solRing, 'before');
+
+    expect(decklistValue()).toBe('1 Lightning Bolt\n4 Sol Ring');
+    expect(await screen.findByRole('button', { name: 'Modifica Lightning Bolt' })).toBeTruthy();
+  });
+
   it('keeps the selected tile selected when its line moves', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
     const solRingButton = await screen.findByRole('button', { name: 'Modifica Sol Ring' });
