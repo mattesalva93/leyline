@@ -169,26 +169,13 @@ export function useGenerator(): Generator {
     );
   }
 
-  /** Drops the allocations of each of `linesToForget`: they use prints in their old language. */
-  function forgetAllocations(linesToForget: readonly string[]) {
-    setChoicesByLine((previous) => {
-      const next = new Map(previous);
-      for (const writtenLine of linesToForget) {
-        const { allocations: _forgotten, ...kept } = previous.get(writtenLine) ?? {};
-        if (_forgotten) next.set(writtenLine, kept);
-      }
-      return next;
-    });
-  }
-
   // Like a line's own language, switched only once the lines that follow it are resolved: a
-  // failed request keeps them, and their allocations, as they were.
+  // failed request keeps them as they were. Allocated copies stay on their prints either way.
   async function changeDefaultLanguage(lang: Lang) {
     const followingLines = writtenLines.filter(
       (writtenLine) => !choicesByLine.get(writtenLine)?.lang,
     );
     if (!(await resolveInLanguage(followingLines, lang))) return;
-    forgetAllocations(followingLines);
     setDefaultLang(lang);
     saveDefaultLang(lang);
   }
@@ -198,7 +185,6 @@ export function useGenerator(): Generator {
     const writtenLine = writtenLines[writtenIndex];
     if (writtenLine === undefined || lang === languageOf(writtenLine)) return;
     if (!(await resolveInLanguage([writtenLine], lang))) return;
-    forgetAllocations([writtenLine]);
     updateChoices(writtenLine, { lang });
   }
 

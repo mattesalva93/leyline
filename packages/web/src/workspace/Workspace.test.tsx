@@ -288,6 +288,38 @@ describe('copies of a line in another language', () => {
     expect(screen.queryByRole('img', { name: 'Stampa in inglese' })).toBeNull();
     expect(lineInspector().getByRole('radio', { name: 'Italiano', checked: true })).toBeTruthy();
   });
+
+  it('keeps the allocated copies on their print once the line changes language', async () => {
+    const user = await openBrainstorm();
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
+    const lineLanguage = within(
+      lineInspector().getByRole('group', { name: 'Lingua di questa carta' }),
+    );
+
+    await user.click(lineLanguage.getByRole('radio', { name: 'Inglese' }));
+
+    expect(await screen.findByRole('button', { name: 'Una copia in più con C21 #1' })).toBeTruthy();
+    expect(lineInspector().getByText('+3 non assegnate')).toBeTruthy();
+    expect(gridTiles().map(tileSummary)).toEqual([
+      ['Immagine di Brainstorm', '3×', '1/2'],
+      ['Immagine di Brainstorm', '1×', '2/2'],
+    ]);
+  });
+
+  it('keeps the allocated copies on their print once the default language changes', async () => {
+    const user = await openBrainstorm();
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
+    await user.click(screen.getByRole('button', { name: 'Modifica Brainstorm', pressed: true }));
+
+    await user.click(summary().getByRole('radio', { name: 'Inglese' }));
+
+    await user.click(tileAt(0).getByRole('button', { name: 'Modifica Brainstorm' }));
+    expect(await screen.findByRole('button', { name: 'Una copia in più con C21 #1' })).toBeTruthy();
+    expect(gridTiles().map(tileSummary)).toEqual([
+      ['Immagine di Brainstorm', '3×', '1/2'],
+      ['Immagine di Brainstorm', '1×', '2/2'],
+    ]);
+  });
 });
 
 /** The inspector while no tile is selected. */
