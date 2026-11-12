@@ -56,6 +56,20 @@ describe('sectionOfEachWrittenLine', () => {
     ]);
   });
 
+  it('reads Main and Main deck as the main deck too', () => {
+    expect(
+      sectionsOf('Sideboard\n1 Duress\nMain\n4 Delver\nSideboard\nMain deck:\n1 Ponder'),
+    ).toEqual([
+      'sideboard',
+      'sideboard',
+      'mainDeck',
+      'mainDeck',
+      'sideboard',
+      'mainDeck',
+      'mainDeck',
+    ]);
+  });
+
   it("puts a line marked with MTGO's sideboard prefix in the sideboard, wherever it is written", () => {
     expect(sectionsOf('4 Forest\nSB: 2 Pyroblast\n1 Ponder\nLands\n  sb:1 Duress')).toEqual([
       'mainDeck',

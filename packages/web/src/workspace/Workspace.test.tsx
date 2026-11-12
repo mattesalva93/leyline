@@ -235,6 +235,26 @@ describe('the workspace', () => {
     expect(gridSections()).toEqual([['Mazzo 4 carte', ['Immagine di Sol Ring']]]);
   });
 
+  it('shows the lands section between the main deck and the sideboard', async () => {
+    await mountPageAndWrite('Sideboard{Enter}2 Counterspell{Enter}Lands{Enter}4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    expect(gridSections()).toEqual([
+      ['Terre 4 carte', ['Immagine di Sol Ring']],
+      ['Sideboard 2 carte', ['Immagine di Counterspell']],
+    ]);
+  });
+
+  it('shows a section of cards it could not find under its title, counting them as the summary does', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}Sideboard{Enter}2 Nonexistent Card{Enter}');
+    await screen.findByText('Carta non trovata');
+
+    expect(gridSections()).toEqual([
+      ['Mazzo 4 carte', ['Immagine di Sol Ring']],
+      ['Sideboard 2 carte', [undefined]],
+    ]);
+  });
+
   it("shows the selected tile's quantity and prints in the inspector, beside the grid", async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
 
