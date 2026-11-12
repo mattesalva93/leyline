@@ -8,6 +8,7 @@ import {
   fitAllocations,
   hasPrintableCopies,
   layoutSheet,
+  moveWrittenLine,
   sectionOfEachWrittenLine,
   setLineQuantity,
   unprintedLines,
@@ -15,6 +16,8 @@ import {
   type DecklistLine,
   type DecklistSection,
   type Lang,
+  type LineDestination,
+  type LineMove,
   type Print,
   type SheetLayout,
   type SheetOptions,
@@ -95,6 +98,8 @@ export interface Generator {
   /** Gives the tile of `print` on the line at `writtenIndex` `quantity` copies; at zero it goes. */
   readonly changeTileQuantity: (writtenIndex: number, print: Print, quantity: number) => void;
   readonly chooseAllocations: (writtenIndex: number, allocations: AllocationChoice) => void;
+  /** Moves the line at `writtenIndex` to `destination` in the decklist text, with its choices. */
+  readonly moveLine: (writtenIndex: number, destination: LineDestination) => LineMove;
 
   readonly sheetOptions: SheetOptions;
   readonly changeSheetOptions: (options: SheetOptions) => void;
@@ -303,6 +308,30 @@ export function useGenerator(): Generator {
     );
   }
 
+  /**
+   * Moves the line in the decklist text, its choices with it. A move that rewrites the line (to
+   * join or leave the sideboard) keeps its resolution, and the lines the move writes (a section
+   * header) name no card: the move asks the server nothing.
+   */
+  function moveLine(writtenIndex: number, destination: LineDestination): LineMove {
+    const move = moveWrittenLine(decklistText, writtenIndex, destination);
+    const nextWrittenLines = writtenLinesOf(move.text);
+    const resolution = resolutionAt(writtenIndex);
+    const choices = choicesOfEveryLine();
+    move.previousWrittenIndexes.forEach((previousIndex, nextIndex) => {
+      const writtenLine = nextWrittenLines[nextIndex] ?? '';
+      if (previousIndex === null) keepResolution(writtenLine, null);
+      else if (previousIndex === writtenIndex && resolution) {
+        keepResolution(writtenLine, { ...resolution, text: writtenLine });
+      }
+    });
+    writeRewrittenLines(
+      nextWrittenLines,
+      move.previousWrittenIndexes.map((index) => (index === null ? undefined : choices[index])),
+    );
+    return move;
+  }
+
   const sectionOfEachLine = sectionOfEachWrittenLine(writtenLines);
   const cardLines = writtenLines.flatMap((writtenLine, writtenIndex): WrittenCardLine[] => {
     const line = displayedLine(writtenIndex);
@@ -333,6 +362,7 @@ export function useGenerator(): Generator {
     changeTileQuantity,
     chooseAllocations: (writtenIndex, allocations) =>
       updateChoicesAt(writtenIndex, { allocations }),
+    moveLine,
     sheetOptions,
     changeSheetOptions: setSheetOptions,
     sheetLayout,

@@ -3,9 +3,17 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ZoomOn } from '../use-zoomed-card.tsx';
 import type { GridSection } from './grid-sections.ts';
-import { isSelected, type TileSelection } from './grid-tiles.ts';
+import {
+  isFirstOfLine,
+  isLastOfLine,
+  isSelected,
+  type GridTile,
+  type TileSelection,
+} from './grid-tiles.ts';
 import { ImagelessTile } from './ImagelessTile.tsx';
 import { PrintTileCard, TILE_GAP_PX } from './PrintTileCard.tsx';
+import { ReorderableTileItem } from './ReorderableTileItem.tsx';
+import type { LineDrag } from './use-line-drag.ts';
 
 export interface CardGridSectionProps {
   readonly section: GridSection;
@@ -14,6 +22,8 @@ export interface CardGridSectionProps {
   readonly selection: TileSelection | null;
   readonly isResolving: boolean;
   readonly zoomOn: ZoomOn;
+  /** `null` where touch is the main input: there no tile can be dragged. */
+  readonly lineDrag: LineDrag | null;
   readonly onSelect: (selection: TileSelection | null) => void;
   readonly onPickCandidate: (writtenIndex: number, oracleId: string) => void;
   readonly onTileQuantityChange: (writtenIndex: number, print: Print, quantity: number) => void;
@@ -35,6 +45,14 @@ function useColumnCount(grid: React.RefObject<HTMLElement | null>): number {
   return columns;
 }
 
+/** The side of `gridTile` where the dragged line lands, if it lands by the tile. */
+function dropMarkSideOf(gridTile: GridTile, lineDrag: LineDrag | null): 'before' | 'after' | null {
+  const nextTo = lineDrag?.destination?.nextTo;
+  if (nextTo?.writtenIndex !== gridTile.writtenIndex) return null;
+  const isOnSide = nextTo.side === 'before' ? isFirstOfLine(gridTile) : isLastOfLine(gridTile);
+  return isOnSide ? nextTo.side : null;
+}
+
 /** One section of the card grid: its title with its card count, then its tiles. */
 export function CardGridSection({
   section,
@@ -42,6 +60,7 @@ export function CardGridSection({
   selection,
   isResolving,
   zoomOn,
+  lineDrag,
   onSelect,
   onPickCandidate,
   onTileQuantityChange,
@@ -70,7 +89,7 @@ export function CardGridSection({
           const selected = isSelected(gridTile, selection);
           const toggleSelection = (printId: string | null) =>
             onSelect(selected ? null : { writtenIndex: gridTile.writtenIndex, printId });
-          const tileContent =
+          const tile =
             gridTile.kind === 'print' ? (
               <PrintTileCard
                 gridTile={gridTile}
@@ -92,13 +111,15 @@ export function CardGridSection({
               />
             );
           return (
-            <li
+            <ReorderableTileItem
               key={gridTile.key}
-              className="relative min-w-0"
-              aria-current={selected || undefined}
+              isSelected={selected}
+              dragHandlers={lineDrag?.tileDragHandlers(gridTile.writtenIndex, section.name) ?? null}
+              isDragged={lineDrag?.draggedWrittenIndex === gridTile.writtenIndex}
+              dropMarkSide={dropMarkSideOf(gridTile, lineDrag)}
             >
-              {tileContent}
-            </li>
+              {tile}
+            </ReorderableTileItem>
           );
         })}
       </ul>

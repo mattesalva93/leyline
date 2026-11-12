@@ -4,7 +4,7 @@ import type { WorkspaceState } from './workspace-state.ts';
 
 /** The centre of the workspace in the "cards" view: the card grid, or how to start one. */
 export function CardsView({
-  state: { generator, gridSections, selection, selectTile },
+  state: { generator, gridSections, selection, selectTile, moveLine, tilesAreDraggable },
   tileWidthPx,
 }: {
   readonly state: WorkspaceState;
@@ -22,6 +22,8 @@ export function CardsView({
       onSelect={selectTile}
       onPickCandidate={generator.pickCandidate}
       onTileQuantityChange={generator.changeTileQuantity}
+      tilesAreDraggable={tilesAreDraggable}
+      onMoveLine={moveLine}
     />
   );
 }

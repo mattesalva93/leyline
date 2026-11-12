@@ -41,6 +41,16 @@ export function isSelected(gridTile: GridTile, selection: TileSelection | null):
   return gridTile.kind === 'print' ? gridTile.tile.print.id === selection.printId : true;
 }
 
+/** Whether the tile is the first of its line's tiles in the grid: a line dropped before it lands there. */
+export function isFirstOfLine(gridTile: GridTile): boolean {
+  return gridTile.kind === 'imageless' || gridTile.siblingIndex === 0;
+}
+
+/** Whether the tile is the last of its line's tiles in the grid: a line dropped after it lands there. */
+export function isLastOfLine(gridTile: GridTile): boolean {
+  return gridTile.kind === 'imageless' || gridTile.siblingIndex === gridTile.siblingCount - 1;
+}
+
 /**
  * The lines the user has to fix before they print, in the order of the decklist text: each one
  * with an imageless tile.
