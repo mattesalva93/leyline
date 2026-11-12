@@ -598,7 +598,7 @@ describe('the zoomed card', () => {
     it('when a drag starts', async () => {
       const { tile } = await zoomTheTile();
 
-      fireEvent.dragStart(tile);
+      startDrag(tile);
 
       expect(zoomedCard()).toBeNull();
     });
@@ -1097,19 +1097,29 @@ function tileOf(button: HTMLElement | undefined): HTMLElement {
   return tile;
 }
 
+/** What a browser hands every event of a drag; jsdom makes none. */
+function aDataTransfer() {
+  return { setData: () => {}, dropEffect: 'none', effectAllowed: 'all' };
+}
+
+/** Starts dragging `element` with the mouse, as a browser does. */
+function startDrag(element: HTMLElement) {
+  fireEvent.dragStart(element, { dataTransfer: aDataTransfer() });
+}
+
 /** Holds the dragged tile over the `side` half of `over`. */
 function holdOver(over: HTMLElement, side: 'before' | 'after') {
   // jsdom lays nothing out: the tile under the pointer gets a box, so the pointer is on one half.
   over.getBoundingClientRect = () => ({ left: 0, width: 100, top: 0, height: 140 }) as DOMRect;
   // jsdom has no DragEvent, so the event it makes keeps no pointer position of its own.
-  const event = createEvent.dragOver(over);
+  const event = createEvent.dragOver(over, { dataTransfer: aDataTransfer() });
   Object.defineProperty(event, 'clientX', { value: side === 'before' ? 25 : 75 });
   fireEvent(over, event);
 }
 
 /** Starts dragging `tile` with the mouse and holds it over the `side` half of `over`. */
 function dragOver(tile: HTMLElement, over: HTMLElement, side: 'before' | 'after') {
-  fireEvent.dragStart(tile);
+  startDrag(tile);
   holdOver(over, side);
 }
 
@@ -1237,9 +1247,9 @@ describe('reordering the decklist by dragging tiles', () => {
     const solRing = tileOf(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
     expect(screen.queryByText('Rilascia qui per il sideboard')).toBeNull();
 
-    fireEvent.dragStart(solRing);
+    startDrag(solRing);
     const sideboardDrop = screen.getByText('Rilascia qui per il sideboard');
-    fireEvent.dragOver(sideboardDrop);
+    fireEvent.dragOver(sideboardDrop, { dataTransfer: aDataTransfer() });
     fireEvent.drop(sideboardDrop);
     fireEvent.dragEnd(solRing);
 

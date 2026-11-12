@@ -61,7 +61,7 @@ export function useLineDrag(
   /** Lets the dragged line land where the pointer is, while there is somewhere to land. */
   function allowDrop(event: React.DragEvent, nextDestination: LineDestination) {
     event.preventDefault();
-    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    event.dataTransfer.dropEffect = 'move';
     // `dragover` fires every few milliseconds: the grid renders again only when the bar moves.
     setDestination((current) =>
       isSameDestination(current, nextDestination) ? current : nextDestination,
@@ -73,11 +73,9 @@ export function useLineDrag(
     destination,
     tileDragHandlers: (gridTile, section) => ({
       onDragStart: (event) => {
-        // jsdom has no `dataTransfer`; Firefox starts no drag without data in it.
-        if (event.dataTransfer) {
-          event.dataTransfer.setData(LINE_DRAG_TYPE, `${gridTile.writtenIndex}`);
-          event.dataTransfer.effectAllowed = 'move';
-        }
+        // Firefox starts no drag without data in it.
+        event.dataTransfer.setData(LINE_DRAG_TYPE, `${gridTile.writtenIndex}`);
+        event.dataTransfer.effectAllowed = 'move';
         setDraggedWrittenIndex(gridTile.writtenIndex);
       },
       onDragOver: (event) => {
