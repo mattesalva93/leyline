@@ -79,6 +79,62 @@ describe('the app shell', () => {
     expect(document.activeElement).toBe(menuButton);
   });
 
+  it('credits Scryfall on the generator screen, with no footer below it', async () => {
+    mountApp('/proxy');
+    await screen.findByRole('heading', { name: 'Generatore di fogli proxy' });
+
+    expect(screen.getByRole('link', { name: 'Scryfall' }).getAttribute('href')).toBe(
+      'https://scryfall.com',
+    );
+    expect(screen.queryByRole('contentinfo')).toBeNull();
+  });
+
+  describe('"Informazioni"', () => {
+    function expectTheInformation(dialog: HTMLElement) {
+      expect(
+        within(dialog).getByText('Progetto non ufficiale, non affiliato a Wizards of the Coast.'),
+      ).toBeTruthy();
+      expect(
+        within(dialog).getByRole('link', { name: 'Segnala un problema' }).getAttribute('href'),
+      ).toBe('https://github.com/mattesalva93/mtg-suite/issues');
+    }
+
+    it('shows the disclaimer and the link to report a problem, from the top bar', async () => {
+      const { user } = mountShellWithFourAreas();
+
+      await user.click(screen.getByRole('button', { name: 'Informazioni' }));
+
+      expectTheInformation(screen.getByRole('dialog', { name: 'Informazioni' }));
+    });
+
+    it('opens from the phone menu too, closing the menu', async () => {
+      const { user } = mountShellWithFourAreas();
+      await user.click(screen.getByRole('button', { name: 'Menu' }));
+
+      await user.click(
+        within(screen.getByRole('dialog', { name: 'Menu' })).getByRole('button', {
+          name: 'Informazioni',
+        }),
+      );
+
+      expectTheInformation(screen.getByRole('dialog', { name: 'Informazioni' }));
+      expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull();
+    });
+
+    it('closes from the keyboard, giving the focus back', async () => {
+      const { user } = mountShellWithFourAreas();
+      const infoButton = screen.getByRole('button', { name: 'Informazioni' });
+      infoButton.focus();
+
+      await user.keyboard('{Enter}');
+      expect(screen.getByRole('dialog', { name: 'Informazioni' })).toBeTruthy();
+      await user.keyboard('{Escape}');
+
+      expect(screen.queryByRole('dialog', { name: 'Informazioni' })).toBeNull();
+      expect(document.activeElement).toBe(infoButton);
+    });
+  });
+
   describe('theme', () => {
     const isDark = () => document.documentElement.classList.contains('dark');
 

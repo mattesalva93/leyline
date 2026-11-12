@@ -2,7 +2,6 @@ import { CARD_MM } from '@mtg-suite/core';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DecklistLineItem } from './DecklistLineItem.tsx';
-import { Footer } from './Footer.tsx';
 import { LanguagePicker } from './LanguagePicker.tsx';
 import { LinePanel } from './LinePanel.tsx';
 import { touchIsMainInput } from './pdf-delivery.ts';
@@ -113,7 +112,6 @@ export function GeneratorPage() {
         }
         onClose={() => setPanelLineIndex(null)}
       />
-      <Footer />
     </div>
   );
 }
