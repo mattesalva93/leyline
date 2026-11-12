@@ -82,6 +82,14 @@ describe('resolveDecklist', () => {
     ]);
   });
 
+  it('reads a line with the sideboard prefix as a card, never as a section header', async () => {
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]);
+
+    const lines = await resolveDecklist('SB: Lands', catalog, { today, lang: 'en' });
+
+    expect(lines).toMatchObject([{ text: 'SB: Lands', status: 'notFound', quantity: 1 }]);
+  });
+
   it('reads "4x name" as four copies', async () => {
     const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]);
 

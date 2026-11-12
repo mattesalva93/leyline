@@ -66,6 +66,14 @@ describe('sectionOfEachWrittenLine', () => {
     ]);
   });
 
+  it('opens no section at a header behind the sideboard prefix: that line is a sideboard card', () => {
+    expect(sectionsOf('4 Forest\nSB: Lands\n1 Ponder')).toEqual([
+      'mainDeck',
+      'sideboard',
+      'mainDeck',
+    ]);
+  });
+
   it('never takes a card named like a section word for a header', () => {
     expect(sectionsOf('Sideboard\n1 Deck of Many Things')).toEqual(['sideboard', 'sideboard']);
   });

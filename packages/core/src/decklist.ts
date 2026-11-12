@@ -50,10 +50,14 @@ function isIgnored(trimmed: string): boolean {
   return trimmed === '' || COMMENT.test(trimmed) || sectionOpenedBy(trimmed) !== null;
 }
 
-/** The card a line asks for, or `null` for blank lines, comments and section headers. */
+/**
+ * The card a line asks for, or `null` for blank lines, comments and section headers. The
+ * sideboard prefix marks a card: a header is a line of its own, so a prefixed one is a card name.
+ */
 function parseLine(text: string): ParsedLine | null {
-  const trimmed = text.trim().replace(SIDEBOARD_PREFIX, '');
-  if (isIgnored(trimmed)) return null;
+  const written = text.trim();
+  const trimmed = written.replace(SIDEBOARD_PREFIX, '');
+  if (isIgnored(written) || trimmed === '') return null;
   const quantityMatch = QUANTITY_NAME.exec(trimmed);
   const quantity = quantityMatch?.[1] ? Number(quantityMatch[1]) : 1;
   const rest = quantityMatch?.[2] ?? trimmed;
