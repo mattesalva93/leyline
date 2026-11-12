@@ -297,4 +297,22 @@ describe('the workspace on a phone', () => {
     const tileButton = screen.getByRole('button', { name: 'Modifica Sol Ring' });
     expect(tileButton.getAttribute('aria-pressed')).toBe('false');
   });
+
+  it('folds the "Lista" and "Riepilogo" panels down to their title, and opens them again', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const decklist = screen.getByRole('textbox', { name: 'Decklist' });
+
+    await user.click(screen.getByRole('button', { name: 'Richiudi il pannello «Lista»' }));
+    await user.click(screen.getByRole('button', { name: 'Richiudi il pannello «Riepilogo»' }));
+
+    expect(screen.getByRole('region', { name: 'Lista' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Riepilogo' })).toBeTruthy();
+    expect(screen.queryByRole('textbox', { name: 'Decklist' })).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Lingua delle carte' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Riapri il pannello «Lista»' }));
+
+    expect(screen.getByRole('textbox', { name: 'Decklist' })).toBe(decklist);
+    expect(screen.queryByRole('group', { name: 'Lingua delle carte' })).toBeNull();
+  });
 });
