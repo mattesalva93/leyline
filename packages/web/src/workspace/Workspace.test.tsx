@@ -8,7 +8,6 @@ import { inMemoryServer } from '../in-memory-server.ts';
 import { mountApp } from '../mount-app.tsx';
 import { DESKTOP, PHONE, stubScreen } from '../test-screen.ts';
 import { PRINT_PICKER_ZOOM_WAIT_MS, TILE_ZOOM_WAIT_MS } from '../use-zoomed-card.tsx';
-import { ZOOMED_CARD_GAP_PX, ZOOMED_CARD_PX } from '../zoomed-card-placement.ts';
 
 vi.mock('../api.ts');
 
@@ -401,6 +400,79 @@ describe('the zoomed card', () => {
     return screen.queryByRole('img', { name: /, ingrandita$/ });
   }
 
+  /** Makes `element` stand on screen in the box from `left` and `top`, `width` by `height` px. */
+  function placeOnScreen(
+    element: Element,
+    left: number,
+    top: number,
+    width: number,
+    height: number,
+  ) {
+    const box = { left, top, width, height, right: left + width, bottom: top + height };
+    vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({
+      ...box,
+      x: left,
+      y: top,
+    } as DOMRect);
+  }
+
+  /** Where the zoomed card stands on screen. */
+  function zoomedCardBox() {
+    const card = zoomedCard();
+    if (!card) throw new Error('no zoomed card');
+    const [left, top, width, height] = [
+      card.style.left,
+      card.style.top,
+      card.style.width,
+      card.style.height,
+    ].map(parseFloat) as [number, number, number, number];
+    return { left, top, right: left + width, bottom: top + height };
+  }
+
+  /** The screen under test: jsdom's window. */
+  const screenBox = () => ({ width: window.innerWidth, height: window.innerHeight });
+
+  describe('beside a tile', () => {
+    /** Mounts a grid of one tile standing in `box`, and zooms it. */
+    async function zoomTheTileAt(...box: [number, number, number, number]) {
+      const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+      const tile = await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+      placeOnScreen(tile, ...box);
+      await user.hover(tile);
+      act(() => vi.advanceTimersByTime(TILE_ZOOM_WAIT_MS));
+      return zoomedCardBox();
+    }
+
+    it('stands to the right of its tile, when the screen has room there', async () => {
+      const card = await zoomTheTileAt(100, 200, 150, 210);
+
+      expect(card.left).toBeGreaterThan(250);
+      expect(card.right).toBeLessThanOrEqual(screenBox().width);
+    });
+
+    it('goes to the left of its tile when the right has no room', async () => {
+      const card = await zoomTheTileAt(800, 200, 150, 210);
+
+      expect(card.right).toBeLessThan(800);
+      expect(card.left).toBeGreaterThanOrEqual(0);
+    });
+
+    it('centres on its tile in height', async () => {
+      const card = await zoomTheTileAt(100, 200, 150, 210);
+
+      expect((card.top + card.bottom) / 2).toBeCloseTo(305);
+    });
+
+    it('stays inside the screen when its tile is near the top or the bottom', async () => {
+      const nearTop = await zoomTheTileAt(100, 0, 150, 210);
+      expect(nearTop.top).toBeGreaterThanOrEqual(0);
+      cleanup();
+
+      const nearBottom = await zoomTheTileAt(100, screenBox().height - 210, 150, 210);
+      expect(nearBottom.bottom).toBeLessThanOrEqual(screenBox().height);
+    });
+  });
+
   it('shows the card enlarged once the pointer has rested on its tile for a while', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     const tile = await screen.findByRole('button', { name: 'Modifica Sol Ring' });
@@ -505,14 +577,24 @@ describe('the zoomed card', () => {
 
     it('stands beside the whole picker, covering none of its prints', async () => {
       const { user, picker, leaPrint } = await openThePicker();
-      const pickerBox = { left: 600, right: 1000, top: 0, bottom: 700, width: 400, height: 700 };
-      vi.spyOn(picker, 'getBoundingClientRect').mockReturnValue(pickerBox as DOMRect);
+      placeOnScreen(picker, 600, 0, 400, 700);
 
       await user.hover(leaPrint);
       act(() => vi.advanceTimersByTime(PRINT_PICKER_ZOOM_WAIT_MS));
 
-      // The screen under test is 1024 px wide: no room on the right, so on the left.
-      expect(zoomedCard()?.style.left).toBe(`${600 - ZOOMED_CARD_GAP_PX - ZOOMED_CARD_PX.width}px`);
+      expect(zoomedCardBox().right).toBeLessThan(600);
+    });
+
+    it('covers the picker rather than leave the screen, when neither side has room', async () => {
+      const { user, picker, leaPrint } = await openThePicker();
+      placeOnScreen(picker, 100, 0, 900, 700);
+
+      await user.hover(leaPrint);
+      act(() => vi.advanceTimersByTime(PRINT_PICKER_ZOOM_WAIT_MS));
+
+      const card = zoomedCardBox();
+      expect(card.left).toBeGreaterThanOrEqual(0);
+      expect(card.right).toBeLessThanOrEqual(screenBox().width);
     });
   });
 

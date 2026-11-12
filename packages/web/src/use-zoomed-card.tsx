@@ -74,7 +74,7 @@ export function useZoomedCard(waitMs: number): {
             (besideClosest && element.closest(besideClosest)?.getBoundingClientRect()) || hovered,
           viewport: { width: window.innerWidth, height: window.innerHeight },
         });
-        setZoom(placement && { face, ...placement });
+        setZoom({ face, ...placement });
       }, waitMs);
     },
     onPointerLeave: hide,
@@ -87,7 +87,7 @@ export function useZoomedCard(waitMs: number): {
     createPortal(
       <img
         className="pointer-events-none fixed z-50 shadow-[0_0_0_3px_var(--color-border),10px_10px_0_var(--color-border)]"
-        style={{ ...CARD_SHAPE, left: zoom.left, top: zoom.top, width: ZOOMED_CARD_PX.width }}
+        style={{ ...CARD_SHAPE, left: zoom.left, top: zoom.top, ...ZOOMED_CARD_PX }}
         src={zoom.face.imageUris.large}
         alt={t('zoomedCard.alt', { name: zoom.face.name })}
         width={LARGE_IMAGE.width}

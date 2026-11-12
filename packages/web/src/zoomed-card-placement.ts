@@ -27,19 +27,23 @@ interface ZoomedCardPlacementInput {
 
 /**
  * Where the zoomed card goes: to the right of `beside`, or to its left when the right has no
- * room, never over it, so it hides nothing the user compares it with. With room on neither side
- * it is not shown (`null`).
+ * room, so it hides nothing the user compares it with. With room on neither side it covers
+ * `beside` rather than leave the screen.
  */
-export function zoomedCardPlacement({
-  hovered,
-  beside,
-  viewport,
-}: ZoomedCardPlacementInput): { readonly left: number; readonly top: number } | null {
+export function zoomedCardPlacement({ hovered, beside, viewport }: ZoomedCardPlacementInput): {
+  readonly left: number;
+  readonly top: number;
+} {
   const { width, height } = ZOOMED_CARD_PX;
-  const rightLeft = beside.right + ZOOMED_CARD_GAP_PX;
-  const leftLeft = beside.left - ZOOMED_CARD_GAP_PX - width;
-  const left = rightLeft + width <= viewport.width ? rightLeft : leftLeft >= 0 ? leftLeft : null;
-  if (left === null) return null;
+  const onTheRight = beside.right + ZOOMED_CARD_GAP_PX;
+  const onTheLeft = beside.left - ZOOMED_CARD_GAP_PX - width;
+  const left =
+    onTheRight + width <= viewport.width
+      ? onTheRight
+      : Math.max(
+          ZOOMED_CARD_GAP_PX,
+          Math.min(onTheLeft, viewport.width - ZOOMED_CARD_GAP_PX - width),
+        );
   const centred = (hovered.top + hovered.bottom) / 2 - height / 2;
   const lowest = viewport.height - ZOOMED_CARD_GAP_PX - height;
   return { left, top: Math.max(ZOOMED_CARD_GAP_PX, Math.min(centred, lowest)) };
