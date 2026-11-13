@@ -88,7 +88,22 @@ const DELVER: CatalogEntry = (() => {
   };
 })();
 
+/** A card whose only Italian print has a placeholder image, so it prints in English. */
+const TRINISPHERE: CatalogEntry = {
+  card: aCard({ oracleId: 'trinisphere', name: 'Trinisphere' }),
+  prints: [
+    {
+      ...printOf('Trinisfera', 'trinisphere-it-dst', 'dst', '2004-02-06'),
+      lang: 'it',
+      imageStatus: 'placeholder',
+    },
+    printOf('Trinisphere', 'trinisphere-dst', 'dst', '2004-02-06'),
+    printOf('Trinisphere', 'trinisphere-sld', 'sld', '2023-01-01'),
+  ],
+};
+
 const CATALOG = [
+  TRINISPHERE,
   catalogEntry('sol-ring', 'Sol Ring', 'c21', 'lea'),
   DELVER,
   BRAINSTORM,
@@ -870,7 +885,7 @@ describe('copies of a line in another language', () => {
       within(lineInspector().getByRole('group', { name: 'Lingua delle stampe' }));
     await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
 
-    await user.click(printsLanguage().getByRole('radio', { name: 'Inglese' }));
+    await user.click(await printsLanguage().findByRole('radio', { name: 'Inglese (1)' }));
     await user.click(await screen.findByRole('button', { name: 'Una copia in più con C21 #1' }));
 
     expect(screen.queryByRole('button', { name: 'Una copia in più con MMQ #1' })).toBeNull();
@@ -889,7 +904,7 @@ describe('copies of a line in another language', () => {
     );
     await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
 
-    await user.click(printsLanguage.getByRole('radio', { name: 'Inglese' }));
+    await user.click(await printsLanguage.findByRole('radio', { name: 'Inglese (1)' }));
     await screen.findByRole('button', { name: 'Una copia in più con C21 #1' });
 
     expect(lineInspector().getByText('+3 non assegnate')).toBeTruthy();
@@ -927,6 +942,40 @@ describe('copies of a line in another language', () => {
       ['Immagine di Brainstorm', '3×', '1/2'],
       ['Immagine di Brainstorm', '1×', '2/2'],
     ]);
+  });
+});
+
+describe('the languages of the print picker', () => {
+  /** The language choice of the print picker in the inspector. */
+  async function printsLanguage() {
+    const inspector = within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
+    return within(await inspector.findByRole('group', { name: 'Lingua delle stampe' }));
+  }
+
+  it('counts the prints of each language, the one not selected too, without loading its pages', async () => {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+
+    const languages = await printsLanguage();
+
+    expect(
+      await languages.findByRole('radio', { name: 'Italiano (2)', checked: true }),
+    ).toBeTruthy();
+    expect(languages.getByRole('radio', { name: 'Inglese (1)' })).toBeTruthy();
+    expect(vi.mocked(api.fetchPrintPage).mock.calls.map(([, lang]) => lang)).not.toContain('en');
+  });
+
+  it('offers no Italian prints for a card whose only Italian one is not printable, and opens on English', async () => {
+    const user = await mountPageAndWrite('1 Trinisphere{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Trinisphere' }));
+
+    const languages = await printsLanguage();
+
+    const italian = await languages.findByRole('radio', { name: 'Italiano (0)' });
+    expect(italian).toHaveProperty('disabled', true);
+    expect(languages.getByRole('radio', { name: 'Inglese (2)', checked: true })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Una copia in più con SLD #1' })).toBeTruthy();
+    expect(screen.getByRole('img', { name: 'Stampa in inglese' })).toBeTruthy();
   });
 });
 
@@ -2025,7 +2074,7 @@ describe('the decklist saved on the device', () => {
     await user.click(await screen.findByRole('button', { name: 'Lightning Bolt' }));
     await user.click(screen.getByRole('button', { name: 'Modifica Brainstorm' }));
     await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
-    await user.click(screen.getByRole('radio', { name: 'Inglese' }));
+    await user.click(await screen.findByRole('radio', { name: 'Inglese (1)' }));
     await user.click(await screen.findByRole('button', { name: 'Una copia in più con C21 #1' }));
 
     reload();

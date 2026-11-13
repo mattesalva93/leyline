@@ -12,6 +12,7 @@ import { PrintWarningNote } from './PrintWarningNote.tsx';
 import { NORMAL_IMAGE } from './scryfall-image-sizes.ts';
 import { SYMBOL_BUTTON } from './ui/board-styles.ts';
 import { usePrintPages } from './use-print-pages.ts';
+import { usePrintCounts } from './use-print-counts.ts';
 import { usePrintsLanguage } from './use-prints-language.ts';
 import { CARD_SHAPE } from './card-shape.ts';
 
@@ -33,7 +34,8 @@ export function LinePanel({
 }: LinePanelProps) {
   const { t } = useTranslation();
   const panelRef = useRef<HTMLDivElement>(null);
-  const [printsLang, changePrintsLang] = usePrintsLanguage(line.lang);
+  const printCounts = usePrintCounts(line.card.oracleId);
+  const [printsLang, changePrintsLang] = usePrintsLanguage(line.lang, printCounts);
   const printPages = usePrintPages(line.card.oracleId, printsLang, () => {
     const panel = panelRef.current;
     const gridWidth = panel ? contentWidthOf(panel) : window.innerWidth;
@@ -86,6 +88,7 @@ export function LinePanel({
       <PrintPicker
         line={line}
         printsLang={printsLang}
+        printCounts={printCounts}
         onPrintsLangChange={changePrintsLang}
         printPages={printPages}
         onAllocationChoice={onAllocationChoice}

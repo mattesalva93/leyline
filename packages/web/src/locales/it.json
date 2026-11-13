@@ -204,6 +204,7 @@
   "printPicker": {
     "title": "Stampe di {{name}}",
     "lang": "Lingua delle stampe",
+    "langWithPrintCount": "{{lang}} ({{count}})",
     "back": "Indietro",
     "setAndNumber": "{{set}} #{{number}}",
     "quality": {

@@ -7,6 +7,7 @@ import {
   type AllocationChoice,
   type Lang,
   type Print,
+  type PrintCountsByLang,
   type ResolvedLine,
 } from '@mtg-suite/core';
 import { useEffect, useRef } from 'react';
@@ -38,6 +39,8 @@ interface PrintPickerProps {
   /** The language of the prints shown: copies can go to prints of either language. */
   readonly printsLang: Lang;
   readonly onPrintsLangChange: (lang: Lang) => void;
+  /** How many prints the card has in each language; `null` while not known. */
+  readonly printCounts: PrintCountsByLang | null;
   /** The prints of the card in `printsLang`. */
   readonly printPages: PrintPages;
   /** Called with the allocations a tap on a print or its +/− counter sets. */
@@ -71,6 +74,7 @@ export function PrintPicker({
   line,
   printsLang,
   onPrintsLangChange,
+  printCounts,
   printPages,
   onAllocationChoice,
 }: PrintPickerProps) {
@@ -115,6 +119,7 @@ export function PrintPicker({
           label={t('printPicker.lang')}
           selectedLang={printsLang}
           onChange={onPrintsLangChange}
+          printCounts={printCounts}
         />
         {/* Beside the switch, not on the default print: that one is in a single language. */}
         {unallocated > 0 && (

@@ -1,5 +1,6 @@
 import {
   CARD_SEARCH_LIMIT,
+  countPrintsByLang,
   createInMemoryCatalog,
   listPrints,
   resolveDecklist,
@@ -28,6 +29,11 @@ export function inMemoryServer(entries: readonly CatalogEntry[]): typeof api {
       const page = await listPrints(catalog, { oracleId, lang, today: TODAY, limit, cursor });
       if (!page) throw new Error(`No card ${oracleId}`);
       return page;
+    },
+    fetchPrintCounts: async (oracleId) => {
+      const counts = await countPrintsByLang(catalog, { oracleId, today: TODAY });
+      if (!counts) throw new Error(`No card ${oracleId}`);
+      return counts;
     },
   };
 }

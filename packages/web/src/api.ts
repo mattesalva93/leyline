@@ -1,4 +1,4 @@
-import type { Candidate, DecklistLine, Lang, PrintPage } from '@mtg-suite/core';
+import type { Candidate, DecklistLine, Lang, PrintCountsByLang, PrintPage } from '@mtg-suite/core';
 
 export async function resolveDecklistText(text: string, lang: Lang): Promise<DecklistLine[]> {
   const response = await fetch('/api/decklists/resolve', {
@@ -55,6 +55,15 @@ export async function fetchPrintPage(
   });
   if (!response.ok) throw new Error(`Prints failed with ${response.status}`);
   return (await response.json()) as PrintPage;
+}
+
+/** How many prints `oracleId` can print with in each language, with no page of them. */
+export async function fetchPrintCounts(oracleId: string): Promise<PrintCountsByLang> {
+  const response = await fetch(`/api/cards/${encodeURIComponent(oracleId)}/print-counts`, {
+    headers: { accept: 'application/json' },
+  });
+  if (!response.ok) throw new Error(`Print counts failed with ${response.status}`);
+  return (await response.json()) as PrintCountsByLang;
 }
 
 /** The cards whose name, English or in a language the catalog holds, comes close to `query`. */
