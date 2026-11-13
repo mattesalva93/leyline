@@ -13,16 +13,16 @@
   "areas": {
     "generator": "Generatore"
   },
+  "landingPage": {
+    "paste": "Incolla.",
+    "pickPrints": "Scegli le stampe.",
+    "print": "Stampa.",
+    "hint": "Incolla o scrivi una decklist, una carta per riga, in inglese o in italiano (es. 4 Sol Ring, anello del sole, 1 Sol Ring (C21) 263). Ogni riga diventa una tessera appena viene riconosciuta.",
+    "tryExample": "Prova con un esempio",
+    "tryExampleArrow": "→"
+  },
   "workspace": {
     "decklistPanel": "Lista",
-    "emptyState": {
-      "paste": "Incolla.",
-      "pickPrints": "Scegli le stampe.",
-      "print": "Stampa.",
-      "hint": "Incolla o scrivi una decklist, una carta per riga, in inglese o in italiano (es. 4 Sol Ring, anello del sole, 1 Sol Ring (C21) 263). Ogni riga diventa una tessera appena viene riconosciuta.",
-      "tryExample": "Prova con un esempio",
-      "tryExampleArrow": "→"
-    },
     "cardGrid": "Griglia delle carte",
     "dropMark": "Punto di arrivo",
     "sideboardDrop": "Rilascia qui per il sideboard",

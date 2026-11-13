@@ -31,7 +31,8 @@ import { fetchPrintPage, resolveDecklistText } from './api.ts';
 import { loadDefaultLang, saveDefaultLang } from './default-lang.ts';
 import { choicesKeysOf, type LineChoices } from './line-choices.ts';
 import { allocationsSplitOverPrints, type LineSplitOverPrints } from './line-split.ts';
-import { loadSavedDecklist, saveDecklist } from './saved-decklist.ts';
+import { loadSavedDecklist } from './saved-decklist.ts';
+import { useDecklistUnderWay } from './use-decklist-under-way.ts';
 import { useSheetPdf, type SheetPdf } from './use-sheet-pdf.ts';
 
 /**
@@ -96,7 +97,15 @@ export interface Generator {
    * line of its own at the end of the section, already resolved.
    */
   readonly addCard: (section: DecklistSection, candidate: Candidate) => void;
-  /** Empties the decklist text, its line choices and the sheet options, on the device too. */
+  /**
+   * Whether a decklist is under way: one the device kept on entering, or one with a line
+   * recognised since. Until then the device keeps no decklist.
+   */
+  readonly isDecklistUnderWay: boolean;
+  /**
+   * Empties the decklist text, its line choices and the sheet options, on the device too: the
+   * decklist is no longer under way.
+   */
   readonly startNewDecklist: () => void;
 
   readonly sheetOptions: SheetOptions;
@@ -401,6 +410,7 @@ export function useGenerator(): Generator {
     setChoicesByLine(new Map());
     setSheetOptions(defaultSheetOptions);
     setDecklistText('');
+    decklistUnderWay.startOver();
   }
 
   useEffect(() => {
@@ -408,11 +418,6 @@ export function useGenerator(): Generator {
     setIsSavedDecklistUnresolved(false);
     void resolveInLanguage(writtenLines, defaultLang);
   });
-
-  useEffect(
-    () => saveDecklist({ decklistText, choicesByLine: [...choicesByLine], sheetOptions }),
-    [decklistText, choicesByLine, sheetOptions],
-  );
 
   useEffect(() => {
     if (!pendingSplit) return;
@@ -444,6 +449,11 @@ export function useGenerator(): Generator {
     return [{ writtenIndex, writtenLine, section, line }];
   });
   const recognisedLines = cardLines.flatMap((cardLine) => cardLine.line ?? []);
+  const decklistUnderWay = useDecklistUnderWay({
+    wasKeptOnEntering: savedDecklist !== null,
+    hasRecognisedLine: recognisedLines.length > 0,
+    decklist: { decklistText, choicesByLine, sheetOptions },
+  });
   const unresolvedCount = cardLines.length - recognisedLines.length;
   const sheet = { options: sheetOptions, lines: recognisedLines };
   const sheetLayout = hasPrintableCopies(sheet) ? layoutSheet(sheet) : null;
@@ -467,6 +477,7 @@ export function useGenerator(): Generator {
       updateChoicesAt(writtenIndex, { allocations }),
     moveLine,
     addCard,
+    isDecklistUnderWay: decklistUnderWay.isDecklistUnderWay,
     startNewDecklist,
     sheetOptions,
     changeSheetOptions: setSheetOptions,

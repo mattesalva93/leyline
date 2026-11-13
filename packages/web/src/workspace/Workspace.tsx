@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { touchIsMainInput } from '../pdf-delivery.ts';
 import { useIsWideScreen } from '../screen-size.ts';
-import { useGenerator } from '../use-generator.ts';
+import type { Generator } from '../use-generator.ts';
 import { DesktopWorkspace } from './DesktopWorkspace.tsx';
 import { gridSectionsOf } from './grid-sections.ts';
 import { gridTilesOf, linesToFixOf, type GridTile, type TileSelection } from './grid-tiles.ts';
@@ -43,8 +43,7 @@ function startingStepFor(isWideScreen: boolean): WorkspaceStep {
  * The generator's screen. A wide screen shows its zones side by side; a phone shows them as
  * steps. Both show the same state: switching from one to the other loses nothing.
  */
-export function Workspace() {
-  const generator = useGenerator();
+export function Workspace({ generator }: { readonly generator: Generator }) {
   const isWideScreen = useIsWideScreen();
   const [step, setStep] = useState(() => startingStepFor(isWideScreen));
   const [selectionInText, setSelectionInText] = useState<SelectionInText | null>(null);
@@ -52,19 +51,11 @@ export function Workspace() {
   const gridSections = gridSectionsOf(generator.cardLines);
   const gridTiles = gridTilesOf(generator.cardLines);
   const linesToFix = linesToFixOf(gridTiles);
-  const isEmpty = generator.cardLines.every((cardLine) => cardLine.line === undefined);
-  // An emptied workspace starts over: on a phone, the decklist is where to start again.
-  const [wasEmpty, setWasEmpty] = useState(isEmpty);
-  if (isEmpty !== wasEmpty) {
-    setWasEmpty(isEmpty);
-    if (isEmpty) setStep(startingStepFor(isWideScreen));
-  }
   const selectTile = (selection: TileSelection | null) =>
     setSelectionInText(selection && { ...selection, writtenLineCount: generator.writtenLineCount });
   const selection = currentSelection(selectionInText, generator.writtenLineCount, gridTiles);
   const state: WorkspaceState = {
     generator,
-    isEmpty,
     step,
     goToStep: setStep,
     gridSections,

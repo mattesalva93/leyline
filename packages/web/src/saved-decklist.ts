@@ -147,3 +147,12 @@ export function saveDecklist(saved: SavedDecklist): void {
     // Not kept across visits (blocked or full storage); the generator still works for this one.
   }
 }
+
+/** Leaves the device with no decklist to bring back on the next visit. */
+export function forgetSavedDecklist(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Blocked storage keeps nothing to forget.
+  }
+}

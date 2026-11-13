@@ -18,8 +18,6 @@ export function centreViewAt(step: WorkspaceStep): CentreView {
 /** The state both layouts of the workspace show, each in its own arrangement of the zones. */
 export interface WorkspaceState {
   readonly generator: Generator;
-  /** Whether no line of the decklist is recognised yet: the workspace then shows how to start. */
-  readonly isEmpty: boolean;
   readonly step: WorkspaceStep;
   readonly goToStep: (step: WorkspaceStep) => void;
   readonly gridSections: readonly GridSection[];
