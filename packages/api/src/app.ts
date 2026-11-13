@@ -1,5 +1,6 @@
 import {
   CARD_SEARCH_LIMIT,
+  countPrintsByLang,
   isLang,
   isPrintCursor,
   listPrints,
@@ -103,6 +104,15 @@ export function createApp(deps: AppDeps): Hono {
     });
     if (!page) return c.json({ error: 'No card has this oracle id.' }, 404);
     return c.json(page);
+  });
+
+  app.get('/api/cards/:oracleId/print-counts', async (c) => {
+    const counts = await countPrintsByLang(catalog, {
+      oracleId: c.req.param('oracleId'),
+      today: today(),
+    });
+    if (!counts) return c.json({ error: 'No card has this oracle id.' }, 404);
+    return c.json(counts);
   });
 
   return app;
