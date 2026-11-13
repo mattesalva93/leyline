@@ -25,7 +25,8 @@
     "import:catalog": "pnpm --filter @mtg-suite/api run import:catalog",
     "import:daily": "pnpm --filter @mtg-suite/api run import:daily",
     "import:debug": "pnpm --filter @mtg-suite/api run import:debug",
-    "sheet:preview": "pnpm --filter @mtg-suite/api run sheet:preview"
+    "sheet:preview": "pnpm --filter @mtg-suite/api run sheet:preview",
+    "landing:screenshots": "node scripts/landing-screenshots.js"
   },
   "lint-staged": {
     "*.{ts,tsx,js,mjs,cjs}": [
@@ -44,6 +45,7 @@
     "globals": "^17.14.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
+    "playwright": "^1.65.0",
     "prettier": "^3.9.10",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.1",
