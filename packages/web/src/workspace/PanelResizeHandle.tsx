@@ -1,4 +1,4 @@
-import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
+import { useRef, type KeyboardEvent, type PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GridSide } from './PanelEdgeTab.tsx';
 import { SIDE_PANEL_KEY_STEP_PX } from './side-panel-layout.ts';
@@ -26,8 +26,8 @@ export function PanelResizeHandle({
   readonly onResize: (width: number) => void;
 }) {
   const { t } = useTranslation();
-  // Moving the edge towards the grid widens the panel.
   const widening = gridSide === 'right' ? 1 : -1;
+  const drag = useRef<{ readonly startX: number; readonly startWidth: number } | null>(null);
 
   const onKeyDown = (event: KeyboardEvent) => {
     const next = {
@@ -41,25 +41,28 @@ export function PanelResizeHandle({
     onResize(next);
   };
 
-  const onPointerDown = (event: ReactPointerEvent) => {
+  const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
     event.preventDefault();
-    const startX = event.clientX;
-    const startWidth = width;
-    const onMove = (move: PointerEvent) =>
-      onResize(startWidth + widening * (move.clientX - startX));
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', () => window.removeEventListener('pointermove', onMove), {
-      once: true,
-    });
+    // Captured, the pointer's moves reach the edge wherever it goes, even off the window.
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    drag.current = { startX: event.clientX, startWidth: width };
+  };
+  const onPointerMove = (event: PointerEvent) => {
+    if (drag.current === null) return;
+    onResize(drag.current.startWidth + widening * (event.clientX - drag.current.startX));
+  };
+  const endDrag = () => {
+    drag.current = null;
   };
 
+  const label = t('boardPanel.resize', { title });
   return (
     <div
       role="separator"
       tabIndex={0}
-      aria-label={t('boardPanel.resize', { title })}
-      title={t('boardPanel.resize', { title })}
+      aria-label={label}
+      title={label}
       aria-orientation="vertical"
       aria-controls={panelId}
       aria-valuenow={width}
@@ -68,6 +71,10 @@ export function PanelResizeHandle({
       className="-mx-[11px] w-1.5 shrink-0 cursor-col-resize touch-none rounded-full transition-colors outline-none hover:bg-accent/60 focus-visible:bg-accent"
       onKeyDown={onKeyDown}
       onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+      onLostPointerCapture={endDrag}
     />
   );
 }

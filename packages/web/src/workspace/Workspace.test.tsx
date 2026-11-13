@@ -1159,15 +1159,29 @@ describe('the side panels on a wide screen', () => {
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
     const edge = screen.getByRole('separator', { name: 'Allarga o stringi «Riepilogo»' });
 
+    // The edge captures the pointer while it is dragged: every move of the drag reaches it.
     fireEvent.pointerDown(edge, { button: 0, clientX: 900 });
-    fireEvent.pointerMove(window, { clientX: 870 });
+    fireEvent.pointerMove(edge, { clientX: 870 });
     expect(edge.getAttribute('aria-valuenow')).toBe('370');
-    fireEvent.pointerMove(window, { clientX: 500 });
+    fireEvent.pointerMove(edge, { clientX: 500 });
     expect(edge.getAttribute('aria-valuenow')).toBe('520');
-    fireEvent.pointerUp(window);
-    fireEvent.pointerMove(window, { clientX: 950 });
+    fireEvent.pointerUp(edge);
+    fireEvent.pointerMove(edge, { clientX: 950 });
 
     expect(edge.getAttribute('aria-valuenow')).toBe('520');
+  });
+
+  it('lets go of its edge when the browser cancels the drag', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    const edge = screen.getByRole('separator', { name: 'Allarga o stringi «Lista»' });
+
+    fireEvent.pointerDown(edge, { button: 0, clientX: 300 });
+    fireEvent.pointerMove(edge, { clientX: 320 });
+    fireEvent.pointerCancel(edge);
+    fireEvent.pointerMove(edge, { clientX: 400 });
+
+    expect(edge.getAttribute('aria-valuenow')).toBe('260');
   });
 
   it('comes back after a reload folded or open, and as wide, as the user left it', async () => {

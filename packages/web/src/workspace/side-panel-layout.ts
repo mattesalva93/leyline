@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /** The side panels of the workspace on a wide screen. */
 export type SidePanelName = 'decklist' | 'inspector';
@@ -67,19 +67,21 @@ function saveLayout(panel: SidePanelName, layout: SidePanelLayout): void {
   }
 }
 
-/**
- * How the user left side panel `panel`, remembered on the device, with the ways to fold it or
- * open it and to resize it, within its limits.
- */
-export function useSidePanelLayout(panel: SidePanelName) {
+/** A side panel as the user left it, with the ways to fold it or open it and to resize it. */
+export interface SidePanelControls extends SidePanelLayout {
+  readonly toggle: () => void;
+  /** Sets the panel's width, brought within its limits. */
+  readonly resize: (width: number) => void;
+}
+
+/** How the user left side panel `panel`, remembered on the device. */
+export function useSidePanelLayout(panel: SidePanelName): SidePanelControls {
   const [layout, setLayout] = useState(() => loadLayout(panel));
-  const update = (next: SidePanelLayout) => {
-    setLayout(next);
-    saveLayout(panel, next);
-  };
+  useEffect(() => saveLayout(panel, layout), [panel, layout]);
   return {
     ...layout,
-    toggle: () => update({ ...layout, isOpen: !layout.isOpen }),
-    resize: (width: number) => update({ ...layout, width: clampSidePanelWidth(panel, width) }),
+    toggle: () => setLayout((current) => ({ ...current, isOpen: !current.isOpen })),
+    resize: (width) =>
+      setLayout((current) => ({ ...current, width: clampSidePanelWidth(panel, width) })),
   };
 }
