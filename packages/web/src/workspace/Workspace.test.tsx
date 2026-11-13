@@ -125,6 +125,12 @@ beforeEach(() => {
   });
 });
 
+/** Leaves the page and opens it again, as a reload does. */
+function reload() {
+  cleanup();
+  mountApp('/proxy');
+}
+
 /** Mounts the generator page and types `decklistText` into the decklist, as a user would. */
 async function mountPageAndWrite(decklistText: string) {
   const user = userEvent.setup();
@@ -1985,13 +1991,14 @@ describe('reordering the decklist by dragging tiles', () => {
   });
 });
 
-describe('the empty workspace', () => {
-  it('puts the explanation, the decklist text and the example button at the centre, with no other zone', () => {
+describe('the landing page', () => {
+  it('opens when the device keeps no decklist: the explanation, the decklist text and the example button, with no zone of the workspace', () => {
     mountApp('/proxy');
 
     expect(screen.getByText(/^Incolla o scrivi una decklist, una carta per riga/)).toBeTruthy();
     expect(screen.getByLabelText('Decklist')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^Aggiungi una carta/ })).toBeNull();
     expect(screen.queryByRole('navigation', { name: 'Viste' })).toBeNull();
     expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
     expect(screen.queryByRole('complementary')).toBeNull();
@@ -2009,14 +2016,28 @@ describe('the empty workspace', () => {
     expect(decklistValue()).toBe('4 Sol Ring\n1 Brainstorm');
   });
 
-  it('comes back once the decklist text is emptied', async () => {
+  it('opens when the device keeps nothing at all', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+
+    mountApp('/proxy');
+
+    expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
+    vi.restoreAllMocks();
+  });
+
+  it('never comes back once the decklist text is emptied: the workspace stays, its grid empty', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
 
     await user.clear(screen.getByLabelText('Decklist'));
 
-    expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
-    expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Prova con un esempio' })).toBeNull();
+    expect(gridTiles()).toEqual([]);
+    expect(within(cardGrid()).getByRole('group', { name: 'Sezioni vuote' }).children.length).toBe(
+      5,
+    );
   });
 
   it('loads the example decklist, recognised to its last line as one written by hand', async () => {
@@ -2092,29 +2113,23 @@ describe('the empty workspace', () => {
       expect(image.getAttribute('src')).toContain('counterspell-it-mh2');
     });
 
-    it('shows the explanation, the decklist text and the example button, the other steps waiting for a card', async () => {
+    it('shows the explanation, the decklist text and the example button, with no step bar', async () => {
       const user = await mountPageAndWrite('4 Sol Ring');
 
       expect(screen.getByText(/^Incolla o scrivi una decklist, una carta per riga/)).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
       expect(screen.queryByRole('region', { name: 'Riepilogo' })).toBeNull();
-      for (const step of ['Carte', 'Foglio', 'PDF']) {
-        expect(stepBar().getByRole<HTMLButtonElement>('button', { name: step }).disabled).toBe(
-          true,
-        );
-      }
+      expect(screen.queryByRole('navigation', { name: 'Passi' })).toBeNull();
 
       await user.keyboard('{Enter}');
 
       expect(await screen.findByRole('region', { name: 'Riepilogo' })).toBeTruthy();
-      expect(stepBar().getByRole<HTMLButtonElement>('button', { name: 'Carte' }).disabled).toBe(
-        false,
-      );
+      expect(stepBar().getByRole('button', { name: 'Carte' })).toBeTruthy();
       await user.keyboard('1 Brainstorm');
       expect(decklistValue()).toBe('4 Sol Ring\n1 Brainstorm');
     });
 
-    it('comes back on the list step when the last card goes from another step', async () => {
+    it('never comes back when the last card goes from another step: that step stays, its grid empty', async () => {
       const user = await mountPageAndWrite('1 Sol Ring{Enter}');
       await user.click(stepBar().getByRole('button', { name: 'Carte' }));
 
@@ -2122,10 +2137,11 @@ describe('the empty workspace', () => {
         screen.getByRole('button', { name: 'Una copia in meno di Sol Ring (C21 #1)' }),
       );
 
-      expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
-      expect(stepBar().getByRole('button', { name: 'Lista' }).getAttribute('aria-current')).toBe(
+      expect(screen.queryByRole('button', { name: 'Prova con un esempio' })).toBeNull();
+      expect(stepBar().getByRole('button', { name: 'Carte' }).getAttribute('aria-current')).toBe(
         'step',
       );
+      expect(gridTiles()).toEqual([]);
     });
   });
 });
@@ -2237,8 +2253,10 @@ describe('the add tile', () => {
   });
 
   it('adds a copy to a line of the card the server has not resolved yet', async () => {
-    vi.mocked(api.resolveDecklistText).mockImplementation(() => new Promise(() => {}));
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    vi.mocked(api.resolveDecklistText).mockImplementation(() => new Promise(() => {}));
+    reload();
     const found = await searchToAdd(user, 'Mazzo', 'sol ring');
 
     await user.click(await within(found).findByRole('option', { name: /Sol Ring/ }));
@@ -2285,9 +2303,10 @@ describe('the add tile', () => {
     expect(decklistValue()).toBe('4 Sol Ring\n');
   });
 
-  it('starts the decklist from the empty workspace', async () => {
-    const user = userEvent.setup();
-    mountApp('/proxy');
+  it('fills a decklist emptied in the workspace again', async () => {
+    const user = await mountPageAndWrite('1 Brainstorm{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Brainstorm' });
+    await user.clear(screen.getByLabelText('Decklist'));
     const found = await searchToAdd(user, 'Mazzo', 'sol ri');
 
     await user.click(await within(found).findByRole('option', { name: /Sol Ring/ }));
@@ -2298,12 +2317,6 @@ describe('the add tile', () => {
 });
 
 describe('the decklist saved on the device', () => {
-  /** Leaves the page and opens it again, as a reload does. */
-  function reload() {
-    cleanup();
-    mountApp('/proxy');
-  }
-
   it('comes back after a reload, every line recognised again', async () => {
     await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
@@ -2315,6 +2328,20 @@ describe('the decklist saved on the device', () => {
     expect(await screen.findByRole('button', { name: 'Modifica Lightning Bolt' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Modifica Sol Ring' })).toBeTruthy();
     expect(api.resolveDecklistText).toHaveBeenCalledWith('4 Sol Ring\n1 Lightning Bolt', 'it');
+  });
+
+  it('opens straight on the workspace, never the landing page, even while the server is out of reach', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    vi.mocked(api.resolveDecklistText).mockRejectedValue(new Error('offline'));
+
+    reload();
+
+    expect(screen.queryByRole('button', { name: 'Prova con un esempio' })).toBeNull();
+    expect(cardGrid()).toBeTruthy();
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Prova con un esempio' })).toBeNull();
+    expect(decklistValue()).toBe('4 Sol Ring\n');
   });
 
   it("brings back each line's choices: the candidate picked and the copies on prints of either language", async () => {
@@ -2406,7 +2433,7 @@ describe('the decklist saved on the device', () => {
 });
 
 describe('a new decklist', () => {
-  it('empties the workspace once the user confirms, and stays empty after a reload', async () => {
+  it('goes to the landing page once the user confirms, and opens there after a reload', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
     await user.click(screen.getByRole('button', { name: 'Foglio' }));
@@ -2422,8 +2449,8 @@ describe('a new decklist', () => {
 
     expect(decklistValue()).toBe('');
     expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
-    cleanup();
-    mountApp('/proxy');
+    expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
+    reload();
     expect(decklistValue()).toBe('');
     expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
     await user.type(screen.getByLabelText('Decklist'), '4 Sol Ring{Enter}');

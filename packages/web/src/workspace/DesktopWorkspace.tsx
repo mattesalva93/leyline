@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { AdSlot } from './AdSlot.tsx';
 import { CardsView } from './CardsView.tsx';
 import { DecklistEditor } from './DecklistEditor.tsx';
-import { EmptyWorkspace } from './EmptyWorkspace.tsx';
 import type { TileSelection } from './grid-tiles.ts';
 import { Inspector } from './Inspector.tsx';
 import { PdfControl } from './PdfControl.tsx';
@@ -18,7 +17,7 @@ import { centreViewAt, type WorkspaceState } from './workspace-state.ts';
 /**
  * The workspace on a wide screen, filling it: from left to right the tool rail, the decklist
  * text with a banner's place at its foot, the centre (the card grid or the sheet, with the PDF
- * button) and the inspector. Each zone scrolls on its own. Empty, it shows only how to start.
+ * button) and the inspector. Each zone scrolls on its own.
  */
 export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) {
   const { t } = useTranslation();
@@ -32,13 +31,6 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
     if (!panels.inspector.controls.isOpen) panels.inspector.controls.toggle();
     setInspectorFocusRequestCount((request) => request + 1);
   };
-  if (state.isEmpty) {
-    return (
-      <div className="flex h-full overflow-y-auto">
-        <EmptyWorkspace generator={generator} />
-      </div>
-    );
-  }
   return (
     <div className="flex h-full gap-4 overflow-hidden p-4">
       <ToolRail view={view} onViewChange={state.goToStep} />

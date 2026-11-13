@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createBrowserRouter, Navigate, RouterProvider, type RouteObject } from 'react-router';
+import { GeneratorPage } from './GeneratorPage.tsx';
 import { AppShell } from './shell/AppShell.tsx';
-import { Workspace } from './workspace/Workspace.tsx';
 
 const GENERATOR_PATH = '/proxy';
 
@@ -17,7 +17,7 @@ export const APP_ROUTES: RouteObject[] = [
   { index: true, element: <Navigate to={GENERATOR_PATH} replace /> },
   {
     element: <ShellWithProductionAreas />,
-    children: [{ path: GENERATOR_PATH, element: <Workspace /> }],
+    children: [{ path: GENERATOR_PATH, element: <GeneratorPage /> }],
   },
 ];
 
