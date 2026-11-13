@@ -1,4 +1,5 @@
 import {
+  CARD_SEARCH_LIMIT,
   isLang,
   isPrintCursor,
   listPrints,
@@ -19,9 +20,6 @@ const MAX_DECKLIST_LENGTH = 50_000;
 
 /** Most prints one call returns, whatever the client asks for: keeps every response small. */
 const MAX_PRINTS_PER_PAGE = 50;
-
-/** How many cards a name search returns: few enough to show each with its image. */
-const SEARCH_RESULT_LIMIT = 8;
 
 /** Longest name a search accepts, in characters: far above any card name. */
 const MAX_SEARCH_LENGTH = 200;
@@ -77,7 +75,7 @@ export function createApp(deps: AppDeps): Hono {
       query: q,
       lang,
       today: today(),
-      limit: SEARCH_RESULT_LIMIT,
+      limit: CARD_SEARCH_LIMIT,
     });
     return c.json({ cards });
   });

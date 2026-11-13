@@ -2,6 +2,9 @@ import { defaultPrintFor } from './default-print.ts';
 import { MIN_SIMILARITY, nameKey } from './name-match.ts';
 import type { Candidate, Catalog, Lang } from './types.ts';
 
+/** How many cards a name search returns: few enough to show each with its image. */
+export const CARD_SEARCH_LIMIT = 8;
+
 export interface CardSearch {
   /** The name as the user is typing it, in English or in a language the catalog holds. */
   readonly query: string;
