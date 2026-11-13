@@ -4,7 +4,7 @@ import { BoardPanel } from '../ui/BoardPanel.tsx';
 import { PRIMARY_BUTTON } from '../ui/board-styles.ts';
 import type { Generator } from '../use-generator.ts';
 import { DecklistEditor } from '../workspace/DecklistEditor.tsx';
-import { EXAMPLE_DECKLIST } from '../workspace/example-decklist.ts';
+import { EXAMPLE_DECKLIST } from './example-decklist.ts';
 
 /**
  * What the generator shows until a decklist is under way, in place of the workspace: what to
