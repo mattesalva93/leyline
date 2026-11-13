@@ -3,7 +3,7 @@ import { LanguagePicker } from '../LanguagePicker.tsx';
 import { BoardPanel } from '../ui/BoardPanel.tsx';
 import { PRIMARY_BUTTON } from '../ui/board-styles.ts';
 import type { Generator } from '../use-generator.ts';
-import { DecklistEditor } from '../workspace/DecklistEditor.tsx';
+import { DecklistEditor } from '../decklist-editor/DecklistEditor.tsx';
 import { EXAMPLE_DECKLIST } from './example-decklist.ts';
 
 /**

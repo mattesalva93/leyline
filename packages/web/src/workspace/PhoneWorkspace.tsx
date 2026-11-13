@@ -6,7 +6,7 @@ import { LABEL } from '../ui/board-styles.ts';
 import { AdSlot } from './AdSlot.tsx';
 import { CardsView } from './CardsView.tsx';
 import { DecklistCount } from './DecklistCount.tsx';
-import { DecklistEditor } from './DecklistEditor.tsx';
+import { DecklistEditor } from '../decklist-editor/DecklistEditor.tsx';
 import { DecklistSummary } from './DecklistSummary.tsx';
 import { PdfStep } from './PdfStep.tsx';
 import { PhoneLinePanel } from './PhoneLinePanel.tsx';

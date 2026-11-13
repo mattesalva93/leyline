@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AdSlot } from './AdSlot.tsx';
 import { CardsView } from './CardsView.tsx';
-import { DecklistEditor } from './DecklistEditor.tsx';
+import { DecklistEditor } from '../decklist-editor/DecklistEditor.tsx';
 import type { TileSelection } from './grid-tiles.ts';
 import { Inspector } from './Inspector.tsx';
 import { PdfControl } from './PdfControl.tsx';
