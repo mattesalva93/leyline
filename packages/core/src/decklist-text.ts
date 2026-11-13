@@ -49,6 +49,10 @@ export function changeTileQuantity(
     const copies = allocation.quantity + printAllocationChange;
     return copies > 0 ? [{ ...allocation, quantity: copies }] : [];
   });
+  const isAllocated = line.allocations.some((allocation) => allocation.print.id === print.id);
+  if (!isAllocated && printAllocationChange > 0) {
+    allocations.push({ print, quantity: printAllocationChange });
+  }
   const rewritten = setLineQuantity(line, lineQuantity);
   const changed = applyAllocationChoice(rewritten, { oracleId: line.card.oracleId, allocations });
   return {

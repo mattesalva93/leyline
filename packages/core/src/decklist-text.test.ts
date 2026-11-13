@@ -64,6 +64,18 @@ describe('changeTileQuantity', () => {
     ]);
   });
 
+  it('adds a copy to a print no copy uses yet, as a tile of its own', async () => {
+    const line = await lineOf('4 Forest');
+
+    const change = changeTileQuantity('4 Forest', { writtenIndex: 0, line, print: forestZnr }, 1);
+
+    expect(change.text).toBe('5 Forest');
+    expect(tilesById(change.line)).toEqual([
+      ['forest-fdn', 4],
+      ['forest-znr', 1],
+    ]);
+  });
+
   it("takes copies off the default print's tile from its unallocated copies first, then from its own allocation", async () => {
     const line = withCopiesOn(withCopiesOn(await lineOf('6 Forest'), forestFdn, 2), forestM21, 1);
 
