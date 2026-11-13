@@ -67,8 +67,21 @@ function contrastRatio(first, second) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+/**
+ * Each colour of the sibling group palette, a `--color-sibling-*` token: its link and its mark on
+ * the board, and the quantity on its tab.
+ */
+function siblingPairs(tokens) {
+  return [...tokens.keys()]
+    .filter((name) => name.startsWith('sibling-'))
+    .flatMap((sibling) => [
+      { front: sibling, back: 'background', minimum: TEXT_MINIMUM },
+      { front: 'panel', back: sibling, minimum: TEXT_MINIMUM },
+    ]);
+}
+
 function contrastProblems(themeName, tokens) {
-  return PAIRS.flatMap(({ front, back, minimum }) => {
+  return [...PAIRS, ...siblingPairs(tokens)].flatMap(({ front, back, minimum }) => {
     const [frontColour, backColour] = [tokens.get(front), tokens.get(back)];
     if (!frontColour || !backColour)
       return [`${themeName} theme: no --color-${front} or --color-${back}`];

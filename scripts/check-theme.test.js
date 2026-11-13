@@ -65,6 +65,14 @@ describe('check-theme', () => {
     expect(result.stderr).not.toContain('light theme');
   });
 
+  it('rejects a sibling group colour under 4.5:1 on the board or under the quantity on its tab', () => {
+    const result = check({ theme: themeWith('dark', 'sibling-2', '#3a3a3a') });
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('dark theme: sibling-2 on background');
+    expect(result.stderr).toContain('dark theme: panel on sibling-2');
+  });
+
   it('rejects a font family the theme does not bundle from @fontsource', () => {
     const theme = appTheme.replace("@import '@fontsource-variable/jetbrains-mono';\n", '');
 
