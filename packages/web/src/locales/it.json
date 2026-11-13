@@ -19,7 +19,14 @@
     "print": "Stampa.",
     "hint": "Incolla o scrivi una decklist, una carta per riga, in inglese o in italiano (es. 4 Sol Ring, anello del sole, 1 Sol Ring (C21) 263). Ogni riga diventa una tessera appena viene riconosciuta.",
     "tryExample": "Prova con un esempio",
-    "tryExampleArrow": "→"
+    "tryExampleArrow": "→",
+    "features": {
+      "title": "Cosa sa fare",
+      "misspelledNames": "Riconosce i nomi delle carte anche scritti male.",
+      "printAndLang": "Scegli stampa e lingua, italiano o inglese, per ogni riga.",
+      "sheet": "Foglio A4 o Letter, con i segni di taglio.",
+      "pdfInBrowser": "Il PDF viene creato nel tuo browser."
+    }
   },
   "workspace": {
     "decklistPanel": "Lista",
