@@ -34,10 +34,10 @@ interface PrintPickerProps {
   /** The line whose copies the picker allocates: the prints its copies use are marked. */
   readonly line: ResolvedLine;
   /** The language of the prints shown, and the print to bring into view. */
-  readonly view: PrintPickerView;
+  readonly pickerView: PrintPickerView;
   /** How many prints the card has in each language; `null` while not known. */
   readonly printCounts: PrintCountsByLang | null;
-  /** The prints of the card in the view's language: copies can go to prints of either one. */
+  /** The prints of the card in the picker view's language: copies can go to prints of either one. */
   readonly printPages: PrintPages;
   /** Called with the allocations a tap on a print sets: every copy on it. */
   readonly onAllocationChoice: (allocations: AllocationChoice) => void;
@@ -70,7 +70,7 @@ function byReleaseYear(prints: readonly Print[]): ReleaseYear[] {
  */
 export function PrintPicker({
   line,
-  view: { printsLang, changePrintsLang, printToShow, onPrintShown },
+  pickerView: { printsLang, changePrintsLang, printToShow, onPrintShown },
   printCounts,
   printPages,
   onAllocationChoice,

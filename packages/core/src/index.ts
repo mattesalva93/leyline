@@ -6,6 +6,7 @@ export { CARD_SEARCH_LIMIT, searchCards, type CardSearch } from './card-search.t
 export {
   countPrintsByLang,
   isPrintCursor,
+  langWithPrints,
   listPrints,
   type ListPrintsOptions,
   type PrintCountsByLang,

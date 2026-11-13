@@ -3,6 +3,7 @@ import {
   countPrintsByLang,
   createInMemoryCatalog,
   isPrintCursor,
+  langWithPrints,
   listPrints,
   resolveDecklist,
 } from './index.ts';
@@ -178,5 +179,19 @@ describe('countPrintsByLang', () => {
     const catalog = createInMemoryCatalog([]);
 
     expect(await countPrintsByLang(catalog, { oracleId: 'nope', today })).toBeNull();
+  });
+});
+
+describe('langWithPrints', () => {
+  it('keeps the asked language when the card has prints in it', () => {
+    expect(langWithPrints('it', { it: 1, en: 8 })).toBe('it');
+  });
+
+  it('gives way to a language the card has prints in when the asked one has none', () => {
+    expect(langWithPrints('it', { it: 0, en: 8 })).toBe('en');
+  });
+
+  it('keeps the asked language when no language has prints', () => {
+    expect(langWithPrints('it', { it: 0, en: 0 })).toBe('it');
   });
 });

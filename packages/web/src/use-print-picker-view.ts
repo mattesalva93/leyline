@@ -1,4 +1,4 @@
-import { LANGS, type Lang, type Print, type PrintCountsByLang } from '@mtg-suite/core';
+import { langWithPrints, type Lang, type Print, type PrintCountsByLang } from '@mtg-suite/core';
 import { useCallback, useState } from 'react';
 
 /** Where the print picker stands, and how the user moves it. */
@@ -14,25 +14,25 @@ export interface PrintPickerView {
 }
 
 /**
- * The print picker opened on `openingPrint`, the print of the tile the user picked: its language,
+ * The print picker opened on `tilePrint`, the print of the tile the user picked: its language,
  * with that print to bring into view; again each time the user picks another tile. With no such
  * print it opens on `fallbackLang`. A language the card has no printable print in gives way to
  * one it has, once `printCounts` tell.
  */
 export function usePrintPickerView(
-  openingPrint: Print | null,
+  tilePrint: Print | null,
   fallbackLang: Lang,
   printCounts: PrintCountsByLang | null,
 ): PrintPickerView {
-  const openingLang = openingPrint?.lang ?? fallbackLang;
-  const openingPrintId = openingPrint?.id ?? null;
-  const [printsLang, setPrintsLang] = useState(openingLang);
-  const [printToShow, setPrintToShow] = useState(openingPrintId);
-  const [followed, setFollowed] = useState({ lang: openingLang, printId: openingPrintId });
-  if (followed.lang !== openingLang || followed.printId !== openingPrintId) {
-    setFollowed({ lang: openingLang, printId: openingPrintId });
-    setPrintsLang(openingLang);
-    setPrintToShow(openingPrintId);
+  const tileLang = tilePrint?.lang ?? fallbackLang;
+  const tilePrintId = tilePrint?.id ?? null;
+  const [printsLang, setPrintsLang] = useState(tileLang);
+  const [printToShow, setPrintToShow] = useState(tilePrintId);
+  const [lastTilePrint, setLastTilePrint] = useState({ lang: tileLang, printId: tilePrintId });
+  if (lastTilePrint.lang !== tileLang || lastTilePrint.printId !== tilePrintId) {
+    setLastTilePrint({ lang: tileLang, printId: tilePrintId });
+    setPrintsLang(tileLang);
+    setPrintToShow(tilePrintId);
   }
   const changePrintsLang = useCallback((lang: Lang) => {
     setPrintsLang(lang);
@@ -40,15 +40,9 @@ export function usePrintPickerView(
   }, []);
   const onPrintShown = useCallback(() => setPrintToShow(null), []);
   return {
-    printsLang: languageWithPrints(printsLang, printCounts),
+    printsLang: printCounts ? langWithPrints(printsLang, printCounts) : printsLang,
     changePrintsLang,
     printToShow,
     onPrintShown,
   };
-}
-
-/** `lang`, unless the counts say it has no print and another language has some. */
-function languageWithPrints(lang: Lang, printCounts: PrintCountsByLang | null): Lang {
-  if (printCounts?.[lang] !== 0) return lang;
-  return LANGS.find((other) => printCounts[other] > 0) ?? lang;
 }

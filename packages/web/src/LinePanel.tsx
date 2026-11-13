@@ -97,7 +97,7 @@ export function LinePanel({
       <CopyBreakdown line={line} openingQuantity={openingQuantity} />
       <PrintPicker
         line={line}
-        view={pickerView}
+        pickerView={pickerView}
         printCounts={printCounts}
         printPages={printPages}
         onAllocationChoice={onAllocationChoice}

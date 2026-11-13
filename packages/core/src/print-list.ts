@@ -82,3 +82,9 @@ export async function countPrintsByLang(
   const countIn = (lang: Lang) => printablePrints(entry.prints, lang, today).length;
   return Object.fromEntries(LANGS.map((lang) => [lang, countIn(lang)])) as PrintCountsByLang;
 }
+
+/** `lang`, unless the card has no print in it and has some in another language. */
+export function langWithPrints(lang: Lang, printCounts: PrintCountsByLang): Lang {
+  if (printCounts[lang] > 0) return lang;
+  return LANGS.find((other) => printCounts[other] > 0) ?? lang;
+}
