@@ -1,7 +1,7 @@
 import { copiesByPrint } from './allocation.ts';
 import { defaultPrintFor, hasRealImage, qualityWarning } from './default-print.ts';
 import { SIDEBOARD_PREFIX, sectionOpenedBy } from './decklist-section.ts';
-import { cardKeys, nameKey, trigramSimilarity, trigrams } from './name-match.ts';
+import { MIN_SIMILARITY, cardKeys, nameKey, trigramSimilarity, trigrams } from './name-match.ts';
 import type {
   AmbiguousLine,
   Candidate,
@@ -13,8 +13,6 @@ import type {
   ResolvedLine,
 } from './types.ts';
 
-/** Least trigram similarity for a misspelled name to match a card: pg_trgm's default. */
-const MIN_SIMILARITY = 0.3;
 /**
  * How far below the closest card another one may score and still be suggested with it. A real
  * typo leads its runner-up by far more; a bare shared word ("lightning") does not.

@@ -73,6 +73,17 @@ export interface Catalog {
     names: readonly string[],
     options: { readonly minSimilarity: number },
   ): Promise<readonly CatalogEntry[]>;
+  /**
+   * The cards, with all their prints, a name search for `key` (already normalised with
+   * `nameKey`) finds: those with a name key equal to it, then those with one that starts with
+   * it, then those with one whose trigram similarity to it reaches `minSimilarity`. Within each
+   * group the most similar name key comes first, then the card name in alphabetical order; at
+   * most `limit` cards.
+   */
+  searchByName(
+    key: string,
+    options: { readonly minSimilarity: number; readonly limit: number },
+  ): Promise<readonly CatalogEntry[]>;
   /** The card with oracle id `oracleId` and all its prints, or `null` when there is none. */
   findCard(oracleId: string): Promise<CatalogEntry | null>;
 }

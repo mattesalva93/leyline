@@ -2,6 +2,7 @@
 export type * from './types.ts';
 export { DECKLIST_SECTIONS, LANGS, isLang } from './types.ts';
 export { createInMemoryCatalog } from './in-memory-catalog.ts';
+export { searchCards, type CardSearch } from './card-search.ts';
 export { isPrintCursor, listPrints, type ListPrintsOptions } from './print-list.ts';
 export { cardKeys } from './name-match.ts';
 export {
