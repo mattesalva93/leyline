@@ -2017,14 +2017,16 @@ describe('the landing page', () => {
   });
 
   it('opens when the device keeps nothing at all', () => {
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    const blockedRead = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('SecurityError');
     });
+    try {
+      mountApp('/proxy');
 
-    mountApp('/proxy');
-
-    expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
-    vi.restoreAllMocks();
+      expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
+    } finally {
+      blockedRead.mockRestore();
+    }
   });
 
   it('never comes back once the decklist text is emptied: the workspace stays, its grid empty', async () => {
@@ -2035,9 +2037,8 @@ describe('the landing page', () => {
 
     expect(screen.queryByRole('button', { name: 'Prova con un esempio' })).toBeNull();
     expect(gridTiles()).toEqual([]);
-    expect(within(cardGrid()).getByRole('group', { name: 'Sezioni vuote' }).children.length).toBe(
-      5,
-    );
+    const emptySections = within(cardGrid()).getByRole('group', { name: 'Sezioni vuote' });
+    expect(within(emptySections).getAllByRole('button')).toHaveLength(5);
   });
 
   it('loads the example decklist, recognised to its last line as one written by hand', async () => {
