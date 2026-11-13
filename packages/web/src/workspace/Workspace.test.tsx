@@ -10,7 +10,7 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
 import { inMemoryServer } from '../in-memory-server.ts';
 import { mountApp } from '../mount-app.tsx';
@@ -1221,6 +1221,97 @@ describe('the side panels on a wide screen', () => {
 
     expect(screen.getByRole('region', { name: 'Lista' }).style.width).toBe('240px');
     expect(screen.getByRole('complementary', { name: 'Riepilogo' }).style.width).toBe('340px');
+  });
+});
+
+describe('the side panels on a screen with little room', () => {
+  /**
+   * Makes the centre of the workspace measure `width` CSS px, as a browser's `ResizeObserver`
+   * reports it: jsdom lays nothing out.
+   */
+  function stubCentreWidth(width: number) {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        readonly onResize: ResizeObserverCallback;
+        constructor(onResize: ResizeObserverCallback) {
+          this.onResize = onResize;
+        }
+        observe() {
+          this.onResize([{ contentRect: { width } } as ResizeObserverEntry], this as never);
+        }
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('stops a panel widening where the centre would get narrower than it may', async () => {
+    // The centre measures 400px beside the panels at their usual 240px and 340px: the panels
+    // have 400 + 240 + 340 - 320 = 660px between them, keeping the centre's narrowest 320px.
+    stubCentreWidth(400);
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    const decklistEdge = screen.getByRole('separator', { name: 'Allarga o stringi «Lista»' });
+    const inspectorEdge = screen.getByRole('separator', { name: 'Allarga o stringi «Riepilogo»' });
+    expect(decklistEdge.getAttribute('aria-valuemax')).toBe('320');
+
+    decklistEdge.focus();
+    await user.keyboard('{End}{ArrowRight}');
+
+    expect(decklistEdge.getAttribute('aria-valuenow')).toBe('320');
+    expect(screen.getByRole('region', { name: 'Lista' }).style.width).toBe('320px');
+    expect(inspectorEdge.getAttribute('aria-valuenow')).toBe('340');
+    expect(inspectorEdge.getAttribute('aria-valuemax')).toBe('340');
+  });
+
+  it('narrows both panels, each by its share of what it can give, when they come back too wide for the screen', async () => {
+    localStorage.setItem(
+      'mtg-suite.sidePanel.decklist',
+      '{"version": 1, "isOpen": true, "width": 420}',
+    );
+    localStorage.setItem(
+      'mtg-suite.sidePanel.inspector',
+      '{"version": 1, "isOpen": true, "width": 520}',
+    );
+    // 100 + 420 + 520 - 320 = 720px for both: 220px too few. The decklist panel can give
+    // 420 - 190 = 230px and the inspector 520 - 280 = 240px, so they give 230/470 and 240/470
+    // of the 220px: about 108px and 112px.
+    stubCentreWidth(100);
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    expect(
+      screen
+        .getByRole('separator', { name: 'Allarga o stringi «Lista»' })
+        .getAttribute('aria-valuenow'),
+    ).toBe('312');
+    expect(
+      screen
+        .getByRole('separator', { name: 'Allarga o stringi «Riepilogo»' })
+        .getAttribute('aria-valuenow'),
+    ).toBe('407');
+  });
+
+  it('gets back its own width on a screen with room for it again', async () => {
+    localStorage.setItem(
+      'mtg-suite.sidePanel.decklist',
+      '{"version": 1, "isOpen": true, "width": 420}',
+    );
+    stubCentreWidth(100);
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    cleanup();
+    vi.unstubAllGlobals();
+
+    mountApp('/proxy');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    expect(screen.getByRole('region', { name: 'Lista' }).style.width).toBe('420px');
   });
 });
 

@@ -25,12 +25,6 @@ export function clampSidePanelWidth(panel: SidePanelName, width: number): number
   return Math.min(max, Math.max(min, width));
 }
 
-/**
- * The narrowest the centre of the workspace gets, in CSS px: on a screen too narrow for it and
- * both side panels, the panels narrow instead, down to their narrowest.
- */
-export const CENTRE_MIN_WIDTH_PX = 320;
-
 /** How the user left a side panel: folded down to a strip or open, and how wide while open. */
 export interface SidePanelLayout {
   readonly isOpen: boolean;

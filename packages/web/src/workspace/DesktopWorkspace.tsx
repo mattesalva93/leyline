@@ -6,11 +6,11 @@ import { EmptyWorkspace } from './EmptyWorkspace.tsx';
 import { Inspector } from './Inspector.tsx';
 import { PdfControl } from './PdfControl.tsx';
 import { SheetView } from './SheetView.tsx';
-import { CENTRE_MIN_WIDTH_PX } from './side-panel-layout.ts';
 import { SidePanel } from './SidePanel.tsx';
 import { TileWidthSlider } from './TileWidthSlider.tsx';
 import { useTileWidth } from './tile-width.ts';
 import { ToolRail } from './ToolRail.tsx';
+import { useFittedSidePanels } from './use-fitted-side-panels.ts';
 import { centreViewAt, type WorkspaceState } from './workspace-state.ts';
 
 /**
@@ -23,6 +23,7 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
   const { generator } = state;
   const view = centreViewAt(state.step);
   const [tileWidth, setTileWidth] = useTileWidth();
+  const { centreRef, panels } = useFittedSidePanels();
   if (state.isEmpty) {
     return (
       <div className="flex h-full overflow-y-auto">
@@ -33,11 +34,16 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
   return (
     <div className="flex h-full gap-4 overflow-hidden p-4">
       <ToolRail view={view} onViewChange={state.goToStep} />
-      <SidePanel name="decklist" title={t('workspace.decklistPanel')} centreSide="right">
+      <SidePanel
+        name="decklist"
+        panel={panels.decklist}
+        title={t('workspace.decklistPanel')}
+        centreSide="right"
+      >
         <DecklistEditor generator={generator} className="min-h-48 flex-1" />
         <AdSlot className="shrink-0 border-t-2 border-border p-2" />
       </SidePanel>
-      <div className="flex min-h-0 flex-1 flex-col" style={{ minWidth: CENTRE_MIN_WIDTH_PX }}>
+      <div ref={centreRef} className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="mb-3 flex shrink-0 flex-wrap items-center gap-4">
           <h1 className="text-3xl leading-none font-bold tracking-tight">
             {t(`workspace.views.${view}`)}
@@ -53,7 +59,7 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
           <SheetView generator={generator} />
         )}
       </div>
-      <Inspector state={state} view={view} className="mr-1 mb-1" />
+      <Inspector state={state} view={view} panel={panels.inspector} className="mr-1 mb-1" />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { lineToFixOf, LineToFixPanel } from './LineToFixPanel.tsx';
 import { panelLineOf, SelectedLinePanel } from './SelectedLinePanel.tsx';
 import { SheetSettings } from './SheetSettings.tsx';
 import { SidePanel } from './SidePanel.tsx';
+import type { SidePanelOnScreen } from './use-fitted-side-panels.ts';
 import type { CentreView } from './ToolRail.tsx';
 import type { WorkspaceState } from './workspace-state.ts';
 
@@ -16,10 +17,12 @@ import type { WorkspaceState } from './workspace-state.ts';
 export function Inspector({
   state,
   view,
+  panel,
   className = '',
 }: {
   readonly state: WorkspaceState;
   readonly view: CentreView;
+  readonly panel: SidePanelOnScreen;
   readonly className?: string;
 }) {
   const { t } = useTranslation();
@@ -31,6 +34,7 @@ export function Inspector({
   return (
     <SidePanel
       name="inspector"
+      panel={panel}
       as="aside"
       title={t(`workspace.inspector.${content}`)}
       centreSide="left"

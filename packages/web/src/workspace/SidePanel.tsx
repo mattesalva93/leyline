@@ -2,11 +2,8 @@ import { useId, type ReactNode } from 'react';
 import { BoardPanel } from '../ui/BoardPanel.tsx';
 import { PanelEdgeTab, type CentreSide } from './PanelEdgeTab.tsx';
 import { PanelResizeHandle } from './PanelResizeHandle.tsx';
-import {
-  SIDE_PANEL_WIDTH_PX,
-  useSidePanelLayout,
-  type SidePanelName,
-} from './side-panel-layout.ts';
+import { SIDE_PANEL_WIDTH_PX, type SidePanelName } from './side-panel-layout.ts';
+import type { SidePanelOnScreen } from './use-fitted-side-panels.ts';
 
 /**
  * A panel at the side of the workspace on a wide screen. The tab on its edge facing the centre
@@ -15,6 +12,7 @@ import {
  */
 export function SidePanel({
   name,
+  panel: { controls, fitted },
   title,
   as = 'section',
   centreSide,
@@ -22,6 +20,7 @@ export function SidePanel({
   children,
 }: {
   readonly name: SidePanelName;
+  readonly panel: SidePanelOnScreen;
   readonly title: string;
   readonly as?: 'section' | 'aside';
   readonly centreSide: CentreSide;
@@ -30,18 +29,16 @@ export function SidePanel({
 }) {
   const panelId = useId();
   const limits = SIDE_PANEL_WIDTH_PX[name];
-  const { isOpen, width, toggle, resize } = useSidePanelLayout(name);
+  const { isOpen, toggle, resize } = controls;
+  const { width, maxWidth } = fitted;
   const panel = (
-    <div
-      className={`relative flex ${isOpen ? 'shrink' : 'shrink-0'} ${className}`}
-      style={isOpen ? { minWidth: limits.min } : undefined}
-    >
+    <div className={`relative flex shrink-0 ${className}`}>
       <BoardPanel
         id={panelId}
         as={as}
         title={title}
         isFoldedToStrip={!isOpen}
-        className={isOpen ? 'min-w-0 shrink' : 'w-10'}
+        className={isOpen ? '' : 'w-10'}
         style={isOpen ? { width } : undefined}
       >
         {children}
@@ -60,9 +57,9 @@ export function SidePanel({
       title={title}
       centreSide={centreSide}
       width={width}
-      limits={limits}
+      limits={{ ...limits, max: maxWidth }}
       panelId={panelId}
-      onResize={resize}
+      onResize={(next) => resize(Math.min(maxWidth, next))}
     />
   );
   return centreSide === 'right' ? (
