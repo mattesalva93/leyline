@@ -25,7 +25,7 @@ export interface CardGridSectionProps {
   readonly lineDrag: LineDrag | null;
   readonly onSelect: (selection: TileSelection | null) => void;
   /** Selects the tile and takes the focus to its line's panel, as Enter on the tile does. */
-  readonly onOpenPanel: (selection: TileSelection) => void;
+  readonly onOpenLinePanel: (selection: TileSelection) => void;
   readonly cellPropsOf: CellPropsOf;
   readonly onPickCandidate: (writtenIndex: number, oracleId: string) => void;
   readonly onTileQuantityChange: (writtenIndex: number, print: Print, quantity: number) => void;
@@ -51,7 +51,7 @@ export function CardGridSection({
   zoomOn,
   lineDrag,
   onSelect,
-  onOpenPanel,
+  onOpenLinePanel,
   cellPropsOf,
   onPickCandidate,
   onTileQuantityChange,
@@ -84,7 +84,7 @@ export function CardGridSection({
             ...cellPropsOf(gridTile.key),
             'aria-label': tileCellLabel(gridTile, t),
             onKeyDown: tileKeyHandler({
-              onOpen: () => onOpenPanel({ writtenIndex: gridTile.writtenIndex, printId }),
+              onOpen: () => onOpenLinePanel({ writtenIndex: gridTile.writtenIndex, printId }),
               onQuantityStep:
                 gridTile.kind === 'print'
                   ? (step) =>

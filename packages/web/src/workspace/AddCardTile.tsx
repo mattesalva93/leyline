@@ -2,7 +2,7 @@ import type { Candidate, DecklistSection, Lang } from '@mtg-suite/core';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CARD_SHAPE } from '../card-shape.ts';
-import { SECONDARY_BUTTON } from '../ui/board-styles.ts';
+import { GRID_CELL_FOCUS_RING, SECONDARY_BUTTON } from '../ui/board-styles.ts';
 import {
   CenteredDialogContent,
   Dialog,
@@ -47,7 +47,7 @@ export function AddCardTile({
           {...cell}
           aria-label={t('workspace.addCard.open', { section: sectionName })}
           style={CARD_SHAPE}
-          className="flex w-full flex-col items-center justify-center gap-1 border-2 border-dashed border-border bg-panel/50 text-sm font-semibold text-muted-foreground hover:border-accent hover:text-foreground focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-focus"
+          className={`${GRID_CELL_FOCUS_RING} flex w-full flex-col items-center justify-center gap-1 border-2 border-dashed border-border bg-panel/50 text-sm font-semibold text-muted-foreground hover:border-accent hover:text-foreground`}
         >
           <Icon name="plus" className="size-8" />
           {namesItsSection

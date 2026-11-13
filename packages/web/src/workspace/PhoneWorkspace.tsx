@@ -62,7 +62,7 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
               state={state}
               tileWidthPx={TILE_WIDTH_PX.default}
               // The panel rises over the grid and takes the focus as it opens.
-              onOpenPanel={state.selectTile}
+              onOpenLinePanel={state.selectTile}
             />
           </div>
         )}

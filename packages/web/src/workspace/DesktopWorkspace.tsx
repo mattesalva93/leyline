@@ -26,11 +26,11 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
   const view = centreViewAt(state.step);
   const [tileWidth, setTileWidth] = useTileWidth();
   const { centreRef, panels } = useFittedSidePanels();
-  const [inspectorFocusRequest, setInspectorFocusRequest] = useState(0);
-  const openPanel = (selection: TileSelection) => {
+  const [inspectorFocusRequestCount, setInspectorFocusRequestCount] = useState(0);
+  const openLinePanel = (selection: TileSelection) => {
     state.selectTile(selection);
     if (!panels.inspector.controls.isOpen) panels.inspector.controls.toggle();
-    setInspectorFocusRequest((request) => request + 1);
+    setInspectorFocusRequestCount((request) => request + 1);
   };
   if (state.isEmpty) {
     return (
@@ -61,7 +61,7 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
         </div>
         {view === 'cards' ? (
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <CardsView state={state} tileWidthPx={tileWidth} onOpenPanel={openPanel} />
+            <CardsView state={state} tileWidthPx={tileWidth} onOpenLinePanel={openLinePanel} />
           </div>
         ) : (
           <SheetView generator={generator} />
@@ -71,7 +71,7 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
         state={state}
         view={view}
         panel={panels.inspector}
-        focusRequest={inspectorFocusRequest}
+        focusRequestCount={inspectorFocusRequestCount}
         className="mr-1 mb-1"
       />
     </div>

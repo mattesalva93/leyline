@@ -2,7 +2,13 @@ import type { TFunction } from 'i18next';
 import type { KeyboardEvent } from 'react';
 import { setAndNumberOf } from '../print-label.ts';
 import type { GridTile } from './grid-tiles.ts';
-import { isOnCell, isWithinCell } from './use-grid-cell-focus.ts';
+import { isOnCell, isWithinCell, type GridCellProps } from './use-grid-cell-focus.ts';
+
+/** A tile as a cell of the card grid: what the keyboard focuses, and what a screen reader says of it. */
+export type TileCellProps = GridCellProps & {
+  readonly 'aria-label': string;
+  readonly onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
+};
 
 /**
  * What a screen reader says of a tile: the card, its print and its copies, and its print's

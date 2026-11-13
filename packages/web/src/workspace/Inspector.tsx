@@ -21,21 +21,21 @@ export function Inspector({
   state,
   view,
   panel,
-  focusRequest,
+  focusRequestCount,
   className = '',
 }: {
   readonly state: WorkspaceState;
   readonly view: CentreView;
   readonly panel: SidePanelOnScreen;
   /** Grows each time a tile asks the inspector to take the focus, as Enter on it does. */
-  readonly focusRequest: number;
+  readonly focusRequestCount: number;
   readonly className?: string;
 }) {
   const { t } = useTranslation();
   const bodyRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (focusRequest > 0) bodyRef.current?.focus();
-  }, [focusRequest]);
+    if (focusRequestCount > 0) bodyRef.current?.focus();
+  }, [focusRequestCount]);
   const { generator } = state;
   const panelLine = view === 'cards' ? panelLineOf(state.gridTiles, state.selection) : null;
   const lineToFix = view === 'cards' ? lineToFixOf(state.gridTiles, state.selection) : null;
