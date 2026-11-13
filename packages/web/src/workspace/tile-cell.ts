@@ -2,7 +2,7 @@ import type { TFunction } from 'i18next';
 import type { KeyboardEvent } from 'react';
 import { setAndNumberOf } from '../print-label.ts';
 import type { GridTile } from './grid-tiles.ts';
-import { isOnCell } from './use-grid-cell-focus.ts';
+import { isOnCell, isWithinCell } from './use-grid-cell-focus.ts';
 
 /**
  * What a screen reader says of a tile: the card, its print and its copies, and its print's
@@ -21,7 +21,10 @@ export function tileCellLabel(gridTile: GridTile, t: TFunction): string {
   ].join(', ');
 }
 
-/** What the keys do on a focused tile: Enter opens its line's panel, plus and minus change its copies. */
+/**
+ * What the keys do on a focused tile: Enter opens its line's panel, plus and minus change its
+ * copies. Plus and minus work as well once a click has put the focus on a button of the tile.
+ */
 export function tileKeyHandler({
   onOpen,
   onQuantityStep,
@@ -31,10 +34,11 @@ export function tileKeyHandler({
   readonly onQuantityStep: ((step: 1 | -1) => void) | null;
 }) {
   return (event: KeyboardEvent<HTMLElement>) => {
-    if (!isOnCell(event)) return;
-    const step = event.key === '+' ? 1 : event.key === '-' ? -1 : null;
-    if (event.key === 'Enter') onOpen();
-    else if (step !== null && onQuantityStep) onQuantityStep(step);
+    // Enter on a button of the tile presses that button.
+    if (event.key === 'Enter' && isOnCell(event)) onOpen();
+    else if (!isWithinCell(event)) return;
+    else if (event.key === '+' && onQuantityStep) onQuantityStep(1);
+    else if (event.key === '-' && onQuantityStep) onQuantityStep(-1);
     else return;
     event.preventDefault();
   };

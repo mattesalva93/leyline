@@ -31,6 +31,15 @@ export function isOnCell(event: KeyboardEvent): boolean {
 }
 
 /**
+ * Whether the keyboard event comes from the cell or from a control inside it that a click
+ * focused; not from a dialog the cell opened, which React hands on to it from outside the page's
+ * order of elements.
+ */
+export function isWithinCell(event: KeyboardEvent): boolean {
+  return event.target instanceof Node && event.currentTarget.contains(event.target);
+}
+
+/**
  * Puts the focus back on the cell of the card grid the keyboard last stood on, as the user leaves
  * a panel opened from it.
  */
@@ -94,8 +103,10 @@ export function useGridCellFocus(cellKeys: readonly string[]) {
     },
     onKeyDown(event: KeyboardEvent<HTMLElement>) {
       const arrow = ARROWS[event.key];
-      const cell = event.target as HTMLElement;
-      if (!arrow || !cell.hasAttribute(CELL_ATTRIBUTE)) return;
+      const { target } = event;
+      const inGrid = target instanceof Element && event.currentTarget.contains(target);
+      const cell = inGrid ? target.closest<HTMLElement>(`[${CELL_ATTRIBUTE}]`) : null;
+      if (!arrow || !cell) return;
       const groups = [...event.currentTarget.querySelectorAll<HTMLElement>(`[${GROUP_ATTRIBUTE}]`)];
       const cellsOfGroups = groups.map((group) => [
         ...group.querySelectorAll<HTMLElement>(`[${CELL_ATTRIBUTE}]`),

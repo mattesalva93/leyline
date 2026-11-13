@@ -2234,6 +2234,21 @@ describe('the card grid from the keyboard', () => {
     );
   });
 
+  it('takes plus, minus and the arrows once a click has put the focus on a button of the tile', async () => {
+    const user = await focusBeforeTheGrid(
+      '4 Sol Ring{Enter}1 Lightning Bolt{Enter}',
+      'Lightning Bolt',
+    );
+    await user.click(screen.getByRole('button', { name: 'Una copia in più di Sol Ring (C21 #1)' }));
+
+    await user.keyboard('+{ArrowRight}');
+
+    expect(decklistValue()).toBe('6 Sol Ring\n1 Lightning Bolt\n');
+    expect(document.activeElement).toBe(
+      focusableTile('Lightning Bolt, TST #1, 1 copia, Stampa in inglese'),
+    );
+  });
+
   it('names to a screen reader the card, the print and the copies of each tile, and the warning of its print', async () => {
     await focusBeforeTheGrid('3 Counterspell{Enter}4 Sol Ring{Enter}', 'Sol Ring');
 
