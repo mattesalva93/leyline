@@ -5,7 +5,8 @@ import {
   type PrintWarning,
   type ResolvedLine,
 } from '@mtg-suite/core';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { CopyBreakdown } from './CopyBreakdown.tsx';
 import { useTranslation } from 'react-i18next';
 import { contentWidthOf, printPageSize } from './print-picker-geometry.ts';
 import { PrintPicker } from './PrintPicker.tsx';
@@ -26,6 +27,8 @@ interface LinePanelProps {
   readonly onQuantityChange: (quantity: number) => void;
   /** Called with the allocations the user set in the print picker. */
   readonly onAllocationChoice: (allocations: AllocationChoice) => void;
+  /** Gives `print` `quantity` copies, the line's quantity changing as many. */
+  readonly onPrintQuantityChange: (print: Print, quantity: number) => void;
 }
 
 /** The settings of one line: its quantity and the prints its copies use, in either language. */
@@ -35,9 +38,11 @@ export function LinePanel({
   printWarning,
   onQuantityChange,
   onAllocationChoice,
+  onPrintQuantityChange,
 }: LinePanelProps) {
   const { t } = useTranslation();
   const panelRef = useRef<HTMLDivElement>(null);
+  const [openingQuantity] = useState(line.quantity);
   const printCounts = usePrintCounts(line.card.oracleId);
   const pickerView = usePrintPickerView(tilePrint, line.lang, printCounts);
   const printPages = usePrintPages(line.card.oracleId, pickerView.printsLang, () => {
@@ -89,12 +94,14 @@ export function LinePanel({
           {t('panel.plus')}
         </button>
       </fieldset>
+      <CopyBreakdown line={line} openingQuantity={openingQuantity} />
       <PrintPicker
         line={line}
         view={pickerView}
         printCounts={printCounts}
         printPages={printPages}
         onAllocationChoice={onAllocationChoice}
+        onPrintQuantityChange={onPrintQuantityChange}
       />
     </div>
   );

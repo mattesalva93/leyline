@@ -46,6 +46,9 @@ export function SelectedLinePanel({
       printWarning={tileWarning}
       onQuantityChange={(quantity) => generator.changeLineQuantity(writtenIndex, quantity)}
       onAllocationChoice={(allocations) => generator.chooseAllocations(writtenIndex, allocations)}
+      onPrintQuantityChange={(print, quantity) =>
+        generator.changeTileQuantity(writtenIndex, print, quantity)
+      }
     />
   );
 }

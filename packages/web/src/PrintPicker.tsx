@@ -1,9 +1,6 @@
 import {
   allocateEveryCopy,
-  allocatePrintCopies,
-  copiesAllocatedTo,
   copiesByPrint,
-  unallocatedCopies,
   type AllocationChoice,
   type Print,
   type PrintCountsByLang,
@@ -42,8 +39,10 @@ interface PrintPickerProps {
   readonly printCounts: PrintCountsByLang | null;
   /** The prints of the card in the view's language: copies can go to prints of either one. */
   readonly printPages: PrintPages;
-  /** Called with the allocations a tap on a print or its +/− counter sets. */
+  /** Called with the allocations a tap on a print sets: every copy on it. */
   readonly onAllocationChoice: (allocations: AllocationChoice) => void;
+  /** Called by a print's +/− counter with the copies it now prints, the line's changing as many. */
+  readonly onPrintQuantityChange: (print: Print, quantity: number) => void;
 }
 
 interface ReleaseYear {
@@ -65,9 +64,9 @@ function byReleaseYear(prints: readonly Print[]): ReleaseYear[] {
 
 /**
  * The grid of the prints a line can use, grouped by release year, newest first. Tapping a print
- * puts every copy on it; its +/− counter moves one copy at a time between it and the default
- * print. More prints load as the user scrolls near the end of the grid. A print the pointer
- * rests on shows enlarged beside the picker.
+ * puts every copy on it; its +/− counter adds or takes off one copy of the line on that print.
+ * More prints load as the user scrolls near the end of the grid, or until the print to show is
+ * among them. A print the pointer rests on shows enlarged beside the picker.
  */
 export function PrintPicker({
   line,
@@ -75,6 +74,7 @@ export function PrintPicker({
   printCounts,
   printPages,
   onAllocationChoice,
+  onPrintQuantityChange,
 }: PrintPickerProps) {
   const { t } = useTranslation();
   const endOfGridRef = useRef<HTMLDivElement>(null);
@@ -107,10 +107,9 @@ export function PrintPicker({
     else if (!isLoading && !lastRequestFailed) loadMore();
   }, [printToShow, prints, hasMore, isLoading, lastRequestFailed, loadMore, onPrintShown]);
 
-  const printIdsUsedByLine = new Set(copiesByPrint(line).map(({ print }) => print.id));
-  const unallocated = unallocatedCopies(line);
-  const changeAllocatedCopies = (print: Print, copies: number) =>
-    onAllocationChoice(allocatePrintCopies(line, print, copies));
+  const copiesOfEachPrint = new Map(
+    copiesByPrint(line).map(({ print, quantity }) => [print.id, quantity]),
+  );
 
   return (
     <section
@@ -125,20 +124,12 @@ export function PrintPicker({
           </span>
         )}
       </h3>
-      <div className="flex flex-wrap items-center justify-between gap-x-4">
-        <LanguagePicker
-          label={t('printPicker.lang')}
-          selectedLang={printsLang}
-          onChange={changePrintsLang}
-          printCounts={printCounts}
-        />
-        {/* Beside the switch, not on the default print: that one is in a single language. */}
-        {unallocated > 0 && (
-          <span className="text-xs text-muted-foreground">
-            {t('printPicker.unallocated', { count: unallocated })}
-          </span>
-        )}
-      </div>
+      <LanguagePicker
+        label={t('printPicker.lang')}
+        selectedLang={printsLang}
+        onChange={changePrintsLang}
+        printCounts={printCounts}
+      />
       {byReleaseYear(prints).map(({ year, prints: printsOfYear }) => (
         <section key={year} aria-label={year}>
           <h4 className="mt-3 mb-1.5 font-mono text-xs font-bold">{year}</h4>
@@ -151,9 +142,9 @@ export function PrintPicker({
           >
             {printsOfYear.map((print) => {
               const frontFace = print.faces[0];
-              const usedByLine = printIdsUsedByLine.has(print.id);
+              const copies = copiesOfEachPrint.get(print.id) ?? 0;
+              const usedByLine = copies > 0;
               const setAndNumber = setAndNumberOf(print, t);
-              const allocated = copiesAllocatedTo(line, print);
               return (
                 <li
                   key={print.id}
@@ -196,20 +187,19 @@ export function PrintPicker({
                       type="button"
                       className={COUNTER_BUTTON}
                       aria-label={t('printPicker.decrease', { print: setAndNumber })}
-                      disabled={allocated === 0}
-                      onClick={() => changeAllocatedCopies(print, allocated - 1)}
+                      disabled={copies === 0 || line.quantity <= 1}
+                      onClick={() => onPrintQuantityChange(print, copies - 1)}
                     >
                       {t('panel.minus')}
                     </button>
                     <output aria-live="polite" className="min-w-[2ch] font-bold">
-                      {allocated}
+                      {copies}
                     </output>
                     <button
                       type="button"
                       className={COUNTER_BUTTON}
                       aria-label={t('printPicker.increase', { print: setAndNumber })}
-                      disabled={unallocated === 0}
-                      onClick={() => changeAllocatedCopies(print, allocated + 1)}
+                      onClick={() => onPrintQuantityChange(print, copies + 1)}
                     >
                       {t('panel.plus')}
                     </button>
