@@ -7,7 +7,7 @@ import { InfoDialog } from './InfoDialog.tsx';
 import { PhoneMenu } from './PhoneMenu.tsx';
 import { ScryfallCredit } from './ScryfallCredit.tsx';
 import { ThemeSwitch } from './ThemeSwitch.tsx';
-import type { ShellOutletContext } from './top-bar-slot.tsx';
+import type { ShellOutletContext } from './shell-outlet-context.ts';
 import { useTheme } from './use-theme.ts';
 
 const MENU_ITEM = 'flex items-center gap-2 rounded-md px-3 py-2.5 text-left';
@@ -65,7 +65,7 @@ export function AppShell({ areas }: { readonly areas: readonly ShellArea[] }) {
         <ThemeSwitch theme={theme} onSwitch={switchTheme} className="hidden lg:flex" />
       </header>
       <main className="dot-grid min-h-0 flex-1 overflow-y-auto">
-        <Outlet context={{ topBarSlot } satisfies ShellOutletContext} />
+        <Outlet context={{ topBarSlot, theme } satisfies ShellOutletContext} />
       </main>
     </div>
   );
