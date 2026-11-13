@@ -1,14 +1,17 @@
 import type { Candidate, DecklistSection, Lang, LineSide, Print } from '@mtg-suite/core';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ZoomOn } from '../use-zoomed-card.tsx';
 import { AddCardTile } from './AddCardTile.tsx';
-import type { GridSection } from './grid-sections.ts';
+import { addTileKeyOf, type GridSection } from './grid-sections.ts';
 import { dropMarkSideOf, isSelected, type GridTile, type TileSelection } from './grid-tiles.ts';
 import { ImagelessTile } from './ImagelessTile.tsx';
 import { PrintTileCard } from './PrintTileCard.tsx';
 import { ReorderableTileItem } from './ReorderableTileItem.tsx';
+import { tileCellLabel, tileKeyHandler } from './tile-cell.ts';
 import { TILE_GRID_CLASS, tileGridStyle } from './tile-grid.ts';
+import { useColumnCount } from './use-column-count.ts';
+import { cellGroupProps, type CellPropsOf } from './use-grid-cell-focus.ts';
 import type { LineDrag } from './use-line-drag.ts';
 
 export interface CardGridSectionProps {
@@ -21,27 +24,14 @@ export interface CardGridSectionProps {
   /** `null` where touch is the main input: there no tile can be dragged. */
   readonly lineDrag: LineDrag | null;
   readonly onSelect: (selection: TileSelection | null) => void;
+  /** Selects the tile and takes the focus to its line's panel, as Enter on the tile does. */
+  readonly onOpenPanel: (selection: TileSelection) => void;
+  readonly cellPropsOf: CellPropsOf;
   readonly onPickCandidate: (writtenIndex: number, oracleId: string) => void;
   readonly onTileQuantityChange: (writtenIndex: number, print: Print, quantity: number) => void;
   /** The language the add tile shows and adds cards in. */
   readonly defaultLang: Lang;
   readonly onAddCard: (section: DecklistSection, candidate: Candidate) => void;
-}
-
-/** How many columns `grid` lays its tiles in, updated as its width changes. */
-function useColumnCount(grid: React.RefObject<HTMLElement | null>): number {
-  const [columns, setColumns] = useState(1);
-  useEffect(() => {
-    const element = grid.current;
-    if (!element || typeof ResizeObserver === 'undefined') return;
-    // The grid changes width with the window and the side panels.
-    const observer = new ResizeObserver(() =>
-      setColumns(getComputedStyle(element).gridTemplateColumns.split(' ').length),
-    );
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [grid]);
-  return columns;
 }
 
 /** The side of `gridTile` where the bar of the dragged line stands, if it lands by the tile. */
@@ -61,6 +51,8 @@ export function CardGridSection({
   zoomOn,
   lineDrag,
   onSelect,
+  onOpenPanel,
+  cellPropsOf,
   onPickCandidate,
   onTileQuantityChange,
   defaultLang,
@@ -68,8 +60,7 @@ export function CardGridSection({
 }: CardGridSectionProps) {
   const { t } = useTranslation();
   const titleId = useId();
-  const gridRef = useRef<HTMLUListElement>(null);
-  const columns = useColumnCount(gridRef);
+  const { gridRef, columns } = useColumnCount();
   return (
     <section aria-labelledby={titleId}>
       <h2 id={titleId} className="px-6 pt-3 pb-2 font-semibold">
@@ -78,11 +69,33 @@ export function CardGridSection({
           {t('workspace.cardCount', { count: section.cardCount })}
         </span>
       </h2>
-      <ul ref={gridRef} className={TILE_GRID_CLASS} style={tileGridStyle(tileWidthPx)}>
+      <ul
+        ref={gridRef}
+        className={TILE_GRID_CLASS}
+        style={tileGridStyle(tileWidthPx)}
+        {...cellGroupProps(columns)}
+      >
         {section.gridTiles.map((gridTile, index) => {
           const selected = isSelected(gridTile, selection);
           const toggleSelection = (printId: string | null) =>
             onSelect(selected ? null : { writtenIndex: gridTile.writtenIndex, printId });
+          const printId = gridTile.kind === 'print' ? gridTile.tile.print.id : null;
+          const cell = {
+            ...cellPropsOf(gridTile.key),
+            'aria-label': tileCellLabel(gridTile, t),
+            onKeyDown: tileKeyHandler({
+              onOpen: () => onOpenPanel({ writtenIndex: gridTile.writtenIndex, printId }),
+              onQuantityStep:
+                gridTile.kind === 'print'
+                  ? (step) =>
+                      onTileQuantityChange(
+                        gridTile.writtenIndex,
+                        gridTile.tile.print,
+                        gridTile.tile.quantity + step,
+                      )
+                  : null,
+            }),
+          };
           const tileContent =
             gridTile.kind === 'print' ? (
               <PrintTileCard
@@ -90,7 +103,7 @@ export function CardGridSection({
                 isSelected={selected}
                 continuesRowAbove={gridTile.siblingIndex > 0 && index % columns === 0}
                 zoomOn={zoomOn}
-                onSelect={() => toggleSelection(gridTile.tile.print.id)}
+                onSelect={() => toggleSelection(printId)}
                 onQuantityChange={(quantity) =>
                   onTileQuantityChange(gridTile.writtenIndex, gridTile.tile.print, quantity)
                 }
@@ -107,6 +120,7 @@ export function CardGridSection({
           return (
             <ReorderableTileItem
               key={gridTile.key}
+              cell={cell}
               isSelected={selected}
               dragHandlers={lineDrag?.tileDragHandlers(gridTile, section.name) ?? null}
               isDragged={lineDrag?.draggedWrittenIndex === gridTile.writtenIndex}
@@ -117,7 +131,12 @@ export function CardGridSection({
           );
         })}
         <li>
-          <AddCardTile section={section.name} lang={defaultLang} onAdd={onAddCard} />
+          <AddCardTile
+            section={section.name}
+            lang={defaultLang}
+            cell={cellPropsOf(addTileKeyOf(section.name))}
+            onAdd={onAddCard}
+          />
         </li>
       </ul>
     </section>

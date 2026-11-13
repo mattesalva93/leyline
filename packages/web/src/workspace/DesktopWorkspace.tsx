@@ -53,7 +53,7 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
         </div>
         {view === 'cards' ? (
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <CardsView state={state} tileWidthPx={tileWidth} />
+            <CardsView state={state} tileWidthPx={tileWidth} onOpenPanel={state.selectTile} />
           </div>
         ) : (
           <SheetView generator={generator} />

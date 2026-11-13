@@ -132,8 +132,11 @@
     "decrease": "Una copia in meno di {{name}} ({{print}})",
     "increase": "Una copia in più di {{name}} ({{print}})",
     "siblingMark": "{{index}}/{{count}}",
+    "copies_one": "1 copia",
+    "copies_other": "{{count}} copie",
     "flip": "Gira {{name}}",
     "imageless": {
+      "pending": "Da riconoscere",
       "notFound": "Carta non trovata",
       "ambiguous": "Quale carta intendevi?",
       "noPrint": "Nessuna stampa con immagine"

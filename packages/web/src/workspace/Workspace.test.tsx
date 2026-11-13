@@ -2077,3 +2077,84 @@ describe('a new decklist', () => {
     expect(screen.queryByRole('button', { name: 'Nuova decklist' })).toBeNull();
   });
 });
+
+/** The tile a screen reader names `name`. */
+function focusableTile(name: string) {
+  return within(cardGrid()).getByRole('listitem', { name });
+}
+
+describe('the card grid from the keyboard', () => {
+  /** Mounts the page with `decklistText` and puts the focus on the PDF button, just before the grid. */
+  async function focusBeforeTheGrid(decklistText: string, lastCardName: string) {
+    const user = await mountPageAndWrite(decklistText);
+    await screen.findByRole('button', { name: `Modifica ${lastCardName}` });
+    screen.getByRole('button', { name: 'Scarica il PDF' }).focus();
+    return user;
+  }
+
+  it('takes one stop of Tab, on its first tile, and the next Tab leaves it', async () => {
+    const user = await focusBeforeTheGrid(
+      '4 Sol Ring{Enter}1 Lightning Bolt{Enter}',
+      'Lightning Bolt',
+    );
+
+    await user.tab();
+    expect(document.activeElement).toBe(gridTiles()[0]);
+
+    await user.tab();
+    expect(cardGrid().contains(document.activeElement)).toBe(false);
+  });
+
+  it('moves the focus from tile to tile with the arrows, on through the next section', async () => {
+    const user = await focusBeforeTheGrid(
+      '4 Sol Ring{Enter}Sideboard{Enter}1 Pyroblast{Enter}',
+      'Pyroblast',
+    );
+    await user.tab();
+
+    await user.keyboard('{ArrowRight}');
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Aggiungi una carta a Mazzo' }),
+    );
+    await user.keyboard('{ArrowDown}');
+    expect(document.activeElement).toBe(
+      focusableTile('Pyroblast, TST #1, 1 copia, Stampa in inglese'),
+    );
+    await user.keyboard('{ArrowUp}{ArrowLeft}');
+    expect(document.activeElement).toBe(
+      focusableTile('Sol Ring, C21 #1, 4 copie, Stampa in inglese'),
+    );
+  });
+
+  it('comes back by Tab to the tile it left', async () => {
+    const user = await focusBeforeTheGrid(
+      '4 Sol Ring{Enter}1 Lightning Bolt{Enter}',
+      'Lightning Bolt',
+    );
+    await user.tab();
+    await user.keyboard('{ArrowRight}');
+
+    await user.tab();
+    await user.tab({ shift: true });
+
+    expect(document.activeElement).toBe(
+      focusableTile('Lightning Bolt, TST #1, 1 copia, Stampa in inglese'),
+    );
+  });
+
+  it('names to a screen reader the card, the print and the copies of each tile, and the warning of its print', async () => {
+    await focusBeforeTheGrid('3 Counterspell{Enter}4 Sol Ring{Enter}', 'Sol Ring');
+
+    expect(gridTiles().map((tile) => tile.getAttribute('aria-label'))).toEqual([
+      'Counterspell, MH2 #1, 3 copie',
+      'Sol Ring, C21 #1, 4 copie, Stampa in inglese',
+    ]);
+  });
+
+  it('names to a screen reader the line of a tile to fix and what is wrong with it', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}2 Nonexistent Card{Enter}');
+    await screen.findByText('Carta non trovata');
+
+    expect(focusableTile('2 Nonexistent Card, Carta non trovata')).toBeTruthy();
+  });
+});

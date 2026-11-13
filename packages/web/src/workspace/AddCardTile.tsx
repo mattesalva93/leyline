@@ -13,6 +13,7 @@ import {
 import { Icon } from '../ui/Icon.tsx';
 import { CardSearchPanel } from './CardSearchPanel.tsx';
 import { TILE_TAB_HEIGHT_PX } from './PrintTileCard.tsx';
+import type { GridCellProps } from './use-grid-cell-focus.ts';
 
 interface AddCardTileProps {
   readonly section: DecklistSection;
@@ -20,6 +21,8 @@ interface AddCardTileProps {
   readonly lang: Lang;
   /** Whether the tile says which section it adds to: where no section title above says it. */
   readonly namesItsSection?: boolean;
+  /** The tile as a cell of the card grid, when it ends a section there. */
+  readonly cell?: GridCellProps;
   readonly onAdd: (section: DecklistSection, candidate: Candidate) => void;
 }
 
@@ -27,7 +30,13 @@ interface AddCardTileProps {
  * The last element of a section of the card grid: it opens a search by name, and the card
  * picked there joins the section. Closing the search adds nothing.
  */
-export function AddCardTile({ section, lang, namesItsSection = false, onAdd }: AddCardTileProps) {
+export function AddCardTile({
+  section,
+  lang,
+  namesItsSection = false,
+  cell,
+  onAdd,
+}: AddCardTileProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const sectionName = t(`workspace.sections.${section}`);
@@ -35,9 +44,10 @@ export function AddCardTile({ section, lang, namesItsSection = false, onAdd }: A
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <div style={{ paddingTop: TILE_TAB_HEIGHT_PX }}>
         <DialogTrigger
+          {...cell}
           aria-label={t('workspace.addCard.open', { section: sectionName })}
           style={CARD_SHAPE}
-          className="flex w-full flex-col items-center justify-center gap-1 border-2 border-dashed border-border bg-panel/50 text-sm font-semibold text-muted-foreground hover:border-accent hover:text-foreground focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          className="flex w-full flex-col items-center justify-center gap-1 border-2 border-dashed border-border bg-panel/50 text-sm font-semibold text-muted-foreground hover:border-accent hover:text-foreground focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-focus"
         >
           <Icon name="plus" className="size-8" />
           {namesItsSection

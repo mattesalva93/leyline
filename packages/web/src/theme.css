@@ -18,6 +18,8 @@
   --color-muted-foreground: #57544c;
   --color-accent: #c5f02c;
   --color-accent-foreground: #1b1a17;
+  /* The ring of the focused element: the accent is too light to see on the light board. */
+  --color-focus: #1b1a17;
   --color-chrome: #1b1a17;
   --color-chrome-foreground: #fbfaf6;
   --color-warning: #9a4a00;
@@ -44,6 +46,7 @@
     --color-muted-foreground: #aeaba2;
     --color-accent: #c5f02c;
     --color-accent-foreground: #101010;
+    --color-focus: #c5f02c;
     --color-chrome: #000000;
     --color-chrome-foreground: #f1efe8;
     --color-warning: #fbbf24;

@@ -4,9 +4,12 @@ import { SECONDARY_BUTTON } from '../ui/board-styles.ts';
 /** One button per card an ambiguous line could mean, best match first. */
 export function CandidateButtons({
   candidates,
+  isInGridCell = false,
   onPick,
 }: {
   readonly candidates: readonly Candidate[];
+  /** Leaves the buttons out of Tab, which stops on the cell of the card grid they stand in. */
+  readonly isInGridCell?: boolean;
   readonly onPick: (oracleId: string) => void;
 }) {
   return (
@@ -15,6 +18,7 @@ export function CandidateButtons({
         <button
           key={card.oracleId}
           type="button"
+          tabIndex={isInGridCell ? -1 : undefined}
           className={`${SECONDARY_BUTTON} px-2 py-1 text-left text-xs`}
           onClick={() => onPick(card.oracleId)}
         >

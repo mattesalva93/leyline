@@ -25,3 +25,27 @@ export function gridSectionsOf(cardLines: readonly WrittenCardLine[]): GridSecti
     ];
   });
 }
+
+/** The sections the card grid shows no title for, having no card: each gets an add tile after the others. */
+export function emptySectionsOf(sections: readonly GridSection[]): DecklistSection[] {
+  return DECKLIST_SECTIONS.filter((name) => !sections.some((section) => section.name === name));
+}
+
+/** Names the add tile of `section` among the cells of the card grid. */
+export function addTileKeyOf(section: DecklistSection): string {
+  return `add:${section}`;
+}
+
+/**
+ * The keys of the cells of the card grid in the order it shows them: each section's tiles and
+ * its add tile, then the add tiles of the sections with no card.
+ */
+export function gridCellKeysOf(sections: readonly GridSection[]): string[] {
+  return [
+    ...sections.flatMap((section) => [
+      ...section.gridTiles.map((gridTile) => gridTile.key),
+      addTileKeyOf(section.name),
+    ]),
+    ...emptySectionsOf(sections).map(addTileKeyOf),
+  ];
+}

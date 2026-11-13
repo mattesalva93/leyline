@@ -1,18 +1,17 @@
-import {
-  DECKLIST_SECTIONS,
-  type Candidate,
-  type DecklistSection,
-  type Lang,
-} from '@mtg-suite/core';
+import type { Candidate, DecklistSection, Lang } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
 import { AddCardTile } from './AddCardTile.tsx';
+import { addTileKeyOf } from './grid-sections.ts';
 import { TILE_GRID_CLASS, tileGridStyle } from './tile-grid.ts';
+import { useColumnCount } from './use-column-count.ts';
+import { cellGroupProps, type CellPropsOf } from './use-grid-cell-focus.ts';
 
 interface EmptySectionsRowProps {
-  /** The sections the card grid shows: every other one gets an add tile here. */
-  readonly shownSections: readonly DecklistSection[];
+  /** The sections with no card, which the card grid shows no title for. */
+  readonly emptySections: readonly DecklistSection[];
   readonly tileWidthPx: number;
   readonly lang: Lang;
+  readonly cellPropsOf: CellPropsOf;
   readonly onAddCard: (section: DecklistSection, candidate: Candidate) => void;
 }
 
@@ -21,24 +20,33 @@ interface EmptySectionsRowProps {
  * the tile since such a section has no title: adding a card opens it.
  */
 export function EmptySectionsRow({
-  shownSections,
+  emptySections,
   tileWidthPx,
   lang,
+  cellPropsOf,
   onAddCard,
 }: EmptySectionsRowProps) {
   const { t } = useTranslation();
-  const emptySections = DECKLIST_SECTIONS.filter((name) => !shownSections.includes(name));
+  const { gridRef, columns } = useColumnCount();
   if (emptySections.length === 0) return null;
   return (
     <ul
+      ref={gridRef}
       role="group"
       aria-label={t('workspace.addCard.emptySections')}
       className={`${TILE_GRID_CLASS} border-t-2 border-dashed border-border/40 pt-3`}
       style={tileGridStyle(tileWidthPx)}
+      {...cellGroupProps(columns)}
     >
       {emptySections.map((section) => (
         <li key={section}>
-          <AddCardTile section={section} lang={lang} namesItsSection onAdd={onAddCard} />
+          <AddCardTile
+            section={section}
+            lang={lang}
+            namesItsSection
+            cell={cellPropsOf(addTileKeyOf(section))}
+            onAdd={onAddCard}
+          />
         </li>
       ))}
     </ul>
