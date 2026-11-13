@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 /** The side panels of the workspace on a wide screen. */
 export type SidePanelName = 'decklist' | 'inspector';
 
@@ -22,3 +24,62 @@ export function clampSidePanelWidth(panel: SidePanelName, width: number): number
  * screen always has room for.
  */
 export const CENTRE_MIN_WIDTH_PX = 320;
+
+/** How the user left a side panel: folded down to a strip or open, and how wide while open. */
+export interface SidePanelLayout {
+  readonly isOpen: boolean;
+  readonly width: number;
+}
+
+function storageKey(panel: SidePanelName): string {
+  return `mtg-suite.sidePanel.${panel}`;
+}
+
+function defaultLayout(panel: SidePanelName): SidePanelLayout {
+  return { isOpen: true, width: SIDE_PANEL_WIDTH_PX[panel].default };
+}
+
+function isLayoutOf(panel: SidePanelName, value: unknown): value is SidePanelLayout {
+  if (typeof value !== 'object' || value === null) return false;
+  const { isOpen, width } = value as Record<string, unknown>;
+  return (
+    typeof isOpen === 'boolean' &&
+    typeof width === 'number' &&
+    clampSidePanelWidth(panel, width) === width
+  );
+}
+
+function loadLayout(panel: SidePanelName): SidePanelLayout {
+  try {
+    const stored: unknown = JSON.parse(localStorage.getItem(storageKey(panel)) ?? 'null');
+    return isLayoutOf(panel, stored) ? stored : defaultLayout(panel);
+  } catch {
+    // Unreadable, or storage blocked (private windows, site data off): the panel starts as usual.
+    return defaultLayout(panel);
+  }
+}
+
+function saveLayout(panel: SidePanelName, layout: SidePanelLayout): void {
+  try {
+    localStorage.setItem(storageKey(panel), JSON.stringify(layout));
+  } catch {
+    // Not remembered across visits; the panel still folds and resizes for this one.
+  }
+}
+
+/**
+ * How the user left side panel `panel`, remembered on the device, with the ways to fold it or
+ * open it and to resize it, within its limits.
+ */
+export function useSidePanelLayout(panel: SidePanelName) {
+  const [layout, setLayout] = useState(() => loadLayout(panel));
+  const update = (next: SidePanelLayout) => {
+    setLayout(next);
+    saveLayout(panel, next);
+  };
+  return {
+    ...layout,
+    toggle: () => update({ ...layout, isOpen: !layout.isOpen }),
+    resize: (width: number) => update({ ...layout, width: clampSidePanelWidth(panel, width) }),
+  };
+}

@@ -1,10 +1,10 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { BoardPanel } from '../ui/BoardPanel.tsx';
 import { PanelEdgeTab, type GridSide } from './PanelEdgeTab.tsx';
 import { PanelResizeHandle } from './PanelResizeHandle.tsx';
 import {
-  clampSidePanelWidth,
   SIDE_PANEL_WIDTH_PX,
+  useSidePanelLayout,
   type SidePanelName,
 } from './side-panel-layout.ts';
 
@@ -30,8 +30,7 @@ export function SidePanel({
 }) {
   const panelId = useId();
   const limits = SIDE_PANEL_WIDTH_PX[name];
-  const [isOpen, setIsOpen] = useState(true);
-  const [width, setWidth] = useState<number>(limits.default);
+  const { isOpen, width, toggle, resize } = useSidePanelLayout(name);
   const panel = (
     <div
       className={`relative flex ${isOpen ? 'shrink' : 'shrink-0'} ${className}`}
@@ -52,7 +51,7 @@ export function SidePanel({
         gridSide={gridSide}
         isOpen={isOpen}
         panelId={panelId}
-        onToggle={() => setIsOpen(!isOpen)}
+        onToggle={toggle}
       />
     </div>
   );
@@ -64,7 +63,7 @@ export function SidePanel({
       minWidth={limits.min}
       maxWidth={limits.max}
       panelId={panelId}
-      onResize={(next) => setWidth(clampSidePanelWidth(name, next))}
+      onResize={resize}
     />
   );
   return gridSide === 'right' ? (

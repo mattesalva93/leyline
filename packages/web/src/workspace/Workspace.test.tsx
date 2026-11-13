@@ -1169,6 +1169,34 @@ describe('the side panels on a wide screen', () => {
 
     expect(edge.getAttribute('aria-valuenow')).toBe('520');
   });
+
+  it('comes back after a reload folded or open, and as wide, as the user left it', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    screen.getByRole('separator', { name: 'Allarga o stringi «Lista»' }).focus();
+    await user.keyboard('{ArrowRight}');
+    await user.click(screen.getByRole('button', { name: 'Richiudi il pannello «Riepilogo»' }));
+    cleanup();
+
+    mountApp('/proxy');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    expect(screen.getByRole('region', { name: 'Lista' }).style.width).toBe('260px');
+    expect(screen.getByRole('button', { name: 'Riapri il pannello «Riepilogo»' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Riapri il pannello «Riepilogo»' }));
+    expect(screen.getByRole('complementary', { name: 'Riepilogo' }).style.width).toBe('340px');
+  });
+
+  it('starts open at its usual width when what the device kept of it cannot be read', async () => {
+    localStorage.setItem('mtg-suite.sidePanel.decklist', '{"isOpen": "no", "width": 9000}');
+    localStorage.setItem('mtg-suite.sidePanel.inspector', 'not json');
+
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    expect(screen.getByRole('region', { name: 'Lista' }).style.width).toBe('240px');
+    expect(screen.getByRole('complementary', { name: 'Riepilogo' }).style.width).toBe('340px');
+  });
 });
 
 describe('the workspace across screen sizes', () => {
