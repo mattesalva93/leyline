@@ -3,6 +3,7 @@ import {
   applyAllocationChoice,
   applyCandidateChoice,
   changeTileQuantity as changeTileQuantityInText,
+  changeWritesALineBreak,
   writtenLinesOf,
   copyCount,
   defaultSheetOptions,
@@ -64,8 +65,11 @@ export interface Generator {
   readonly decklistText: string;
   /** How many lines the decklist text has, blank ones included. */
   readonly writtenLineCount: number;
-  /** Takes the text as the user left it; a new line break resolves the lines before the last. */
-  readonly writeDecklistText: (nextText: string) => void;
+  /**
+   * Takes the text as the user left it, the caret at `caretAfterChange` (its end by default); a
+   * line break the change wrote, typed or pasted, resolves every line before the last.
+   */
+  readonly writeDecklistText: (nextText: string, caretAfterChange?: number) => void;
   /** Resolves every written line not resolved yet, the last one included. */
   readonly resolveEveryLine: () => void;
   /**
@@ -176,11 +180,9 @@ export function useGenerator(): Generator {
     }
   }
 
-  function writeDecklistText(nextText: string) {
-    // A new line break (typed or pasted) completes every line before the last one.
-    const nextWrittenLines = writtenLinesOf(nextText);
-    if (nextWrittenLines.length > writtenLines.length) {
-      void resolveInLanguage(nextWrittenLines.slice(0, -1), defaultLang);
+  function writeDecklistText(nextText: string, caretAfterChange = nextText.length) {
+    if (changeWritesALineBreak(decklistText, nextText, caretAfterChange)) {
+      void resolveInLanguage(writtenLinesOf(nextText).slice(0, -1), defaultLang);
     }
     setDecklistText(nextText);
   }

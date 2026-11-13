@@ -27,7 +27,9 @@ export function DecklistEditor({
         className={`resize-none bg-transparent p-3 font-mono text-[13px] leading-5 outline-none ${className}`}
         value={generator.decklistText}
         placeholder={t('decklist.placeholder')}
-        onChange={(event) => generator.writeDecklistText(event.target.value)}
+        onChange={(event) =>
+          generator.writeDecklistText(event.target.value, event.target.selectionEnd)
+        }
         onPaste={(event) => {
           const decklistTextarea = event.currentTarget;
           const nextText = textAfterPasteAtEnd(
