@@ -1,4 +1,4 @@
-import type { CatalogEntry } from '@mtg-suite/core';
+import { defaultSheetOptions, type CatalogEntry } from '@mtg-suite/core';
 import { aCard, aPrint, jpegOfSize } from '@mtg-suite/core/test-fixtures';
 import {
   act,
@@ -546,6 +546,7 @@ describe('the zoomed card', () => {
       const nearTop = await zoomTheTileAt(100, 0, 150, 210);
       expect(nearTop.top).toBeGreaterThanOrEqual(0);
       cleanup();
+      localStorage.clear();
 
       const nearBottom = await zoomTheTileAt(100, screenBox().height - 210, 150, 210);
       expect(nearBottom.bottom).toBeLessThanOrEqual(screenBox().height);
@@ -711,7 +712,7 @@ describe('the tile width slider', () => {
     fireEvent.change(screen.getByRole('slider', { name: 'Zoom' }), { target: { value: '100' } });
     cleanup();
 
-    await mountPageAndWrite('4 Sol Ring{Enter}');
+    mountApp('/proxy');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
 
     expect(screen.getByRole<HTMLInputElement>('slider', { name: 'Zoom' }).value).toBe('100');
@@ -1656,5 +1657,191 @@ describe('the add tile', () => {
 
     expect(await screen.findByRole('button', { name: 'Modifica Sol Ring' })).toBeTruthy();
     expect(decklistValue()).toBe('1 Sol Ring');
+  });
+});
+
+describe('the decklist saved on the device', () => {
+  /** Leaves the page and opens it again, as a reload does. */
+  function reload() {
+    cleanup();
+    mountApp('/proxy');
+  }
+
+  it('comes back after a reload, every line recognised again', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    vi.mocked(api.resolveDecklistText).mockClear();
+
+    reload();
+
+    expect(decklistValue()).toBe('4 Sol Ring\n1 Lightning Bolt');
+    expect(await screen.findByRole('button', { name: 'Modifica Lightning Bolt' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Modifica Sol Ring' })).toBeTruthy();
+    expect(api.resolveDecklistText).toHaveBeenCalledWith('4 Sol Ring\n1 Lightning Bolt', 'it');
+  });
+
+  it("brings back each line's choices: the candidate picked and the copies on prints of either language", async () => {
+    const user = await mountPageAndWrite('1 Lightning{Enter}4 Brainstorm{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Lightning Bolt' }));
+    await user.click(screen.getByRole('button', { name: 'Modifica Brainstorm' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
+    await user.click(screen.getByRole('radio', { name: 'Inglese' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con C21 #1' }));
+
+    reload();
+
+    await waitFor(() =>
+      expect(gridTiles().map(tileSummary)).toEqual([
+        ['Immagine di Lightning Bolt', '1×', undefined],
+        ['Immagine di Brainstorm', '2×', '1/3'],
+        ['Immagine di Brainstorm', '1×', '2/3'],
+        ['Immagine di Brainstorm', '1×', '3/3'],
+      ]),
+    );
+    const images = screen.getAllByRole('img', { name: 'Immagine di Brainstorm' });
+    expect(
+      images.map((image) => /brainstorm-[\w-]+/.exec(image.getAttribute('src') ?? '')?.[0]),
+    ).toEqual(['brainstorm-it-ice', 'brainstorm-it-mmq', 'brainstorm-c21']);
+  });
+
+  it('brings back the sheet options', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+    await user.selectOptions(screen.getByLabelText('Formato della pagina'), 'Letter (USA)');
+    await user.selectOptions(
+      screen.getByLabelText('Qualità delle immagini'),
+      'Qualità massima (PNG)',
+    );
+    await user.click(screen.getByLabelText('Segni di taglio'));
+    fireEvent.change(screen.getByLabelText('Margine dal bordo del foglio (mm)'), {
+      target: { value: '8' },
+    });
+    fireEvent.change(screen.getByLabelText('Spazio tra le carte (mm)'), { target: { value: '2' } });
+
+    reload();
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+
+    const field = (label: string) => screen.getByLabelText<HTMLInputElement>(label);
+    expect(field('Formato della pagina').value).toBe('Letter');
+    expect(field('Qualità delle immagini').value).toBe('png');
+    expect(field('Segni di taglio').checked).toBe(false);
+    expect(field('Margine dal bordo del foglio (mm)').value).toBe('8');
+    expect(field('Spazio tra le carte (mm)').value).toBe('2');
+  });
+
+  it.each([
+    ['not readable', '{"version": 1, "decklistText": '],
+    [
+      'of an unknown version',
+      JSON.stringify({
+        version: 99,
+        decklistText: '4 Sol Ring',
+        choicesByLine: [],
+        sheetOptions: defaultSheetOptions,
+      }),
+    ],
+    ['of the wrong shape', JSON.stringify({ version: 1, decklistText: ['4 Sol Ring'] })],
+  ])('starts empty, with no error, from saved data %s', (_kind, stored) => {
+    localStorage.setItem('mtg-suite.decklist', stored);
+
+    mountApp('/proxy');
+
+    expect(decklistValue()).toBe('');
+    expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
+  });
+
+  it('works for the visit, keeping nothing, when the device keeps nothing', async () => {
+    const blocked = () => {
+      throw new Error('SecurityError');
+    };
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(blocked);
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(blocked);
+
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+
+    expect(await screen.findByRole('button', { name: 'Modifica Sol Ring' })).toBeTruthy();
+    vi.restoreAllMocks();
+    reload();
+    expect(decklistValue()).toBe('');
+  });
+});
+
+describe('a new decklist', () => {
+  it('empties the workspace once the user confirms, and stays empty after a reload', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+    await user.selectOptions(screen.getByLabelText('Formato della pagina'), 'Letter (USA)');
+
+    await user.click(screen.getByRole('button', { name: 'Nuova decklist' }));
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Iniziare una nuova decklist?' })).getByRole(
+        'button',
+        { name: 'Svuota' },
+      ),
+    );
+
+    expect(decklistValue()).toBe('');
+    expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
+    cleanup();
+    mountApp('/proxy');
+    expect(decklistValue()).toBe('');
+    expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
+    await user.type(screen.getByLabelText('Decklist'), '4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+    expect(screen.getByLabelText<HTMLSelectElement>('Formato della pagina').value).toBe('A4');
+  });
+
+  /** Starts a new decklist, confirming it. */
+  async function startNewDecklist(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('button', { name: 'Nuova decklist' }));
+    await user.click(screen.getByRole('button', { name: 'Svuota' }));
+  }
+
+  it('leaves no error of the emptied decklist behind', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    vi.mocked(api.resolveDecklistText).mockRejectedValue(new Error('offline'));
+    await user.type(screen.getByLabelText('Decklist'), '1 Brainstorm{Enter}');
+    await screen.findByRole('alert');
+
+    await startNewDecklist(user);
+
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('opens empty after a reload, with no error even while the server is out of reach', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    await startNewDecklist(user);
+    vi.mocked(api.resolveDecklistText).mockRejectedValue(new Error('offline'));
+
+    cleanup();
+    mountApp('/proxy');
+
+    expect(decklistValue()).toBe('');
+    await act(() => Promise.resolve());
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('keeps the decklist when the user changes their mind', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    await user.click(screen.getByRole('button', { name: 'Nuova decklist' }));
+    await user.click(screen.getByRole('button', { name: 'Annulla' }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(decklistValue()).toBe('4 Sol Ring\n');
+    expect(screen.getByRole('button', { name: 'Modifica Sol Ring' })).toBeTruthy();
+  });
+
+  it('is not offered while there is nothing to empty', () => {
+    mountApp('/proxy');
+
+    expect(screen.queryByRole('button', { name: 'Nuova decklist' })).toBeNull();
   });
 });

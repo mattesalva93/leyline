@@ -28,7 +28,9 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { fetchPrintPage, resolveDecklistText } from './api.ts';
 import { loadDefaultLang, saveDefaultLang } from './default-lang.ts';
+import { choicesKeysOf, type LineChoices } from './line-choices.ts';
 import { allocationsSplitOverPrints, type LineSplitOverPrints } from './line-split.ts';
+import { loadSavedDecklist, saveDecklist } from './saved-decklist.ts';
 import { useSheetPdf, type SheetPdf } from './use-sheet-pdf.ts';
 
 /**
@@ -39,30 +41,6 @@ type ResolutionsByLanguage = ReadonlyMap<string, DecklistLine | null>;
 
 function resolutionKey(lang: Lang, writtenLine: string): string {
   return `${lang}:${writtenLine}`;
-}
-
-/**
- * What the user picked on one written line, kept apart from its resolution so the picks
- * survive resolving the line again.
- */
-interface LineChoices {
-  /** The card picked among an ambiguous line's candidates. */
-  readonly oracleId?: string;
-  /** The copies allocated to prints in the print picker. */
-  readonly allocations?: AllocationChoice;
-}
-
-/**
- * Names the choices of each written line: its text, and how many lines above it are written the
- * same, so two lines written alike keep choices of their own.
- */
-function choicesKeysOf(writtenLines: readonly string[]): string[] {
-  const linesWrittenAlike = new Map<string, number>();
-  return writtenLines.map((writtenLine) => {
-    const above = linesWrittenAlike.get(writtenLine) ?? 0;
-    linesWrittenAlike.set(writtenLine, above + 1);
-    return `${above}:${writtenLine}`;
-  });
 }
 
 /** One written line of the decklist that names a card, or may once the server resolves it. */
@@ -114,6 +92,8 @@ export interface Generator {
    * line of its own at the end of the section, already resolved.
    */
   readonly addCard: (section: DecklistSection, candidate: Candidate) => void;
+  /** Empties the decklist text, its line choices and the sheet options, on the device too. */
+  readonly startNewDecklist: () => void;
 
   readonly sheetOptions: SheetOptions;
   readonly changeSheetOptions: (options: SheetOptions) => void;
@@ -130,14 +110,19 @@ export interface Generator {
 }
 
 export function useGenerator(): Generator {
-  const [decklistText, setDecklistText] = useState('');
+  const [savedDecklist] = useState(loadSavedDecklist);
+  const [decklistText, setDecklistText] = useState(savedDecklist?.decklistText ?? '');
   const [defaultLang, setDefaultLang] = useState(loadDefaultLang);
   const [resolutions, setResolutions] = useState<ResolutionsByLanguage>(new Map());
   // Keyed by `choicesKeysOf`.
-  const [choicesByLine, setChoicesByLine] = useState<ReadonlyMap<string, LineChoices>>(new Map());
+  const [choicesByLine, setChoicesByLine] = useState<ReadonlyMap<string, LineChoices>>(
+    () => new Map(savedDecklist?.choicesByLine),
+  );
   const [requestsInFlight, setRequestsInFlight] = useState(0);
   const [lastResolveFailed, setLastResolveFailed] = useState(false);
-  const [sheetOptions, setSheetOptions] = useState<SheetOptions>(defaultSheetOptions);
+  const [sheetOptions, setSheetOptions] = useState<SheetOptions>(
+    savedDecklist?.sheetOptions ?? defaultSheetOptions,
+  );
   // Every `resolutionKey` already asked for, so a line is sent once per language however often
   // the decklist text changes.
   const requestedKeys = useRef(new Set<string>());
@@ -147,6 +132,12 @@ export function useGenerator(): Generator {
     readonly choicesKey: string;
     readonly printCount: number;
   } | null>(null);
+
+  // Whether the decklist left on the device still waits to be resolved again, every line of it.
+  // An empty one has nothing to ask the server.
+  const [isSavedDecklistUnresolved, setIsSavedDecklistUnresolved] = useState(
+    () => (savedDecklist?.decklistText.trim() ?? '') !== '',
+  );
 
   const writtenLines = writtenLinesOf(decklistText);
   const choicesKeys = choicesKeysOf(writtenLines);
@@ -402,6 +393,25 @@ export function useGenerator(): Generator {
     );
   }
 
+  function startNewDecklist() {
+    setPendingSplit(null);
+    setLastResolveFailed(false);
+    setChoicesByLine(new Map());
+    setSheetOptions(defaultSheetOptions);
+    setDecklistText('');
+  }
+
+  useEffect(() => {
+    if (!isSavedDecklistUnresolved) return;
+    setIsSavedDecklistUnresolved(false);
+    void resolveInLanguage(writtenLines, defaultLang);
+  });
+
+  useEffect(
+    () => saveDecklist({ decklistText, choicesByLine: [...choicesByLine], sheetOptions }),
+    [decklistText, choicesByLine, sheetOptions],
+  );
+
   useEffect(() => {
     if (!pendingSplit) return;
     const { choicesKey, printCount } = pendingSplit;
@@ -455,6 +465,7 @@ export function useGenerator(): Generator {
       updateChoicesAt(writtenIndex, { allocations }),
     moveLine,
     addCard,
+    startNewDecklist,
     sheetOptions,
     changeSheetOptions: setSheetOptions,
     sheetLayout,

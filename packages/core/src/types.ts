@@ -8,8 +8,9 @@ export function isLang(value: unknown): value is Lang {
   return LANGS.some((lang) => lang === value);
 }
 
-/** Scryfall's `image_status`. */
-export type ImageStatus = 'highres_scan' | 'lowres' | 'placeholder' | 'missing';
+/** Scryfall's `image_status` values. */
+export const IMAGE_STATUSES = ['highres_scan', 'lowres', 'placeholder', 'missing'] as const;
+export type ImageStatus = (typeof IMAGE_STATUSES)[number];
 
 /** The abstract card, identified by Scryfall's oracle id. */
 export interface Card {

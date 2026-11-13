@@ -1,6 +1,6 @@
 // Pure domain logic: no I/O (see CODING_STANDARDS.md and eslint.config.js).
 export type * from './types.ts';
-export { DECKLIST_SECTIONS, LANGS, isLang } from './types.ts';
+export { DECKLIST_SECTIONS, IMAGE_STATUSES, LANGS, isLang } from './types.ts';
 export { createInMemoryCatalog } from './in-memory-catalog.ts';
 export { CARD_SEARCH_LIMIT, searchCards, type CardSearch } from './card-search.ts';
 export { isPrintCursor, listPrints, type ListPrintsOptions } from './print-list.ts';

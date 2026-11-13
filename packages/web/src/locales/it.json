@@ -101,6 +101,13 @@
     "resolving": "Riconoscimento in corso…",
     "error": "Non è stato possibile riconoscere le carte. Riprova tra poco."
   },
+  "newDecklist": {
+    "open": "Nuova decklist",
+    "title": "Iniziare una nuova decklist?",
+    "warning": "La decklist, le stampe scelte e le opzioni del foglio vengono cancellate, anche da questo dispositivo.",
+    "cancel": "Annulla",
+    "confirm": "Svuota"
+  },
   "line": {
     "quantity": "{{count}}×",
     "notFound": "Correggi la riga nella lista: non verrà stampata.",

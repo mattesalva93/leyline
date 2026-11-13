@@ -1,8 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import type { Generator } from '../use-generator.ts';
+import { NewDecklistButton } from './NewDecklistButton.tsx';
 import { useFocusKeptAcrossLayouts } from './use-focus-kept-across-layouts.ts';
 
-/** The decklist text, always the source of what the grid shows, with how its recognition went. */
+/**
+ * The decklist text, always the source of what the grid shows, with how its recognition went
+ * and, once there is something to empty, the way to a new decklist.
+ */
 export function DecklistEditor({
   generator,
   className = '',
@@ -32,6 +36,12 @@ export function DecklistEditor({
         <p role="alert" className="shrink-0 px-3 pb-2 text-xs text-danger">
           {t('decklist.error')}
         </p>
+      )}
+      {generator.decklistText !== '' && (
+        <NewDecklistButton
+          onConfirm={generator.startNewDecklist}
+          className="mx-3 mb-3 self-start"
+        />
       )}
     </>
   );
