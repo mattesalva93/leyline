@@ -21,7 +21,7 @@ export {
   fitAllocations,
   unallocatedCopies,
 } from './allocation.ts';
-export { sectionOfEachWrittenLine } from './decklist-section.ts';
+export { SECTION_BEFORE_ANY_HEADER, sectionOfEachWrittenLine } from './decklist-section.ts';
 export {
   lineRewrittenByMove,
   moveWrittenLine,

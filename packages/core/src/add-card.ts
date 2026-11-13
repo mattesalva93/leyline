@@ -1,4 +1,8 @@
-import { sectionOfEachWrittenLine } from './decklist-section.ts';
+import {
+  HEADER_OF_SECTION,
+  SECTION_BEFORE_ANY_HEADER,
+  sectionOfEachWrittenLine,
+} from './decklist-section.ts';
 import { writtenLinesOf } from './decklist-text.ts';
 import { parseLine, resolvedLine, writtenWithQuantity } from './decklist.ts';
 import { cardKeys, nameKey } from './name-match.ts';
@@ -86,11 +90,14 @@ export function addCardToSection(
   const lineOf = (writtenLine: string) =>
     resolvedLine({ text: writtenLine, quantity: 1, lang }, candidate);
   if (text.trim() === '') {
+    // A line above every header is in the main deck: any other section needs its header first.
+    const writtenLinesAdded =
+      section === SECTION_BEFORE_ANY_HEADER ? [newLine] : [HEADER_OF_SECTION[section], newLine];
     return {
       added: 'line',
-      text: newLine,
-      previousWrittenIndexes: [null],
-      writtenIndex: 0,
+      text: writtenLinesAdded.join('\n'),
+      previousWrittenIndexes: writtenLinesAdded.map(() => null),
+      writtenIndex: writtenLinesAdded.length - 1,
       line: lineOf(newLine),
     };
   }

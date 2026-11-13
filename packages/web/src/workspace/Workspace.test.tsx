@@ -291,7 +291,7 @@ function cardGrid() {
 function tilesIn(container: HTMLElement) {
   return within(container)
     .getAllByRole('listitem')
-    .filter((item) => !within(item).queryByRole('button', { name: /^Aggiungi una carta a / }));
+    .filter((item) => !within(item).queryByRole('button', { name: /^Aggiungi (una )?carta/ }));
 }
 
 /** The tiles of the card grid, in the order the grid shows them. */
@@ -2059,8 +2059,7 @@ describe('the landing page', () => {
 
     expect(screen.queryByRole('button', { name: 'Prova con un esempio' })).toBeNull();
     expect(gridTiles()).toEqual([]);
-    const emptySections = within(cardGrid()).getByRole('group', { name: 'Sezioni vuote' });
-    expect(within(emptySections).getAllByRole('button')).toHaveLength(5);
+    expect(within(cardGrid()).getAllByRole('button')).toHaveLength(1);
   });
 
   it('loads the example decklist, recognised to its last line as one written by hand', async () => {
@@ -2170,15 +2169,22 @@ describe('the landing page', () => {
 });
 
 describe('the add tile', () => {
-  /** Opens the search of the add tile ending `section`, and types `name` into it. */
+  /**
+   * Opens the search of the add tile ending `section`, or the only add tile when `null`, picks
+   * `sectionToPick` if any, and types `name` into the search.
+   */
   async function searchToAdd(
     user: ReturnType<typeof userEvent.setup>,
-    section: string,
+    section: string | null,
     name: string,
+    sectionToPick?: string,
   ) {
     await user.click(
-      await screen.findByRole('button', { name: `Aggiungi una carta a ${section}` }),
+      await screen.findByRole('button', {
+        name: section ? `Aggiungi una carta a ${section}` : 'Aggiungi carta',
+      }),
     );
+    if (sectionToPick) await user.click(screen.getByRole('radio', { name: sectionToPick }));
     await user.type(screen.getByRole('combobox', { name: 'Nome della carta' }), name);
     return screen.findByRole('listbox', { name: 'Carte trovate' });
   }
@@ -2193,35 +2199,101 @@ describe('the add tile', () => {
     ).toEqual(['Aggiungi una carta', 'Aggiungi una carta']);
   });
 
-  it('stands for each section the decklist has no card in, after the others, under no title', async () => {
-    await mountPageAndWrite('4 Sol Ring{Enter}');
-    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
-
-    const emptySections = within(cardGrid()).getByRole('group', { name: 'Sezioni vuote' });
-    expect(
-      within(emptySections)
-        .getAllByRole('button')
-        .map((tile) => tile.textContent),
-    ).toEqual([
-      'Aggiungi a Comandante',
-      'Aggiungi a Terre',
-      'Aggiungi a Sideboard',
-      'Aggiungi a Token',
-    ]);
-    expect(gridSections()).toEqual([['Mazzo 4 carte', ['Immagine di Sol Ring']]]);
-  });
-
   it('opens an empty section with its header in the text, and its title in the grid', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
-    const found = await searchToAdd(user, 'Sideboard', 'pyrobl');
+    const found = await searchToAdd(user, 'Mazzo', 'pyrobl', 'Token');
 
     await user.click(await within(found).findByRole('option', { name: /Pyroblast/ }));
 
-    expect(decklistValue()).toBe('4 Sol Ring\n\nSideboard\n1 Pyroblast');
+    expect(decklistValue()).toBe('4 Sol Ring\n\nTokens\n1 Pyroblast');
     expect(gridSections()).toEqual([
       ['Mazzo 4 carte', ['Immagine di Sol Ring']],
-      ['Sideboard 1 carta', ['Immagine di Pyroblast']],
+      ['Token 1 carta', ['Immagine di Pyroblast']],
     ]);
+  });
+
+  it('is the only tile of an empty decklist, naming no section, and adds to the main deck', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    await user.clear(screen.getByLabelText('Decklist'));
+
+    const [onlyTile, ...others] = within(cardGrid()).getAllByRole('button');
+    expect(others).toEqual([]);
+    expect(onlyTile?.textContent).toBe('Aggiungi carta');
+    expect(onlyTile?.getAttribute('aria-label')).toBe('Aggiungi carta');
+    const found = await searchToAdd(user, null, 'brainst');
+    await user.click(await within(found).findByRole('option', { name: /Brainstorm/ }));
+
+    expect(decklistValue()).toBe('1 Brainstorm');
+  });
+
+  it('adds to the section picked from the only tile of an empty decklist, opening it', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    await user.clear(screen.getByLabelText('Decklist'));
+    const found = await searchToAdd(user, null, 'pyrobl', 'Sideboard');
+
+    await user.click(await within(found).findByRole('option', { name: /Pyroblast/ }));
+
+    expect(decklistValue()).toBe('Sideboard\n1 Pyroblast');
+    expect(gridSections()).toEqual([['Sideboard 1 carta', ['Immagine di Pyroblast']]]);
+  });
+
+  it('picks the section of the tile on each opening, whatever the last one picked', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const tile = await screen.findByRole('button', { name: 'Aggiungi una carta a Mazzo' });
+    await user.click(tile);
+    await user.click(screen.getByRole('radio', { name: 'Token' }));
+    await user.click(screen.getByRole('button', { name: 'Chiudi' }));
+
+    await user.click(tile);
+
+    const picker = screen.getByRole('radiogroup', { name: 'Sezione di destinazione' });
+    expect(
+      within(picker)
+        .getAllByRole('radio')
+        .map((radio) => [radio.closest('label')?.textContent, (radio as HTMLInputElement).checked]),
+    ).toEqual([
+      ['Comandante', false],
+      ['Mazzo', true],
+      ['Terre', false],
+      ['Sideboard', false],
+      ['Token', false],
+    ]);
+  });
+
+  it('starts each search in the name field', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+
+    await user.click(await screen.findByRole('button', { name: 'Aggiungi una carta a Mazzo' }));
+
+    expect(document.activeElement).toBe(screen.getByRole('combobox', { name: 'Nome della carta' }));
+  });
+
+  it('changes section with the arrows, as a radio group, opening the sideboard from the main deck', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Aggiungi una carta a Mazzo' }));
+    await user.tab({ shift: true });
+    expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'Mazzo' }));
+
+    await user.keyboard('{ArrowRight}{ArrowRight}');
+    expect(screen.getByRole('radio', { name: 'Sideboard' })).toHaveProperty('checked', true);
+    await user.tab();
+    await user.keyboard('pyrobl');
+    const found = await screen.findByRole('listbox', { name: 'Carte trovate' });
+    await user.click(await within(found).findByRole('option', { name: /Pyroblast/ }));
+
+    expect(decklistValue()).toBe('4 Sol Ring\n\nSideboard\n1 Pyroblast');
+  });
+
+  it('titles its search after the section picked', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Aggiungi una carta a Mazzo' }));
+    expect(screen.getByRole('dialog', { name: 'Aggiungi una carta a Mazzo' })).toBeTruthy();
+
+    await user.click(screen.getByRole('radio', { name: 'Terre' }));
+
+    expect(screen.getByRole('dialog', { name: 'Aggiungi una carta a Terre' })).toBeTruthy();
   });
 
   it('searches once the user stops typing, showing each card found with its image', async () => {
@@ -2330,7 +2402,7 @@ describe('the add tile', () => {
     const user = await mountPageAndWrite('1 Brainstorm{Enter}');
     await screen.findByRole('button', { name: 'Modifica Brainstorm' });
     await user.clear(screen.getByLabelText('Decklist'));
-    const found = await searchToAdd(user, 'Mazzo', 'sol ri');
+    const found = await searchToAdd(user, null, 'sol ri');
 
     await user.click(await within(found).findByRole('option', { name: /Sol Ring/ }));
 

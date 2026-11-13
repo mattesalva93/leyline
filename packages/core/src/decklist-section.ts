@@ -63,13 +63,16 @@ export function sectionOpenedBy(writtenLine: string): DecklistSection | null {
   return name === undefined ? null : (SECTIONS.get(nameKey(name)) ?? null);
 }
 
+/** The section of a line written above every header: where a card goes when no section is named. */
+export const SECTION_BEFORE_ANY_HEADER: DecklistSection = 'mainDeck';
+
 /**
  * The section each written line belongs to, in the order of the text: the one the last header
  * above it opened (a header belongs to the section it opens), the main deck before any header.
  * A line with the sideboard prefix is in the sideboard wherever it is written.
  */
 export function sectionOfEachWrittenLine(writtenLines: readonly string[]): DecklistSection[] {
-  let current: DecklistSection = 'mainDeck';
+  let current = SECTION_BEFORE_ANY_HEADER;
   return writtenLines.map((writtenLine) => {
     current = sectionOpenedBy(writtenLine) ?? current;
     return SIDEBOARD_PREFIX.test(writtenLine.trim()) ? 'sideboard' : current;
