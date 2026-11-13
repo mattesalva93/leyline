@@ -31,6 +31,9 @@ export interface SidePanelLayout {
   readonly width: number;
 }
 
+/** Raised whenever the saved shape changes: a layout of any other version is left unread. */
+const SAVED_LAYOUT_VERSION = 1;
+
 function storageKey(panel: SidePanelName): string {
   return `mtg-suite.sidePanel.${panel}`;
 }
@@ -41,8 +44,9 @@ function defaultLayout(panel: SidePanelName): SidePanelLayout {
 
 function isLayoutOf(panel: SidePanelName, value: unknown): value is SidePanelLayout {
   if (typeof value !== 'object' || value === null) return false;
-  const { isOpen, width } = value as Record<string, unknown>;
+  const { version, isOpen, width } = value as Record<string, unknown>;
   return (
+    version === SAVED_LAYOUT_VERSION &&
     typeof isOpen === 'boolean' &&
     typeof width === 'number' &&
     clampSidePanelWidth(panel, width) === width
@@ -52,7 +56,9 @@ function isLayoutOf(panel: SidePanelName, value: unknown): value is SidePanelLay
 function loadLayout(panel: SidePanelName): SidePanelLayout {
   try {
     const stored: unknown = JSON.parse(localStorage.getItem(storageKey(panel)) ?? 'null');
-    return isLayoutOf(panel, stored) ? stored : defaultLayout(panel);
+    return isLayoutOf(panel, stored)
+      ? { isOpen: stored.isOpen, width: stored.width }
+      : defaultLayout(panel);
   } catch {
     // Unreadable, or storage blocked (private windows, site data off): the panel starts as usual.
     return defaultLayout(panel);
@@ -61,7 +67,10 @@ function loadLayout(panel: SidePanelName): SidePanelLayout {
 
 function saveLayout(panel: SidePanelName, layout: SidePanelLayout): void {
   try {
-    localStorage.setItem(storageKey(panel), JSON.stringify(layout));
+    localStorage.setItem(
+      storageKey(panel),
+      JSON.stringify({ version: SAVED_LAYOUT_VERSION, ...layout }),
+    );
   } catch {
     // Not remembered across visits; the panel still folds and resizes for this one.
   }

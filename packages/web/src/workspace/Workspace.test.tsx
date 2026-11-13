@@ -1204,6 +1204,17 @@ describe('the side panels on a wide screen', () => {
   it('starts open at its usual width when what the device kept of it cannot be read', async () => {
     localStorage.setItem('mtg-suite.sidePanel.decklist', '{"isOpen": "no", "width": 9000}');
     localStorage.setItem('mtg-suite.sidePanel.inspector', 'not json');
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    expect(screen.getByRole('region', { name: 'Lista' }).style.width).toBe('240px');
+    expect(screen.getByRole('complementary', { name: 'Riepilogo' }).style.width).toBe('340px');
+  });
+
+  it('starts open at its usual width when the device kept it in a version it does not know', async () => {
+    const otherVersion = '{"version": 99, "isOpen": false, "width": 300}';
+    localStorage.setItem('mtg-suite.sidePanel.decklist', otherVersion);
+    localStorage.setItem('mtg-suite.sidePanel.inspector', otherVersion);
 
     await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
