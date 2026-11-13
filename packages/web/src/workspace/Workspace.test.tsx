@@ -912,25 +912,47 @@ describe('the tile width slider', () => {
 });
 
 describe('the pile under a tile', () => {
-  /** How many card edges the pile under each tile of the grid draws. */
-  function pileEdgesPerTile() {
-    return gridTiles().map((tile) => tile.querySelectorAll('[data-copy-pile-edge]').length);
+  /** The copies of the card drawn behind the card of each tile of the grid. */
+  function pileCopiesPerTile() {
+    return gridTiles().map((tile) => [
+      ...tile.querySelectorAll<HTMLElement>('[data-copy-pile-copy]'),
+    ]);
   }
 
-  it("draws a card edge per copy beyond the first, counting the tile's copies, not the line's", async () => {
+  it("draws a copy of the card per copy beyond the first, counting the tile's copies, not the line's", async () => {
     const user = await mountPageAndWrite('3 Sol Ring{Enter}1 Lightning Bolt{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
 
     await moveOneCopy(user, 'Sol Ring', 'C21 #1', 'LEA #1');
 
-    expect(pileEdgesPerTile()).toEqual([1, 0, 0]);
+    expect(pileCopiesPerTile().map((copies) => copies.length)).toEqual([1, 0, 0]);
   });
 
-  it('stops growing past five edges', async () => {
+  it('stops growing past five copies', async () => {
     await mountPageAndWrite('6 Sol Ring{Enter}40 Lightning Bolt{Enter}');
     await screen.findByRole('button', { name: 'Modifica Lightning Bolt' });
 
-    expect(pileEdgesPerTile()).toEqual([5, 5]);
+    expect(pileCopiesPerTile().map((copies) => copies.length)).toEqual([5, 5]);
+  });
+
+  it('draws the image of the face the card shows', async () => {
+    await mountPageAndWrite('2 Sol Ring{Enter}');
+    const card = await screen.findByRole('img', { name: /^Immagine di Sol Ring/ });
+
+    const [copy] = pileCopiesPerTile()[0] ?? [];
+
+    expect(copy?.querySelector('img')?.getAttribute('src')).toBe(card.getAttribute('src'));
+  });
+
+  it('keeps the copies decorative: hidden, without alternative text, and deaf to the pointer', async () => {
+    await mountPageAndWrite('2 Sol Ring{Enter}');
+    await screen.findByRole('img', { name: /^Immagine di Sol Ring/ });
+
+    const [copy] = pileCopiesPerTile()[0] ?? [];
+
+    expect(copy?.getAttribute('aria-hidden')).toBe('true');
+    expect(copy?.querySelector('img')?.getAttribute('alt')).toBe('');
+    expect(copy?.className).toContain('pointer-events-none');
   });
 });
 

@@ -4,6 +4,7 @@ import { Icon } from '../ui/Icon.tsx';
 import { CandidateButtons } from './CandidateButtons.tsx';
 import type { ImagelessGridTile } from './grid-tiles.ts';
 import { LineToFixHint } from './LineToFixHint.tsx';
+import { COPY_PILE_FOOTPRINT_PX } from './CopyPile.tsx';
 import { TILE_TAB_HEIGHT_PX } from './PrintTileCard.tsx';
 import { CARD_SHAPE } from '../card-shape.ts';
 
@@ -31,7 +32,14 @@ export function ImagelessTile({
   const { t } = useTranslation();
   const { reason, line, writtenLine } = gridTile;
   return (
-    <div style={{ paddingTop: TILE_TAB_HEIGHT_PX }}>
+    <div
+      // The room a pile takes beside a print's card, so this card lines up with it.
+      style={{
+        paddingTop: TILE_TAB_HEIGHT_PX,
+        paddingRight: COPY_PILE_FOOTPRINT_PX,
+        paddingBottom: COPY_PILE_FOOTPRINT_PX,
+      }}
+    >
       <div
         style={CARD_SHAPE}
         className={`flex w-full flex-col gap-1.5 overflow-hidden border-2 border-dashed p-2 text-xs ${reason === 'pending' ? 'border-border bg-panel/70' : 'border-danger bg-panel'} ${isSelected ? 'outline-4 outline-offset-4 outline-accent' : ''}`}

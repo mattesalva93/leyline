@@ -12,6 +12,7 @@ import {
 } from '../ui/Dialog.tsx';
 import { Icon } from '../ui/Icon.tsx';
 import { CardSearchPanel } from './CardSearchPanel.tsx';
+import { COPY_PILE_FOOTPRINT_PX } from './CopyPile.tsx';
 import { TILE_TAB_HEIGHT_PX } from './PrintTileCard.tsx';
 import type { GridCellProps } from './use-grid-cell-focus.ts';
 
@@ -42,7 +43,14 @@ export function AddCardTile({
   const sectionName = t(`workspace.sections.${section}`);
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <div style={{ paddingTop: TILE_TAB_HEIGHT_PX }}>
+      <div
+        // The room a pile takes beside a print's card, so this card lines up with it.
+        style={{
+          paddingTop: TILE_TAB_HEIGHT_PX,
+          paddingRight: COPY_PILE_FOOTPRINT_PX,
+          paddingBottom: COPY_PILE_FOOTPRINT_PX,
+        }}
+      >
         <DialogTrigger
           {...cell}
           aria-label={t('workspace.addCard.open', { section: sectionName })}
