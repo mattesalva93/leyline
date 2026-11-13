@@ -16,6 +16,8 @@ export function changeWritesALineBreak(
   nextText: string,
   caretAfterChange: number,
 ): boolean {
+  // A change that leaves the caret before what it wrote, as an undo can, still adds breaks.
+  if (lineBreakCount(nextText) > lineBreakCount(previousText)) return true;
   // The text after the caret is the text the change left as it was.
   const keptAfterLength = nextText.length - caretAfterChange;
   const replacedEnd = previousText.length - keptAfterLength;
@@ -27,4 +29,8 @@ export function changeWritesALineBreak(
     writtenStart += 1;
   }
   return nextText.slice(writtenStart, caretAfterChange).includes('\n');
+}
+
+function lineBreakCount(text: string): number {
+  return text.split('\n').length - 1;
 }

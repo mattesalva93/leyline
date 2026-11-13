@@ -43,7 +43,7 @@ export function DecklistEditor({
           if (nextText === null) return;
           event.preventDefault();
           // Setting a textarea's value puts the caret at its end: on the new empty line.
-          generator.writeDecklistText(nextText);
+          generator.writeDecklistText(nextText, nextText.length);
         }}
         onBlur={generator.resolveEveryLine}
       />

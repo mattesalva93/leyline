@@ -43,4 +43,10 @@ describe('changeWritesALineBreak', () => {
     const nextText = '4 Sol Ring1 Lightning Bolt';
     expect(changeWritesALineBreak(previousText, nextText, '4 Sol Ring'.length)).toBe(false);
   });
+
+  it('sees the line breaks of lines put back after the caret, as an undo does', () => {
+    const previousText = '4 Sol Ring';
+    const nextText = '1 Lightning Bolt\n2 Brainstorm\n4 Sol Ring';
+    expect(changeWritesALineBreak(previousText, nextText, 0)).toBe(true);
+  });
 });

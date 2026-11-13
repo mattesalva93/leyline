@@ -66,10 +66,10 @@ export interface Generator {
   /** How many lines the decklist text has, blank ones included. */
   readonly writtenLineCount: number;
   /**
-   * Takes the text as the user left it, the caret at `caretAfterChange` (its end by default); a
-   * line break the change wrote, typed or pasted, resolves every line before the last.
+   * Takes the text as the user left it, the caret at `caretAfterChange`; a line break the change
+   * wrote, typed or pasted, resolves every line before the last.
    */
-  readonly writeDecklistText: (nextText: string, caretAfterChange?: number) => void;
+  readonly writeDecklistText: (nextText: string, caretAfterChange: number) => void;
   /** Resolves every written line not resolved yet, the last one included. */
   readonly resolveEveryLine: () => void;
   /**
@@ -180,7 +180,7 @@ export function useGenerator(): Generator {
     }
   }
 
-  function writeDecklistText(nextText: string, caretAfterChange = nextText.length) {
+  function writeDecklistText(nextText: string, caretAfterChange: number) {
     if (changeWritesALineBreak(decklistText, nextText, caretAfterChange)) {
       void resolveInLanguage(writtenLinesOf(nextText).slice(0, -1), defaultLang);
     }

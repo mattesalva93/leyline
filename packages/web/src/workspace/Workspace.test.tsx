@@ -212,9 +212,10 @@ describe('the generator page', () => {
     expect(vi.mocked(api.resolveDecklistText).mock.calls.length).toBe(requestsBefore + 1);
   });
 
-  it('recognises every line of a decklist pasted over a text with as many lines', async () => {
+  it('recognises every line of a decklist pasted over a text with as many lines, in one request', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
     await screen.findByRole('button', { name: 'Modifica Lightning Bolt' });
+    const requestsBefore = vi.mocked(api.resolveDecklistText).mock.calls.length;
     const decklist = screen.getByLabelText<HTMLTextAreaElement>('Decklist');
     decklist.setSelectionRange(0, decklist.value.length);
 
@@ -223,6 +224,7 @@ describe('the generator page', () => {
     expect(decklistValue()).toBe('2 Brainstorm\n1 Island\n');
     expect(await screen.findByRole('button', { name: 'Modifica Brainstorm' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Modifica Island' })).toBeTruthy();
+    expect(vi.mocked(api.resolveDecklistText).mock.calls.length).toBe(requestsBefore + 1);
   });
 
   it('asks the server nothing while a line in the middle is typed, letter by letter', async () => {
