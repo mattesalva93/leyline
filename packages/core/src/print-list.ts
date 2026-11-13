@@ -1,6 +1,6 @@
 import { printablePrints } from './default-print.ts';
 import { comparePrintSortKeys, printSortKey, type PrintSortKey } from './print-order.ts';
-import type { Catalog, Lang, PrintPage } from './types.ts';
+import { LANGS, type Catalog, type Lang, type PrintPage } from './types.ts';
 
 export interface ListPrintsOptions {
   readonly oracleId: string;
@@ -64,4 +64,21 @@ export async function listPrints(
     total: prints.length,
     nextCursor: hasMore && last ? JSON.stringify(printSortKey(last)) : null,
   };
+}
+
+/** How many prints a card can print with in each language. */
+export type PrintCountsByLang = Readonly<Record<Lang, number>>;
+
+/**
+ * How many printable prints the card `oracleId` has in each language, with no English fallback:
+ * a language with none counts zero. `null` when the catalog holds no card `oracleId`.
+ */
+export async function countPrintsByLang(
+  catalog: Catalog,
+  { oracleId, today }: { readonly oracleId: string; readonly today: string },
+): Promise<PrintCountsByLang | null> {
+  const entry = await catalog.findCard(oracleId);
+  if (!entry) return null;
+  const countIn = (lang: Lang) => printablePrints(entry.prints, lang, today).length;
+  return Object.fromEntries(LANGS.map((lang) => [lang, countIn(lang)])) as PrintCountsByLang;
 }
