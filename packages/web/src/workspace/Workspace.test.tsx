@@ -1786,7 +1786,10 @@ describe('a new decklist', () => {
     expect(decklistValue()).toBe('');
     expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
     cleanup();
-    await mountPageAndWrite('4 Sol Ring{Enter}');
+    mountApp('/proxy');
+    expect(decklistValue()).toBe('');
+    expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
+    await user.type(screen.getByLabelText('Decklist'), '4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
     await user.click(screen.getByRole('button', { name: 'Foglio' }));
     expect(screen.getByLabelText<HTMLSelectElement>('Formato della pagina').value).toBe('A4');
