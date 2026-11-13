@@ -134,4 +134,12 @@ describe('addCardToSection', () => {
     expect(addition.text).toBe('1 Sol Ring');
     expect(addition).toMatchObject({ writtenIndex: 0, previousWrittenIndexes: [null] });
   });
+
+  it('opens the section with its header when the text is blank and the section is not the main deck', async () => {
+    const addition = await add('', 'sideboard');
+
+    expect(addition.text).toBe('Sideboard\n1 Sol Ring');
+    expect(addition).toMatchObject({ writtenIndex: 1, previousWrittenIndexes: [null, null] });
+    expect(sectionOfEachWrittenLine(writtenLinesOf(addition.text))[1]).toBe('sideboard');
+  });
 });

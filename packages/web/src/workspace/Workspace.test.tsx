@@ -2227,6 +2227,18 @@ describe('the add tile', () => {
     expect(decklistValue()).toBe('1 Brainstorm');
   });
 
+  it('adds to the section picked from the only tile of an empty decklist, opening it', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    await user.clear(screen.getByLabelText('Decklist'));
+    const found = await searchToAdd(user, null, 'pyrobl', 'Sideboard');
+
+    await user.click(await within(found).findByRole('option', { name: /Pyroblast/ }));
+
+    expect(decklistValue()).toBe('Sideboard\n1 Pyroblast');
+    expect(gridSections()).toEqual([['Sideboard 1 carta', ['Immagine di Pyroblast']]]);
+  });
+
   it('picks the section of the tile on each opening, whatever the last one picked', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     const tile = await screen.findByRole('button', { name: 'Aggiungi una carta a Mazzo' });
