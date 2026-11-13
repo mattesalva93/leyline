@@ -130,6 +130,44 @@ describe('the generator page', () => {
     expect(await screen.findByRole('button', { name: 'Modifica Sol Ring' })).toBeTruthy();
   });
 
+  it('recognises every pasted line, the last one too, breaking the line after a paste at the end', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    const requestsBefore = vi.mocked(api.resolveDecklistText).mock.calls.length;
+
+    await user.paste('1 Lightning Bolt\n2 Brainstorm');
+
+    expect(await screen.findByRole('button', { name: 'Modifica Brainstorm' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Modifica Lightning Bolt' })).toBeTruthy();
+    const decklist = screen.getByLabelText<HTMLTextAreaElement>('Decklist');
+    expect(decklist.value).toBe('4 Sol Ring\n1 Lightning Bolt\n2 Brainstorm\n');
+    expect(decklist.selectionStart).toBe(decklist.value.length);
+    expect(decklist.selectionEnd).toBe(decklist.value.length);
+    expect(vi.mocked(api.resolveDecklistText).mock.calls.length).toBe(requestsBefore + 1);
+  });
+
+  it('adds no second line break after a pasted text that already ends with one', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+
+    await user.paste('1 Lightning Bolt\n');
+
+    expect(await screen.findByRole('button', { name: 'Modifica Lightning Bolt' })).toBeTruthy();
+    expect(decklistValue()).toBe('4 Sol Ring\n1 Lightning Bolt\n');
+  });
+
+  it('adds no line break after a paste in the middle of the text, leaving the text after it as it was', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}2 Brainstorm');
+    const decklist = screen.getByLabelText<HTMLTextAreaElement>('Decklist');
+    const endOfFirstLine = '4 Sol Ring'.length;
+    decklist.setSelectionRange(endOfFirstLine, endOfFirstLine);
+
+    await user.paste('\n1 Lightning Bolt');
+
+    expect(await screen.findByRole('button', { name: 'Modifica Lightning Bolt' })).toBeTruthy();
+    expect(decklistValue()).toBe('4 Sol Ring\n1 Lightning Bolt\n2 Brainstorm');
+    expect(screen.queryByRole('button', { name: 'Modifica Brainstorm' })).toBeNull();
+  });
+
   it('resolves an ambiguous line to the candidate the user picks', async () => {
     const user = await mountPageAndWrite('1 Lightning{Enter}');
     expect(await screen.findByText('Quale carta intendevi?')).toBeTruthy();
