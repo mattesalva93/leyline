@@ -33,7 +33,7 @@ export function Inspector({
       name="inspector"
       as="aside"
       title={t(`workspace.inspector.${content}`)}
-      gridSide="left"
+      centreSide="left"
       className={className}
     >
       <div className="min-h-0 flex-1 overflow-y-auto p-3" {...PRINT_PICKER_SCROLL_ROOT_PROPS}>

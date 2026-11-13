@@ -12,7 +12,7 @@ interface BoardPanelProps {
    * Folds the panel down to a narrow strip that keeps only its title, on its side. Its content
    * stays mounted, hidden, so it comes back as it was left.
    */
-  readonly isStrip?: boolean;
+  readonly isFoldedToStrip?: boolean;
   readonly id?: string;
   readonly className?: string;
   readonly style?: CSSProperties | undefined;
@@ -25,7 +25,7 @@ export function BoardPanel({
   title,
   as: Landmark = 'section',
   isFoldable = false,
-  isStrip = false,
+  isFoldedToStrip = false,
   id,
   className = '',
   style,
@@ -36,15 +36,15 @@ export function BoardPanel({
   const titleId = useId();
   const bodyId = useId();
   const [isFoldedToTitle, setIsFoldedToTitle] = useState(false);
-  const isOpen = !isFoldedToTitle && !isStrip;
+  const isOpen = !isFoldedToTitle && !isFoldedToStrip;
   return (
     <Landmark
       id={id}
       aria-labelledby={titleId}
       style={style}
-      className={`${BOARD_PANEL} flex min-h-0 flex-col overflow-hidden ${isStrip ? 'items-center py-3' : ''} ${className}`}
+      className={`${BOARD_PANEL} flex min-h-0 flex-col overflow-hidden ${isFoldedToStrip ? 'items-center py-3' : ''} ${className}`}
     >
-      {isStrip ? (
+      {isFoldedToStrip ? (
         <h2 id={titleId} className={`${LABEL} [writing-mode:vertical-rl]`}>
           {title}
         </h2>

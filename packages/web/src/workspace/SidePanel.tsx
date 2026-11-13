@@ -1,6 +1,6 @@
 import { useId, type ReactNode } from 'react';
 import { BoardPanel } from '../ui/BoardPanel.tsx';
-import { PanelEdgeTab, type GridSide } from './PanelEdgeTab.tsx';
+import { PanelEdgeTab, type CentreSide } from './PanelEdgeTab.tsx';
 import { PanelResizeHandle } from './PanelResizeHandle.tsx';
 import {
   SIDE_PANEL_WIDTH_PX,
@@ -9,22 +9,22 @@ import {
 } from './side-panel-layout.ts';
 
 /**
- * A panel at the side of the workspace on a wide screen. The tab on its edge facing the card
- * grid folds it down to a strip with its title, never out of sight, and opens it again;
+ * A panel at the side of the workspace on a wide screen. The tab on its edge facing the centre
+ * folds it down to a strip with its title, never out of sight, and opens it again;
  * dragging that edge widens or narrows it.
  */
 export function SidePanel({
   name,
   title,
   as = 'section',
-  gridSide,
+  centreSide,
   className = '',
   children,
 }: {
   readonly name: SidePanelName;
   readonly title: string;
   readonly as?: 'section' | 'aside';
-  readonly gridSide: GridSide;
+  readonly centreSide: CentreSide;
   readonly className?: string;
   readonly children: ReactNode;
 }) {
@@ -40,15 +40,15 @@ export function SidePanel({
         id={panelId}
         as={as}
         title={title}
-        isStrip={!isOpen}
-        className={isOpen ? 'shrink' : 'w-10'}
-        style={isOpen ? { width, minWidth: limits.min } : undefined}
+        isFoldedToStrip={!isOpen}
+        className={isOpen ? 'min-w-0 shrink' : 'w-10'}
+        style={isOpen ? { width } : undefined}
       >
         {children}
       </BoardPanel>
       <PanelEdgeTab
         title={title}
-        gridSide={gridSide}
+        centreSide={centreSide}
         isOpen={isOpen}
         panelId={panelId}
         onToggle={toggle}
@@ -58,15 +58,14 @@ export function SidePanel({
   const edge = isOpen && (
     <PanelResizeHandle
       title={title}
-      gridSide={gridSide}
+      centreSide={centreSide}
       width={width}
-      minWidth={limits.min}
-      maxWidth={limits.max}
+      limits={limits}
       panelId={panelId}
       onResize={resize}
     />
   );
-  return gridSide === 'right' ? (
+  return centreSide === 'right' ? (
     <>
       {panel}
       {edge}

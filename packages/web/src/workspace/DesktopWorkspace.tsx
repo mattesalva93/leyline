@@ -33,7 +33,7 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
   return (
     <div className="flex h-full gap-4 overflow-hidden p-4">
       <ToolRail view={view} onViewChange={state.goToStep} />
-      <SidePanel name="decklist" title={t('workspace.decklistPanel')} gridSide="right">
+      <SidePanel name="decklist" title={t('workspace.decklistPanel')} centreSide="right">
         <DecklistEditor generator={generator} className="min-h-48 flex-1" />
         <AdSlot className="shrink-0 border-t-2 border-border p-2" />
       </SidePanel>

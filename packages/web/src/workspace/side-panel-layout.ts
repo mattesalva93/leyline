@@ -3,11 +3,18 @@ import { useEffect, useState } from 'react';
 /** The side panels of the workspace on a wide screen. */
 export type SidePanelName = 'decklist' | 'inspector';
 
-/** How wide each side panel gets in CSS px, as dragging its edge sets it. */
+/** The narrowest, the widest and the usual width of a side panel, in CSS px. */
+export interface SidePanelWidthLimits {
+  readonly min: number;
+  readonly max: number;
+  readonly default: number;
+}
+
+/** How wide each side panel gets, as dragging its edge sets it. */
 export const SIDE_PANEL_WIDTH_PX = {
   decklist: { min: 190, max: 420, default: 240 },
   inspector: { min: 280, max: 520, default: 340 },
-} as const satisfies Record<SidePanelName, { min: number; max: number; default: number }>;
+} as const satisfies Record<SidePanelName, SidePanelWidthLimits>;
 
 /** How far one press of an arrow key moves a side panel's edge, in CSS px. */
 export const SIDE_PANEL_KEY_STEP_PX = 20;
@@ -19,9 +26,8 @@ export function clampSidePanelWidth(panel: SidePanelName, width: number): number
 }
 
 /**
- * The narrowest the centre of the workspace gets, in CSS px. A screen too narrow for it and both
- * side panels at their width narrows the panels instead, down to their narrowest, which a wide
- * screen always has room for.
+ * The narrowest the centre of the workspace gets, in CSS px: on a screen too narrow for it and
+ * both side panels, the panels narrow instead, down to their narrowest.
  */
 export const CENTRE_MIN_WIDTH_PX = 320;
 

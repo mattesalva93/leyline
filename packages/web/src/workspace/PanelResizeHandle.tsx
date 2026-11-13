@@ -1,40 +1,38 @@
 import { useRef, type KeyboardEvent, type PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { GridSide } from './PanelEdgeTab.tsx';
-import { SIDE_PANEL_KEY_STEP_PX } from './side-panel-layout.ts';
+import type { CentreSide } from './PanelEdgeTab.tsx';
+import { SIDE_PANEL_KEY_STEP_PX, type SidePanelWidthLimits } from './side-panel-layout.ts';
 
 /**
- * The edge of a side panel facing the card grid, dragged with the mouse or moved with the arrow
+ * The edge of a side panel facing the centre, dragged with the mouse or moved with the arrow
  * keys to widen or narrow the panel; Home and End take it to its narrowest and its widest.
  */
 export function PanelResizeHandle({
   title,
-  gridSide,
+  centreSide,
   width,
-  minWidth,
-  maxWidth,
+  limits,
   panelId,
   onResize,
 }: {
   readonly title: string;
-  readonly gridSide: GridSide;
+  readonly centreSide: CentreSide;
   readonly width: number;
-  readonly minWidth: number;
-  readonly maxWidth: number;
+  readonly limits: SidePanelWidthLimits;
   readonly panelId: string;
   /** Asks for the panel at `width`, which may be out of its limits: the panel keeps within them. */
   readonly onResize: (width: number) => void;
 }) {
   const { t } = useTranslation();
-  const widening = gridSide === 'right' ? 1 : -1;
+  const widening = centreSide === 'right' ? 1 : -1;
   const drag = useRef<{ readonly startX: number; readonly startWidth: number } | null>(null);
 
   const onKeyDown = (event: KeyboardEvent) => {
     const next = {
       ArrowRight: width + widening * SIDE_PANEL_KEY_STEP_PX,
       ArrowLeft: width - widening * SIDE_PANEL_KEY_STEP_PX,
-      Home: minWidth,
-      End: maxWidth,
+      Home: limits.min,
+      End: limits.max,
     }[event.key];
     if (next === undefined) return;
     event.preventDefault();
@@ -56,7 +54,7 @@ export function PanelResizeHandle({
     drag.current = null;
   };
 
-  const label = t('boardPanel.resize', { title });
+  const label = t('sidePanel.resize', { title });
   return (
     <div
       role="separator"
@@ -66,8 +64,8 @@ export function PanelResizeHandle({
       aria-orientation="vertical"
       aria-controls={panelId}
       aria-valuenow={width}
-      aria-valuemin={minWidth}
-      aria-valuemax={maxWidth}
+      aria-valuemin={limits.min}
+      aria-valuemax={limits.max}
       className="-mx-[11px] w-1.5 shrink-0 cursor-col-resize touch-none rounded-full transition-colors outline-none hover:bg-accent/60 focus-visible:bg-accent"
       onKeyDown={onKeyDown}
       onPointerDown={onPointerDown}
