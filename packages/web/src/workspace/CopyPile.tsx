@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { CARD_SHAPE } from '../card-shape.ts';
 
 /** The most copies a pile draws: past it, a tile of more copies looks the same. */
@@ -11,8 +12,20 @@ const COPY_STEP_PX = 4;
  */
 export const COPY_PILE_FOOTPRINT_PX = MAX_COPIES * COPY_STEP_PX;
 
+/**
+ * The room a tile without a pile leaves beside its card, below the tab height `tabHeightPx`, so
+ * its card lines up with a print's.
+ */
+export function pileFreeTileFrame(tabHeightPx: number): CSSProperties {
+  return {
+    paddingTop: tabHeightPx,
+    paddingRight: COPY_PILE_FOOTPRINT_PX,
+    paddingBottom: COPY_PILE_FOOTPRINT_PX,
+  };
+}
+
 /** How many copies the pile of a tile holding `copies` copies draws. */
-export function copyPileEdgeCount(copies: number): number {
+export function copyPileCopyCount(copies: number): number {
   return Math.min(Math.max(copies - 1, 0), MAX_COPIES);
 }
 
@@ -30,7 +43,7 @@ interface CopyPileProps {
  * colour, or the background's so that the black borders of two copies do not merge.
  */
 export function CopyPile({ copies, imageUrl, ringColour }: CopyPileProps) {
-  return Array.from({ length: copyPileEdgeCount(copies) }, (_, index) => {
+  return Array.from({ length: copyPileCopyCount(copies) }, (_, index) => {
     const offset = (index + 1) * COPY_STEP_PX;
     return (
       <span
