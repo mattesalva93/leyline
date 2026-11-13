@@ -15,7 +15,7 @@ interface BoardPanelProps {
   readonly isStrip?: boolean;
   readonly id?: string;
   readonly className?: string;
-  readonly style?: CSSProperties;
+  readonly style?: CSSProperties | undefined;
   readonly bodyClassName?: string;
   readonly children: ReactNode;
 }

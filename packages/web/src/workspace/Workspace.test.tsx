@@ -1119,6 +1119,56 @@ describe('the side panels on a wide screen', () => {
       screen.getAllByRole('button', { name: /^Richiudi il pannello/ }).map((tab) => tab.title),
     ).toEqual(['Richiudi il pannello «Lista»', 'Richiudi il pannello «Riepilogo»']);
   });
+
+  it('widens and narrows a panel from the keyboard on its edge, its edge moving the way the arrow points', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    const decklistEdge = screen.getByRole('separator', { name: 'Allarga o stringi «Lista»' });
+    const inspectorEdge = screen.getByRole('separator', { name: 'Allarga o stringi «Riepilogo»' });
+
+    decklistEdge.focus();
+    await user.keyboard('{ArrowRight}{ArrowRight}');
+    inspectorEdge.focus();
+    await user.keyboard('{ArrowLeft}');
+
+    expect(decklistEdge.getAttribute('aria-valuenow')).toBe('280');
+    expect(screen.getByRole('region', { name: 'Lista' }).style.width).toBe('280px');
+    expect(inspectorEdge.getAttribute('aria-valuenow')).toBe('360');
+    expect(screen.getByRole('complementary', { name: 'Riepilogo' }).style.width).toBe('360px');
+  });
+
+  it('keeps a panel between its narrowest and its widest, leaving the grid room', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    const edge = screen.getByRole('separator', { name: 'Allarga o stringi «Lista»' });
+    expect([edge.getAttribute('aria-valuemin'), edge.getAttribute('aria-valuemax')]).toEqual([
+      '190',
+      '420',
+    ]);
+
+    edge.focus();
+    await user.keyboard('{End}{ArrowRight}');
+    expect(edge.getAttribute('aria-valuenow')).toBe('420');
+
+    await user.keyboard('{Home}{ArrowLeft}');
+    expect(edge.getAttribute('aria-valuenow')).toBe('190');
+  });
+
+  it('follows the pointer dragging its edge, within its widest, until the button is let go', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    const edge = screen.getByRole('separator', { name: 'Allarga o stringi «Riepilogo»' });
+
+    fireEvent.pointerDown(edge, { button: 0, clientX: 900 });
+    fireEvent.pointerMove(window, { clientX: 870 });
+    expect(edge.getAttribute('aria-valuenow')).toBe('370');
+    fireEvent.pointerMove(window, { clientX: 500 });
+    expect(edge.getAttribute('aria-valuenow')).toBe('520');
+    fireEvent.pointerUp(window);
+    fireEvent.pointerMove(window, { clientX: 950 });
+
+    expect(edge.getAttribute('aria-valuenow')).toBe('520');
+  });
 });
 
 describe('the workspace across screen sizes', () => {

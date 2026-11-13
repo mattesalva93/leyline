@@ -5,7 +5,6 @@ import { DecklistSummary } from './DecklistSummary.tsx';
 import { lineToFixOf, LineToFixPanel } from './LineToFixPanel.tsx';
 import { panelLineOf, SelectedLinePanel } from './SelectedLinePanel.tsx';
 import { SheetSettings } from './SheetSettings.tsx';
-import { SIDE_PANEL_WIDTH_PX } from './side-panel-layout.ts';
 import { SidePanel } from './SidePanel.tsx';
 import type { CentreView } from './ToolRail.tsx';
 import type { WorkspaceState } from './workspace-state.ts';
@@ -31,10 +30,10 @@ export function Inspector({
     view === 'sheet' ? 'sheetOptions' : panelLine ? 'line' : lineToFix ? 'lineToFix' : 'summary';
   return (
     <SidePanel
+      name="inspector"
       as="aside"
       title={t(`workspace.inspector.${content}`)}
       gridSide="left"
-      width={SIDE_PANEL_WIDTH_PX.inspector.default}
       className={className}
     >
       <div className="min-h-0 flex-1 overflow-y-auto p-3" {...PRINT_PICKER_SCROLL_ROOT_PROPS}>

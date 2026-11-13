@@ -82,7 +82,8 @@
   },
   "boardPanel": {
     "fold": "Richiudi il pannello «{{title}}»",
-    "unfold": "Riapri il pannello «{{title}}»"
+    "unfold": "Riapri il pannello «{{title}}»",
+    "resize": "Allarga o stringi «{{title}}»"
   },
   "info": {
     "title": "Informazioni",
