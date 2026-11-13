@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { GridSection } from './grid-sections.ts';
 
-/** How many `--color-sibling-*` tokens the theme holds. */
+/** How many `--color-sibling-*` tokens the theme holds: `pnpm check:theme` holds the theme to it. */
 const SIBLING_PALETTE_SIZE = 4;
 
 /**

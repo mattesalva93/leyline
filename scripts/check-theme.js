@@ -1,6 +1,7 @@
 // Checks the web theme, the one home of the design tokens (ADR 0010): every colour pair meets
-// WCAG 2.2 AA in the light and the dark theme, and fonts and stylesheets come from the app itself.
-// Usage: node scripts/check-theme.js [theme.css] [index.html]
+// WCAG 2.2 AA in the light and the dark theme, each theme holds the sibling palette the card grid
+// cycles through, and fonts and stylesheets come from the app itself.
+// Usage: node scripts/check-theme.js [theme.css] [index.html] [sibling-group-colours.ts]
 import { readFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -92,6 +93,27 @@ function contrastProblems(themeName, tokens) {
   });
 }
 
+/** How many colours the card grid cycles its sibling groups through, as the web code says. */
+function siblingPaletteSize(palettePath) {
+  const size = readFileSync(palettePath, 'utf8').match(/SIBLING_PALETTE_SIZE = (\d+)/)?.[1];
+  if (!size) throw new Error(`${basename(palettePath)} has no SIBLING_PALETTE_SIZE`);
+  return Number(size);
+}
+
+/** Each theme block must define `--color-sibling-1` up to the palette's size, and no more. */
+function paletteProblems(themeName, ownTokens, size) {
+  const expected = Array.from({ length: size }, (_, index) => `sibling-${index + 1}`);
+  const defined = [...ownTokens.keys()].filter((name) => name.startsWith('sibling-'));
+  return [
+    ...expected
+      .filter((name) => !ownTokens.has(name))
+      .map((name) => `${themeName} theme: no --color-${name} for the palette of ${size}`),
+    ...defined
+      .filter((name) => !expected.includes(name))
+      .map((name) => `${themeName} theme: --color-${name} is beyond the palette of ${size}`),
+  ];
+}
+
 /** Each font family the theme names first in a `--font-*` token must come from @fontsource. */
 function fontProblems(themeCss, lightBlock) {
   return [...lightBlock.matchAll(/--font-[\w-]+:\s*'([^']+)'/g)].flatMap(([, family]) => {
@@ -111,14 +133,18 @@ function outsideServiceProblems(path, text) {
   );
 }
 
-export function themeProblems(themePath, pagePath) {
+export function themeProblems(themePath, pagePath, palettePath) {
   const themeCss = readFileSync(themePath, 'utf8');
   const lightBlock = ruleBody(themeCss, '@theme static {');
   const lightTokens = colourTokens(lightBlock);
-  const darkTokens = new Map([...lightTokens, ...colourTokens(ruleBody(themeCss, '.dark {'))]);
+  const ownDarkTokens = colourTokens(ruleBody(themeCss, '.dark {'));
+  const darkTokens = new Map([...lightTokens, ...ownDarkTokens]);
+  const paletteSize = siblingPaletteSize(palettePath);
   return [
     ...contrastProblems('light', lightTokens),
     ...contrastProblems('dark', darkTokens),
+    ...paletteProblems('light', lightTokens, paletteSize),
+    ...paletteProblems('dark', ownDarkTokens, paletteSize),
     ...fontProblems(themeCss, lightBlock),
     ...outsideServiceProblems(themePath, themeCss),
     ...outsideServiceProblems(pagePath, readFileSync(pagePath, 'utf8')),
@@ -126,9 +152,12 @@ export function themeProblems(themePath, pagePath) {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const [themePath = 'packages/web/src/theme.css', pagePath = 'packages/web/index.html'] =
-    process.argv.slice(2);
-  const problems = themeProblems(themePath, pagePath);
+  const [
+    themePath = 'packages/web/src/theme.css',
+    pagePath = 'packages/web/index.html',
+    palettePath = 'packages/web/src/workspace/sibling-group-colours.ts',
+  ] = process.argv.slice(2);
+  const problems = themeProblems(themePath, pagePath, palettePath);
   if (problems.length > 0) {
     console.error(
       ['check-theme: the web theme fails its checks.', ...problems.map((p) => `  ${p}`)].join('\n'),
