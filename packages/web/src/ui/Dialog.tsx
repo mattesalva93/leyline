@@ -50,13 +50,22 @@ export function SideDrawerContent({ ariaLabel, className = '', children }: Dialo
 }
 
 /** A panel that rises from the bottom edge of the screen, full width. */
-export function BottomPanelContent({ ariaLabel, className = '', children }: DialogContentProps) {
+export function BottomPanelContent({
+  ariaLabel,
+  className = '',
+  onCloseAutoFocus,
+  children,
+}: DialogContentProps & {
+  /** Where the focus goes as the panel closes, for a panel opened by no trigger to give it back to. */
+  readonly onCloseAutoFocus?: (event: Event) => void;
+}) {
   return (
     <RadixDialog.Portal>
       <RadixDialog.Overlay className={OVERLAY} />
       <RadixDialog.Content
         aria-label={ariaLabel}
         aria-describedby={undefined}
+        onCloseAutoFocus={onCloseAutoFocus}
         className={`fixed inset-x-0 bottom-0 z-50 flex max-h-[78dvh] flex-col rounded-t-lg border-t-2 border-border bg-panel font-sans text-foreground ${className}`}
       >
         {children}

@@ -2142,6 +2142,65 @@ describe('the card grid from the keyboard', () => {
     );
   });
 
+  it('opens the line panel of the focused tile with Enter, and goes back to the tile with Escape', async () => {
+    const user = await focusBeforeTheGrid(
+      '4 Sol Ring{Enter}1 Lightning Bolt{Enter}',
+      'Lightning Bolt',
+    );
+    await user.tab();
+    await user.keyboard('{ArrowRight}');
+
+    await user.keyboard('{Enter}');
+
+    const inspector = screen.getByRole('complementary', { name: 'Riga selezionata' });
+    expect(within(inspector).getByRole('heading', { name: 'Lightning Bolt' })).toBeTruthy();
+    expect(inspector.contains(document.activeElement)).toBe(true);
+    await user.keyboard('{Escape}');
+    expect(document.activeElement).toBe(
+      focusableTile('Lightning Bolt, TST #1, 1 copia, Stampa in inglese'),
+    );
+  });
+
+  it('opens the line panel of a folded inspector with Enter', async () => {
+    const user = await focusBeforeTheGrid('4 Sol Ring{Enter}', 'Sol Ring');
+    await user.click(screen.getByRole('button', { name: 'Richiudi il pannello «Riepilogo»' }));
+    screen.getByRole('button', { name: 'Scarica il PDF' }).focus();
+    await user.tab();
+
+    await user.keyboard('{Enter}');
+
+    const inspector = screen.getByRole('complementary', { name: 'Riga selezionata' });
+    expect(within(inspector).getByRole('heading', { name: 'Sol Ring' })).toBeTruthy();
+    expect(inspector.contains(document.activeElement)).toBe(true);
+  });
+
+  it('opens the line to fix of a focused imageless tile with Enter', async () => {
+    const user = await focusBeforeTheGrid('2 Nonexistent Card{Enter}4 Sol Ring{Enter}', 'Sol Ring');
+    await user.tab();
+
+    await user.keyboard('{Enter}');
+
+    expect(screen.getByRole('complementary', { name: 'Riga da sistemare' })).toBeTruthy();
+  });
+
+  it('opens the line panel of the focused tile with Enter on a phone, and gives the focus back to the tile as it closes', async () => {
+    stubScreen(PHONE);
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+    focusableTile('Sol Ring, C21 #1, 4 copie, Stampa in inglese').focus();
+
+    await user.keyboard('{Enter}');
+    const panel = await screen.findByRole('dialog', { name: 'Riga selezionata' });
+    expect(within(panel).getByRole('heading', { name: 'Sol Ring' })).toBeTruthy();
+    await user.keyboard('{Escape}');
+
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        focusableTile('Sol Ring, C21 #1, 4 copie, Stampa in inglese'),
+      ),
+    );
+  });
+
   it('names to a screen reader the card, the print and the copies of each tile, and the warning of its print', async () => {
     await focusBeforeTheGrid('3 Counterspell{Enter}4 Sol Ring{Enter}', 'Sol Ring');
 
