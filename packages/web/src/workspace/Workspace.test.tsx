@@ -1083,6 +1083,44 @@ describe('the workspace on a phone', () => {
   });
 });
 
+describe('the side panels on a wide screen', () => {
+  it('folds the decklist panel down to a strip with its title from the tab on its edge, and opens it again', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    const decklist = screen.getByRole('textbox', { name: 'Decklist' });
+
+    await user.click(screen.getByRole('button', { name: 'Richiudi il pannello «Lista»' }));
+
+    const strip = screen.getByRole('region', { name: 'Lista' });
+    expect(within(strip).getByRole('heading', { name: 'Lista' })).toBeTruthy();
+    expect(screen.queryByRole('textbox', { name: 'Decklist' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Riapri il pannello «Lista»' }));
+
+    expect(screen.getByRole('textbox', { name: 'Decklist' })).toBe(decklist);
+  });
+
+  it('folds the inspector down to a strip with the title of what it shows', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    await user.click(screen.getByRole('button', { name: 'Richiudi il pannello «Riepilogo»' }));
+
+    const strip = screen.getByRole('complementary', { name: 'Riepilogo' });
+    expect(within(strip).getByRole('heading', { name: 'Riepilogo' })).toBeTruthy();
+    expect(screen.queryByRole('group', { name: 'Lingua delle carte' })).toBeNull();
+  });
+
+  it('has the tab on its edge as the only control that folds a panel', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    expect(
+      screen.getAllByRole('button', { name: /^Richiudi il pannello/ }).map((tab) => tab.title),
+    ).toEqual(['Richiudi il pannello «Lista»', 'Richiudi il pannello «Riepilogo»']);
+  });
+});
+
 describe('the workspace across screen sizes', () => {
   it('keeps the text and the selected tile when a wide screen narrows to a phone, open in its line panel', async () => {
     const screenSize = stubScreen(DESKTOP);
