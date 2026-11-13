@@ -979,6 +979,89 @@ describe('the languages of the print picker', () => {
   });
 });
 
+describe("the print picker opened on the tile's print", () => {
+  /** Makes the server send one print per page, as for a card with many prints. */
+  function onePrintPerPage() {
+    const server = inMemoryServer(CATALOG);
+    vi.mocked(api.fetchPrintPage).mockImplementation((oracleId, lang, _limit, cursor) =>
+      server.fetchPrintPage(oracleId, lang, 1, cursor),
+    );
+  }
+
+  /** The button of the print `setAndNumber` in the print picker. */
+  function printButton(setAndNumber: string) {
+    const counter = screen.getByRole('group', { name: `Copie con ${setAndNumber}` });
+    return within(counter.closest('li') ?? counter).getAllByRole('button')[0];
+  }
+
+  /**
+   * Gives `4 Brainstorm` a tile on each of its prints: ICE (Italian, the default), MMQ (Italian,
+   * second in its list) and C21 (English), in that order in the grid.
+   */
+  async function splitBrainstorm(
+    user: ReturnType<typeof userEvent.setup>,
+    panel: () => HTMLElement,
+  ) {
+    await user.click(
+      await within(panel()).findByRole('button', { name: 'Una copia in più con MMQ #1' }),
+    );
+    await user.click(await within(panel()).findByRole('radio', { name: 'Inglese (1)' }));
+    await user.click(
+      await within(panel()).findByRole('button', { name: 'Una copia in più con C21 #1' }),
+    );
+  }
+
+  const inspector = () => screen.getByRole('complementary', { name: 'Riga selezionata' });
+
+  it("shows the prints in the tile's language, its own in view with the focus, loading the pages before it", async () => {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+    await splitBrainstorm(user, inspector);
+    await user.click(screen.getByRole('button', { name: 'Modifica Brainstorm', pressed: true }));
+    onePrintPerPage();
+
+    await user.click(tileAt(1).getByRole('button', { name: 'Modifica Brainstorm' }));
+
+    await waitFor(() => expect(document.activeElement).toBe(printButton('MMQ #1')));
+    expect(
+      within(inspector()).getByRole('radio', { name: 'Italiano (2)', checked: true }),
+    ).toBeTruthy();
+  });
+
+  it('follows a sibling tile to its print and its language', async () => {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+    await splitBrainstorm(user, inspector);
+    await user.click(tileAt(1).getByRole('button', { name: 'Modifica Brainstorm' }));
+    await waitFor(() => expect(document.activeElement).toBe(printButton('MMQ #1')));
+
+    await user.click(tileAt(2).getByRole('button', { name: 'Modifica Brainstorm' }));
+
+    await waitFor(() => expect(document.activeElement).toBe(printButton('C21 #1')));
+    expect(
+      within(inspector()).getByRole('radio', { name: 'Inglese (1)', checked: true }),
+    ).toBeTruthy();
+  });
+
+  it("opens on the tile's print on a phone too, in the panel risen from the bottom", async () => {
+    stubScreen(PHONE);
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+    const phonePanel = () => screen.getByRole('dialog', { name: 'Riga selezionata' });
+    await splitBrainstorm(user, phonePanel);
+    await user.click(within(phonePanel()).getByRole('button', { name: 'Fatto' }));
+    onePrintPerPage();
+
+    await user.click(tileAt(1).getByRole('button', { name: 'Modifica Brainstorm' }));
+
+    await waitFor(() => expect(document.activeElement).toBe(printButton('MMQ #1')));
+    expect(
+      within(phonePanel()).getByRole('radio', { name: 'Italiano (2)', checked: true }),
+    ).toBeTruthy();
+  });
+});
+
 /** The inspector while no tile is selected. */
 function summary() {
   return within(screen.getByRole('complementary', { name: 'Riepilogo' }));

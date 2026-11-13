@@ -1,6 +1,7 @@
 import {
   previewPrint,
   type AllocationChoice,
+  type Print,
   type PrintWarning,
   type ResolvedLine,
 } from '@mtg-suite/core';
@@ -13,11 +14,13 @@ import { NORMAL_IMAGE } from './scryfall-image-sizes.ts';
 import { SYMBOL_BUTTON } from './ui/board-styles.ts';
 import { usePrintPages } from './use-print-pages.ts';
 import { usePrintCounts } from './use-print-counts.ts';
-import { usePrintsLanguage } from './use-prints-language.ts';
+import { usePrintPickerView } from './use-print-picker-view.ts';
 import { CARD_SHAPE } from './card-shape.ts';
 
 interface LinePanelProps {
   readonly line: ResolvedLine;
+  /** The print of the tile the panel was opened from: the print picker opens on it. */
+  readonly tilePrint: Print | null;
   /** What to warn about the print of the tile the panel was opened from. */
   readonly printWarning: PrintWarning | null;
   readonly onQuantityChange: (quantity: number) => void;
@@ -28,6 +31,7 @@ interface LinePanelProps {
 /** The settings of one line: its quantity and the prints its copies use, in either language. */
 export function LinePanel({
   line,
+  tilePrint,
   printWarning,
   onQuantityChange,
   onAllocationChoice,
@@ -35,8 +39,8 @@ export function LinePanel({
   const { t } = useTranslation();
   const panelRef = useRef<HTMLDivElement>(null);
   const printCounts = usePrintCounts(line.card.oracleId);
-  const [printsLang, changePrintsLang] = usePrintsLanguage(line.lang, printCounts);
-  const printPages = usePrintPages(line.card.oracleId, printsLang, () => {
+  const pickerView = usePrintPickerView(tilePrint, line.lang, printCounts);
+  const printPages = usePrintPages(line.card.oracleId, pickerView.printsLang, () => {
     const panel = panelRef.current;
     const gridWidth = panel ? contentWidthOf(panel) : window.innerWidth;
     return printPageSize(gridWidth, window.innerHeight);
@@ -60,7 +64,7 @@ export function LinePanel({
       <PrintWarningNote
         line={line}
         warning={printWarning}
-        onShowEnglishPrints={() => changePrintsLang('en')}
+        onShowEnglishPrints={() => pickerView.changePrintsLang('en')}
       />
       <fieldset className="flex items-center gap-2">
         <legend className="float-left mr-3 font-semibold">{t('panel.quantity')}</legend>
@@ -87,9 +91,8 @@ export function LinePanel({
       </fieldset>
       <PrintPicker
         line={line}
-        printsLang={printsLang}
+        view={pickerView}
         printCounts={printCounts}
-        onPrintsLangChange={changePrintsLang}
         printPages={printPages}
         onAllocationChoice={onAllocationChoice}
       />

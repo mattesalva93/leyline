@@ -5,7 +5,6 @@ import {
   copiesByPrint,
   unallocatedCopies,
   type AllocationChoice,
-  type Lang,
   type Print,
   type PrintCountsByLang,
   type ResolvedLine,
@@ -17,6 +16,7 @@ import { PRINT_TILE_GAP, PRINT_TILE_MIN_WIDTH } from './print-picker-geometry.ts
 import { SMALL_IMAGE } from './scryfall-image-sizes.ts';
 import { SECONDARY_BUTTON } from './ui/board-styles.ts';
 import type { PrintPages } from './use-print-pages.ts';
+import type { PrintPickerView } from './use-print-picker-view.ts';
 import { PRINT_PICKER_ZOOM_WAIT_MS, useZoomedCard } from './use-zoomed-card.tsx';
 import { CARD_SHAPE } from './card-shape.ts';
 import { LanguagePicker } from './LanguagePicker.tsx';
@@ -36,12 +36,11 @@ const COUNTER_BUTTON =
 interface PrintPickerProps {
   /** The line whose copies the picker allocates: the prints its copies use are marked. */
   readonly line: ResolvedLine;
-  /** The language of the prints shown: copies can go to prints of either language. */
-  readonly printsLang: Lang;
-  readonly onPrintsLangChange: (lang: Lang) => void;
+  /** The language of the prints shown, and the print to bring into view. */
+  readonly view: PrintPickerView;
   /** How many prints the card has in each language; `null` while not known. */
   readonly printCounts: PrintCountsByLang | null;
-  /** The prints of the card in `printsLang`. */
+  /** The prints of the card in the view's language: copies can go to prints of either one. */
   readonly printPages: PrintPages;
   /** Called with the allocations a tap on a print or its +/− counter sets. */
   readonly onAllocationChoice: (allocations: AllocationChoice) => void;
@@ -72,14 +71,14 @@ function byReleaseYear(prints: readonly Print[]): ReleaseYear[] {
  */
 export function PrintPicker({
   line,
-  printsLang,
-  onPrintsLangChange,
+  view: { printsLang, changePrintsLang, printToShow, onPrintShown },
   printCounts,
   printPages,
   onAllocationChoice,
 }: PrintPickerProps) {
   const { t } = useTranslation();
   const endOfGridRef = useRef<HTMLDivElement>(null);
+  const printButtons = useRef(new Map<string, HTMLButtonElement>());
   const { zoomOn, zoomedCard } = useZoomedCard(PRINT_PICKER_ZOOM_WAIT_MS);
   const { prints, total, hasMore, isLoading, lastRequestFailed, loadMore } = printPages;
 
@@ -95,6 +94,18 @@ export function PrintPicker({
     return () => observer.disconnect();
     // A new observer per page: it reports at once if the end is still in sight.
   }, [prints.length, hasMore, lastRequestFailed, loadMore]);
+
+  // Loads page after page until the print to show is among them, then brings it into view.
+  useEffect(() => {
+    if (printToShow === null) return;
+    const button = printButtons.current.get(printToShow);
+    if (button) {
+      button.scrollIntoView({ block: 'nearest' });
+      button.focus({ preventScroll: true });
+      onPrintShown();
+    } else if (!hasMore) onPrintShown();
+    else if (!isLoading && !lastRequestFailed) loadMore();
+  }, [printToShow, prints, hasMore, isLoading, lastRequestFailed, loadMore, onPrintShown]);
 
   const printIdsUsedByLine = new Set(copiesByPrint(line).map(({ print }) => print.id));
   const unallocated = unallocatedCopies(line);
@@ -118,7 +129,7 @@ export function PrintPicker({
         <LanguagePicker
           label={t('printPicker.lang')}
           selectedLang={printsLang}
-          onChange={onPrintsLangChange}
+          onChange={changePrintsLang}
           printCounts={printCounts}
         />
         {/* Beside the switch, not on the default print: that one is in a single language. */}
@@ -152,6 +163,10 @@ export function PrintPicker({
                     type="button"
                     className="flex flex-col"
                     aria-pressed={usedByLine}
+                    ref={(element) => {
+                      if (element) printButtons.current.set(print.id, element);
+                      else printButtons.current.delete(print.id);
+                    }}
                     onClick={() => onAllocationChoice(allocateEveryCopy(line, print))}
                     // Beside the whole picker, so the zoomed card hides none of the other prints.
                     {...zoomOn(frontFace, `[${PRINT_PICKER}]`)}
