@@ -1598,6 +1598,34 @@ describe('the add tile', () => {
     expect(decklistValue()).toBe('5 Sol Ring\n');
   });
 
+  it('adds a copy to a line of the card the server has not resolved yet', async () => {
+    vi.mocked(api.resolveDecklistText).mockImplementation(() => new Promise(() => {}));
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const found = await searchToAdd(user, 'Mazzo', 'sol ring');
+
+    await user.click(await within(found).findByRole('option', { name: /Sol Ring/ }));
+
+    expect(decklistValue()).toBe('5 Sol Ring\n');
+  });
+
+  it('adds a copy to an ambiguous line written with the name of the card, picking that card', async () => {
+    const otherIsland = catalogEntry('island-other', 'Island', 'oth');
+    Object.entries(inMemoryServer([...CATALOG, otherIsland])).forEach(([call, answer]) => {
+      vi.mocked(api[call as keyof typeof api]).mockImplementation(answer as never);
+    });
+    const user = await mountPageAndWrite('1 Island{Enter}');
+    expect(await screen.findByText('Quale carta intendevi?')).toBeTruthy();
+    const found = await searchToAdd(user, 'Mazzo', 'island');
+
+    const [firstIsland] = await within(found).findAllByRole('option', { name: /Island/ });
+    if (!firstIsland) throw new Error('no Island found');
+    await user.click(firstIsland);
+
+    expect(decklistValue()).toBe('2 Island\n');
+    expect(screen.getByRole('button', { name: 'Modifica Island' })).toBeTruthy();
+    expect(screen.queryByText('Quale carta intendevi?')).toBeNull();
+  });
+
   it('is used from the keyboard: the arrows go through the cards found, Enter adds one', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     const found = await searchToAdd(user, 'Mazzo', 'lightn');

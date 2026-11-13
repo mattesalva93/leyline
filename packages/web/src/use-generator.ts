@@ -365,7 +365,8 @@ export function useGenerator(): Generator {
   /**
    * Writes the added card into the decklist text, every other line with its choices. The line
    * it lands on keeps a resolution the server need not be asked for, and so do the lines the
-   * addition writes besides it (a section header), which name no card.
+   * addition writes besides it (a section header), which name no card. A copy added to an
+   * ambiguous line picks the card for it; one added to a line not resolved yet asks the server.
    */
   function addCard(section: DecklistSection, candidate: Candidate) {
     const linesInText = cardLines.flatMap(({ writtenIndex, line }) =>
@@ -377,7 +378,7 @@ export function useGenerator(): Generator {
       linesInText,
     );
     const nextWrittenLines = writtenLinesOf(addition.text);
-    const choices = choicesOfEveryLine();
+    let choices = choicesOfEveryLine();
     addition.previousWrittenIndexes.forEach((previousIndex, nextIndex) => {
       if (previousIndex === null && nextIndex !== addition.writtenIndex) {
         keepResolution(nextWrittenLines[nextIndex] ?? '', null);
@@ -386,8 +387,14 @@ export function useGenerator(): Generator {
     if (addition.added === 'line') {
       keepResolution(addition.line.text, addition.line);
     } else {
-      const resolution = resolutionAt(addition.writtenIndex);
-      if (resolution) keepResolutionOfRewrittenLine(resolution, addition.quantity);
+      const { writtenIndex, quantity } = addition;
+      const resolution = resolutionAt(writtenIndex);
+      if (resolution) keepResolutionOfRewrittenLine(resolution, quantity);
+      else void resolveInLanguage([nextWrittenLines[writtenIndex] ?? ''], defaultLang);
+      if (resolution?.status === 'ambiguous') {
+        const oracleId = candidate.card.oracleId;
+        choices = choices.with(writtenIndex, { ...choices[writtenIndex], oracleId });
+      }
     }
     writeRewrittenLines(
       nextWrittenLines,

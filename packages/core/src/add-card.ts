@@ -1,6 +1,7 @@
 import { sectionOfEachWrittenLine } from './decklist-section.ts';
 import { writtenLinesOf } from './decklist-text.ts';
-import { resolvedLine, setLineQuantity } from './decklist.ts';
+import { parseLine, resolvedLine, writtenWithQuantity } from './decklist.ts';
+import { cardKeys, nameKey } from './name-match.ts';
 import { moveWrittenLine, type LineMove } from './move-written-line.ts';
 import type { Candidate, DecklistLine, DecklistSection, Lang, ResolvedLine } from './types.ts';
 
@@ -12,7 +13,7 @@ export interface CardToAdd {
   readonly lang: Lang;
 }
 
-/** A line of the decklist text the server resolved, with where it is written. */
+/** A line of the decklist text the server answered for, with where it is written. */
 export interface LineInText {
   readonly writtenIndex: number;
   readonly line: DecklistLine;
@@ -29,7 +30,10 @@ export type CardAddition = LineMove & {
         readonly line: ResolvedLine;
       }
     | {
-        /** The card came in as one more copy on the section's line of it, now of `quantity`. */
+        /**
+         * The card came in as one more copy on the section's line of it, now of `quantity`: a
+         * line resolved to the card, or one not resolved to any card yet that bears its name.
+         */
         readonly added: 'copy';
         readonly quantity: number;
       }
@@ -47,21 +51,34 @@ export function addCardToSection(
 ): CardAddition {
   const writtenLines = writtenLinesOf(text);
   const sections = sectionOfEachWrittenLine(writtenLines);
-  const existing = linesInText.findLast(
-    ({ writtenIndex, line }) =>
-      sections[writtenIndex] === section &&
-      line.status === 'resolved' &&
-      line.card.oracleId === candidate.card.oracleId,
+  const cardNames = cardKeys(
+    candidate.card.name,
+    candidate.defaultPrint ? [candidate.defaultPrint.printedName] : [],
   );
-  if (existing) {
-    const quantity = existing.line.quantity + 1;
+  /** The quantity of the line written at `writtenIndex` when it is a line of the card. */
+  function quantityOfCardAt(writtenIndex: number): number | null {
+    const parsed = parseLine(writtenLines[writtenIndex] ?? '');
+    const line = linesInText.find((inText) => inText.writtenIndex === writtenIndex)?.line;
+    if (!parsed || sections[writtenIndex] !== section) return null;
+    // A line resolved to another card is not this card's, whatever it is written as.
+    const isTheCard =
+      line?.status === 'resolved'
+        ? line.card.oracleId === candidate.card.oracleId
+        : cardNames.includes(nameKey(parsed.name));
+    return isTheCard ? parsed.quantity : null;
+  }
+  const quantities = writtenLines.map((_writtenLine, index) => quantityOfCardAt(index));
+  const existingIndex = quantities.findLastIndex((quantity) => quantity !== null);
+  const existingQuantity = quantities[existingIndex];
+  if (existingQuantity != null) {
+    const quantity = existingQuantity + 1;
     return {
       added: 'copy',
       text: writtenLines
-        .with(existing.writtenIndex, setLineQuantity(existing.line, quantity).text)
+        .with(existingIndex, writtenWithQuantity(writtenLines[existingIndex] ?? '', quantity))
         .join('\n'),
       previousWrittenIndexes: writtenLines.map((_writtenLine, index) => index),
-      writtenIndex: existing.writtenIndex,
+      writtenIndex: existingIndex,
       quantity,
     };
   }

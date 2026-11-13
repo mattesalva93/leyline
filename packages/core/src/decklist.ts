@@ -32,7 +32,7 @@ interface PrintRef {
   readonly collectorNumber: string;
 }
 
-interface ParsedLine {
+export interface ParsedLine {
   readonly text: string;
   readonly quantity: number;
   readonly name: string;
@@ -52,7 +52,7 @@ function isIgnored(trimmed: string): boolean {
  * The card a line asks for, or `null` for blank lines, comments and section headers. The
  * sideboard prefix marks a card: a header is a line of its own, so a prefixed one is a card name.
  */
-function parseLine(text: string): ParsedLine | null {
+export function parseLine(text: string): ParsedLine | null {
   const written = text.trim();
   const trimmed = written.replace(SIDEBOARD_PREFIX, '');
   if (isIgnored(written) || trimmed === '') return null;
@@ -223,9 +223,14 @@ export function setLineQuantity(line: DecklistLine, quantity: number): DecklistL
   if (!Number.isInteger(quantity) || quantity < 1) {
     throw new Error(`A line prints a whole number of copies, at least one: got ${quantity}`);
   }
+  return { ...line, quantity, text: writtenWithQuantity(line.text, quantity) };
+}
+
+/** The written line rewritten for `quantity` copies, as the user would write it. */
+export function writtenWithQuantity(writtenLine: string, quantity: number): string {
   const [, beforeQuantity = '', , timesMark = '', rest = ''] =
-    WRITTEN_QUANTITY.exec(line.text) ?? [];
-  return { ...line, quantity, text: `${beforeQuantity}${quantity}${timesMark} ${rest}` };
+    WRITTEN_QUANTITY.exec(writtenLine) ?? [];
+  return `${beforeQuantity}${quantity}${timesMark} ${rest}`;
 }
 
 /** How many copies `lines` ask for in all, printable or not. */

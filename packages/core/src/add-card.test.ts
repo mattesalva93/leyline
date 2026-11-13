@@ -68,6 +68,45 @@ describe('addCardToSection', () => {
     expect(addition).toMatchObject({ added: 'copy', writtenIndex: 1, quantity: 2 });
   });
 
+  it('adds a copy to a line the server has not resolved yet, when it names the card', () => {
+    const addition = addCardToSection(
+      '1 sol ring\n4 Forest',
+      { section: 'mainDeck', candidate: SOL_RING, lang: 'en' },
+      [],
+    );
+
+    expect(addition.text).toBe('2 sol ring\n4 Forest');
+    expect(addition).toMatchObject({ added: 'copy', writtenIndex: 0, quantity: 2 });
+  });
+
+  it("adds a copy to an ambiguous line written with one of the card's names", () => {
+    const ambiguous = {
+      text: '3 Sol Ring',
+      quantity: 3,
+      lang: 'en' as const,
+      status: 'ambiguous' as const,
+      candidates: [SOL_RING, { ...SOL_RING, card: aCard({ oracleId: 'sol-ring-art' }) }],
+    };
+
+    const addition = addCardToSection(
+      '3 Sol Ring',
+      { section: 'mainDeck', candidate: SOL_RING, lang: 'en' },
+      [{ writtenIndex: 0, line: ambiguous }],
+    );
+
+    expect(addition).toMatchObject({ added: 'copy', text: '4 Sol Ring', quantity: 4 });
+  });
+
+  it("writes a line of its own beside an unresolved line that only comes close to the card's name", () => {
+    const addition = addCardToSection(
+      '1 Sol Rin',
+      { section: 'mainDeck', candidate: SOL_RING, lang: 'en' },
+      [],
+    );
+
+    expect(addition.text).toBe('1 Sol Rin\n1 Sol Ring');
+  });
+
   it('writes a new line when only another section has the card', async () => {
     const addition = await add('1 Sol Ring\n\nSideboard\n2 Forest', 'sideboard');
 
