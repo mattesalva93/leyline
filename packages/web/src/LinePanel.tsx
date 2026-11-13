@@ -44,7 +44,7 @@ export function LinePanel({
   const panelRef = useRef<HTMLDivElement>(null);
   const [openingQuantity] = useState(line.quantity);
   const printCounts = usePrintCounts(line.card.oracleId);
-  const pickerView = usePrintPickerView(tilePrint, line.lang, printCounts);
+  const pickerView = usePrintPickerView(tilePrint, line, printCounts);
   const printPages = usePrintPages(line.card.oracleId, pickerView.printsLang, () => {
     const panel = panelRef.current;
     const gridWidth = panel ? contentWidthOf(panel) : window.innerWidth;

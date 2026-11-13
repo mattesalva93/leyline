@@ -1048,6 +1048,22 @@ describe("the print picker opened on the tile's print", () => {
     ).toBeTruthy();
   });
 
+  it("keeps the picker's language when a minus empties the selected tile's print and the selection moves on", async () => {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+    await user.click(await within(inspector()).findByRole('radio', { name: 'Inglese (1)' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con C21 #1' }));
+    await user.click(tileAt(1).getByRole('button', { name: 'Modifica Brainstorm' }));
+    await waitFor(() => expect(document.activeElement).toBe(printButton('C21 #1')));
+
+    await user.click(screen.getByRole('button', { name: 'Una copia in meno con C21 #1' }));
+
+    expect(gridTiles()).toHaveLength(1);
+    expect(
+      within(inspector()).getByRole('radio', { name: 'Inglese (1)', checked: true }),
+    ).toBeTruthy();
+  });
+
   it("opens on the tile's print on a phone too, in the panel risen from the bottom", async () => {
     stubScreen(PHONE);
     const user = await mountPageAndWrite('4 Brainstorm{Enter}');

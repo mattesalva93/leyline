@@ -1,4 +1,11 @@
-import { langWithPrints, type Lang, type Print, type PrintCountsByLang } from '@mtg-suite/core';
+import {
+  copiesByPrint,
+  langWithPrints,
+  type Lang,
+  type Print,
+  type PrintCountsByLang,
+  type ResolvedLine,
+} from '@mtg-suite/core';
 import { useCallback, useState } from 'react';
 
 /** Where the print picker stands, and how the user moves it. */
@@ -15,24 +22,31 @@ export interface PrintPickerView {
 
 /**
  * The print picker opened on `tilePrint`, the print of the tile the user picked: its language,
- * with that print to bring into view; again each time the user picks another tile. With no such
- * print it opens on `fallbackLang`. A language the card has no printable print in gives way to
+ * with that print to bring into view; again each time the user picks another tile of `line`.
+ * A tile that took the selection because the selected one lost its last copy moves nothing: the
+ * user is still at work where they were. With no tile print it opens on the line's language. A
+ * language the card has no printable print in gives way to
  * one it has, once `printCounts` tell.
  */
 export function usePrintPickerView(
   tilePrint: Print | null,
-  fallbackLang: Lang,
+  line: ResolvedLine,
   printCounts: PrintCountsByLang | null,
 ): PrintPickerView {
-  const tileLang = tilePrint?.lang ?? fallbackLang;
+  const tileLang = tilePrint?.lang ?? line.lang;
   const tilePrintId = tilePrint?.id ?? null;
   const [printsLang, setPrintsLang] = useState(tileLang);
   const [printToShow, setPrintToShow] = useState(tilePrintId);
   const [lastTilePrint, setLastTilePrint] = useState({ lang: tileLang, printId: tilePrintId });
   if (lastTilePrint.lang !== tileLang || lastTilePrint.printId !== tilePrintId) {
     setLastTilePrint({ lang: tileLang, printId: tilePrintId });
-    setPrintsLang(tileLang);
-    setPrintToShow(tilePrintId);
+    const lastPrintId = lastTilePrint.printId;
+    const lastTileKeepsCopies =
+      lastPrintId === null || copiesByPrint(line).some(({ print }) => print.id === lastPrintId);
+    if (lastTileKeepsCopies) {
+      setPrintsLang(tileLang);
+      setPrintToShow(tilePrintId);
+    }
   }
   const changePrintsLang = useCallback((lang: Lang) => {
     setPrintsLang(lang);
