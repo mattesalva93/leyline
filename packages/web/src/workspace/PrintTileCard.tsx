@@ -6,6 +6,7 @@ import type { ZoomOn } from '../use-zoomed-card.tsx';
 import type { PrintGridTile } from './grid-tiles.ts';
 import { CARD_SHAPE } from '../card-shape.ts';
 import { COPY_PILE_MAX_DEPTH_PX, CopyPile, copyPileEdgeCount } from './CopyPile.tsx';
+import { siblingColourStyle } from './sibling-group-colours.ts';
 
 /** The space between two tiles in a row, which the link between siblings spans, in CSS px. */
 export const TILE_GAP_PX = 22;
@@ -13,7 +14,7 @@ export const TILE_GAP_PX = 22;
 /** The height of the tab above a tile's card, which an imageless tile leaves empty, in CSS px. */
 export const TILE_TAB_HEIGHT_PX = 28;
 
-const LINK_BRIDGE = 'absolute top-1/2 z-10 h-3 -translate-y-1/2 bg-link';
+const LINK_BRIDGE = 'absolute top-1/2 z-10 h-3 -translate-y-1/2 bg-(--sibling-colour)';
 
 /** The space between the deepest pile and the line under the card, in CSS px. */
 const GAP_UNDER_PILE_PX = 4;
@@ -22,19 +23,21 @@ const BELOW_CARD_PX = COPY_PILE_MAX_DEPTH_PX + GAP_UNDER_PILE_PX;
 
 /**
  * The card's shadow, all of it outside the image (ADR 0007): the ring of the selected tile or of
- * a tile with siblings, then the hard shadow of the board, which a pile under the card stands in for.
+ * a tile with siblings, in its group's colour, then the hard shadow of the board, which a pile under the card stands in for.
  */
 function cardShadow(hasSiblings: boolean, isSelected: boolean, hasPile: boolean): string {
   const ring = isSelected
     ? ['0 0 0 4px var(--color-accent)']
     : hasSiblings
-      ? ['0 0 0 3px var(--color-link)']
+      ? ['0 0 0 3px var(--sibling-colour)']
       : [];
   return [...ring, ...(hasPile ? [] : ['4px 4px 0 var(--color-border)'])].join(', ') || 'none';
 }
 
 interface PrintTileCardProps {
   readonly gridTile: PrintGridTile;
+  /** The colour of the tile's sibling group: `undefined` for a tile without siblings. */
+  readonly siblingColour: string | undefined;
   readonly isSelected: boolean;
   /** Whether the tile shows the back face of its double-faced card. */
   readonly isFlipped: boolean;
@@ -55,12 +58,13 @@ const QUANTITY_BUTTON =
  * One `PrintTile` in the card grid: the quantity, with a minus and a plus, on a tab above the
  * card, beside a flip button if its print is double-faced and the mark of its print's warning if it
  * has one, the card on its pile, and under it
- * its set and, among siblings, which of them it is. Siblings are linked by a bridge across the gap
+ * its set and, among siblings, which of them it is. Siblings share their group's colour and are linked by a bridge across the gap
  * to the next one, and by a joint on the row's edge when the next one wraps. Its buttons are for
  * the pointer: Tab stops on the tile, whose keys stand in for them.
  */
 export function PrintTileCard({
   gridTile,
+  siblingColour,
   isSelected,
   isFlipped,
   onFlip,
@@ -71,16 +75,19 @@ export function PrintTileCard({
 }: PrintTileCardProps) {
   const { t } = useTranslation();
   const { line, tile, siblingIndex, siblingCount } = gridTile;
-  const hasSiblings = siblingCount > 1;
+  const hasSiblings = siblingColour !== undefined;
   const isLastSibling = siblingIndex === siblingCount - 1;
   const [frontFace, backFace] = tile.print.faces;
   const shownFace = (isFlipped && backFace) || frontFace;
   const warningLabel = tile.warning && t(`tile.printWarning.${tile.warning}`);
-  const tabColour = hasSiblings ? 'bg-link' : 'bg-foreground';
+  const tabColour = hasSiblings ? 'bg-(--sibling-colour)' : 'bg-foreground';
   const hasPile = copyPileEdgeCount(tile.quantity) > 0;
   const quantityLabel = { name: line.card.name, print: setAndNumberOf(tile.print, t) };
   return (
-    <div className="relative">
+    <div
+      className="relative"
+      style={siblingColour === undefined ? undefined : siblingColourStyle(siblingColour)}
+    >
       <div className="flex items-end pl-2" style={{ height: TILE_TAB_HEIGHT_PX }}>
         <div className={`flex items-center rounded-t-md ${tabColour}`}>
           <button
@@ -175,7 +182,7 @@ export function PrintTileCard({
       >
         <span className="truncate">{setAndNumberOf(tile.print, t)}</span>
         {hasSiblings && (
-          <span className="font-bold text-link">
+          <span className="font-bold text-(--sibling-colour)">
             {t('tile.siblingMark', { index: siblingIndex + 1, count: siblingCount })}
           </span>
         )}
