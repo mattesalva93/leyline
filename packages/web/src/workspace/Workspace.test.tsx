@@ -357,6 +357,53 @@ describe('the workspace', () => {
     expect(screen.getByRole('complementary', { name: 'Riepilogo' })).toBeTruthy();
   });
 
+  it('lets go of the selected tile on a click on the empty space of the grid, back to the summary', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+    expect(screen.getByRole('complementary', { name: 'Riga selezionata' })).toBeTruthy();
+
+    await user.click(cardGrid());
+
+    expect(screen.getByRole('complementary', { name: 'Riepilogo' })).toBeTruthy();
+    const tileButton = screen.getByRole('button', { name: 'Modifica Sol Ring' });
+    expect(tileButton.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('moves the selection to another tile clicked while one is selected', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+
+    await user.click(screen.getByRole('button', { name: 'Modifica Lightning Bolt' }));
+
+    const solRing = screen.getByRole('button', { name: 'Modifica Sol Ring' });
+    const bolt = screen.getByRole('button', { name: 'Modifica Lightning Bolt' });
+    expect(solRing.getAttribute('aria-pressed')).toBe('false');
+    expect(bolt.getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('complementary', { name: 'Riga selezionata' })).toBeTruthy();
+  });
+
+  it("keeps the selection through a tile's plus and minus", async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+
+    await user.click(tileAt(0).getByRole('button', { name: /^Una copia in più/ }));
+    await user.click(tileAt(0).getByRole('button', { name: /^Una copia in meno/ }));
+
+    const tileButton = screen.getByRole('button', { name: 'Modifica Sol Ring' });
+    expect(tileButton.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('keeps the selection on a click in the inspector, the decklist text or the toolbar', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+
+    await user.click(screen.getByRole('complementary', { name: 'Riga selezionata' }));
+    await user.click(screen.getByLabelText('Decklist'));
+    await user.click(screen.getByRole('slider'));
+
+    expect(screen.getByRole('complementary', { name: 'Riga selezionata' })).toBeTruthy();
+  });
+
   it('keeps the selection on its line when every copy leaves the selected print', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
