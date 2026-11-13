@@ -1,14 +1,20 @@
 import type { LineSide } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
 import { GRID_CELL_FOCUS_RING } from '../ui/board-styles.ts';
+import { COPY_PILE_FOOTPRINT_PX } from './CopyPile.tsx';
 import { TILE_GAP_PX, TILE_TAB_HEIGHT_PX } from './PrintTileCard.tsx';
 import type { TileCellProps } from './tile-cell.ts';
 import type { TileDragHandlers } from './use-line-drag.ts';
 
 /** How wide the bar showing where a dragged line lands is, in CSS px. */
 const DROP_MARK_WIDTH_PX = 4;
-/** The bar stands in the middle of the gap between two tiles. */
-const DROP_MARK_OFFSET_PX = -(TILE_GAP_PX + DROP_MARK_WIDTH_PX) / 2;
+/** The space between two cards: the gap between tiles and the pile's room right of the left one. */
+const SPACE_BETWEEN_CARDS_PX = TILE_GAP_PX + COPY_PILE_FOOTPRINT_PX;
+/** The bar stands in the middle of the space between two cards, before or after this tile's card. */
+const DROP_MARK_OFFSET_PX = {
+  before: -(SPACE_BETWEEN_CARDS_PX + DROP_MARK_WIDTH_PX) / 2,
+  after: COPY_PILE_FOOTPRINT_PX - (SPACE_BETWEEN_CARDS_PX + DROP_MARK_WIDTH_PX) / 2,
+};
 
 interface ReorderableTileItemProps {
   readonly cell: TileCellProps;
@@ -53,7 +59,7 @@ export function ReorderableTileItem({
             // Beside the card, below its tab.
             top: TILE_TAB_HEIGHT_PX,
             width: DROP_MARK_WIDTH_PX,
-            [dropMarkSide === 'before' ? 'left' : 'right']: DROP_MARK_OFFSET_PX,
+            [dropMarkSide === 'before' ? 'left' : 'right']: DROP_MARK_OFFSET_PX[dropMarkSide],
           }}
         />
       )}

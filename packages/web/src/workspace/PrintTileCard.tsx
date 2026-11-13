@@ -5,7 +5,7 @@ import { Icon } from '../ui/Icon.tsx';
 import type { ZoomOn } from '../use-zoomed-card.tsx';
 import type { PrintGridTile } from './grid-tiles.ts';
 import { CARD_SHAPE } from '../card-shape.ts';
-import { COPY_PILE_MAX_DEPTH_PX, CopyPile, copyPileEdgeCount } from './CopyPile.tsx';
+import { COPY_PILE_FOOTPRINT_PX, CopyPile } from './CopyPile.tsx';
 import { siblingColourStyle } from './sibling-group-colours.ts';
 
 /** The space between two tiles in a row, which the link between siblings spans, in CSS px. */
@@ -19,19 +19,20 @@ const LINK_BRIDGE = 'absolute top-1/2 z-10 h-3 -translate-y-1/2 bg-(--sibling-co
 /** The space between the deepest pile and the line under the card, in CSS px. */
 const GAP_UNDER_PILE_PX = 4;
 /** The space between a tile's card and the line under it, the same with a pile or without. */
-const BELOW_CARD_PX = COPY_PILE_MAX_DEPTH_PX + GAP_UNDER_PILE_PX;
+const BELOW_CARD_PX = COPY_PILE_FOOTPRINT_PX + GAP_UNDER_PILE_PX;
+
+/** The colour of the ring of the selected tile or of a tile with siblings; none for the others. */
+function ringColourOf(hasSiblings: boolean, isSelected: boolean): string | undefined {
+  if (isSelected) return 'var(--color-accent)';
+  return hasSiblings ? 'var(--sibling-colour)' : undefined;
+}
 
 /**
- * The card's shadow, all of it outside the image (ADR 0007): the ring of the selected tile or of
- * a tile with siblings, in its group's colour, then the hard shadow of the board, which a pile under the card stands in for.
+ * The card's outline, all of it outside the image (ADR 0007): its ring when it has one, else a
+ * thread of the background that keeps its border apart from the pile's.
  */
-function cardShadow(hasSiblings: boolean, isSelected: boolean, hasPile: boolean): string {
-  const ring = isSelected
-    ? ['0 0 0 4px var(--color-accent)']
-    : hasSiblings
-      ? ['0 0 0 3px var(--sibling-colour)']
-      : [];
-  return [...ring, ...(hasPile ? [] : ['4px 4px 0 var(--color-border)'])].join(', ') || 'none';
+function cardOutline(ringColour: string | undefined): string {
+  return ringColour ? `0 0 0 2px ${ringColour}` : '0 0 0 1px var(--color-pile-thread)';
 }
 
 interface PrintTileCardProps {
@@ -81,12 +82,15 @@ export function PrintTileCard({
   const shownFace = (isFlipped && backFace) || frontFace;
   const warningLabel = tile.warning && t(`tile.printWarning.${tile.warning}`);
   const tabColour = hasSiblings ? 'bg-(--sibling-colour)' : 'bg-foreground';
-  const hasPile = copyPileEdgeCount(tile.quantity) > 0;
+  const ringColour = ringColourOf(hasSiblings, isSelected);
   const quantityLabel = { name: line.card.name, print: setAndNumberOf(tile.print, t) };
   return (
     <div
       className="relative"
-      style={siblingColour === undefined ? undefined : siblingColourStyle(siblingColour)}
+      style={{
+        paddingRight: COPY_PILE_FOOTPRINT_PX,
+        ...(siblingColour === undefined ? undefined : siblingColourStyle(siblingColour)),
+      }}
     >
       <div className="flex items-end pl-2" style={{ height: TILE_TAB_HEIGHT_PX }}>
         <div className={`flex items-center rounded-t-md ${tabColour}`}>
@@ -137,14 +141,18 @@ export function PrintTileCard({
         )}
       </div>
       <div className="relative">
-        <CopyPile copies={tile.quantity} />
+        <CopyPile
+          copies={tile.quantity}
+          imageUrl={shownFace?.imageUris.normal}
+          ringColour={ringColour}
+        />
         <button
           type="button"
           tabIndex={-1}
           aria-label={t('tile.open', { name: line.card.name })}
           aria-pressed={isSelected}
           className="relative z-10 block w-full bg-raised focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-accent"
-          style={{ ...CARD_SHAPE, boxShadow: cardShadow(hasSiblings, isSelected, hasPile) }}
+          style={{ ...CARD_SHAPE, boxShadow: cardOutline(ringColour) }}
           onClick={onSelect}
           {...zoomOn(shownFace)}
         >
@@ -172,8 +180,12 @@ export function PrintTileCard({
       {hasSiblings && !isLastSibling && (
         <span
           aria-hidden="true"
-          className={`${LINK_BRIDGE} left-full`}
-          style={{ width: TILE_GAP_PX }}
+          className={LINK_BRIDGE}
+          // From the card's edge, over the pile's room and the gap, to the next sibling.
+          style={{
+            left: `calc(100% - ${COPY_PILE_FOOTPRINT_PX}px)`,
+            width: COPY_PILE_FOOTPRINT_PX + TILE_GAP_PX,
+          }}
         />
       )}
       <p
