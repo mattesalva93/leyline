@@ -25,6 +25,11 @@
   --color-warning: #9a4a00;
   --color-danger: #b42318;
   --color-link: #c2185b;
+  /* The sibling palette: a colour per sibling group, so the eye sees where one group ends and the next starts. */
+  --color-sibling-1: #c2185b;
+  --color-sibling-2: #1d5fbf;
+  --color-sibling-3: #0b6a63;
+  --color-sibling-4: #7b3fc4;
   --color-dot: #1b1a1733;
   --color-overlay: #00000080;
   --color-shadow: #00000026;
@@ -52,6 +57,10 @@
     --color-warning: #fbbf24;
     --color-danger: #fca5a5;
     --color-link: #ff7eb6;
+    --color-sibling-1: #ff7eb6;
+    --color-sibling-2: #7fb2ff;
+    --color-sibling-3: #4fd1c5;
+    --color-sibling-4: #c9a3ff;
     --color-dot: #f1efe826;
     --color-shadow: #00000099;
     --color-edge-tab-top: color-mix(in oklab, var(--color-panel) 70%, var(--color-border));

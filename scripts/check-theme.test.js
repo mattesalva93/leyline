@@ -8,17 +8,34 @@ const script = join(import.meta.dirname, 'check-theme.js');
 const repoRoot = join(import.meta.dirname, '..');
 const appTheme = readFileSync(join(repoRoot, 'packages/web/src/theme.css'), 'utf8');
 const appPage = readFileSync(join(repoRoot, 'packages/web/index.html'), 'utf8');
+const appPalette = readFileSync(
+  join(repoRoot, 'packages/web/src/workspace/sibling-group-colours.ts'),
+  'utf8',
+);
 
 let dir;
 
-/** Runs the check on a theme and a page; resolves to its exit code and stderr. */
-function check({ theme = appTheme, page = appPage } = {}) {
+/**
+ * Runs the check on a theme, a page and the card grid's sibling palette, `paletteSize` colours
+ * long if given; resolves to its exit code and stderr.
+ */
+function check({ theme = appTheme, page = appPage, paletteSize } = {}) {
   const themePath = join(dir, 'theme.css');
   const pagePath = join(dir, 'index.html');
+  const palettePath = join(dir, 'sibling-group-colours.ts');
   writeFileSync(themePath, theme);
   writeFileSync(pagePath, page);
+  writeFileSync(
+    palettePath,
+    paletteSize === undefined
+      ? appPalette
+      : appPalette.replace(/SIBLING_PALETTE_SIZE = \d+/, `SIBLING_PALETTE_SIZE = ${paletteSize}`),
+  );
   try {
-    execFileSync('node', [script, themePath, pagePath], { encoding: 'utf8', stdio: 'pipe' });
+    execFileSync('node', [script, themePath, pagePath, palettePath], {
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
     return { code: 0, stderr: '' };
   } catch (error) {
     return { code: error.status, stderr: error.stderr };
@@ -63,6 +80,33 @@ describe('check-theme', () => {
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('dark theme: border on panel');
     expect(result.stderr).not.toContain('light theme');
+  });
+
+  it('rejects a sibling group colour under 4.5:1 on the board or under the quantity on its tab', () => {
+    const result = check({ theme: themeWith('dark', 'sibling-2', '#3a3a3a') });
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('dark theme: sibling-2 on background');
+    expect(result.stderr).toContain('dark theme: panel on sibling-2');
+  });
+
+  it('rejects a theme whose sibling tokens are not the palette the card grid cycles through', () => {
+    const theme = appTheme.replace(/\n\s*--color-sibling-4: #[0-9a-f]+;(?=[^]*\.dark \{)/, '');
+
+    const result = check({ theme, paletteSize: 5 });
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('light theme: no --color-sibling-4');
+    expect(result.stderr).toContain('light theme: no --color-sibling-5');
+    expect(result.stderr).toContain('dark theme: no --color-sibling-5');
+    expect(result.stderr).not.toContain('dark theme: no --color-sibling-4');
+  });
+
+  it('rejects a sibling token beyond the palette the card grid cycles through', () => {
+    const result = check({ paletteSize: 3 });
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('light theme: --color-sibling-4 is beyond the palette of 3');
   });
 
   it('rejects a font family the theme does not bundle from @fontsource', () => {

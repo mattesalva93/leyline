@@ -210,6 +210,12 @@ function tileSummary(tile: HTMLElement) {
   ];
 }
 
+/** The colour of the sibling group a tile belongs to, if it has siblings. */
+function siblingColourOf(tile: HTMLElement) {
+  const coloured = tile.querySelector<HTMLElement>('[style*="--sibling-colour"]');
+  return coloured?.style.getPropertyValue('--sibling-colour') || undefined;
+}
+
 describe('the workspace', () => {
   it('shows the decklist as tiles in the order of the text, each with its image and quantity', async () => {
     await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
@@ -232,6 +238,23 @@ describe('the workspace', () => {
       ['Immagine di Sol Ring', '1×', '2/2'],
       ['Immagine di Lightning Bolt', '1×', undefined],
     ]);
+  });
+
+  it('gives two consecutive groups of sibling tiles different colours, and a tile without siblings none', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}4 Lightning Bolt{Enter}1 Island{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+    await user.click(screen.getByRole('button', { name: 'Modifica Lightning Bolt' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con M10 #1' }));
+
+    const [solRing, otherSolRing, bolt, otherBolt, island] = gridTiles().map(siblingColourOf);
+
+    expect(solRing).toBeTruthy();
+    expect(otherSolRing).toBe(solRing);
+    expect(bolt).toBeTruthy();
+    expect(otherBolt).toBe(bolt);
+    expect(bolt).not.toBe(solRing);
+    expect(island).toBeUndefined();
   });
 
   it('shows each section under its title with its card count, in a fixed order, its tiles in the order of the text', async () => {
