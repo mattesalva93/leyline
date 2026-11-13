@@ -5,7 +5,13 @@ import { searchCardsByName } from '../api.ts';
 /** How long the user may pause between two keys before the search starts, in ms. */
 export const CARD_SEARCH_WAIT_MS = 250;
 
-/** Where a name search stands: nothing typed, on its way, answered, or failed. */
+/**
+ * How many characters a name needs before it is searched: fewer match too many cards for the
+ * trigram index to narrow them down (ADR 0003).
+ */
+export const MIN_CARD_SEARCH_LENGTH = 2;
+
+/** Where a name search stands: too little typed, on its way, answered, or failed. */
 export type CardSearchState =
   | { readonly status: 'idle' }
   | { readonly status: 'searching' }
@@ -27,7 +33,7 @@ export function useCardSearch(query: string, lang: Lang): CardSearchState {
   const searchKey = `${lang}:${trimmed}`;
   const [answer, setAnswer] = useState<Answer | null>(null);
   useEffect(() => {
-    if (trimmed === '') return;
+    if (trimmed.length < MIN_CARD_SEARCH_LENGTH) return;
     let isCurrent = true;
     const timer = setTimeout(() => {
       searchCardsByName(trimmed, lang).then(
@@ -40,6 +46,6 @@ export function useCardSearch(query: string, lang: Lang): CardSearchState {
       clearTimeout(timer);
     };
   }, [trimmed, lang, searchKey]);
-  if (trimmed === '') return { status: 'idle' };
+  if (trimmed.length < MIN_CARD_SEARCH_LENGTH) return { status: 'idle' };
   return answer?.searchKey === searchKey ? answer.state : { status: 'searching' };
 }

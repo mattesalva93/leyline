@@ -41,7 +41,7 @@ export function AddCardTile({ section, lang, onAdd }: AddCardTileProps) {
           {t('workspace.addCard.tile')}
         </DialogTrigger>
       </div>
-      <CenteredDialogContent className="flex flex-col gap-3">
+      <CenteredDialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-3 overflow-y-auto">
         <DialogTitle className="font-semibold">
           {t('workspace.addCard.title', { section: sectionName })}
         </DialogTitle>

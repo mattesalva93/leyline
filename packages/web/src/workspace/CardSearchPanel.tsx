@@ -1,6 +1,7 @@
 import type { Candidate, Lang } from '@mtg-suite/core';
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CARD_SHAPE } from '../card-shape.ts';
 import { SMALL_IMAGE } from '../scryfall-image-sizes.ts';
 import { FIELD } from '../ui/board-styles.ts';
 import { useCardSearch } from './use-card-search.ts';
@@ -22,8 +23,16 @@ export function CardSearchPanel({ lang, onPick }: CardSearchPanelProps) {
   const search = useCardSearch(query, lang);
   const cards = search.status === 'found' ? search.cards : [];
   const optionId = (index: number) => `${listId}-${index}`;
+  const activeOptionId = activeIndex >= 0 ? optionId(activeIndex) : undefined;
+  // The list scrolls when the cards found outgrow it: the arrows must not pick an unseen one.
+  useEffect(() => {
+    if (activeOptionId)
+      document.getElementById(activeOptionId)?.scrollIntoView({ block: 'nearest' });
+  }, [activeOptionId]);
 
   function onKeyDown(event: React.KeyboardEvent) {
+    // A key that composes a character (an IME, a dead key) is the user still typing.
+    if (event.nativeEvent.isComposing) return;
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
       const step = event.key === 'ArrowDown' ? 1 : -1;
@@ -44,7 +53,7 @@ export function CardSearchPanel({ lang, onPick }: CardSearchPanelProps) {
         aria-expanded={cards.length > 0}
         aria-controls={listId}
         aria-autocomplete="list"
-        aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
+        aria-activedescendant={activeOptionId}
         placeholder={t('workspace.addCard.namePlaceholder')}
         autoComplete="off"
         className={FIELD}
@@ -91,7 +100,7 @@ export function CardSearchPanel({ lang, onPick }: CardSearchPanelProps) {
                   className="h-auto w-12 rounded-sm"
                 />
               ) : (
-                <span className="h-17 w-12 rounded-sm border-2 border-dashed border-border" />
+                <span style={CARD_SHAPE} className="w-12 border-2 border-dashed border-border" />
               )}
               <span className="flex flex-col">
                 <span className="font-semibold">{card.name}</span>

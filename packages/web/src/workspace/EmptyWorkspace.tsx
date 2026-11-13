@@ -10,8 +10,7 @@ import { EXAMPLE_DECKLIST } from './example-decklist.ts';
 /**
  * The workspace while no line of the decklist is recognised: what to do, the decklist text, the
  * language of the cards, a tile to add a card by name and a way to try the generator on an
- * example, at the centre in place of
- * every other zone.
+ * example, at the centre in place of every other zone.
  */
 export function EmptyWorkspace({ generator }: { readonly generator: Generator }) {
   const { t } = useTranslation();
