@@ -1767,3 +1767,46 @@ describe('the decklist saved on the device', () => {
     expect(decklistValue()).toBe('');
   });
 });
+
+describe('a new decklist', () => {
+  it('empties the workspace once the user confirms, and stays empty after a reload', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+    await user.selectOptions(screen.getByLabelText('Formato della pagina'), 'Letter (USA)');
+
+    await user.click(screen.getByRole('button', { name: 'Nuova decklist' }));
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Iniziare una nuova decklist?' })).getByRole(
+        'button',
+        { name: 'Svuota' },
+      ),
+    );
+
+    expect(decklistValue()).toBe('');
+    expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
+    cleanup();
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+    expect(screen.getByLabelText<HTMLSelectElement>('Formato della pagina').value).toBe('A4');
+  });
+
+  it('keeps the decklist when the user changes their mind', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    await user.click(screen.getByRole('button', { name: 'Nuova decklist' }));
+    await user.click(screen.getByRole('button', { name: 'Annulla' }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(decklistValue()).toBe('4 Sol Ring\n');
+    expect(screen.getByRole('button', { name: 'Modifica Sol Ring' })).toBeTruthy();
+  });
+
+  it('is not offered while there is nothing to empty', () => {
+    mountApp('/proxy');
+
+    expect(screen.queryByRole('button', { name: 'Nuova decklist' })).toBeNull();
+  });
+});

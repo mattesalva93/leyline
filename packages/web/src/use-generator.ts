@@ -92,6 +92,8 @@ export interface Generator {
    * line of its own at the end of the section, already resolved.
    */
   readonly addCard: (section: DecklistSection, candidate: Candidate) => void;
+  /** Empties the decklist text, its line choices and the sheet options, on the device too. */
+  readonly startNewDecklist: () => void;
 
   readonly sheetOptions: SheetOptions;
   readonly changeSheetOptions: (options: SheetOptions) => void;
@@ -390,6 +392,13 @@ export function useGenerator(): Generator {
     );
   }
 
+  function startNewDecklist() {
+    setPendingSplit(null);
+    setChoicesByLine(new Map());
+    setSheetOptions(defaultSheetOptions);
+    setDecklistText('');
+  }
+
   useEffect(() => {
     if (!isSavedDecklistUnresolved) return;
     setIsSavedDecklistUnresolved(false);
@@ -454,6 +463,7 @@ export function useGenerator(): Generator {
       updateChoicesAt(writtenIndex, { allocations }),
     moveLine,
     addCard,
+    startNewDecklist,
     sheetOptions,
     changeSheetOptions: setSheetOptions,
     sheetLayout,
