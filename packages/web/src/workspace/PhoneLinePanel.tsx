@@ -3,20 +3,21 @@ import { useTranslation } from 'react-i18next';
 import { PRINT_PICKER_SCROLL_ROOT_PROPS } from '../PrintPicker.tsx';
 import { PRIMARY_BUTTON } from '../ui/board-styles.ts';
 import { BottomPanelContent, Dialog, DialogClose } from '../ui/Dialog.tsx';
-import { focusCurrentGridCell } from './use-grid-cell-focus.ts';
 
 /**
  * On a phone, the panel of the tapped tile's line, risen from the bottom over the grid: the
- * content the inspector shows on a wide screen. Closing it lets go of the tile, and gives the
- * focus back to it.
+ * content the inspector shows on a wide screen. Closing it lets go of the tile.
  */
 export function PhoneLinePanel({
   title,
   onClose,
+  onClosed,
   children,
 }: {
   readonly title: string;
   readonly onClose: () => void;
+  /** Once the panel has gone, to put the focus where it belongs: no button opened the panel. */
+  readonly onClosed: () => void;
   /** What the panel shows; `null` keeps it closed. */
   readonly children: ReactNode;
 }) {
@@ -29,7 +30,7 @@ export function PhoneLinePanel({
           ariaLabel={title}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
-            focusCurrentGridCell();
+            onClosed();
           }}
         >
           <div className="min-h-0 flex-1 overflow-y-auto p-4" {...PRINT_PICKER_SCROLL_ROOT_PROPS}>

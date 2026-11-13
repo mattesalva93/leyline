@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { InTopBar } from '../shell/top-bar-slot.tsx';
 import { BoardPanel } from '../ui/BoardPanel.tsx';
@@ -15,6 +16,7 @@ import { panelLineOf, SelectedLinePanel } from './SelectedLinePanel.tsx';
 import { SheetSettings } from './SheetSettings.tsx';
 import { SheetView } from './SheetView.tsx';
 import { TILE_WIDTH_PX } from './tile-width.ts';
+import { focusCurrentGridCell } from './use-grid-cell-focus.ts';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 
 const STEPS: readonly WorkspaceStep[] = ['list', 'cards', 'sheet', 'pdf'];
@@ -29,6 +31,8 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
   const { generator, step } = state;
   const panelLine = step === 'cards' ? panelLineOf(state.gridTiles, state.selection) : null;
   const lineToFix = step === 'cards' ? lineToFixOf(state.gridTiles, state.selection) : null;
+  // A panel opened by Enter on a tile gives the focus back to it; one opened by a tap leaves it be.
+  const isLinePanelOpenedByKeyboard = useRef(false);
   const showsEmptyWorkspace = step === 'list' && state.isEmpty;
   const showsDecklist = step === 'list' && !state.isEmpty;
   return (
@@ -62,7 +66,10 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
               state={state}
               tileWidthPx={TILE_WIDTH_PX.default}
               // The panel rises over the grid and takes the focus as it opens.
-              onOpenLinePanel={state.selectTile}
+              onOpenLinePanel={(selection) => {
+                isLinePanelOpenedByKeyboard.current = true;
+                state.selectTile(selection);
+              }}
             />
           </div>
         )}
@@ -101,6 +108,10 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
       <PhoneLinePanel
         title={t(panelLine ? 'workspace.inspector.line' : 'workspace.inspector.lineToFix')}
         onClose={() => state.selectTile(null)}
+        onClosed={() => {
+          if (isLinePanelOpenedByKeyboard.current) focusCurrentGridCell();
+          isLinePanelOpenedByKeyboard.current = false;
+        }}
       >
         {panelLine ? (
           <SelectedLinePanel generator={generator} panelLine={panelLine} />
