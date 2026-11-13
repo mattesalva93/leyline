@@ -29,6 +29,7 @@ export {
   type LineInText,
 } from './add-card.ts';
 export { printTiles, type PrintTile } from './print-tile.ts';
+export { cellAfterArrow, type Arrow, type CellGroup, type CellPlace } from './grid-moves.ts';
 export {
   changeTileQuantity,
   writtenLinesOf,

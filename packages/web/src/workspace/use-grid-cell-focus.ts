@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
-import { cellAfterArrow, type Arrow, type CellGroup } from './grid-moves.ts';
+import { cellAfterArrow, type Arrow, type CellGroup } from '@mtg-suite/core';
 
 const CELL_ATTRIBUTE = 'data-grid-cell';
 const GROUP_ATTRIBUTE = 'data-grid-cell-group';

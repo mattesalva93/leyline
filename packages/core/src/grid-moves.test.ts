@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cellAfterArrow } from './grid-moves.ts';
+import { cellAfterArrow } from './index.ts';
 
 // Two sections of the card grid, three columns wide: the first one holds eight cells
 // (two full rows, then two cells), the second one holds five (a full row, then two cells).
