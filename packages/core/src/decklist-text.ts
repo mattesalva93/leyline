@@ -1,8 +1,7 @@
 import { applyAllocationChoice, copiesByPrint, unallocatedCopies } from './allocation.ts';
 import { setLineQuantity } from './decklist.ts';
+import { LINE_BREAK } from './line-breaks.ts';
 import type { Allocation, Print, ResolvedLine } from './types.ts';
-
-const LINE_BREAK = /\r?\n/;
 
 /** The lines of a decklist text as the user wrote them, blank ones, comments and headers too. */
 export function writtenLinesOf(text: string): string[] {

@@ -1,6 +1,7 @@
 import { copiesByPrint } from './allocation.ts';
 import { defaultPrintFor, hasRealImage, qualityWarning } from './default-print.ts';
 import { SIDEBOARD_PREFIX, sectionOpenedBy } from './decklist-section.ts';
+import { LINE_BREAK } from './line-breaks.ts';
 import { MIN_SIMILARITY, cardKeys, nameKey, trigramSimilarity, trigrams } from './name-match.ts';
 import type {
   AmbiguousLine,
@@ -85,7 +86,7 @@ export async function resolveDecklist(
   catalog: Catalog,
   options: ResolveOptions,
 ): Promise<DecklistLine[]> {
-  const parsed = text.split(/\r?\n/).flatMap((raw) => parseLine(raw) ?? []);
+  const parsed = text.split(LINE_BREAK).flatMap((raw) => parseLine(raw) ?? []);
   const names = [...new Set(parsed.map((line) => nameKey(line.name)))];
   const entries = await catalog.findByNames(names, { minSimilarity: MIN_SIMILARITY });
   // Keys and trigrams once per entry, not once per line: a decklist has a hundred lines.

@@ -1,4 +1,4 @@
-const LINE_BREAKS = /\r\n?/g;
+import { withLineFeedBreaks } from '@mtg-suite/core';
 
 /**
  * The decklist text once `pasted` takes the place of everything from `pasteStart` on, with a
@@ -11,8 +11,8 @@ export function textAfterPasteAtEnd(
   { pasteStart, pasteEnd }: { readonly pasteStart: number; readonly pasteEnd: number },
   pasted: string,
 ): string | null {
-  // A textarea holds line breaks as `\n` only; one written by hand must match.
-  const pastedLines = pasted.replace(LINE_BREAKS, '\n');
-  if (pasteEnd !== text.length || pastedLines === '' || pastedLines.endsWith('\n')) return null;
-  return `${text.slice(0, pasteStart)}${pastedLines}\n`;
+  // Written into the textarea by hand, not by the browser, so its line breaks must match.
+  const pastedText = withLineFeedBreaks(pasted);
+  if (pasteEnd !== text.length || pastedText === '' || pastedText.endsWith('\n')) return null;
+  return `${text.slice(0, pasteStart)}${pastedText}\n`;
 }
