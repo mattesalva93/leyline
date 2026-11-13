@@ -32,7 +32,7 @@ function ringColourOf(hasSiblings: boolean, isSelected: boolean): string | undef
  * thread of the background that keeps its border apart from the pile's.
  */
 function cardOutline(ringColour: string | undefined): string {
-  return ringColour ? `0 0 0 2px ${ringColour}` : '0 0 0 1px var(--color-background)';
+  return ringColour ? `0 0 0 2px ${ringColour}` : '0 0 0 1px var(--color-pile-thread)';
 }
 
 interface PrintTileCardProps {

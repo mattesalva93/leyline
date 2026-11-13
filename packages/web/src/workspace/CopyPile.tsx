@@ -54,7 +54,7 @@ export function CopyPile({ copies, imageUrl, ringColour }: CopyPileProps) {
         style={{
           ...CARD_SHAPE,
           transform: `translate(${offset}px, ${offset}px)`,
-          boxShadow: `0 0 0 1px ${ringColour ?? 'var(--color-background)'}`,
+          boxShadow: `0 0 0 1px ${ringColour ?? 'var(--color-pile-thread)'}`,
         }}
       >
         {imageUrl && (
