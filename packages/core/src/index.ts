@@ -36,6 +36,7 @@ export {
   type TileInText,
   type TileQuantityChange,
 } from './decklist-text.ts';
+export { withLineFeedBreaks } from './line-breaks.ts';
 export {
   applyCandidateChoice,
   chooseCandidate,

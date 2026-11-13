@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import type { Generator } from '../use-generator.ts';
 import { NewDecklistButton } from './NewDecklistButton.tsx';
+import { textAfterPasteAtEnd } from './paste-at-end.ts';
 import { useFocusKeptAcrossLayouts } from './use-focus-kept-across-layouts.ts';
 
 /**
@@ -27,6 +28,21 @@ export function DecklistEditor({
         value={generator.decklistText}
         placeholder={t('decklist.placeholder')}
         onChange={(event) => generator.writeDecklistText(event.target.value)}
+        onPaste={(event) => {
+          const decklistTextarea = event.currentTarget;
+          const nextText = textAfterPasteAtEnd(
+            decklistTextarea.value,
+            {
+              pasteStart: decklistTextarea.selectionStart,
+              pasteEnd: decklistTextarea.selectionEnd,
+            },
+            event.clipboardData.getData('text/plain'),
+          );
+          if (nextText === null) return;
+          event.preventDefault();
+          // Setting a textarea's value puts the caret at its end: on the new empty line.
+          generator.writeDecklistText(nextText);
+        }}
         onBlur={generator.resolveEveryLine}
       />
       <p className="shrink-0 px-3 text-xs text-muted-foreground empty:hidden" aria-live="polite">
