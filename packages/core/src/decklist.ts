@@ -109,7 +109,7 @@ interface NamedEntry {
 
 type LineBase = Pick<DecklistLine, 'text' | 'quantity' | 'lang'>;
 
-function resolvedLine(base: LineBase, candidate: Candidate): ResolvedLine {
+export function resolvedLine(base: LineBase, candidate: Candidate): ResolvedLine {
   return { ...base, status: 'resolved', ...candidate, allocations: [] };
 }
 

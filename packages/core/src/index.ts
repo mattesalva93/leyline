@@ -22,6 +22,12 @@ export {
   type LineMove,
   type LineSide,
 } from './move-written-line.ts';
+export {
+  addCardToSection,
+  type CardAddition,
+  type CardToAdd,
+  type LineInText,
+} from './add-card.ts';
 export { printTiles, type PrintTile } from './print-tile.ts';
 export {
   changeTileQuantity,
