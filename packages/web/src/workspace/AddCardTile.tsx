@@ -1,4 +1,9 @@
-import type { Candidate, DecklistSection, Lang } from '@mtg-suite/core';
+import {
+  SECTION_BEFORE_ANY_HEADER,
+  type Candidate,
+  type DecklistSection,
+  type Lang,
+} from '@mtg-suite/core';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CARD_SHAPE } from '../card-shape.ts';
@@ -20,7 +25,7 @@ import type { GridCellProps } from './use-grid-cell-focus.ts';
 interface AddCardTileProps {
   /**
    * The section the search starts on, the one the tile ends. `null` for the only tile of a
-   * decklist with no card: it names no section and starts on the main deck.
+   * decklist with no card: it names no section and starts on the section a line above every header belongs to.
    */
   readonly section: DecklistSection | null;
   /** The language the cards found are shown and added in. */
@@ -37,12 +42,16 @@ interface AddCardTileProps {
  */
 export function AddCardTile({ section, lang, cell, onAdd }: AddCardTileProps) {
   const { t } = useTranslation();
-  const startSection = section ?? 'mainDeck';
+  const startSection = section ?? SECTION_BEFORE_ANY_HEADER;
   const [isOpen, setIsOpen] = useState(false);
   const [pickedSection, setPickedSection] = useState<DecklistSection>(startSection);
-  const tileLabel = section
-    ? t('workspace.addCard.open', { section: t(`workspace.sections.${section}`) })
-    : t('workspace.addCard.openAny');
+  // The only tile of an empty decklist has no section title above it to name, so names none.
+  const [tileLabel, tileText] = section
+    ? [
+        t('workspace.addCard.open', { section: t(`workspace.sections.${section}`) }),
+        t('workspace.addCard.tile'),
+      ]
+    : [t('workspace.addCard.tileOfNoSection'), t('workspace.addCard.tileOfNoSection')];
   return (
     <Dialog
       open={isOpen}
@@ -59,7 +68,7 @@ export function AddCardTile({ section, lang, cell, onAdd }: AddCardTileProps) {
           className={`${GRID_CELL_FOCUS_RING} flex w-full flex-col items-center justify-center gap-1 border-2 border-dashed border-border bg-panel/50 text-sm font-semibold text-muted-foreground hover:border-accent hover:text-foreground`}
         >
           <Icon name="plus" className="size-8" />
-          {section ? t('workspace.addCard.tile') : t('workspace.addCard.openAny')}
+          {tileText}
         </DialogTrigger>
       </div>
       <CenteredDialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-3 overflow-y-auto">

@@ -2169,15 +2169,22 @@ describe('the landing page', () => {
 });
 
 describe('the add tile', () => {
-  /** Opens the search of the add tile ending `section`, and types `name` into it. */
+  /**
+   * Opens the search of the add tile ending `section`, or the only add tile when `null`, picks
+   * `sectionToPick` if any, and types `name` into the search.
+   */
   async function searchToAdd(
     user: ReturnType<typeof userEvent.setup>,
-    section: string,
+    section: string | null,
     name: string,
+    sectionToPick?: string,
   ) {
     await user.click(
-      await screen.findByRole('button', { name: `Aggiungi una carta a ${section}` }),
+      await screen.findByRole('button', {
+        name: section ? `Aggiungi una carta a ${section}` : 'Aggiungi carta',
+      }),
     );
+    if (sectionToPick) await user.click(screen.getByRole('radio', { name: sectionToPick }));
     await user.type(screen.getByRole('combobox', { name: 'Nome della carta' }), name);
     return screen.findByRole('listbox', { name: 'Carte trovate' });
   }
@@ -2194,10 +2201,7 @@ describe('the add tile', () => {
 
   it('opens an empty section with its header in the text, and its title in the grid', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
-    await user.click(await screen.findByRole('button', { name: 'Aggiungi una carta a Mazzo' }));
-    await user.click(screen.getByRole('radio', { name: 'Token' }));
-    await user.type(screen.getByRole('combobox', { name: 'Nome della carta' }), 'pyrobl');
-    const found = await screen.findByRole('listbox', { name: 'Carte trovate' });
+    const found = await searchToAdd(user, 'Mazzo', 'pyrobl', 'Token');
 
     await user.click(await within(found).findByRole('option', { name: /Pyroblast/ }));
 
@@ -2217,10 +2221,7 @@ describe('the add tile', () => {
     expect(others).toEqual([]);
     expect(onlyTile?.textContent).toBe('Aggiungi carta');
     expect(onlyTile?.getAttribute('aria-label')).toBe('Aggiungi carta');
-    if (!onlyTile) throw new Error('no add tile');
-    await user.click(onlyTile);
-    await user.type(screen.getByRole('combobox', { name: 'Nome della carta' }), 'brainst');
-    const found = await screen.findByRole('listbox', { name: 'Carte trovate' });
+    const found = await searchToAdd(user, null, 'brainst');
     await user.click(await within(found).findByRole('option', { name: /Brainstorm/ }));
 
     expect(decklistValue()).toBe('1 Brainstorm');
@@ -2247,7 +2248,30 @@ describe('the add tile', () => {
       ['Sideboard', false],
       ['Token', false],
     ]);
+  });
+
+  it('starts each search in the name field', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+
+    await user.click(await screen.findByRole('button', { name: 'Aggiungi una carta a Mazzo' }));
+
     expect(document.activeElement).toBe(screen.getByRole('combobox', { name: 'Nome della carta' }));
+  });
+
+  it('changes section with the arrows, as a radio group, opening the sideboard from the main deck', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Aggiungi una carta a Mazzo' }));
+    await user.tab({ shift: true });
+    expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'Mazzo' }));
+
+    await user.keyboard('{ArrowRight}{ArrowRight}');
+    expect(screen.getByRole('radio', { name: 'Sideboard' })).toHaveProperty('checked', true);
+    await user.tab();
+    await user.keyboard('pyrobl');
+    const found = await screen.findByRole('listbox', { name: 'Carte trovate' });
+    await user.click(await within(found).findByRole('option', { name: /Pyroblast/ }));
+
+    expect(decklistValue()).toBe('4 Sol Ring\n\nSideboard\n1 Pyroblast');
   });
 
   it('titles its search after the section picked', async () => {
@@ -2366,9 +2390,7 @@ describe('the add tile', () => {
     const user = await mountPageAndWrite('1 Brainstorm{Enter}');
     await screen.findByRole('button', { name: 'Modifica Brainstorm' });
     await user.clear(screen.getByLabelText('Decklist'));
-    await user.click(screen.getByRole('button', { name: 'Aggiungi carta' }));
-    await user.type(screen.getByRole('combobox', { name: 'Nome della carta' }), 'sol ri');
-    const found = await screen.findByRole('listbox', { name: 'Carte trovate' });
+    const found = await searchToAdd(user, null, 'sol ri');
 
     await user.click(await within(found).findByRole('option', { name: /Sol Ring/ }));
 
