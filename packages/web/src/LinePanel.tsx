@@ -1,10 +1,12 @@
 import {
   previewPrint,
   type AllocationChoice,
+  type Print,
   type PrintWarning,
   type ResolvedLine,
 } from '@mtg-suite/core';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { CopyBreakdown } from './CopyBreakdown.tsx';
 import { useTranslation } from 'react-i18next';
 import { contentWidthOf, printPageSize } from './print-picker-geometry.ts';
 import { PrintPicker } from './PrintPicker.tsx';
@@ -12,29 +14,38 @@ import { PrintWarningNote } from './PrintWarningNote.tsx';
 import { NORMAL_IMAGE } from './scryfall-image-sizes.ts';
 import { SYMBOL_BUTTON } from './ui/board-styles.ts';
 import { usePrintPages } from './use-print-pages.ts';
-import { usePrintsLanguage } from './use-prints-language.ts';
+import { usePrintCounts } from './use-print-counts.ts';
+import { usePrintPickerView } from './use-print-picker-view.ts';
 import { CARD_SHAPE } from './card-shape.ts';
 
 interface LinePanelProps {
   readonly line: ResolvedLine;
+  /** The print of the tile the panel was opened from: the print picker opens on it. */
+  readonly tilePrint: Print | null;
   /** What to warn about the print of the tile the panel was opened from. */
   readonly printWarning: PrintWarning | null;
   readonly onQuantityChange: (quantity: number) => void;
   /** Called with the allocations the user set in the print picker. */
   readonly onAllocationChoice: (allocations: AllocationChoice) => void;
+  /** Gives `print` `quantity` copies, the line's quantity changing as many. */
+  readonly onPrintQuantityChange: (print: Print, quantity: number) => void;
 }
 
 /** The settings of one line: its quantity and the prints its copies use, in either language. */
 export function LinePanel({
   line,
+  tilePrint,
   printWarning,
   onQuantityChange,
   onAllocationChoice,
+  onPrintQuantityChange,
 }: LinePanelProps) {
   const { t } = useTranslation();
   const panelRef = useRef<HTMLDivElement>(null);
-  const [printsLang, changePrintsLang] = usePrintsLanguage(line.lang);
-  const printPages = usePrintPages(line.card.oracleId, printsLang, () => {
+  const [openingQuantity] = useState(line.quantity);
+  const printCounts = usePrintCounts(line.card.oracleId);
+  const pickerView = usePrintPickerView(tilePrint, line, printCounts);
+  const printPages = usePrintPages(line.card.oracleId, pickerView.printsLang, () => {
     const panel = panelRef.current;
     const gridWidth = panel ? contentWidthOf(panel) : window.innerWidth;
     return printPageSize(gridWidth, window.innerHeight);
@@ -58,7 +69,7 @@ export function LinePanel({
       <PrintWarningNote
         line={line}
         warning={printWarning}
-        onShowEnglishPrints={() => changePrintsLang('en')}
+        onShowEnglishPrints={() => pickerView.changePrintsLang('en')}
       />
       <fieldset className="flex items-center gap-2">
         <legend className="float-left mr-3 font-semibold">{t('panel.quantity')}</legend>
@@ -83,12 +94,14 @@ export function LinePanel({
           {t('panel.plus')}
         </button>
       </fieldset>
+      <CopyBreakdown line={line} openingQuantity={openingQuantity} />
       <PrintPicker
         line={line}
-        printsLang={printsLang}
-        onPrintsLangChange={changePrintsLang}
+        pickerView={pickerView}
+        printCounts={printCounts}
         printPages={printPages}
         onAllocationChoice={onAllocationChoice}
+        onPrintQuantityChange={onPrintQuantityChange}
       />
     </div>
   );

@@ -88,7 +88,22 @@ const DELVER: CatalogEntry = (() => {
   };
 })();
 
+/** A card whose only Italian print has a placeholder image, so it prints in English. */
+const TRINISPHERE: CatalogEntry = {
+  card: aCard({ oracleId: 'trinisphere', name: 'Trinisphere' }),
+  prints: [
+    {
+      ...printOf('Trinisfera', 'trinisphere-it-dst', 'dst', '2004-02-06'),
+      lang: 'it',
+      imageStatus: 'placeholder',
+    },
+    printOf('Trinisphere', 'trinisphere-dst', 'dst', '2004-02-06'),
+    printOf('Trinisphere', 'trinisphere-sld', 'sld', '2023-01-01'),
+  ],
+};
+
 const CATALOG = [
+  TRINISPHERE,
   catalogEntry('sol-ring', 'Sol Ring', 'c21', 'lea'),
   DELVER,
   BRAINSTORM,
@@ -116,6 +131,20 @@ async function mountPageAndWrite(decklistText: string) {
   mountApp('/proxy');
   await user.type(screen.getByLabelText('Decklist'), decklistText);
   return user;
+}
+
+/**
+ * Moves one copy of `card` off its tile of the print `from` onto the print `to`, with the plus
+ * of the open print picker and the minus of that tile: the line keeps its quantity.
+ */
+async function moveOneCopy(
+  user: ReturnType<typeof userEvent.setup>,
+  card: string,
+  from: string,
+  to: string,
+) {
+  await user.click(await screen.findByRole('button', { name: `Una copia in più con ${to}` }));
+  await user.click(screen.getByRole('button', { name: `Una copia in meno di ${card} (${from})` }));
 }
 
 describe('the generator page', () => {
@@ -269,7 +298,7 @@ describe('the workspace', () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
 
-    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+    await moveOneCopy(user, 'Sol Ring', 'C21 #1', 'LEA #1');
 
     expect(gridTiles().map(tileSummary)).toEqual([
       ['Immagine di Sol Ring', '3×', '1/2'],
@@ -446,8 +475,9 @@ describe('the workspace', () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
 
-    const oneMoreOnLea = await screen.findByRole('button', { name: 'Una copia in più con LEA #1' });
-    for (let copy = 0; copy < 4; copy += 1) await user.click(oneMoreOnLea);
+    for (let copy = 0; copy < 4; copy += 1) {
+      await moveOneCopy(user, 'Sol Ring', 'C21 #1', 'LEA #1');
+    }
 
     const [onlyTile] = gridTiles();
     expect(onlyTile && tileSummary(onlyTile)).toEqual(['Immagine di Sol Ring', '4×', undefined]);
@@ -460,7 +490,7 @@ describe('the quantity on a tile', () => {
   it("adds a copy to the tile's print with its plus, and the decklist text says so", async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
-    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+    await moveOneCopy(user, 'Sol Ring', 'C21 #1', 'LEA #1');
 
     await user.click(screen.getByRole('button', { name: 'Una copia in più di Sol Ring (LEA #1)' }));
 
@@ -477,7 +507,7 @@ describe('the quantity on a tile', () => {
   it('takes a tile brought to zero off the grid and keeps its siblings', async () => {
     const user = await mountPageAndWrite('2 Sol Ring{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
-    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+    await moveOneCopy(user, 'Sol Ring', 'C21 #1', 'LEA #1');
 
     await user.click(
       screen.getByRole('button', { name: 'Una copia in meno di Sol Ring (C21 #1)' }),
@@ -507,7 +537,7 @@ describe('the quantity on a tile', () => {
     const user = await mountPageAndWrite('2 Lightning{Enter}2 Sol Ring{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Lightning Bolt' }));
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
-    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+    await moveOneCopy(user, 'Sol Ring', 'C21 #1', 'LEA #1');
     const requestsBefore = vi.mocked(api.resolveDecklistText).mock.calls.length;
 
     await user.click(
@@ -531,6 +561,9 @@ describe('the quantity on a tile', () => {
     await screen.findAllByRole('button', { name: 'Modifica Sol Ring' });
     await user.click(tileAt(1).getByRole('button', { name: 'Modifica Sol Ring' }));
     await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+    await user.click(
+      tileAt(1).getByRole('button', { name: 'Una copia in meno di Sol Ring (C21 #1)' }),
+    );
 
     const onePlusOnFirstLine = () =>
       user.click(tileAt(0).getByRole('button', { name: 'Una copia in più di Sol Ring (C21 #1)' }));
@@ -838,7 +871,7 @@ describe('the pile under a tile', () => {
     const user = await mountPageAndWrite('3 Sol Ring{Enter}1 Lightning Bolt{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
 
-    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+    await moveOneCopy(user, 'Sol Ring', 'C21 #1', 'LEA #1');
 
     expect(pileEdgesPerTile()).toEqual([1, 0, 0]);
   });
@@ -868,10 +901,10 @@ describe('copies of a line in another language', () => {
     const user = await openBrainstorm();
     const printsLanguage = () =>
       within(lineInspector().getByRole('group', { name: 'Lingua delle stampe' }));
-    await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
+    await moveOneCopy(user, 'Brainstorm', 'ICE #1', 'MMQ #1');
 
-    await user.click(printsLanguage().getByRole('radio', { name: 'Inglese' }));
-    await user.click(await screen.findByRole('button', { name: 'Una copia in più con C21 #1' }));
+    await user.click(await printsLanguage().findByRole('radio', { name: 'Inglese (1)' }));
+    await moveOneCopy(user, 'Brainstorm', 'ICE #1', 'C21 #1');
 
     expect(screen.queryByRole('button', { name: 'Una copia in più con MMQ #1' })).toBeNull();
     expect(gridTiles().map(tileSummary)).toEqual([
@@ -880,19 +913,6 @@ describe('copies of a line in another language', () => {
       ['Immagine di Brainstorm', '1×', '3/3'],
     ]);
     expect(screen.queryByRole('img', { name: 'Stampa in inglese' })).toBeNull();
-  });
-
-  it('counts the copies left unallocated beside the switch, whichever language it shows', async () => {
-    const user = await openBrainstorm();
-    const printsLanguage = within(
-      await lineInspector().findByRole('group', { name: 'Lingua delle stampe' }),
-    );
-    await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
-
-    await user.click(printsLanguage.getByRole('radio', { name: 'Inglese' }));
-    await screen.findByRole('button', { name: 'Una copia in più con C21 #1' });
-
-    expect(lineInspector().getByText('+3 non assegnate')).toBeTruthy();
   });
 
   it('sets no language of its own on a line: only the prints of its copies have one', async () => {
@@ -916,7 +936,7 @@ describe('copies of a line in another language', () => {
 
   it('keeps the allocated copies on their print once the default language changes', async () => {
     const user = await openBrainstorm();
-    await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
+    await moveOneCopy(user, 'Brainstorm', 'ICE #1', 'MMQ #1');
     await user.click(screen.getByRole('button', { name: 'Modifica Brainstorm', pressed: true }));
 
     await user.click(summary().getByRole('radio', { name: 'Inglese' }));
@@ -927,6 +947,239 @@ describe('copies of a line in another language', () => {
       ['Immagine di Brainstorm', '3×', '1/2'],
       ['Immagine di Brainstorm', '1×', '2/2'],
     ]);
+  });
+});
+
+describe('the languages of the print picker', () => {
+  /** The language choice of the print picker in the inspector. */
+  async function printsLanguage() {
+    const inspector = within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
+    return within(await inspector.findByRole('group', { name: 'Lingua delle stampe' }));
+  }
+
+  it('counts the prints of each language, the one not selected too, without loading its pages', async () => {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+
+    const languages = await printsLanguage();
+
+    expect(
+      await languages.findByRole('radio', { name: 'Italiano (2)', checked: true }),
+    ).toBeTruthy();
+    expect(languages.getByRole('radio', { name: 'Inglese (1)' })).toBeTruthy();
+    expect(vi.mocked(api.fetchPrintPage).mock.calls.map(([, lang]) => lang)).not.toContain('en');
+  });
+
+  it('offers no Italian prints for a card whose only Italian one is not printable, and opens on English', async () => {
+    const user = await mountPageAndWrite('1 Trinisphere{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Trinisphere' }));
+
+    const languages = await printsLanguage();
+
+    const italian = await languages.findByRole('radio', { name: 'Italiano (0)' });
+    expect(italian).toHaveProperty('disabled', true);
+    expect(languages.getByRole('radio', { name: 'Inglese (2)', checked: true })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Una copia in più con SLD #1' })).toBeTruthy();
+    expect(screen.getByRole('img', { name: 'Stampa in inglese' })).toBeTruthy();
+  });
+});
+
+describe("the print picker opened on the tile's print", () => {
+  /** Makes the server send one print per page, as for a card with many prints. */
+  function onePrintPerPage() {
+    const server = inMemoryServer(CATALOG);
+    vi.mocked(api.fetchPrintPage).mockImplementation((oracleId, lang, _limit, cursor) =>
+      server.fetchPrintPage(oracleId, lang, 1, cursor),
+    );
+  }
+
+  /** The button of the print `setAndNumber` in the print picker. */
+  function printButton(setAndNumber: string) {
+    const counter = screen.getByRole('group', { name: `Copie con ${setAndNumber}` });
+    return within(counter.closest('li') ?? counter).getAllByRole('button')[0];
+  }
+
+  /**
+   * Gives `4 Brainstorm` a tile on each of its prints: ICE (Italian, the default), MMQ (Italian,
+   * second in its list) and C21 (English), in that order in the grid.
+   */
+  async function splitBrainstorm(
+    user: ReturnType<typeof userEvent.setup>,
+    panel: () => HTMLElement,
+  ) {
+    await user.click(
+      await within(panel()).findByRole('button', { name: 'Una copia in più con MMQ #1' }),
+    );
+    await user.click(await within(panel()).findByRole('radio', { name: 'Inglese (1)' }));
+    await user.click(
+      await within(panel()).findByRole('button', { name: 'Una copia in più con C21 #1' }),
+    );
+  }
+
+  const inspector = () => screen.getByRole('complementary', { name: 'Riga selezionata' });
+
+  it("shows the prints in the tile's language, its own in view with the focus, loading the pages before it", async () => {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+    await splitBrainstorm(user, inspector);
+    await user.click(screen.getByRole('button', { name: 'Modifica Brainstorm', pressed: true }));
+    onePrintPerPage();
+
+    await user.click(tileAt(1).getByRole('button', { name: 'Modifica Brainstorm' }));
+
+    await waitFor(() => expect(document.activeElement).toBe(printButton('MMQ #1')));
+    expect(
+      within(inspector()).getByRole('radio', { name: 'Italiano (2)', checked: true }),
+    ).toBeTruthy();
+  });
+
+  it('follows a sibling tile to its print and its language', async () => {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+    await splitBrainstorm(user, inspector);
+    await user.click(tileAt(1).getByRole('button', { name: 'Modifica Brainstorm' }));
+    await waitFor(() => expect(document.activeElement).toBe(printButton('MMQ #1')));
+
+    await user.click(tileAt(2).getByRole('button', { name: 'Modifica Brainstorm' }));
+
+    await waitFor(() => expect(document.activeElement).toBe(printButton('C21 #1')));
+    expect(
+      within(inspector()).getByRole('radio', { name: 'Inglese (1)', checked: true }),
+    ).toBeTruthy();
+  });
+
+  it("keeps the picker's language when a minus empties the selected tile's print and the selection moves on", async () => {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+    await user.click(await within(inspector()).findByRole('radio', { name: 'Inglese (1)' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con C21 #1' }));
+    await user.click(tileAt(1).getByRole('button', { name: 'Modifica Brainstorm' }));
+    await waitFor(() => expect(document.activeElement).toBe(printButton('C21 #1')));
+
+    await user.click(screen.getByRole('button', { name: 'Una copia in meno con C21 #1' }));
+
+    expect(gridTiles()).toHaveLength(1);
+    expect(
+      within(inspector()).getByRole('radio', { name: 'Inglese (1)', checked: true }),
+    ).toBeTruthy();
+  });
+
+  it("opens on the tile's print on a phone too, in the panel risen from the bottom", async () => {
+    stubScreen(PHONE);
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+    const phonePanel = () => screen.getByRole('dialog', { name: 'Riga selezionata' });
+    await splitBrainstorm(user, phonePanel);
+    await user.click(within(phonePanel()).getByRole('button', { name: 'Fatto' }));
+    onePrintPerPage();
+
+    await user.click(tileAt(1).getByRole('button', { name: 'Modifica Brainstorm' }));
+
+    await waitFor(() => expect(document.activeElement).toBe(printButton('MMQ #1')));
+    expect(
+      within(phonePanel()).getByRole('radio', { name: 'Italiano (2)', checked: true }),
+    ).toBeTruthy();
+  });
+});
+
+describe('the copy breakdown in the line panel', () => {
+  const inspector = () => within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
+
+  /** Each print of the breakdown as (language, set and number, copies), then the total. */
+  function breakdown() {
+    const region = within(inspector().getByRole('region', { name: 'Ripartizione delle copie' }));
+    return {
+      prints: region
+        .getAllByRole('listitem')
+        .map((item) => [...item.children].map((cell) => cell.textContent)),
+      total: region.getByText(/^Totale/).textContent,
+    };
+  }
+
+  /** The counter of the print `setAndNumber` in the print picker. */
+  function counterOf(setAndNumber: string) {
+    return inspector()
+      .getByRole('group', { name: `Copie con ${setAndNumber}` })
+      .querySelector('output')?.textContent;
+  }
+
+  it('shows every print the copies use, in both languages, with its copies and the total', async () => {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
+    await user.click(await inspector().findByRole('radio', { name: 'Inglese (1)' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con C21 #1' }));
+
+    expect(breakdown()).toEqual({
+      prints: [
+        ['Italiano', 'ICE #1', '4'],
+        ['Italiano', 'MMQ #1', '1'],
+        ['Inglese', 'C21 #1', '1'],
+      ],
+      total: 'Totale: 6 copie',
+    });
+    expect(inspector().getByText('+2 rispetto a 4')).toBeTruthy();
+    expect(decklistValue()).toBe('6 Brainstorm\n');
+  });
+
+  it("counts on the default print's counter the copies left unallocated", async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+
+    expect(counterOf('C21 #1')).toBe('4');
+    expect(counterOf('LEA #1')).toBe('1');
+    expect(inspector().queryByText(/non assegnat/)).toBeNull();
+  });
+
+  it('adds a copy to a print and to the line with its plus, even once every copy is allocated, asking the server nothing', async () => {
+    const user = await mountPageAndWrite('2 Sol Ring{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+    const leaPrint = within(
+      (await screen.findByRole('group', { name: 'Copie con LEA #1' })).closest('li') as HTMLElement,
+    ).getAllByRole('button')[0] as HTMLElement;
+    await user.click(leaPrint);
+    expect(breakdown().prints).toEqual([['Inglese', 'LEA #1', '2']]);
+    const requestsBefore = vi.mocked(api.resolveDecklistText).mock.calls.length;
+
+    await user.click(screen.getByRole('button', { name: 'Una copia in più con LEA #1' }));
+
+    expect(decklistValue()).toBe('3 Sol Ring\n');
+    expect(breakdown().prints).toEqual([['Inglese', 'LEA #1', '3']]);
+    expect(vi.mocked(api.resolveDecklistText).mock.calls.length).toBe(requestsBefore);
+  });
+
+  it('takes a copy off a print and off the line with its minus, but never the last copy of the line', async () => {
+    const user = await mountPageAndWrite('2 Sol Ring{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+
+    await user.click(screen.getByRole('button', { name: 'Una copia in meno con C21 #1' }));
+    await user.click(screen.getByRole('button', { name: 'Una copia in meno con C21 #1' }));
+
+    expect(decklistValue()).toBe('1 Sol Ring\n');
+    expect(breakdown()).toEqual({ prints: [['Inglese', 'LEA #1', '1']], total: 'Totale: 1 copia' });
+    expect(inspector().getByText('−1 rispetto a 2')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Una copia in meno con LEA #1' })).toHaveProperty(
+      'disabled',
+      true,
+    );
+  });
+
+  it('still puts every copy on a tapped print, the line keeping its quantity', async () => {
+    const user = await mountPageAndWrite('3 Sol Ring{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+
+    const c21Print = within(
+      screen.getByRole('group', { name: 'Copie con C21 #1' }).closest('li') as HTMLElement,
+    ).getAllByRole('button')[0] as HTMLElement;
+    await user.click(c21Print);
+
+    expect(decklistValue()).toBe('4 Sol Ring\n');
+    expect(breakdown().prints).toEqual([['Inglese', 'C21 #1', '4']]);
   });
 });
 
@@ -1513,7 +1766,7 @@ describe('reordering the decklist by dragging tiles', () => {
   it('moves the whole line, all its sibling tiles in the same order', async () => {
     const user = await mountPageAndWrite('1 Lightning Bolt{Enter}4 Sol Ring{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
-    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+    await moveOneCopy(user, 'Sol Ring', 'C21 #1', 'LEA #1');
     const lightningBolt = tileOf(screen.getByRole('button', { name: 'Modifica Lightning Bolt' }));
 
     const [, lastSolRing] = screen.getAllByRole('button', { name: 'Modifica Sol Ring' });
@@ -1546,7 +1799,7 @@ describe('reordering the decklist by dragging tiles', () => {
   it('lands a line by the nearer edge of a line of sibling tiles, and shows the bar there', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
-    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+    await moveOneCopy(user, 'Sol Ring', 'C21 #1', 'LEA #1');
     const [firstSibling, lastSibling, lightningBolt] = gridTiles();
     if (!firstSibling || !lastSibling || !lightningBolt) throw new Error('expected three tiles');
 
@@ -1623,7 +1876,7 @@ describe('reordering the decklist by dragging tiles', () => {
     );
     await user.click(await screen.findByRole('button', { name: 'Lightning Bolt' }));
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
-    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+    await moveOneCopy(user, 'Sol Ring', 'C21 #1', 'LEA #1');
     const requestsBefore = vi.mocked(api.resolveDecklistText).mock.calls.length;
     // A move gives the tiles after it new places: each drag finds its tiles anew.
     const counterspell = () =>
@@ -2024,9 +2277,9 @@ describe('the decklist saved on the device', () => {
     const user = await mountPageAndWrite('1 Lightning{Enter}4 Brainstorm{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Lightning Bolt' }));
     await user.click(screen.getByRole('button', { name: 'Modifica Brainstorm' }));
-    await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
-    await user.click(screen.getByRole('radio', { name: 'Inglese' }));
-    await user.click(await screen.findByRole('button', { name: 'Una copia in più con C21 #1' }));
+    await moveOneCopy(user, 'Brainstorm', 'ICE #1', 'MMQ #1');
+    await user.click(await screen.findByRole('radio', { name: 'Inglese (1)' }));
+    await moveOneCopy(user, 'Brainstorm', 'ICE #1', 'C21 #1');
 
     reload();
 

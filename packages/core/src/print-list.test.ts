@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { createInMemoryCatalog, isPrintCursor, listPrints, resolveDecklist } from './index.ts';
+import {
+  countPrintsByLang,
+  createInMemoryCatalog,
+  isPrintCursor,
+  langWithPrints,
+  listPrints,
+  resolveDecklist,
+} from './index.ts';
 import { aCard, aPrint } from './test-fixtures.ts';
 
 /** Fixed "today": prints released later are not out yet. */
@@ -144,5 +151,47 @@ describe('isPrintCursor', () => {
     expect(isPrintCursor('not-a-cursor')).toBe(false);
     expect(isPrintCursor('')).toBe(false);
     expect(isPrintCursor(42)).toBe(false);
+  });
+});
+
+describe('countPrintsByLang', () => {
+  it('counts the printable prints of each language, with no English stand-ins for Italian', async () => {
+    const catalog = createInMemoryCatalog([
+      {
+        card: forest,
+        prints: [
+          aPrint({ id: 'forest-it-placeholder', lang: 'it', imageStatus: 'placeholder' }),
+          aPrint({ id: 'forest-en-2024', lang: 'en', releasedAt: '2024-02-09' }),
+          aPrint({ id: 'forest-en-2019', lang: 'en', releasedAt: '2019-05-03' }),
+          aPrint({ id: 'forest-en-mtgo', lang: 'en', digital: true }),
+          aPrint({ id: 'forest-en-preview', lang: 'en', releasedAt: '2027-01-01' }),
+        ],
+      },
+    ]);
+
+    expect(await countPrintsByLang(catalog, { oracleId: 'forest', today })).toEqual({
+      it: 0,
+      en: 2,
+    });
+  });
+
+  it('is null for a card the catalog does not hold', async () => {
+    const catalog = createInMemoryCatalog([]);
+
+    expect(await countPrintsByLang(catalog, { oracleId: 'nope', today })).toBeNull();
+  });
+});
+
+describe('langWithPrints', () => {
+  it('keeps the asked language when the card has prints in it', () => {
+    expect(langWithPrints('it', { it: 1, en: 8 })).toBe('it');
+  });
+
+  it('gives way to a language the card has prints in when the asked one has none', () => {
+    expect(langWithPrints('it', { it: 0, en: 8 })).toBe('en');
+  });
+
+  it('keeps the asked language when no language has prints', () => {
+    expect(langWithPrints('it', { it: 0, en: 0 })).toBe('it');
   });
 });

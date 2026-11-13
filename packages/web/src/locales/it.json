@@ -204,6 +204,7 @@
   "printPicker": {
     "title": "Stampe di {{name}}",
     "lang": "Lingua delle stampe",
+    "langWithPrintCount": "{{lang}} ({{count}})",
     "back": "Indietro",
     "setAndNumber": "{{set}} #{{number}}",
     "quality": {
@@ -215,8 +216,12 @@
     "retry": "Riprova",
     "copiesOf": "Copie con {{print}}",
     "decrease": "Una copia in meno con {{print}}",
-    "increase": "Una copia in più con {{print}}",
-    "unallocated_one": "+1 non assegnata",
-    "unallocated_other": "+{{count}} non assegnate"
+    "increase": "Una copia in più con {{print}}"
+  },
+  "copyBreakdown": {
+    "title": "Ripartizione delle copie",
+    "total_one": "Totale: {{count}} copia",
+    "total_other": "Totale: {{count}} copie",
+    "changeSinceOpened": "{{change}} rispetto a {{count}}"
   }
 }

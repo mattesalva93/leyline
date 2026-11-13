@@ -15,12 +15,18 @@ export interface PrintPages {
 }
 
 interface LoadedPages {
+  /** The card and language the pages are of, as `pagesKeyOf` names them. */
+  readonly pagesKey: string | null;
   readonly prints: readonly Print[];
   readonly total: number | null;
   readonly nextCursor: string | null;
 }
 
-const NOTHING_LOADED: LoadedPages = { prints: [], total: null, nextCursor: null };
+const NOTHING_LOADED: LoadedPages = { pagesKey: null, prints: [], total: null, nextCursor: null };
+
+function pagesKeyOf(oracleId: string | null, lang: Lang): string | null {
+  return oracleId === null ? null : `${lang}:${oracleId}`;
+}
 
 /**
  * The prints the card `oracleId` can print with in `lang`, loaded a page at a time; the first
@@ -47,6 +53,7 @@ export function usePrintPages(
   useEffect(() => {
     pageSizeRef.current = pageSize;
   });
+  const pagesKey = pagesKeyOf(oracleId, lang);
 
   const loadPage = useCallback(
     async (previous: LoadedPages) => {
@@ -63,6 +70,7 @@ export function usePrintPages(
         );
         if (request !== latestRequest.current) return;
         const next = {
+          pagesKey: pagesKeyOf(oracleId, lang),
           prints: [...previous.prints, ...page.prints],
           total: page.total,
           nextCursor: page.nextCursor,
@@ -94,17 +102,29 @@ export function usePrintPages(
     void loadPage(NOTHING_LOADED);
   }, [loadPage]);
 
-  const hasMore = loaded.total === null || loaded.nextCursor !== null;
   const loadMore = useCallback(() => {
     const current = loadedRef.current;
     if (requestInFlight.current || (current.total !== null && current.nextCursor === null)) return;
+    // Pages of another card or language: their first page is on its way.
+    if (current !== NOTHING_LOADED && current.pagesKey !== pagesKeyOf(oracleId, lang)) return;
     void loadPage(current);
-  }, [loadPage]);
+  }, [loadPage, oracleId, lang]);
 
+  // Until the first page of another card or language starts over, the old pages never show.
+  if (loaded.pagesKey !== pagesKey && loaded !== NOTHING_LOADED) {
+    return {
+      prints: [],
+      total: null,
+      hasMore: true,
+      isLoading: true,
+      lastRequestFailed: false,
+      loadMore,
+    };
+  }
   return {
     prints: loaded.prints,
     total: loaded.total,
-    hasMore,
+    hasMore: loaded.total === null || loaded.nextCursor !== null,
     isLoading,
     lastRequestFailed,
     loadMore,

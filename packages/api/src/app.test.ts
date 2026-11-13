@@ -681,3 +681,48 @@ describe('GET /api/health', () => {
     expect(await response.json()).toEqual({ ok: true });
   });
 });
+
+describe('GET /api/cards/:oracleId/print-counts', () => {
+  const trinisphere = {
+    oracle_id: 'aaaaaaaa-0000-0000-0000-0000000000a3',
+    name: 'Trinisphere',
+    set_type: 'expansion',
+  };
+
+  beforeAll(async () => {
+    await importBulk(
+      db.sql,
+      bulkStream([
+        scryfallCard({
+          ...trinisphere,
+          id: 'trinisphere-dst-it',
+          lang: 'it',
+          set: 'dst',
+          image_status: 'placeholder',
+        }),
+        scryfallCard({ ...trinisphere, id: 'trinisphere-dst', set: 'dst' }),
+        scryfallCard({ ...trinisphere, id: 'trinisphere-sld', set: 'sld' }),
+      ]),
+    );
+  });
+
+  async function printCounts(oracleId: string) {
+    const response = await createApp({ sql: db.sql }).request(
+      `/api/cards/${oracleId}/print-counts`,
+    );
+    return { status: response.status, body: (await response.json()) as unknown };
+  }
+
+  it('counts the printable prints of each language, an Italian placeholder not among them', async () => {
+    const { status, body } = await printCounts(trinisphere.oracle_id);
+
+    expect(status).toBe(200);
+    expect(body).toEqual({ it: 0, en: 2 });
+  });
+
+  it('answers 404 for a card the catalog does not hold', async () => {
+    const { status } = await printCounts('aaaaaaaa-0000-0000-0000-00000000dead');
+
+    expect(status).toBe(404);
+  });
+});
