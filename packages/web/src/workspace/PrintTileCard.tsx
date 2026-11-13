@@ -75,7 +75,7 @@ export function PrintTileCard({
 }: PrintTileCardProps) {
   const { t } = useTranslation();
   const { line, tile, siblingIndex, siblingCount } = gridTile;
-  const hasSiblings = siblingColour !== undefined;
+  const hasSiblings = siblingCount > 1;
   const isLastSibling = siblingIndex === siblingCount - 1;
   const [frontFace, backFace] = tile.print.faces;
   const shownFace = (isFlipped && backFace) || frontFace;

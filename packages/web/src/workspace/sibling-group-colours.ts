@@ -17,9 +17,9 @@ export function siblingGroupColoursOf(
     .filter((gridTile) => gridTile.kind === 'print' && gridTile.siblingCount > 1)
     .map((gridTile) => gridTile.writtenIndex);
   return new Map(
-    [...new Set(splitLines)].map((writtenIndex, group) => [
+    [...new Set(splitLines)].map((writtenIndex, groupIndex) => [
       writtenIndex,
-      `var(--color-sibling-${(group % SIBLING_PALETTE_SIZE) + 1})`,
+      `var(--color-sibling-${(groupIndex % SIBLING_PALETTE_SIZE) + 1})`,
     ]),
   );
 }

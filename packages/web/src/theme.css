@@ -25,7 +25,7 @@
   --color-warning: #9a4a00;
   --color-danger: #b42318;
   --color-link: #c2185b;
-  /* The palette of the sibling groups, one colour per group in the order of the card grid. */
+  /* The sibling palette: a colour per sibling group, so the eye sees where one group ends and the next starts. */
   --color-sibling-1: #c2185b;
   --color-sibling-2: #1d5fbf;
   --color-sibling-3: #0b6a63;
