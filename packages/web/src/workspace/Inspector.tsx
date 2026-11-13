@@ -1,11 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { PRINT_PICKER_SCROLL_ROOT_PROPS } from '../PrintPicker.tsx';
-import { BoardPanel } from '../ui/BoardPanel.tsx';
 import { SECONDARY_BUTTON } from '../ui/board-styles.ts';
 import { DecklistSummary } from './DecklistSummary.tsx';
 import { lineToFixOf, LineToFixPanel } from './LineToFixPanel.tsx';
 import { panelLineOf, SelectedLinePanel } from './SelectedLinePanel.tsx';
 import { SheetSettings } from './SheetSettings.tsx';
+import { SidePanel } from './SidePanel.tsx';
+import type { SidePanelOnScreen } from './use-fitted-side-panels.ts';
 import type { CentreView } from './ToolRail.tsx';
 import type { WorkspaceState } from './workspace-state.ts';
 
@@ -16,10 +17,12 @@ import type { WorkspaceState } from './workspace-state.ts';
 export function Inspector({
   state,
   view,
+  panel,
   className = '',
 }: {
   readonly state: WorkspaceState;
   readonly view: CentreView;
+  readonly panel: SidePanelOnScreen;
   readonly className?: string;
 }) {
   const { t } = useTranslation();
@@ -29,7 +32,14 @@ export function Inspector({
   const content =
     view === 'sheet' ? 'sheetOptions' : panelLine ? 'line' : lineToFix ? 'lineToFix' : 'summary';
   return (
-    <BoardPanel as="aside" title={t(`workspace.inspector.${content}`)} className={className}>
+    <SidePanel
+      name="inspector"
+      panel={panel}
+      as="aside"
+      title={t(`workspace.inspector.${content}`)}
+      centreSide="left"
+      className={className}
+    >
       <div className="min-h-0 flex-1 overflow-y-auto p-3" {...PRINT_PICKER_SCROLL_ROOT_PROPS}>
         {content === 'sheetOptions' && <SheetSettings state={state} />}
         {panelLine && <SelectedLinePanel generator={generator} panelLine={panelLine} />}
@@ -47,6 +57,6 @@ export function Inspector({
         )}
         {content === 'summary' && <DecklistSummary state={state} />}
       </div>
-    </BoardPanel>
+    </SidePanel>
   );
 }

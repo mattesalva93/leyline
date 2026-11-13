@@ -80,6 +80,9 @@
     "linesToFix_one": "1 riga da sistemare",
     "linesToFix_other": "{{count}} righe da sistemare"
   },
+  "sidePanel": {
+    "resize": "Allarga o stringi «{{title}}»"
+  },
   "boardPanel": {
     "fold": "Richiudi il pannello «{{title}}»",
     "unfold": "Riapri il pannello «{{title}}»"
