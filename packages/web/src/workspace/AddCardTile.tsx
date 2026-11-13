@@ -12,16 +12,19 @@ import {
 } from '../ui/Dialog.tsx';
 import { Icon } from '../ui/Icon.tsx';
 import { CardSearchPanel } from './CardSearchPanel.tsx';
+import { SectionPicker } from './SectionPicker.tsx';
 import { pileFreeTileFrame } from './CopyPile.tsx';
 import { TILE_TAB_HEIGHT_PX } from './PrintTileCard.tsx';
 import type { GridCellProps } from './use-grid-cell-focus.ts';
 
 interface AddCardTileProps {
-  readonly section: DecklistSection;
+  /**
+   * The section the search starts on, the one the tile ends. `null` for the only tile of a
+   * decklist with no card: it names no section and starts on the main deck.
+   */
+  readonly section: DecklistSection | null;
   /** The language the cards found are shown and added in. */
   readonly lang: Lang;
-  /** Whether the tile says which section it adds to: where no section title above says it. */
-  readonly namesItsSection?: boolean;
   /** The tile as a cell of the card grid, when it ends a section there. */
   readonly cell?: GridCellProps;
   readonly onAdd: (section: DecklistSection, candidate: Candidate) => void;
@@ -29,41 +32,47 @@ interface AddCardTileProps {
 
 /**
  * The last element of a section of the card grid: it opens a search by name, and the card
- * picked there joins the section. Closing the search adds nothing.
+ * picked there joins the section, or the one picked above the search. Each opening starts on
+ * the tile's own section. Closing the search adds nothing.
  */
-export function AddCardTile({
-  section,
-  lang,
-  namesItsSection = false,
-  cell,
-  onAdd,
-}: AddCardTileProps) {
+export function AddCardTile({ section, lang, cell, onAdd }: AddCardTileProps) {
   const { t } = useTranslation();
+  const startSection = section ?? 'mainDeck';
   const [isOpen, setIsOpen] = useState(false);
-  const sectionName = t(`workspace.sections.${section}`);
+  const [pickedSection, setPickedSection] = useState<DecklistSection>(startSection);
+  const tileLabel = section
+    ? t('workspace.addCard.open', { section: t(`workspace.sections.${section}`) })
+    : t('workspace.addCard.openAny');
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (open) setPickedSection(startSection);
+        setIsOpen(open);
+      }}
+    >
       <div style={pileFreeTileFrame(TILE_TAB_HEIGHT_PX)}>
         <DialogTrigger
           {...cell}
-          aria-label={t('workspace.addCard.open', { section: sectionName })}
+          aria-label={tileLabel}
           style={CARD_SHAPE}
           className={`${GRID_CELL_FOCUS_RING} flex w-full flex-col items-center justify-center gap-1 border-2 border-dashed border-border bg-panel/50 text-sm font-semibold text-muted-foreground hover:border-accent hover:text-foreground`}
         >
           <Icon name="plus" className="size-8" />
-          {namesItsSection
-            ? t('workspace.addCard.tileOfSection', { section: sectionName })
-            : t('workspace.addCard.tile')}
+          {section ? t('workspace.addCard.tile') : t('workspace.addCard.openAny')}
         </DialogTrigger>
       </div>
       <CenteredDialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-3 overflow-y-auto">
         <DialogTitle className="font-semibold">
-          {t('workspace.addCard.title', { section: sectionName })}
+          {t('workspace.addCard.title', {
+            section: t(`workspace.sections.${pickedSection}`),
+          })}
         </DialogTitle>
+        <SectionPicker selectedSection={pickedSection} onChange={setPickedSection} />
         <CardSearchPanel
           lang={lang}
           onPick={(candidate) => {
-            onAdd(section, candidate);
+            onAdd(pickedSection, candidate);
             setIsOpen(false);
           }}
         />

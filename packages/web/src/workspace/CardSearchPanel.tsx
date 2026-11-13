@@ -49,6 +49,8 @@ export function CardSearchPanel({ lang, onPick }: CardSearchPanelProps) {
       <input
         type="search"
         role="combobox"
+        // The field, not the controls above it, is where a search starts.
+        autoFocus
         aria-label={t('workspace.addCard.nameField')}
         aria-expanded={cards.length > 0}
         aria-controls={listId}

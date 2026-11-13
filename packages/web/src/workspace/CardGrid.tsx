@@ -3,8 +3,8 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TILE_ZOOM_WAIT_MS, useZoomedCard } from '../use-zoomed-card.tsx';
 import { CardGridSection, type CardGridSectionProps } from './CardGridSection.tsx';
-import { EmptySectionsRow } from './EmptySectionsRow.tsx';
-import { emptySectionsOf, gridCellKeysOf, type GridSection } from './grid-sections.ts';
+import { gridCellKeysOf, type GridSection } from './grid-sections.ts';
+import { OnlyAddTileRow } from './OnlyAddTileRow.tsx';
 import { siblingGroupColoursOf } from './sibling-group-colours.ts';
 import { SideboardDropZone } from './SideboardDropZone.tsx';
 import { isOnEmptyGridSpace, useGridCellFocus } from './use-grid-cell-focus.ts';
@@ -22,7 +22,8 @@ interface CardGridProps extends Omit<
 
 /**
  * The decklist as tiles, section by section, in the order of the text within each, each line's
- * sibling tiles side by side, then an add tile for each section with no card yet. A tile the pointer rests on shows its card enlarged; the mouse
+ * sibling tiles side by side, each section ending with its add tile; a decklist with no card shows a
+ * lone add tile. A tile the pointer rests on shows its card enlarged; the mouse
  * drags a tile to move its line, into another section too. The keyboard stops on the grid once,
  * and the arrows go from tile to tile. A click on the grid outside every tile lets go of the
  * selected one.
@@ -74,13 +75,14 @@ export function CardGrid({
             {...sectionProps}
           />
         ))}
-        <EmptySectionsRow
-          emptySections={emptySectionsOf(sections)}
-          tileWidthPx={sectionProps.tileWidthPx}
-          lang={sectionProps.defaultLang}
-          cellPropsOf={cellPropsOf}
-          onAddCard={sectionProps.onAddCard}
-        />
+        {sections.length === 0 && (
+          <OnlyAddTileRow
+            tileWidthPx={sectionProps.tileWidthPx}
+            lang={sectionProps.defaultLang}
+            cellPropsOf={cellPropsOf}
+            onAddCard={sectionProps.onAddCard}
+          />
+        )}
         {/* A line can open the sideboard only by a drop: there is no tile of it to drop on yet. */}
         {mouseLineDrag?.draggedWrittenIndex != null && !hasSideboard && (
           <SideboardDropZone
