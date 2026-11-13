@@ -49,6 +49,32 @@ export function createPostgresCatalog(sql: Sql): Catalog {
       return entriesOf(sql, [...new Set(oracleIds)]);
     },
 
+    async searchByName(key, { minSimilarity, limit }) {
+      const startsWithKey = `${key.replace(/[\\%_]/g, '\\$&')}%`;
+      const found = await sql.begin(async (tx) => {
+        // `%` matches at `pg_trgm.similarity_threshold`; `true` scopes it to this transaction.
+        await tx`select set_config('pg_trgm.similarity_threshold', ${String(minSimilarity)}, true)`;
+        return tx<{ oracleId: string }[]>`
+          select n.oracle_id as "oracleId"
+          from card_names n
+          join cards c on c.oracle_id = n.oracle_id
+          where n.key like ${startsWithKey} or n.key % ${key}
+          group by n.oracle_id, c.name
+          order by
+            min(case when n.key = ${key} then 0 when n.key like ${startsWithKey} then 1 else 2 end),
+            max(similarity(n.key, ${key})) desc,
+            c.name
+          limit ${limit}
+        `;
+      });
+      const entries = await entriesOf(
+        sql,
+        found.map((row) => row.oracleId),
+      );
+      const byId = new Map(entries.map((entry) => [entry.card.oracleId, entry]));
+      return found.flatMap((row) => byId.get(row.oracleId) ?? []);
+    },
+
     async findCard(oracleId) {
       const [entry] = await entriesOf(sql, [oracleId]);
       return entry ?? null;
