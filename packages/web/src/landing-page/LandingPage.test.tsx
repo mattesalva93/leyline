@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
 import { inMemoryServer } from '../in-memory-server.ts';
@@ -17,6 +18,15 @@ beforeEach(() => {
 /** Whether `earlier` comes before `later` in the page, as a reader meets them. */
 function comesBefore(earlier: Element, later: Element): boolean {
   return Boolean(earlier.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING);
+}
+
+function tutorialSteps(): HTMLElement[] {
+  const tutorial = screen.getByRole('region', { name: 'Come funziona' });
+  return within(tutorial).getAllByRole('listitem');
+}
+
+function screenshotOf(step: HTMLElement): HTMLImageElement {
+  return within(step).getByRole<HTMLImageElement>('img');
 }
 
 describe('the landing page under its start', () => {
@@ -39,5 +49,44 @@ describe('the landing page under its start', () => {
       screen.getByRole('group', { name: 'Lingua delle carte' }),
       screen.getByRole('button', { name: 'Prova con un esempio' }),
     ].forEach((startControl) => expect(comesBefore(startControl, features)).toBe(true));
+  });
+
+  it('walks through the generator in four steps after that, each a sentence with its screenshot', () => {
+    mountApp('/proxy');
+
+    expect(
+      comesBefore(
+        screen.getByRole('region', { name: 'Cosa sa fare' }),
+        screen.getByRole('region', { name: 'Come funziona' }),
+      ),
+    ).toBe(true);
+    expect(tutorialSteps().map((step) => within(step).getByRole('paragraph').textContent)).toEqual([
+      'Incolla la lista: la griglia la riconosce riga per riga e segnala quelle da sistemare.',
+      'Seleziona una tessera e scegli la stampa: puoi ripartire le copie su stampe diverse.',
+      'Imposta il foglio, formato e segni di taglio, e guarda l’anteprima.',
+      'Scarica il PDF e stampalo al 100%.',
+    ]);
+    expect(new Set(tutorialSteps().map((step) => screenshotOf(step).src)).size).toBe(4);
+  });
+
+  it('describes each screenshot with an alternative text of its own', () => {
+    mountApp('/proxy');
+
+    const descriptions = tutorialSteps().map((step) => screenshotOf(step).alt);
+    descriptions.forEach((description) => expect(description).not.toBe(''));
+    expect(new Set(descriptions).size).toBe(4);
+  });
+
+  it('shows the screenshots taken in the theme in use, and the other ones once the theme is switched', async () => {
+    const user = userEvent.setup();
+    mountApp('/proxy');
+    const lightScreenshots = tutorialSteps().map((step) => screenshotOf(step).src);
+    lightScreenshots.forEach((address) => expect(address).toMatch(/-light\.jpg$/));
+
+    await user.click(screen.getByRole('button', { name: 'Passa al tema scuro' }));
+
+    expect(tutorialSteps().map((step) => screenshotOf(step).src)).toEqual(
+      lightScreenshots.map((address) => address.replace('-light.jpg', '-dark.jpg')),
+    );
   });
 });

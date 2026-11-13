@@ -6,11 +6,13 @@ import type { Generator } from '../use-generator.ts';
 import { DecklistEditor } from '../decklist-editor/DecklistEditor.tsx';
 import { EXAMPLE_DECKLIST } from './example-decklist.ts';
 import { GeneratorFeatures } from './GeneratorFeatures.tsx';
+import { Tutorial } from './Tutorial.tsx';
 
 /**
  * What the generator shows until a decklist is under way, in place of the workspace. Its start
  * comes first, kept short so that a phone shows it whole: the decklist text, the language of
- * the cards and a way to try the generator on an example. Under it, what the generator can do.
+ * the cards and a way to try the generator on an example. Under it, what the generator can do
+ * and how.
  */
 export function LandingPage({ generator }: { readonly generator: Generator }) {
   const { t } = useTranslation();
@@ -48,6 +50,7 @@ export function LandingPage({ generator }: { readonly generator: Generator }) {
           </div>
         </div>
         <GeneratorFeatures />
+        <Tutorial />
       </div>
     </div>
   );
