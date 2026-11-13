@@ -1792,6 +1792,38 @@ describe('a new decklist', () => {
     expect(screen.getByLabelText<HTMLSelectElement>('Formato della pagina').value).toBe('A4');
   });
 
+  /** Starts a new decklist, confirming it. */
+  async function startNewDecklist(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('button', { name: 'Nuova decklist' }));
+    await user.click(screen.getByRole('button', { name: 'Svuota' }));
+  }
+
+  it('leaves no error of the emptied decklist behind', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    vi.mocked(api.resolveDecklistText).mockRejectedValue(new Error('offline'));
+    await user.type(screen.getByLabelText('Decklist'), '1 Brainstorm{Enter}');
+    await screen.findByRole('alert');
+
+    await startNewDecklist(user);
+
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('opens empty after a reload, with no error even while the server is out of reach', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    await startNewDecklist(user);
+    vi.mocked(api.resolveDecklistText).mockRejectedValue(new Error('offline'));
+
+    cleanup();
+    mountApp('/proxy');
+
+    expect(decklistValue()).toBe('');
+    await act(() => Promise.resolve());
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('keeps the decklist when the user changes their mind', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });

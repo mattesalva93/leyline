@@ -134,8 +134,9 @@ export function useGenerator(): Generator {
   } | null>(null);
 
   // Whether the decklist left on the device still waits to be resolved again, every line of it.
+  // An empty one has nothing to ask the server.
   const [isSavedDecklistUnresolved, setIsSavedDecklistUnresolved] = useState(
-    savedDecklist !== null,
+    () => (savedDecklist?.decklistText.trim() ?? '') !== '',
   );
 
   const writtenLines = writtenLinesOf(decklistText);
@@ -394,6 +395,7 @@ export function useGenerator(): Generator {
 
   function startNewDecklist() {
     setPendingSplit(null);
+    setLastResolveFailed(false);
     setChoicesByLine(new Map());
     setSheetOptions(defaultSheetOptions);
     setDecklistText('');
