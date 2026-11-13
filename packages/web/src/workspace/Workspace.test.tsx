@@ -197,6 +197,50 @@ describe('the generator page', () => {
     expect(screen.queryByRole('button', { name: 'Modifica Brainstorm' })).toBeNull();
   });
 
+  it('recognises every line of a decklist pasted over a longer text, in one request', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}2 Ponder{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Ponder' });
+    const requestsBefore = vi.mocked(api.resolveDecklistText).mock.calls.length;
+    const decklist = screen.getByLabelText<HTMLTextAreaElement>('Decklist');
+    decklist.setSelectionRange(0, decklist.value.length);
+
+    await user.paste('2 Brainstorm\n1 Island\n');
+
+    expect(decklistValue()).toBe('2 Brainstorm\n1 Island\n');
+    expect(await screen.findByRole('button', { name: 'Modifica Brainstorm' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Modifica Island' })).toBeTruthy();
+    expect(vi.mocked(api.resolveDecklistText).mock.calls.length).toBe(requestsBefore + 1);
+  });
+
+  it('recognises every line of a decklist pasted over a text with as many lines, in one request', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Lightning Bolt' });
+    const requestsBefore = vi.mocked(api.resolveDecklistText).mock.calls.length;
+    const decklist = screen.getByLabelText<HTMLTextAreaElement>('Decklist');
+    decklist.setSelectionRange(0, decklist.value.length);
+
+    await user.paste('2 Brainstorm\n1 Island\n');
+
+    expect(decklistValue()).toBe('2 Brainstorm\n1 Island\n');
+    expect(await screen.findByRole('button', { name: 'Modifica Brainstorm' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Modifica Island' })).toBeTruthy();
+    expect(vi.mocked(api.resolveDecklistText).mock.calls.length).toBe(requestsBefore + 1);
+  });
+
+  it('asks the server nothing while a line in the middle is typed, letter by letter', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}2 Ponder');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    const requestsBefore = vi.mocked(api.resolveDecklistText).mock.calls.length;
+    const decklist = screen.getByLabelText<HTMLTextAreaElement>('Decklist');
+
+    decklist.setSelectionRange('4 Sol'.length, '4 Sol'.length);
+
+    await user.keyboard('a');
+
+    expect(decklistValue()).toBe('4 Sola Ring\n2 Ponder');
+    expect(vi.mocked(api.resolveDecklistText).mock.calls.length).toBe(requestsBefore);
+  });
+
   it('resolves an ambiguous line to the candidate the user picks', async () => {
     const user = await mountPageAndWrite('1 Lightning{Enter}');
     expect(await screen.findByText('Quale carta intendevi?')).toBeTruthy();

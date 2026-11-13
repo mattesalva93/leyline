@@ -27,7 +27,9 @@ export function DecklistEditor({
         className={`resize-none bg-transparent p-3 font-mono text-[13px] leading-5 outline-none ${className}`}
         value={generator.decklistText}
         placeholder={t('decklist.placeholder')}
-        onChange={(event) => generator.writeDecklistText(event.target.value)}
+        onChange={(event) =>
+          generator.writeDecklistText(event.target.value, event.target.selectionEnd)
+        }
         onPaste={(event) => {
           const decklistTextarea = event.currentTarget;
           const nextText = textAfterPasteAtEnd(
@@ -41,7 +43,7 @@ export function DecklistEditor({
           if (nextText === null) return;
           event.preventDefault();
           // Setting a textarea's value puts the caret at its end: on the new empty line.
-          generator.writeDecklistText(nextText);
+          generator.writeDecklistText(nextText, nextText.length);
         }}
         onBlur={generator.resolveEveryLine}
       />
