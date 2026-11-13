@@ -1,4 +1,11 @@
-import { useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FocusEvent,
+  type KeyboardEvent,
+  type MouseEvent,
+} from 'react';
 import { cellAfterArrow, type Arrow, type CellGroup } from '@mtg-suite/core';
 
 const CELL_ATTRIBUTE = 'data-grid-cell';
@@ -37,6 +44,19 @@ export function isOnCell(event: KeyboardEvent): boolean {
  */
 export function isWithinCell(event: KeyboardEvent): boolean {
   return event.target instanceof Node && event.currentTarget.contains(event.target);
+}
+
+/**
+ * Whether the click landed on the grid itself, outside every cell: not on a tile, nor in a dialog
+ * a cell opened, which React hands on to the grid from outside it.
+ */
+export function isOnEmptyGridSpace(event: MouseEvent): boolean {
+  const { target } = event;
+  return (
+    target instanceof Element &&
+    event.currentTarget.contains(target) &&
+    target.closest(`[${CELL_ATTRIBUTE}]`) === null
+  );
 }
 
 /**

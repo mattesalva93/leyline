@@ -7,7 +7,7 @@ import { EmptySectionsRow } from './EmptySectionsRow.tsx';
 import { emptySectionsOf, gridCellKeysOf, type GridSection } from './grid-sections.ts';
 import { siblingGroupColoursOf } from './sibling-group-colours.ts';
 import { SideboardDropZone } from './SideboardDropZone.tsx';
-import { useGridCellFocus } from './use-grid-cell-focus.ts';
+import { isOnEmptyGridSpace, useGridCellFocus } from './use-grid-cell-focus.ts';
 import { useLineDrag } from './use-line-drag.ts';
 
 interface CardGridProps extends Omit<
@@ -24,11 +24,13 @@ interface CardGridProps extends Omit<
  * The decklist as tiles, section by section, in the order of the text within each, each line's
  * sibling tiles side by side, then an add tile for each section with no card yet. A tile the pointer rests on shows its card enlarged; the mouse
  * drags a tile to move its line, into another section too. The keyboard stops on the grid once,
- * and the arrows go from tile to tile.
+ * and the arrows go from tile to tile. A click on the grid outside every tile lets go of the
+ * selected one.
  */
 export function CardGrid({
   sections,
   selection,
+  onSelect,
   tilesAreDraggable,
   onMoveLine,
   ...sectionProps
@@ -51,6 +53,11 @@ export function CardGrid({
         ref={gridRef}
         role="region"
         aria-label={t('workspace.cardGrid')}
+        // The grid fills the centre, so the empty space below the last tile is the grid's too.
+        className="min-h-full"
+        onClick={(event) => {
+          if (selection && isOnEmptyGridSpace(event)) onSelect(null);
+        }}
         {...gridFocusHandlers}
         {...(mouseLineDrag?.gridDropHandlers ?? {})}
       >
@@ -60,6 +67,7 @@ export function CardGrid({
             section={section}
             siblingGroupColours={siblingGroupColours}
             selection={selection}
+            onSelect={onSelect}
             zoomOn={zoomOn}
             lineDrag={mouseLineDrag}
             cellPropsOf={cellPropsOf}
