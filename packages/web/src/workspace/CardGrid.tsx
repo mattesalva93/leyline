@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TILE_ZOOM_WAIT_MS, useZoomedCard } from '../use-zoomed-card.tsx';
 import { CardGridSection, type CardGridSectionProps } from './CardGridSection.tsx';
+import { EmptySectionsRow } from './EmptySectionsRow.tsx';
 import type { GridSection } from './grid-sections.ts';
 import { SideboardDropZone } from './SideboardDropZone.tsx';
 import { useLineDrag } from './use-line-drag.ts';
@@ -16,7 +17,7 @@ interface CardGridProps extends Omit<CardGridSectionProps, 'section' | 'zoomOn' 
 
 /**
  * The decklist as tiles, section by section, in the order of the text within each, each line's
- * sibling tiles side by side. A tile the pointer rests on shows its card enlarged; the mouse
+ * sibling tiles side by side, then an add tile for each section with no card yet. A tile the pointer rests on shows its card enlarged; the mouse
  * drags a tile to move its line, into another section too.
  */
 export function CardGrid({
@@ -55,6 +56,12 @@ export function CardGrid({
             {...sectionProps}
           />
         ))}
+        <EmptySectionsRow
+          shownSections={sections.map((section) => section.name)}
+          tileWidthPx={sectionProps.tileWidthPx}
+          lang={sectionProps.defaultLang}
+          onAddCard={sectionProps.onAddCard}
+        />
         {/* A line can open the sideboard only by a drop: there is no tile of it to drop on yet. */}
         {mouseLineDrag?.draggedWrittenIndex != null && !hasSideboard && (
           <SideboardDropZone

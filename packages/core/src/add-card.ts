@@ -1,0 +1,113 @@
+import { sectionOfEachWrittenLine } from './decklist-section.ts';
+import { writtenLinesOf } from './decklist-text.ts';
+import { parseLine, resolvedLine, writtenWithQuantity } from './decklist.ts';
+import { cardKeys, nameKey } from './name-match.ts';
+import { moveWrittenLine, type LineMove } from './move-written-line.ts';
+import type { Candidate, DecklistLine, DecklistSection, Lang, ResolvedLine } from './types.ts';
+
+/** The card the user picked to add, and the section it goes into. */
+export interface CardToAdd {
+  readonly section: DecklistSection;
+  readonly candidate: Candidate;
+  /** The language the line asks for: the one `candidate`'s default print was picked in. */
+  readonly lang: Lang;
+}
+
+/** A line of the decklist text the server answered for, with where it is written. */
+export interface LineInText {
+  readonly writtenIndex: number;
+  readonly line: DecklistLine;
+}
+
+/** What adding a card makes of the decklist text. */
+export type CardAddition = LineMove & {
+  /** Where the line holding the added copy is written in the new text. */
+  readonly writtenIndex: number;
+} & (
+    | {
+        /** The card came in on a line of its own, already resolved to `candidate`. */
+        readonly added: 'line';
+        readonly line: ResolvedLine;
+      }
+    | {
+        /**
+         * The card came in as one more copy on the section's line of it, now of `quantity`: a
+         * line resolved to the card, or one not resolved to any card yet that bears its name.
+         */
+        readonly added: 'copy';
+        readonly quantity: number;
+      }
+  );
+
+/**
+ * The decklist text with one copy of the card added to its section: one more on the section's
+ * line of the card when it has one, otherwise a line of its own, written by the card's English
+ * name after the section's last card. A section the text has no header of opens at its end.
+ */
+export function addCardToSection(
+  text: string,
+  { section, candidate, lang }: CardToAdd,
+  linesInText: readonly LineInText[],
+): CardAddition {
+  const writtenLines = writtenLinesOf(text);
+  const sections = sectionOfEachWrittenLine(writtenLines);
+  const cardNames = cardKeys(
+    candidate.card.name,
+    candidate.defaultPrint ? [candidate.defaultPrint.printedName] : [],
+  );
+  /** The quantity of the line written at `writtenIndex` when it is a line of the card. */
+  function quantityOfCardAt(writtenIndex: number): number | null {
+    const parsed = parseLine(writtenLines[writtenIndex] ?? '');
+    const line = linesInText.find((inText) => inText.writtenIndex === writtenIndex)?.line;
+    if (!parsed || sections[writtenIndex] !== section) return null;
+    // A line resolved to another card is not this card's, whatever it is written as.
+    const isTheCard =
+      line?.status === 'resolved'
+        ? line.card.oracleId === candidate.card.oracleId
+        : cardNames.includes(nameKey(parsed.name));
+    return isTheCard ? parsed.quantity : null;
+  }
+  const quantities = writtenLines.map((_writtenLine, index) => quantityOfCardAt(index));
+  const existingIndex = quantities.findLastIndex((quantity) => quantity !== null);
+  const existingQuantity = quantities[existingIndex];
+  if (existingQuantity != null) {
+    const quantity = existingQuantity + 1;
+    return {
+      added: 'copy',
+      text: writtenLines
+        .with(existingIndex, writtenWithQuantity(writtenLines[existingIndex] ?? '', quantity))
+        .join('\n'),
+      previousWrittenIndexes: writtenLines.map((_writtenLine, index) => index),
+      writtenIndex: existingIndex,
+      quantity,
+    };
+  }
+  const newLine = `1 ${candidate.card.name}`;
+  const lineOf = (writtenLine: string) =>
+    resolvedLine({ text: writtenLine, quantity: 1, lang }, candidate);
+  if (text.trim() === '') {
+    return {
+      added: 'line',
+      text: newLine,
+      previousWrittenIndexes: [null],
+      writtenIndex: 0,
+      line: lineOf(newLine),
+    };
+  }
+  // Written at the end first, then moved: the move knows where a section ends and how to open it.
+  const appendedIndex = writtenLines.length;
+  const move = moveWrittenLine([...writtenLines, newLine].join('\n'), appendedIndex, {
+    section,
+    nextTo: null,
+  });
+  const writtenIndex = move.previousWrittenIndexes.indexOf(appendedIndex);
+  return {
+    added: 'line',
+    text: move.text,
+    previousWrittenIndexes: move.previousWrittenIndexes.map((index) =>
+      index === appendedIndex ? null : index,
+    ),
+    writtenIndex,
+    line: lineOf(writtenLinesOf(move.text)[writtenIndex] ?? newLine),
+  };
+}

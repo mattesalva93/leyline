@@ -578,6 +578,101 @@ describe('GET /api/cards/:oracleId/prints', () => {
   });
 });
 
+describe('GET /api/cards/search', () => {
+  const counterspell = { oracle_id: 'aaaaaaaa-0000-0000-0000-00000000c0de', name: 'Counterspell' };
+  /**
+   * Twelve cards whose name starts with "Forest Card": more than one search returns. Their last
+   * letters, G to R, share no trigram with "forest card", so every name is as close to it.
+   */
+  const forestCards = Array.from({ length: 12 }, (_, index) =>
+    scryfallCard({
+      id: `forest-card-${index}`,
+      oracle_id: `aaaaaaaa-0000-0000-0000-0000000f00${String(index).padStart(2, '0')}`,
+      name: `Forest Card ${String.fromCharCode(71 + index)}`,
+    }),
+  );
+
+  beforeAll(async () => {
+    await importBulk(
+      db.sql,
+      bulkStream([
+        scryfallCard({ id: 'counterspell-en', ...counterspell, set: 'mh2' }),
+        scryfallCard({
+          id: 'counterspell-it',
+          ...counterspell,
+          lang: 'it',
+          set: 'mh2',
+          printed_name: 'Contromagia',
+        }),
+        ...forestCards,
+      ]),
+    );
+  });
+
+  async function search(query: Record<string, string>) {
+    const response = await createApp({ sql: db.sql }).request(
+      `/api/cards/search?${new URLSearchParams(query)}`,
+    );
+    return {
+      status: response.status,
+      body: (await response.json()) as {
+        cards: { card: { name: string }; defaultPrint: { id: string } | null }[];
+      },
+    };
+  }
+
+  it('finds a card by its English name, with its default print in the asked language', async () => {
+    const { status, body } = await search({ q: 'counterspell', lang: 'it' });
+
+    expect(status).toBe(200);
+    expect(body.cards).toMatchObject([
+      { card: { name: 'Counterspell' }, defaultPrint: { id: 'counterspell-it' } },
+    ]);
+  });
+
+  it('finds a card by its Italian name', async () => {
+    const { body } = await search({ q: 'Contromagia', lang: 'en' });
+
+    expect(body.cards).toMatchObject([
+      { card: { name: 'Counterspell' }, defaultPrint: { id: 'counterspell-en' } },
+    ]);
+  });
+
+  it('forgives a misspelled name', async () => {
+    const { body } = await search({ q: 'contrspell', lang: 'en' });
+
+    expect(body.cards.map((found) => found.card.name)).toEqual(['Counterspell']);
+  });
+
+  it('finds the cards whose name starts with what the user has typed so far', async () => {
+    const { body } = await search({ q: 'contro', lang: 'it' });
+
+    expect(body.cards.map((found) => found.card.name)).toEqual(['Counterspell']);
+  });
+
+  it('returns no card when no name comes close', async () => {
+    const { status, body } = await search({ q: 'xyzzy plover', lang: 'en' });
+
+    expect(status).toBe(200);
+    expect(body.cards).toEqual([]);
+  });
+
+  it('returns 8 cards at most, closest first', async () => {
+    const { body } = await search({ q: 'forest card', lang: 'en' });
+
+    expect(body.cards.map((found) => found.card.name)).toEqual(
+      forestCards.slice(0, 8).map((card) => card.name),
+    );
+  });
+
+  it('rejects a search without a name, or in a language the catalog does not hold', async () => {
+    expect((await search({ lang: 'en' })).status).toBe(400);
+    expect((await search({ q: '  ', lang: 'en' })).status).toBe(400);
+    expect((await search({ q: 'x'.repeat(201), lang: 'en' })).status).toBe(400);
+    expect((await search({ q: 'counterspell', lang: 'fr' })).status).toBe(400);
+  });
+});
+
 describe('GET /api/health', () => {
   it('answers ok, so the compose healthcheck can tell a serving api', async () => {
     const response = await createApp({ sql: db.sql }).request('/api/health');

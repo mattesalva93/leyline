@@ -1,7 +1,7 @@
 import { copiesByPrint } from './allocation.ts';
 import { defaultPrintFor, hasRealImage, qualityWarning } from './default-print.ts';
 import { SIDEBOARD_PREFIX, sectionOpenedBy } from './decklist-section.ts';
-import { cardKeys, nameKey, trigramSimilarity, trigrams } from './name-match.ts';
+import { MIN_SIMILARITY, cardKeys, nameKey, trigramSimilarity, trigrams } from './name-match.ts';
 import type {
   AmbiguousLine,
   Candidate,
@@ -13,8 +13,6 @@ import type {
   ResolvedLine,
 } from './types.ts';
 
-/** Least trigram similarity for a misspelled name to match a card: pg_trgm's default. */
-const MIN_SIMILARITY = 0.3;
 /**
  * How far below the closest card another one may score and still be suggested with it. A real
  * typo leads its runner-up by far more; a bare shared word ("lightning") does not.
@@ -34,7 +32,7 @@ interface PrintRef {
   readonly collectorNumber: string;
 }
 
-interface ParsedLine {
+export interface ParsedLine {
   readonly text: string;
   readonly quantity: number;
   readonly name: string;
@@ -54,7 +52,7 @@ function isIgnored(trimmed: string): boolean {
  * The card a line asks for, or `null` for blank lines, comments and section headers. The
  * sideboard prefix marks a card: a header is a line of its own, so a prefixed one is a card name.
  */
-function parseLine(text: string): ParsedLine | null {
+export function parseLine(text: string): ParsedLine | null {
   const written = text.trim();
   const trimmed = written.replace(SIDEBOARD_PREFIX, '');
   if (isIgnored(written) || trimmed === '') return null;
@@ -111,7 +109,7 @@ interface NamedEntry {
 
 type LineBase = Pick<DecklistLine, 'text' | 'quantity' | 'lang'>;
 
-function resolvedLine(base: LineBase, candidate: Candidate): ResolvedLine {
+export function resolvedLine(base: LineBase, candidate: Candidate): ResolvedLine {
   return { ...base, status: 'resolved', ...candidate, allocations: [] };
 }
 
@@ -225,9 +223,14 @@ export function setLineQuantity(line: DecklistLine, quantity: number): DecklistL
   if (!Number.isInteger(quantity) || quantity < 1) {
     throw new Error(`A line prints a whole number of copies, at least one: got ${quantity}`);
   }
+  return { ...line, quantity, text: writtenWithQuantity(line.text, quantity) };
+}
+
+/** The written line rewritten for `quantity` copies, as the user would write it. */
+export function writtenWithQuantity(writtenLine: string, quantity: number): string {
   const [, beforeQuantity = '', , timesMark = '', rest = ''] =
-    WRITTEN_QUANTITY.exec(line.text) ?? [];
-  return { ...line, quantity, text: `${beforeQuantity}${quantity}${timesMark} ${rest}` };
+    WRITTEN_QUANTITY.exec(writtenLine) ?? [];
+  return `${beforeQuantity}${quantity}${timesMark} ${rest}`;
 }
 
 /** How many copies `lines` ask for in all, printable or not. */

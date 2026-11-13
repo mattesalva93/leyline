@@ -1,6 +1,9 @@
 // How a written name is compared with card names. `api` builds its search index with
 // `cardKeys`, so the catalog and `core` agree on what a name looks like.
 
+/** Least trigram similarity for a misspelled name to match a card: pg_trgm's default. */
+export const MIN_SIMILARITY = 0.3;
+
 /** Lookup key for a name: case, spacing and accents do not matter. */
 export function nameKey(name: string): string {
   return name

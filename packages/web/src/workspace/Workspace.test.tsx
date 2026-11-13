@@ -170,9 +170,16 @@ function cardGrid() {
   return screen.getByRole('region', { name: 'Griglia delle carte' });
 }
 
+/** The tiles of `container`, in the order it shows them, leaving out the add tiles. */
+function tilesIn(container: HTMLElement) {
+  return within(container)
+    .getAllByRole('listitem')
+    .filter((item) => !within(item).queryByRole('button', { name: /^Aggiungi una carta a / }));
+}
+
 /** The tiles of the card grid, in the order the grid shows them. */
 function gridTiles() {
-  return within(cardGrid()).getAllByRole('listitem');
+  return tilesIn(cardGrid());
 }
 
 /** Each section of the card grid: its title with its card count, and the images of its tiles. */
@@ -181,9 +188,7 @@ function gridSections() {
     .getAllByRole('region')
     .map((section) => [
       within(section).getByRole('heading').textContent,
-      within(section)
-        .getAllByRole('listitem')
-        .map((tile) => tileSummary(tile)[0]),
+      tilesIn(section).map((tile) => tileSummary(tile)[0]),
     ]);
 }
 
@@ -438,7 +443,10 @@ describe('the quantity on a tile', () => {
 describe('a double-faced card', () => {
   it('shows its front on the tile and turns to its back with the flip button', async () => {
     const user = await mountPageAndWrite('1 Delver of Secrets{Enter}');
-    const tile = within(await screen.findByRole('listitem'));
+    await screen.findByRole('button', {
+      name: 'Modifica Delver of Secrets // Insectile Aberration',
+    });
+    const tile = tileAt(0);
     expect(tile.getByRole('img', { name: 'Immagine di Delver of Secrets' })).toBeTruthy();
 
     await user.click(tile.getByRole('button', { name: 'Gira Delver of Secrets' }));
@@ -1481,5 +1489,172 @@ describe('the empty workspace', () => {
         'step',
       );
     });
+  });
+});
+
+describe('the add tile', () => {
+  /** Opens the search of the add tile ending `section`, and types `name` into it. */
+  async function searchToAdd(
+    user: ReturnType<typeof userEvent.setup>,
+    section: string,
+    name: string,
+  ) {
+    await user.click(
+      await screen.findByRole('button', { name: `Aggiungi una carta a ${section}` }),
+    );
+    await user.type(screen.getByRole('combobox', { name: 'Nome della carta' }), name);
+    return screen.findByRole('listbox', { name: 'Carte trovate' });
+  }
+
+  it('ends each section of the grid', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}{Enter}Sideboard{Enter}1 Pyroblast{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Pyroblast' });
+
+    const sections = within(cardGrid()).getAllByRole('region');
+    expect(
+      sections.map((section) => within(section).getAllByRole('listitem').at(-1)?.textContent),
+    ).toEqual(['Aggiungi una carta', 'Aggiungi una carta']);
+  });
+
+  it('stands for each section the decklist has no card in, after the others, under no title', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    const emptySections = within(cardGrid()).getByRole('group', { name: 'Sezioni vuote' });
+    expect(
+      within(emptySections)
+        .getAllByRole('button')
+        .map((tile) => tile.textContent),
+    ).toEqual([
+      'Aggiungi a Comandante',
+      'Aggiungi a Terre',
+      'Aggiungi a Sideboard',
+      'Aggiungi a Token',
+    ]);
+    expect(gridSections()).toEqual([['Mazzo 4 carte', ['Immagine di Sol Ring']]]);
+  });
+
+  it('opens an empty section with its header in the text, and its title in the grid', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const found = await searchToAdd(user, 'Sideboard', 'pyrobl');
+
+    await user.click(await within(found).findByRole('option', { name: /Pyroblast/ }));
+
+    expect(decklistValue()).toBe('4 Sol Ring\n\nSideboard\n1 Pyroblast');
+    expect(gridSections()).toEqual([
+      ['Mazzo 4 carte', ['Immagine di Sol Ring']],
+      ['Sideboard 1 carta', ['Immagine di Pyroblast']],
+    ]);
+  });
+
+  it('searches once the user stops typing, showing each card found with its image', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+
+    const found = await searchToAdd(user, 'Mazzo', 'lightn');
+
+    expect(await within(found).findByRole('option', { name: /Lightning Bolt/ })).toBeTruthy();
+    expect(within(found).getByRole('option', { name: /Lightning Helix/ })).toBeTruthy();
+    expect(within(found).getByRole('img', { name: 'Immagine di Lightning Bolt' })).toBeTruthy();
+    expect(vi.mocked(api.searchCardsByName)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(api.searchCardsByName)).toHaveBeenCalledWith('lightn', 'it');
+  });
+
+  it('forgives a misspelled name, as the decklist does', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+
+    const found = await searchToAdd(user, 'Mazzo', 'brainstrom');
+
+    expect(await within(found).findByRole('option', { name: /Brainstorm/ })).toBeTruthy();
+  });
+
+  it('says so when no card comes close', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Aggiungi una carta a Mazzo' }));
+
+    await user.type(screen.getByRole('combobox', { name: 'Nome della carta' }), 'xyzzy plover');
+
+    expect(await screen.findByText('Nessuna carta trovata')).toBeTruthy();
+  });
+
+  it('adds the picked card at the end of its section, as a tile and as a line of the text', async () => {
+    const user = await mountPageAndWrite(
+      '4 Sol Ring{Enter}{Enter}Sideboard{Enter}1 Pyroblast{Enter}',
+    );
+    const found = await searchToAdd(user, 'Mazzo', 'brainst');
+
+    await user.click(await within(found).findByRole('option', { name: /Brainstorm/ }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Modifica Brainstorm' })).toBeTruthy();
+    expect(decklistValue()).toBe('4 Sol Ring\n1 Brainstorm\n\nSideboard\n1 Pyroblast\n');
+  });
+
+  it('adds a copy to the line of a card the section already has', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const found = await searchToAdd(user, 'Mazzo', 'sol ring');
+
+    await user.click(await within(found).findByRole('option', { name: /Sol Ring/ }));
+
+    expect(decklistValue()).toBe('5 Sol Ring\n');
+  });
+
+  it('adds a copy to a line of the card the server has not resolved yet', async () => {
+    vi.mocked(api.resolveDecklistText).mockImplementation(() => new Promise(() => {}));
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const found = await searchToAdd(user, 'Mazzo', 'sol ring');
+
+    await user.click(await within(found).findByRole('option', { name: /Sol Ring/ }));
+
+    expect(decklistValue()).toBe('5 Sol Ring\n');
+  });
+
+  it('adds a copy to an ambiguous line written with the name of the card, picking that card', async () => {
+    const otherIsland = catalogEntry('island-other', 'Island', 'oth');
+    Object.entries(inMemoryServer([...CATALOG, otherIsland])).forEach(([call, answer]) => {
+      vi.mocked(api[call as keyof typeof api]).mockImplementation(answer as never);
+    });
+    const user = await mountPageAndWrite('1 Island{Enter}');
+    expect(await screen.findByText('Quale carta intendevi?')).toBeTruthy();
+    const found = await searchToAdd(user, 'Mazzo', 'island');
+
+    const [firstIsland] = await within(found).findAllByRole('option', { name: /Island/ });
+    if (!firstIsland) throw new Error('no Island found');
+    await user.click(firstIsland);
+
+    expect(decklistValue()).toBe('2 Island\n');
+    expect(screen.getByRole('button', { name: 'Modifica Island' })).toBeTruthy();
+    expect(screen.queryByText('Quale carta intendevi?')).toBeNull();
+  });
+
+  it('is used from the keyboard: the arrows go through the cards found, Enter adds one', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const found = await searchToAdd(user, 'Mazzo', 'lightn');
+    await within(found).findByRole('option', { name: /Lightning Helix/ });
+
+    await user.keyboard('{ArrowDown}{ArrowDown}{ArrowUp}{ArrowDown}{Enter}');
+
+    expect(decklistValue()).toBe('4 Sol Ring\n1 Lightning Helix\n');
+  });
+
+  it('closes with Escape, adding nothing', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const found = await searchToAdd(user, 'Mazzo', 'lightn');
+    await within(found).findByRole('option', { name: /Lightning Bolt/ });
+
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(decklistValue()).toBe('4 Sol Ring\n');
+  });
+
+  it('starts the decklist from the empty workspace', async () => {
+    const user = userEvent.setup();
+    mountApp('/proxy');
+    const found = await searchToAdd(user, 'Mazzo', 'sol ri');
+
+    await user.click(await within(found).findByRole('option', { name: /Sol Ring/ }));
+
+    expect(await screen.findByRole('button', { name: 'Modifica Sol Ring' })).toBeTruthy();
+    expect(decklistValue()).toBe('1 Sol Ring');
   });
 });

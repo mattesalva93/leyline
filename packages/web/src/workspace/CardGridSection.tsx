@@ -1,12 +1,14 @@
-import type { LineSide, Print } from '@mtg-suite/core';
+import type { Candidate, DecklistSection, Lang, LineSide, Print } from '@mtg-suite/core';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ZoomOn } from '../use-zoomed-card.tsx';
+import { AddCardTile } from './AddCardTile.tsx';
 import type { GridSection } from './grid-sections.ts';
 import { dropMarkSideOf, isSelected, type GridTile, type TileSelection } from './grid-tiles.ts';
 import { ImagelessTile } from './ImagelessTile.tsx';
-import { PrintTileCard, TILE_GAP_PX } from './PrintTileCard.tsx';
+import { PrintTileCard } from './PrintTileCard.tsx';
 import { ReorderableTileItem } from './ReorderableTileItem.tsx';
+import { TILE_GRID_CLASS, tileGridStyle } from './tile-grid.ts';
 import type { LineDrag } from './use-line-drag.ts';
 
 export interface CardGridSectionProps {
@@ -21,6 +23,9 @@ export interface CardGridSectionProps {
   readonly onSelect: (selection: TileSelection | null) => void;
   readonly onPickCandidate: (writtenIndex: number, oracleId: string) => void;
   readonly onTileQuantityChange: (writtenIndex: number, print: Print, quantity: number) => void;
+  /** The language the add tile shows and adds cards in. */
+  readonly defaultLang: Lang;
+  readonly onAddCard: (section: DecklistSection, candidate: Candidate) => void;
 }
 
 /** How many columns `grid` lays its tiles in, updated as its width changes. */
@@ -47,7 +52,7 @@ function dropMarkOf(gridTile: GridTile, lineDrag: LineDrag | null): LineSide | n
     : null;
 }
 
-/** One section of the card grid: its title with its card count, then its tiles. */
+/** One section of the card grid: its title with its card count, then its tiles, then the add tile. */
 export function CardGridSection({
   section,
   tileWidthPx,
@@ -58,6 +63,8 @@ export function CardGridSection({
   onSelect,
   onPickCandidate,
   onTileQuantityChange,
+  defaultLang,
+  onAddCard,
 }: CardGridSectionProps) {
   const { t } = useTranslation();
   const titleId = useId();
@@ -71,14 +78,7 @@ export function CardGridSection({
           {t('workspace.cardCount', { count: section.cardCount })}
         </span>
       </h2>
-      <ul
-        ref={gridRef}
-        className="grid content-start gap-y-3 p-1 pr-6 pb-4 pl-6"
-        style={{
-          columnGap: TILE_GAP_PX,
-          gridTemplateColumns: `repeat(auto-fill, minmax(${tileWidthPx}px, 1fr))`,
-        }}
-      >
+      <ul ref={gridRef} className={TILE_GRID_CLASS} style={tileGridStyle(tileWidthPx)}>
         {section.gridTiles.map((gridTile, index) => {
           const selected = isSelected(gridTile, selection);
           const toggleSelection = (printId: string | null) =>
@@ -116,6 +116,9 @@ export function CardGridSection({
             </ReorderableTileItem>
           );
         })}
+        <li>
+          <AddCardTile section={section.name} lang={defaultLang} onAdd={onAddCard} />
+        </li>
       </ul>
     </section>
   );

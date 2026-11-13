@@ -1,4 +1,12 @@
-import { isLang, isPrintCursor, listPrints, resolveDecklist, type Lang } from '@mtg-suite/core';
+import {
+  CARD_SEARCH_LIMIT,
+  isLang,
+  isPrintCursor,
+  listPrints,
+  resolveDecklist,
+  searchCards,
+  type Lang,
+} from '@mtg-suite/core';
 import { Hono } from 'hono';
 import type { Sql } from './db.ts';
 import { createPostgresCatalog } from './postgres-catalog.ts';
@@ -12,6 +20,9 @@ const MAX_DECKLIST_LENGTH = 50_000;
 
 /** Most prints one call returns, whatever the client asks for: keeps every response small. */
 const MAX_PRINTS_PER_PAGE = 50;
+
+/** Longest name a search accepts, in characters: far above any card name. */
+const MAX_SEARCH_LENGTH = 200;
 
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 
@@ -50,6 +61,25 @@ export function createApp(deps: AppDeps): Hono {
       lang: request.lang,
     });
     return c.json({ lines });
+  });
+
+  app.get('/api/cards/search', async (c) => {
+    const { q, lang = 'en' } = c.req.query();
+    if (q === undefined || q.trim() === '' || q.length > MAX_SEARCH_LENGTH || !isLang(lang)) {
+      return c.json(
+        {
+          error: `Expected the query ?q=<a name of up to ${MAX_SEARCH_LENGTH} characters>&lang=en|it.`,
+        },
+        400,
+      );
+    }
+    const cards = await searchCards(catalog, {
+      query: q,
+      lang,
+      today: today(),
+      limit: CARD_SEARCH_LIMIT,
+    });
+    return c.json({ cards });
   });
 
   app.get('/api/cards/:oracleId/prints', async (c) => {

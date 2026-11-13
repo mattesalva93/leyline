@@ -1,4 +1,4 @@
-import type { DecklistLine, Lang, PrintPage } from '@mtg-suite/core';
+import type { Candidate, DecklistLine, Lang, PrintPage } from '@mtg-suite/core';
 
 export async function resolveDecklistText(text: string, lang: Lang): Promise<DecklistLine[]> {
   const response = await fetch('/api/decklists/resolve', {
@@ -55,4 +55,13 @@ export async function fetchPrintPage(
   });
   if (!response.ok) throw new Error(`Prints failed with ${response.status}`);
   return (await response.json()) as PrintPage;
+}
+
+/** The cards whose name, English or in a language the catalog holds, comes close to `query`. */
+export async function searchCardsByName(query: string, lang: Lang): Promise<Candidate[]> {
+  const response = await fetch(`/api/cards/search?${new URLSearchParams({ q: query, lang })}`, {
+    headers: { accept: 'application/json' },
+  });
+  if (!response.ok) throw new Error(`Search failed with ${response.status}`);
+  return ((await response.json()) as { cards: Candidate[] }).cards;
 }

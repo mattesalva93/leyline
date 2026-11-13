@@ -18,6 +18,8 @@ export function CardsView({
       onSelect={selectTile}
       onPickCandidate={generator.pickCandidate}
       onTileQuantityChange={generator.changeTileQuantity}
+      defaultLang={generator.defaultLang}
+      onAddCard={generator.addCard}
       tilesAreDraggable={tilesAreDraggable}
       onMoveLine={moveLine}
     />

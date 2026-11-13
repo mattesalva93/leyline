@@ -1,4 +1,5 @@
 import {
+  addCardToSection,
   applyAllocationChoice,
   applyCandidateChoice,
   changeTileQuantity as changeTileQuantityInText,
@@ -14,6 +15,7 @@ import {
   setLineQuantity,
   unprintedLines,
   type AllocationChoice,
+  type Candidate,
   type DecklistLine,
   type DecklistSection,
   type Lang,
@@ -107,6 +109,11 @@ export interface Generator {
   readonly chooseAllocations: (writtenIndex: number, allocations: AllocationChoice) => void;
   /** Moves the line at `writtenIndex` to `destination` in the decklist text, with its choices. */
   readonly moveLine: (writtenIndex: number, destination: LineDestination) => LineMove;
+  /**
+   * Adds one copy of `candidate`'s card to `section`: one more on the section's line of it, or a
+   * line of its own at the end of the section, already resolved.
+   */
+  readonly addCard: (section: DecklistSection, candidate: Candidate) => void;
 
   readonly sheetOptions: SheetOptions;
   readonly changeSheetOptions: (options: SheetOptions) => void;
@@ -355,6 +362,46 @@ export function useGenerator(): Generator {
     return move;
   }
 
+  /**
+   * Writes the added card into the decklist text, every other line with its choices. The line
+   * it lands on keeps a resolution the server need not be asked for, and so do the lines the
+   * addition writes besides it (a section header), which name no card. A copy added to an
+   * ambiguous line picks the card for it; one added to a line not resolved yet asks the server.
+   */
+  function addCard(section: DecklistSection, candidate: Candidate) {
+    const linesInText = cardLines.flatMap(({ writtenIndex, line }) =>
+      line ? [{ writtenIndex, line }] : [],
+    );
+    const addition = addCardToSection(
+      decklistText,
+      { section, candidate, lang: defaultLang },
+      linesInText,
+    );
+    const nextWrittenLines = writtenLinesOf(addition.text);
+    let choices = choicesOfEveryLine();
+    addition.previousWrittenIndexes.forEach((previousIndex, nextIndex) => {
+      if (previousIndex === null && nextIndex !== addition.writtenIndex) {
+        keepResolution(nextWrittenLines[nextIndex] ?? '', null);
+      }
+    });
+    if (addition.added === 'line') {
+      keepResolution(addition.line.text, addition.line);
+    } else {
+      const { writtenIndex, quantity } = addition;
+      const resolution = resolutionAt(writtenIndex);
+      if (resolution) keepResolutionOfRewrittenLine(resolution, quantity);
+      else void resolveInLanguage([nextWrittenLines[writtenIndex] ?? ''], defaultLang);
+      if (resolution?.status === 'ambiguous') {
+        const oracleId = candidate.card.oracleId;
+        choices = choices.with(writtenIndex, { ...choices[writtenIndex], oracleId });
+      }
+    }
+    writeRewrittenLines(
+      nextWrittenLines,
+      addition.previousWrittenIndexes.map((index) => (index === null ? undefined : choices[index])),
+    );
+  }
+
   useEffect(() => {
     if (!pendingSplit) return;
     const { choicesKey, printCount } = pendingSplit;
@@ -407,6 +454,7 @@ export function useGenerator(): Generator {
     chooseAllocations: (writtenIndex, allocations) =>
       updateChoicesAt(writtenIndex, { allocations }),
     moveLine,
+    addCard,
     sheetOptions,
     changeSheetOptions: setSheetOptions,
     sheetLayout,

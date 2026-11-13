@@ -58,7 +58,21 @@
     "cardCount_one": "{{count}} carta",
     "cardCount_other": "{{count}} carte",
     "pageCount_one": "{{count}} pagina",
-    "pageCount_other": "{{count}} pagine"
+    "pageCount_other": "{{count}} pagine",
+    "addCard": {
+      "open": "Aggiungi una carta a {{section}}",
+      "tile": "Aggiungi una carta",
+      "tileOfSection": "Aggiungi a {{section}}",
+      "title": "Aggiungi una carta a {{section}}",
+      "nameField": "Nome della carta",
+      "namePlaceholder": "In inglese o in italiano",
+      "results": "Carte trovate",
+      "searching": "Ricerca in corso…",
+      "noResults": "Nessuna carta trovata",
+      "failed": "Ricerca non riuscita: riprova.",
+      "close": "Chiudi",
+      "emptySections": "Sezioni vuote"
+    }
   },
   "summary": {
     "cards": "Carte",
