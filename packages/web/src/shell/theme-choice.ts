@@ -1,9 +1,11 @@
-export type Theme = 'light' | 'dark';
+export const THEMES = ['light', 'dark'] as const;
+
+export type Theme = (typeof THEMES)[number];
 
 const STORAGE_KEY = 'mtg-suite.theme';
 
 function isTheme(value: unknown): value is Theme {
-  return value === 'light' || value === 'dark';
+  return THEMES.some((theme) => theme === value);
 }
 
 /** The theme the user picked with the switch on this device, or `null` if they never did. */

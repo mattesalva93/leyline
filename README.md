@@ -18,6 +18,7 @@ pnpm dev              # api on 127.0.0.1:3000, web on http://127.0.0.1:5173
 pnpm check            # typecheck, lint, format check, theme check, tests (what CI runs; needs db:up)
 pnpm build            # production build of web and api
 pnpm sheet:preview    # render a sample sheet to .preview/sheet-*.png (needs pdftoppm: brew install poppler)
+pnpm landing:screenshots  # retake the landing page's tutorial screenshots from the running app (see scripts/landing-screenshots.js)
 ```
 
 `pnpm import:catalog --file all-cards.jsonl.gz` imports a bulk file downloaded earlier.
