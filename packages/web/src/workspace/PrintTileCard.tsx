@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { setAndNumberOf } from '../print-label.ts';
 import { NORMAL_IMAGE } from '../scryfall-image-sizes.ts';
@@ -37,6 +36,9 @@ function cardShadow(hasSiblings: boolean, isSelected: boolean, hasPile: boolean)
 interface PrintTileCardProps {
   readonly gridTile: PrintGridTile;
   readonly isSelected: boolean;
+  /** Whether the tile shows the back face of its double-faced card. */
+  readonly isFlipped: boolean;
+  readonly onFlip: () => void;
   /** The tile starts a row while its previous sibling ends the row above. */
   readonly continuesRowAbove: boolean;
   /** Zooms the card the tile shows once the pointer rests on it. */
@@ -60,6 +62,8 @@ const QUANTITY_BUTTON =
 export function PrintTileCard({
   gridTile,
   isSelected,
+  isFlipped,
+  onFlip,
   continuesRowAbove,
   zoomOn,
   onSelect,
@@ -69,7 +73,6 @@ export function PrintTileCard({
   const { line, tile, siblingIndex, siblingCount } = gridTile;
   const hasSiblings = siblingCount > 1;
   const isLastSibling = siblingIndex === siblingCount - 1;
-  const [isFlipped, setIsFlipped] = useState(false);
   const [frontFace, backFace] = tile.print.faces;
   const shownFace = (isFlipped && backFace) || frontFace;
   const warningLabel = tile.warning && t(`tile.printWarning.${tile.warning}`);
@@ -109,7 +112,7 @@ export function PrintTileCard({
             className="ml-1 grid size-6 place-items-center rounded-t-md bg-foreground text-panel hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-accent"
             aria-label={t('tile.flip', { name: frontFace.name })}
             aria-pressed={isFlipped}
-            onClick={() => setIsFlipped(!isFlipped)}
+            onClick={onFlip}
           >
             <Icon name="flip" className="size-3.5" />
           </button>

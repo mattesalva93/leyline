@@ -1,5 +1,5 @@
 import type { Candidate, DecklistSection, Lang, LineSide, Print } from '@mtg-suite/core';
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ZoomOn } from '../use-zoomed-card.tsx';
 import { AddCardTile } from './AddCardTile.tsx';
@@ -61,6 +61,13 @@ export function CardGridSection({
   const { t } = useTranslation();
   const titleId = useId();
   const { gridRef, columns } = useColumnCount();
+  const [flippedTileKeys, setFlippedTileKeys] = useState<ReadonlySet<string>>(new Set());
+  const flip = (tileKey: string) =>
+    setFlippedTileKeys((keys) => {
+      const flipped = new Set(keys);
+      if (!flipped.delete(tileKey)) flipped.add(tileKey);
+      return flipped;
+    });
   return (
     <section aria-labelledby={titleId}>
       <h2 id={titleId} className="px-6 pt-3 pb-2 font-semibold">
@@ -80,9 +87,11 @@ export function CardGridSection({
           const toggleSelection = (printId: string | null) =>
             onSelect(selected ? null : { writtenIndex: gridTile.writtenIndex, printId });
           const printId = gridTile.kind === 'print' ? gridTile.tile.print.id : null;
+          const isFlipped = flippedTileKeys.has(gridTile.key);
+          const isDoubleFaced = gridTile.kind === 'print' && gridTile.tile.print.faces.length > 1;
           const cell = {
             ...cellPropsOf(gridTile.key),
-            'aria-label': tileCellLabel(gridTile, t),
+            'aria-label': tileCellLabel(gridTile, isFlipped, t),
             onKeyDown: tileKeyHandler({
               onOpen: () => onOpenLinePanel({ writtenIndex: gridTile.writtenIndex, printId }),
               onQuantityStep:
@@ -94,6 +103,7 @@ export function CardGridSection({
                         gridTile.tile.quantity + step,
                       )
                   : null,
+              onFlip: isDoubleFaced ? () => flip(gridTile.key) : null,
             }),
           };
           const tileContent =
@@ -101,6 +111,8 @@ export function CardGridSection({
               <PrintTileCard
                 gridTile={gridTile}
                 isSelected={selected}
+                isFlipped={isFlipped}
+                onFlip={() => flip(gridTile.key)}
                 continuesRowAbove={gridTile.siblingIndex > 0 && index % columns === 0}
                 zoomOn={zoomOn}
                 onSelect={() => toggleSelection(printId)}

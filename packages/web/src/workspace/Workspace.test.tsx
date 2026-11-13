@@ -2234,6 +2234,21 @@ describe('the card grid from the keyboard', () => {
     );
   });
 
+  it('turns the focused double-faced card over with F, and names to a screen reader the face it shows', async () => {
+    const user = await focusBeforeTheGrid(
+      '1 Delver of Secrets{Enter}',
+      'Delver of Secrets // Insectile Aberration',
+    );
+    await user.tab();
+
+    await user.keyboard('f');
+
+    expect(tileAt(0).getByRole('img', { name: 'Immagine di Insectile Aberration' })).toBeTruthy();
+    expect(document.activeElement?.getAttribute('aria-label')).toBe(
+      'Delver of Secrets // Insectile Aberration, ISD #1, 1 copia, girata su Insectile Aberration, Stampa in inglese',
+    );
+  });
+
   it('takes plus, minus and the arrows once a click has put the focus on a button of the tile', async () => {
     const user = await focusBeforeTheGrid(
       '4 Sol Ring{Enter}1 Lightning Bolt{Enter}',

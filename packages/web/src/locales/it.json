@@ -134,6 +134,7 @@
     "siblingMark": "{{index}}/{{count}}",
     "copies_one": "1 copia",
     "copies_other": "{{count}} copie",
+    "showsFace": "girata su {{name}}",
     "flip": "Gira {{name}}",
     "imageless": {
       "pending": "Da riconoscere",
