@@ -1,6 +1,8 @@
 import type { LineSide } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
+import { GRID_CELL_FOCUS_RING } from '../ui/board-styles.ts';
 import { TILE_GAP_PX, TILE_TAB_HEIGHT_PX } from './PrintTileCard.tsx';
+import type { TileCellProps } from './tile-cell.ts';
 import type { TileDragHandlers } from './use-line-drag.ts';
 
 /** How wide the bar showing where a dragged line lands is, in CSS px. */
@@ -9,6 +11,7 @@ const DROP_MARK_WIDTH_PX = 4;
 const DROP_MARK_OFFSET_PX = -(TILE_GAP_PX + DROP_MARK_WIDTH_PX) / 2;
 
 interface ReorderableTileItemProps {
+  readonly cell: TileCellProps;
   readonly isSelected: boolean;
   /** `null` where touch is the main input: there the order changes in the text alone. */
   readonly dragHandlers: TileDragHandlers | null;
@@ -20,10 +23,11 @@ interface ReorderableTileItemProps {
 }
 
 /**
- * One tile of the card grid as a list item the mouse can drag to move its line in the decklist,
- * with the bar that shows where a dragged line lands when it lands by this tile.
+ * One tile of the card grid as a list item: the cell the keyboard focuses, which the mouse can
+ * drag to move its line in the decklist, with the bar that shows where a dragged line lands when it lands by this tile.
  */
 export function ReorderableTileItem({
+  cell,
   isSelected,
   dragHandlers,
   isDragged,
@@ -33,7 +37,8 @@ export function ReorderableTileItem({
   const { t } = useTranslation();
   return (
     <li
-      className={`relative min-w-0 ${dragHandlers ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragged ? 'opacity-40' : ''}`}
+      {...cell}
+      className={`relative min-w-0 ${GRID_CELL_FOCUS_RING} ${dragHandlers ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragged ? 'opacity-40' : ''}`}
       aria-current={isSelected || undefined}
       draggable={dragHandlers !== null || undefined}
       {...dragHandlers}

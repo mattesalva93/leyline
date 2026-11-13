@@ -11,10 +11,13 @@ import { BottomPanelContent, Dialog, DialogClose } from '../ui/Dialog.tsx';
 export function PhoneLinePanel({
   title,
   onClose,
+  onClosed,
   children,
 }: {
   readonly title: string;
   readonly onClose: () => void;
+  /** Once the panel has gone, to put the focus where it belongs: no button opened the panel. */
+  readonly onClosed: () => void;
   /** What the panel shows; `null` keeps it closed. */
   readonly children: ReactNode;
 }) {
@@ -23,7 +26,13 @@ export function PhoneLinePanel({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => open || onClose()}>
       {isOpen && (
-        <BottomPanelContent ariaLabel={title}>
+        <BottomPanelContent
+          ariaLabel={title}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            onClosed();
+          }}
+        >
           <div className="min-h-0 flex-1 overflow-y-auto p-4" {...PRINT_PICKER_SCROLL_ROOT_PROPS}>
             {children}
           </div>

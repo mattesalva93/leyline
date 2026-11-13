@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AdSlot } from './AdSlot.tsx';
 import { CardsView } from './CardsView.tsx';
 import { DecklistEditor } from './DecklistEditor.tsx';
 import { EmptyWorkspace } from './EmptyWorkspace.tsx';
+import type { TileSelection } from './grid-tiles.ts';
 import { Inspector } from './Inspector.tsx';
 import { PdfControl } from './PdfControl.tsx';
 import { SheetView } from './SheetView.tsx';
@@ -24,6 +26,12 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
   const view = centreViewAt(state.step);
   const [tileWidth, setTileWidth] = useTileWidth();
   const { centreRef, panels } = useFittedSidePanels();
+  const [inspectorFocusRequestCount, setInspectorFocusRequestCount] = useState(0);
+  const openLinePanel = (selection: TileSelection) => {
+    state.selectTile(selection);
+    if (!panels.inspector.controls.isOpen) panels.inspector.controls.toggle();
+    setInspectorFocusRequestCount((request) => request + 1);
+  };
   if (state.isEmpty) {
     return (
       <div className="flex h-full overflow-y-auto">
@@ -53,13 +61,19 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
         </div>
         {view === 'cards' ? (
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <CardsView state={state} tileWidthPx={tileWidth} />
+            <CardsView state={state} tileWidthPx={tileWidth} onOpenLinePanel={openLinePanel} />
           </div>
         ) : (
           <SheetView generator={generator} />
         )}
       </div>
-      <Inspector state={state} view={view} panel={panels.inspector} className="mr-1 mb-1" />
+      <Inspector
+        state={state}
+        view={view}
+        panel={panels.inspector}
+        focusRequestCount={inspectorFocusRequestCount}
+        className="mr-1 mb-1"
+      />
     </div>
   );
 }

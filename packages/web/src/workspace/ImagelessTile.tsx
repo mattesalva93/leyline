@@ -18,7 +18,8 @@ interface ImagelessTileProps {
 
 /**
  * The tile of a line with no print to show: it says what is wrong, as the line is written, and
- * offers the way out when there is one.
+ * offers the way out when there is one. Its buttons are for the pointer: Tab stops on the tile,
+ * and Enter opens the line's panel, which offers the same ways out.
  */
 export function ImagelessTile({
   gridTile,
@@ -44,11 +45,12 @@ export function ImagelessTile({
         <p className="font-mono break-words">{writtenLine.trim()}</p>
         <LineToFixHint reason={reason} isResolving={isResolving} />
         {line?.status === 'ambiguous' && (
-          <CandidateButtons candidates={line.candidates} onPick={onPickCandidate} />
+          <CandidateButtons candidates={line.candidates} isInGridCell onPick={onPickCandidate} />
         )}
         {reason === 'noPrint' && line?.status === 'resolved' && (
           <button
             type="button"
+            tabIndex={-1}
             className={`${SECONDARY_BUTTON} mt-auto px-2 py-1 text-xs`}
             aria-pressed={isSelected}
             onClick={onSelect}
