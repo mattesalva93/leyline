@@ -1,7 +1,8 @@
-import type { LineSide, Print } from '@mtg-suite/core';
+import type { Candidate, DecklistSection, Lang, LineSide, Print } from '@mtg-suite/core';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ZoomOn } from '../use-zoomed-card.tsx';
+import { AddCardTile } from './AddCardTile.tsx';
 import type { GridSection } from './grid-sections.ts';
 import { dropMarkSideOf, isSelected, type GridTile, type TileSelection } from './grid-tiles.ts';
 import { ImagelessTile } from './ImagelessTile.tsx';
@@ -21,6 +22,9 @@ export interface CardGridSectionProps {
   readonly onSelect: (selection: TileSelection | null) => void;
   readonly onPickCandidate: (writtenIndex: number, oracleId: string) => void;
   readonly onTileQuantityChange: (writtenIndex: number, print: Print, quantity: number) => void;
+  /** The language the add tile shows and adds cards in. */
+  readonly defaultLang: Lang;
+  readonly onAddCard: (section: DecklistSection, candidate: Candidate) => void;
 }
 
 /** How many columns `grid` lays its tiles in, updated as its width changes. */
@@ -47,7 +51,7 @@ function dropMarkOf(gridTile: GridTile, lineDrag: LineDrag | null): LineSide | n
     : null;
 }
 
-/** One section of the card grid: its title with its card count, then its tiles. */
+/** One section of the card grid: its title with its card count, then its tiles, then the add tile. */
 export function CardGridSection({
   section,
   tileWidthPx,
@@ -58,6 +62,8 @@ export function CardGridSection({
   onSelect,
   onPickCandidate,
   onTileQuantityChange,
+  defaultLang,
+  onAddCard,
 }: CardGridSectionProps) {
   const { t } = useTranslation();
   const titleId = useId();
@@ -116,6 +122,9 @@ export function CardGridSection({
             </ReorderableTileItem>
           );
         })}
+        <li>
+          <AddCardTile section={section.name} lang={defaultLang} onAdd={onAddCard} />
+        </li>
       </ul>
     </section>
   );

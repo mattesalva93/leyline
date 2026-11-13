@@ -3,12 +3,14 @@ import { LanguagePicker } from '../LanguagePicker.tsx';
 import { BoardPanel } from '../ui/BoardPanel.tsx';
 import { PRIMARY_BUTTON } from '../ui/board-styles.ts';
 import type { Generator } from '../use-generator.ts';
+import { AddCardTile } from './AddCardTile.tsx';
 import { DecklistEditor } from './DecklistEditor.tsx';
 import { EXAMPLE_DECKLIST } from './example-decklist.ts';
 
 /**
  * The workspace while no line of the decklist is recognised: what to do, the decklist text, the
- * language of the cards and a way to try the generator on an example, at the centre in place of
+ * language of the cards, a tile to add a card by name and a way to try the generator on an
+ * example, at the centre in place of
  * every other zone.
  */
 export function EmptyWorkspace({ generator }: { readonly generator: Generator }) {
@@ -29,6 +31,9 @@ export function EmptyWorkspace({ generator }: { readonly generator: Generator })
         <DecklistEditor generator={generator} className="h-44" />
       </BoardPanel>
       <div className="flex flex-wrap items-end justify-between gap-5">
+        <div className="w-28">
+          <AddCardTile section="mainDeck" lang={generator.defaultLang} onAdd={generator.addCard} />
+        </div>
         <LanguagePicker
           label={t('app.defaultLang')}
           selectedLang={generator.defaultLang}
