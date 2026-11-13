@@ -29,10 +29,13 @@ export function DecklistEditor({
         placeholder={t('decklist.placeholder')}
         onChange={(event) => generator.writeDecklistText(event.target.value)}
         onPaste={(event) => {
-          const decklist = event.currentTarget;
+          const decklistTextarea = event.currentTarget;
           const nextText = textAfterPasteAtEnd(
-            decklist.value,
-            { pasteStart: decklist.selectionStart, pasteEnd: decklist.selectionEnd },
+            decklistTextarea.value,
+            {
+              pasteStart: decklistTextarea.selectionStart,
+              pasteEnd: decklistTextarea.selectionEnd,
+            },
             event.clipboardData.getData('text/plain'),
           );
           if (nextText === null) return;
