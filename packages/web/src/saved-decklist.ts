@@ -1,11 +1,11 @@
 import {
+  IMAGE_STATUSES,
   imageQualities,
   isLang,
   pageFormats,
   sheetOptionLimits,
   type Allocation,
   type AllocationChoice,
-  type ImageStatus,
   type Print,
   type PrintFace,
   type SheetOptions,
@@ -23,8 +23,6 @@ export interface SavedDecklist {
   readonly choicesByLine: readonly (readonly [string, LineChoices])[];
   readonly sheetOptions: SheetOptions;
 }
-
-const IMAGE_STATUSES: readonly ImageStatus[] = ['highres_scan', 'lowres', 'placeholder', 'missing'];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
