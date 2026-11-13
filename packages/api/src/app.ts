@@ -67,7 +67,9 @@ export function createApp(deps: AppDeps): Hono {
     const { q, lang = 'en' } = c.req.query();
     if (q === undefined || q.trim() === '' || q.length > MAX_SEARCH_LENGTH || !isLang(lang)) {
       return c.json(
-        { error: 'Expected the query ?q=<a name of up to 200 characters>&lang=en|it.' },
+        {
+          error: `Expected the query ?q=<a name of up to ${MAX_SEARCH_LENGTH} characters>&lang=en|it.`,
+        },
         400,
       );
     }
