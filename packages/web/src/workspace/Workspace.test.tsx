@@ -1510,10 +1510,40 @@ describe('the add tile', () => {
     await mountPageAndWrite('4 Sol Ring{Enter}{Enter}Sideboard{Enter}1 Pyroblast{Enter}');
     await screen.findByRole('button', { name: 'Modifica Pyroblast' });
 
-    const tiles = within(cardGrid()).getAllByRole('button', { name: /^Aggiungi una carta a / });
-    expect(tiles.map((tile) => tile.getAttribute('aria-label'))).toEqual([
-      'Aggiungi una carta a Mazzo',
-      'Aggiungi una carta a Sideboard',
+    const sections = within(cardGrid()).getAllByRole('region');
+    expect(
+      sections.map((section) => within(section).getAllByRole('listitem').at(-1)?.textContent),
+    ).toEqual(['Aggiungi una carta', 'Aggiungi una carta']);
+  });
+
+  it('stands for each section the decklist has no card in, after the others, under no title', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    const emptySections = within(cardGrid()).getByRole('group', { name: 'Sezioni vuote' });
+    expect(
+      within(emptySections)
+        .getAllByRole('button')
+        .map((tile) => tile.textContent),
+    ).toEqual([
+      'Aggiungi a Comandante',
+      'Aggiungi a Terre',
+      'Aggiungi a Sideboard',
+      'Aggiungi a Token',
+    ]);
+    expect(gridSections()).toEqual([['Mazzo 4 carte', ['Immagine di Sol Ring']]]);
+  });
+
+  it('opens an empty section with its header in the text, and its title in the grid', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const found = await searchToAdd(user, 'Sideboard', 'pyrobl');
+
+    await user.click(await within(found).findByRole('option', { name: /Pyroblast/ }));
+
+    expect(decklistValue()).toBe('4 Sol Ring\n\nSideboard\n1 Pyroblast');
+    expect(gridSections()).toEqual([
+      ['Mazzo 4 carte', ['Immagine di Sol Ring']],
+      ['Sideboard 1 carta', ['Immagine di Pyroblast']],
     ]);
   });
 

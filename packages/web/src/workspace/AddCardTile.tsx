@@ -18,6 +18,8 @@ interface AddCardTileProps {
   readonly section: DecklistSection;
   /** The language the cards found are shown and added in. */
   readonly lang: Lang;
+  /** Whether the tile says which section it adds to: where no section title above says it. */
+  readonly namesItsSection?: boolean;
   readonly onAdd: (section: DecklistSection, candidate: Candidate) => void;
 }
 
@@ -25,7 +27,7 @@ interface AddCardTileProps {
  * The last element of a section of the card grid: it opens a search by name, and the card
  * picked there joins the section. Closing the search adds nothing.
  */
-export function AddCardTile({ section, lang, onAdd }: AddCardTileProps) {
+export function AddCardTile({ section, lang, namesItsSection = false, onAdd }: AddCardTileProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const sectionName = t(`workspace.sections.${section}`);
@@ -38,7 +40,9 @@ export function AddCardTile({ section, lang, onAdd }: AddCardTileProps) {
           className="flex w-full flex-col items-center justify-center gap-1 border-2 border-dashed border-border bg-panel/50 text-sm font-semibold text-muted-foreground hover:border-accent hover:text-foreground focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-accent"
         >
           <Icon name="plus" className="size-8" />
-          {t('workspace.addCard.tile')}
+          {namesItsSection
+            ? t('workspace.addCard.tileOfSection', { section: sectionName })
+            : t('workspace.addCard.tile')}
         </DialogTrigger>
       </div>
       <CenteredDialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-3 overflow-y-auto">

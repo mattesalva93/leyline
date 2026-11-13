@@ -6,8 +6,9 @@ import { AddCardTile } from './AddCardTile.tsx';
 import type { GridSection } from './grid-sections.ts';
 import { dropMarkSideOf, isSelected, type GridTile, type TileSelection } from './grid-tiles.ts';
 import { ImagelessTile } from './ImagelessTile.tsx';
-import { PrintTileCard, TILE_GAP_PX } from './PrintTileCard.tsx';
+import { PrintTileCard } from './PrintTileCard.tsx';
 import { ReorderableTileItem } from './ReorderableTileItem.tsx';
+import { TILE_GRID_CLASS, tileGridStyle } from './tile-grid.ts';
 import type { LineDrag } from './use-line-drag.ts';
 
 export interface CardGridSectionProps {
@@ -77,14 +78,7 @@ export function CardGridSection({
           {t('workspace.cardCount', { count: section.cardCount })}
         </span>
       </h2>
-      <ul
-        ref={gridRef}
-        className="grid content-start gap-y-3 p-1 pr-6 pb-4 pl-6"
-        style={{
-          columnGap: TILE_GAP_PX,
-          gridTemplateColumns: `repeat(auto-fill, minmax(${tileWidthPx}px, 1fr))`,
-        }}
-      >
+      <ul ref={gridRef} className={TILE_GRID_CLASS} style={tileGridStyle(tileWidthPx)}>
         {section.gridTiles.map((gridTile, index) => {
           const selected = isSelected(gridTile, selection);
           const toggleSelection = (printId: string | null) =>
