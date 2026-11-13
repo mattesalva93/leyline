@@ -2201,6 +2201,39 @@ describe('the card grid from the keyboard', () => {
     );
   });
 
+  it('adds and takes off a copy of the focused tile with plus and minus, and the decklist text says so', async () => {
+    const user = await focusBeforeTheGrid(
+      '4 Sol Ring{Enter}1 Lightning Bolt{Enter}',
+      'Lightning Bolt',
+    );
+    await user.tab();
+
+    await user.keyboard('++');
+    expect(decklistValue()).toBe('6 Sol Ring\n1 Lightning Bolt\n');
+    await user.keyboard('-');
+
+    expect(decklistValue()).toBe('5 Sol Ring\n1 Lightning Bolt\n');
+    expect(document.activeElement).toBe(
+      focusableTile('Sol Ring, C21 #1, 5 copie, Stampa in inglese'),
+    );
+  });
+
+  it('passes the focus to the tile that takes the place of one brought to zero', async () => {
+    const user = await focusBeforeTheGrid(
+      '1 Sol Ring{Enter}1 Lightning Bolt{Enter}1 Pyroblast{Enter}',
+      'Pyroblast',
+    );
+    await user.tab();
+    await user.keyboard('{ArrowRight}');
+
+    await user.keyboard('-');
+
+    expect(decklistValue()).toBe('1 Sol Ring\n1 Pyroblast\n');
+    expect(document.activeElement).toBe(
+      focusableTile('Pyroblast, TST #1, 1 copia, Stampa in inglese'),
+    );
+  });
+
   it('names to a screen reader the card, the print and the copies of each tile, and the warning of its print', async () => {
     await focusBeforeTheGrid('3 Counterspell{Enter}4 Sol Ring{Enter}', 'Sol Ring');
 
