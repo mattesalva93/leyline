@@ -65,13 +65,15 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
               </Tab>
             ))}
           </TabList>
-          {view === 'cards' && <TileWidthSlider width={tileWidth} onChange={setTileWidth} />}
           {view === 'cards' ? (
-            <GoToSheetButton
-              sheetHasSomethingToPrint={generator.sheetLayout !== null}
-              onGoToSheet={() => state.goToStep('sheet')}
-              className="mr-1 ml-auto"
-            />
+            <>
+              <TileWidthSlider width={tileWidth} onChange={setTileWidth} />
+              <GoToSheetButton
+                sheetHasSomethingToPrint={generator.sheetLayout !== null}
+                onGoToSheet={() => state.goToStep('sheet')}
+                className="mr-1 ml-auto"
+              />
+            </>
           ) : (
             <PdfControl pdf={generator.pdf} className="mr-1 ml-auto" />
           )}
