@@ -1,4 +1,5 @@
 import { printablePrints } from './default-print.ts';
+import { printsMatching } from './print-query.ts';
 import { comparePrintSortKeys, printSortKey, type PrintSortKey } from './print-order.ts';
 import { LANGS, type Catalog, type Lang, type PrintPage } from './types.ts';
 
@@ -11,6 +12,8 @@ export interface ListPrintsOptions {
   readonly limit: number;
   /** The `nextCursor` of the previous page; absent for the first one. */
   readonly cursor?: string | null | undefined;
+  /** What the user typed to narrow the prints (see `printsMatching`); absent or blank keeps all. */
+  readonly query?: string | undefined;
 }
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -39,18 +42,19 @@ export function isPrintCursor(value: unknown): value is string {
 /**
  * The prints a line of the card can print with, in `lang`, newest first, one page at a time;
  * or in English when none is printable in `lang`; `null` when the catalog holds no card
- * `oracleId`. A page resumes right after the print the
+ * `oracleId`. With a `query`, only the prints it matches, `total` counting them alone. A page resumes right after the print the
  * cursor names, so it neither repeats nor skips prints when the catalog changes in between.
  */
 export async function listPrints(
   catalog: Catalog,
-  { oracleId, lang, today, limit, cursor }: ListPrintsOptions,
+  { oracleId, lang, today, limit, cursor, query = '' }: ListPrintsOptions,
 ): Promise<PrintPage | null> {
   const entry = await catalog.findCard(oracleId);
   if (!entry) return null;
   // Same fallback as the default print: a line with no print in its language prints English.
   const inLang = printablePrints(entry.prints, lang, today);
-  const prints = inLang.length > 0 ? inLang : printablePrints(entry.prints, 'en', today);
+  const printable = inLang.length > 0 ? inLang : printablePrints(entry.prints, 'en', today);
+  const prints = printsMatching(printable, query);
   const after = cursor ? decodeCursor(cursor) : null;
   if (cursor && !after) throw new Error(`Not a print cursor: ${cursor}`);
   const start = after
