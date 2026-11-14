@@ -1064,19 +1064,19 @@ describe('the pile under a tile', () => {
     expect([outline.style.right, outline.style.bottom]).toEqual(['0px', '0px']);
   });
 
-  it('keeps the set line under the deepest pile clear of the focus around it', async () => {
+  it('keeps the set and number under the deepest pile clear of the focus line around it', async () => {
     await mountPageAndWrite('6 Sol Ring{Enter}');
     await screen.findByRole('img', { name: /^Immagine di Sol Ring/ });
     const [tile] = gridTiles();
     const outline = focusOutlineOf(tile);
-    const setLine = within(tile as HTMLElement).getByText('C21 #1').parentElement;
+    const setAndNumber = within(tile as HTMLElement).getByText('C21 #1').parentElement;
 
     const px = (length: string | undefined) => Number.parseFloat(length ?? '');
     const focusBelowCard =
       -px(outline.style.bottom) + px(outline.style.outlineOffset) + px(outline.style.outlineWidth);
 
     expect(focusBelowCard).toBeGreaterThan(0);
-    expect(px(setLine?.style.marginTop)).toBeGreaterThan(focusBelowCard);
+    expect(px(setAndNumber?.style.marginTop)).toBeGreaterThan(focusBelowCard);
   });
 
   it('keeps the copies decorative: hidden, without alternative text, and deaf to the pointer', async () => {

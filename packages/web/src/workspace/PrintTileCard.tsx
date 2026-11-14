@@ -19,10 +19,10 @@ export const TILE_TAB_HEIGHT_PX = 28;
 
 const LINK_BRIDGE = 'absolute top-1/2 z-10 h-3 -translate-y-1/2 bg-(--sibling-colour)';
 
-/** The space between the focus line around the deepest pile and the line under the card, in CSS px. */
-const SPACE_ABOVE_SET_LINE_PX = 3;
-/** The space between a tile's card and the line under it, the same with a pile or without. */
-const BELOW_CARD_PX = COPY_PILE_FOOTPRINT_PX + FOCUS_REACH_PX + SPACE_ABOVE_SET_LINE_PX;
+/** The space between the focus line around the deepest pile and the set and number under the card, in CSS px. */
+const SPACE_ABOVE_SET_AND_NUMBER_PX = 3;
+/** The space between a tile's card and the set and number under it, the same with a pile or without. */
+const BELOW_CARD_PX = COPY_PILE_FOOTPRINT_PX + FOCUS_REACH_PX + SPACE_ABOVE_SET_AND_NUMBER_PX;
 
 /** What a card with no ring wears: a thread of the background that parts its border from the pile's. */
 const THREAD_OF_A_CARD_WITHOUT_RINGS = '0 0 0 1px var(--color-pile-thread)';
