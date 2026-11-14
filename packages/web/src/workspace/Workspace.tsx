@@ -47,12 +47,15 @@ export function Workspace({ generator }: { readonly generator: Generator }) {
   const isWideScreen = useIsWideScreen();
   const [step, setStep] = useState(() => startingStepFor(isWideScreen));
   const [selectionInText, setSelectionInText] = useState<SelectionInText | null>(null);
+  const [tileSelectionCount, setTileSelectionCount] = useState(0);
   const [touchIsMain] = useState(touchIsMainInput);
   const gridSections = gridSectionsOf(generator.cardLines);
   const gridTiles = gridTilesOf(generator.cardLines);
   const linesToFix = linesToFixOf(gridTiles);
-  const selectTile = (selection: TileSelection | null) =>
+  const selectTile = (selection: TileSelection | null) => {
     setSelectionInText(selection && { ...selection, writtenLineCount: generator.writtenLineCount });
+    if (selection) setTileSelectionCount((count) => count + 1);
+  };
   const selection = currentSelection(selectionInText, generator.writtenLineCount, gridTiles);
   const state: WorkspaceState = {
     generator,
@@ -62,6 +65,7 @@ export function Workspace({ generator }: { readonly generator: Generator }) {
     gridTiles,
     selection,
     selectTile,
+    tileSelectionCount,
     moveLine: (writtenIndex, destination) => {
       const move = generator.moveLine(writtenIndex, destination);
       if (!selection) return;

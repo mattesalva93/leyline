@@ -230,6 +230,12 @@
   "printPicker": {
     "title": "Stampe di {{name}}",
     "lang": "Lingua delle stampe",
+    "search": "Cerca variante",
+    "clearSearch": "Svuota la ricerca",
+    "clearSymbol": "✕",
+    "foundCount_one": "1 stampa trovata",
+    "foundCount_other": "{{count}} stampe trovate",
+    "noMatch": "Nessuna stampa corrisponde a \"{{query}}\"",
     "langWithPrintCount": "{{lang}} ({{count}})",
     "back": "Indietro",
     "setAndNumber": "{{set}} #{{number}}",

@@ -33,9 +33,12 @@ export function panelLineOf(
 export function SelectedLinePanel({
   generator,
   panelLine: { writtenIndex, line, tileWarning, tilePrint },
+  tileSelectionCount,
 }: {
   readonly generator: Generator;
   readonly panelLine: PanelLine;
+  /** Grows each time the user selects a tile, the one already selected included. */
+  readonly tileSelectionCount: number;
 }) {
   return (
     <LinePanel
@@ -43,6 +46,7 @@ export function SelectedLinePanel({
       key={writtenIndex}
       line={line}
       tilePrint={tilePrint}
+      tileSelectionCount={tileSelectionCount}
       printWarning={tileWarning}
       onQuantityChange={(quantity) => generator.changeLineQuantity(writtenIndex, quantity)}
       onAllocationChoice={(allocations) => generator.chooseAllocations(writtenIndex, allocations)}

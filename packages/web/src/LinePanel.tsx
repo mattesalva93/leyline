@@ -16,12 +16,15 @@ import { SYMBOL_BUTTON } from './ui/board-styles.ts';
 import { usePrintPages } from './use-print-pages.ts';
 import { usePrintCounts } from './use-print-counts.ts';
 import { usePrintPickerView } from './use-print-picker-view.ts';
+import { usePrintQuery } from './use-print-query.ts';
 import { CARD_SHAPE } from './card-shape.ts';
 
 interface LinePanelProps {
   readonly line: ResolvedLine;
   /** The print of the tile the panel was opened from: the print picker opens on it. */
   readonly tilePrint: Print | null;
+  /** Grows each time the user presses a tile, the selected one included: it empties the print query. */
+  readonly tileSelectionCount: number;
   /** What to warn about the print of the tile the panel was opened from. */
   readonly printWarning: PrintWarning | null;
   readonly onQuantityChange: (quantity: number) => void;
@@ -35,6 +38,7 @@ interface LinePanelProps {
 export function LinePanel({
   line,
   tilePrint,
+  tileSelectionCount,
   printWarning,
   onQuantityChange,
   onAllocationChoice,
@@ -45,11 +49,17 @@ export function LinePanel({
   const [openingQuantity] = useState(line.quantity);
   const printCounts = usePrintCounts(line.card.oracleId);
   const pickerView = usePrintPickerView(tilePrint, line, printCounts);
-  const printPages = usePrintPages(line.card.oracleId, pickerView.printsLang, () => {
-    const panel = panelRef.current;
-    const gridWidth = panel ? contentWidthOf(panel) : window.innerWidth;
-    return printPageSize(gridWidth, window.innerHeight);
-  });
+  const printQuery = usePrintQuery(tileSelectionCount);
+  const printPages = usePrintPages(
+    line.card.oracleId,
+    pickerView.printsLang,
+    printQuery.searched,
+    () => {
+      const panel = panelRef.current;
+      const gridWidth = panel ? contentWidthOf(panel) : window.innerWidth;
+      return printPageSize(gridWidth, window.innerHeight);
+    },
+  );
   const frontFace = previewPrint(line)?.faces[0];
   return (
     <div ref={panelRef} className="flex flex-col gap-4">
@@ -99,6 +109,7 @@ export function LinePanel({
         line={line}
         pickerView={pickerView}
         printCounts={printCounts}
+        printQuery={printQuery}
         printPages={printPages}
         onAllocationChoice={onAllocationChoice}
         onPrintQuantityChange={onPrintQuantityChange}

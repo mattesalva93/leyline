@@ -5,7 +5,7 @@ import { fetchPrintPage } from './api.ts';
 export interface PrintPages {
   /** Every print loaded so far, newest first. */
   readonly prints: readonly Print[];
-  /** How many prints the card has in all; `null` until the first page arrives. */
+  /** How many prints the card has in all, or the print query found; `null` until the first page arrives. */
   readonly total: number | null;
   readonly hasMore: boolean;
   readonly isLoading: boolean;
@@ -15,7 +15,7 @@ export interface PrintPages {
 }
 
 interface LoadedPages {
-  /** The card and language the pages are of, as `pagesKeyOf` names them. */
+  /** The card, language and print query the pages are of, as `pagesKeyOf` names them. */
   readonly pagesKey: string | null;
   readonly prints: readonly Print[];
   readonly total: number | null;
@@ -24,25 +24,27 @@ interface LoadedPages {
 
 const NOTHING_LOADED: LoadedPages = { pagesKey: null, prints: [], total: null, nextCursor: null };
 
-function pagesKeyOf(oracleId: string | null, lang: Lang): string | null {
-  return oracleId === null ? null : `${lang}:${oracleId}`;
+function pagesKeyOf(oracleId: string | null, lang: Lang, printQuery: string): string | null {
+  return oracleId === null ? null : JSON.stringify([lang, oracleId, printQuery]);
 }
 
 /**
- * The prints the card `oracleId` can print with in `lang`, loaded a page at a time; the first
- * page is asked for as soon as there is a card, so its total is ready before the picker opens.
+ * The prints the card `oracleId` can print with in `lang`, only those `printQuery` finds when it
+ * is not blank, loaded a page at a time; the first page is asked for as soon as there is a card,
+ * so its total is ready before the picker opens.
  * `pageSize` says, when each request leaves, how many prints to ask for.
  */
 export function usePrintPages(
   oracleId: string | null,
   lang: Lang,
+  printQuery: string,
   pageSize: () => number,
 ): PrintPages {
   const [loaded, setLoaded] = useState<LoadedPages>(NOTHING_LOADED);
   const [isLoading, setIsLoading] = useState(false);
   const [lastRequestFailed, setLastRequestFailed] = useState(false);
   // Numbers every request: only the latest one may update the state, so a late answer for
-  // another card, another language or an older page never lands.
+  // another card, another language, another print query or an older page never lands.
   const latestRequest = useRef(0);
   // Read and set synchronously: two scroll events before a re-render must not ask twice.
   const requestInFlight = useRef(false);
@@ -53,7 +55,7 @@ export function usePrintPages(
   useEffect(() => {
     pageSizeRef.current = pageSize;
   });
-  const pagesKey = pagesKeyOf(oracleId, lang);
+  const pagesKey = pagesKeyOf(oracleId, lang, printQuery);
 
   const loadPage = useCallback(
     async (previous: LoadedPages) => {
@@ -67,10 +69,11 @@ export function usePrintPages(
           lang,
           pageSizeRef.current(),
           previous.nextCursor,
+          printQuery,
         );
         if (request !== latestRequest.current) return;
         const next = {
-          pagesKey: pagesKeyOf(oracleId, lang),
+          pagesKey: pagesKeyOf(oracleId, lang, printQuery),
           prints: [...previous.prints, ...page.prints],
           total: page.total,
           nextCursor: page.nextCursor,
@@ -87,10 +90,10 @@ export function usePrintPages(
         }
       }
     },
-    [oracleId, lang],
+    [oracleId, lang, printQuery],
   );
 
-  // Another card or language starts over from its first page.
+  // Another card, language or print query starts over from its first page.
   useEffect(() => {
     // Drops whatever is on its way, even when no card follows (the panel closed).
     latestRequest.current += 1;
@@ -105,12 +108,13 @@ export function usePrintPages(
   const loadMore = useCallback(() => {
     const current = loadedRef.current;
     if (requestInFlight.current || (current.total !== null && current.nextCursor === null)) return;
-    // Pages of another card or language: their first page is on its way.
-    if (current !== NOTHING_LOADED && current.pagesKey !== pagesKeyOf(oracleId, lang)) return;
+    // Pages of another card, language or print query: their first page is on its way.
+    if (current !== NOTHING_LOADED && current.pagesKey !== pagesKey) return;
     void loadPage(current);
-  }, [loadPage, oracleId, lang]);
+  }, [loadPage, pagesKey]);
 
-  // Until the first page of another card or language starts over, the old pages never show.
+  // Until the first page of another card, language or print query starts over, the old pages
+  // never show.
   if (loaded.pagesKey !== pagesKey && loaded !== NOTHING_LOADED) {
     return {
       prints: [],

@@ -10,6 +10,18 @@ export const DialogTitle = RadixDialog.Title;
 
 const OVERLAY = 'fixed inset-0 z-40 bg-overlay';
 
+/**
+ * Marks a field that Escape empties while it has text. Radix hears Escape before the field
+ * does, so a panel that holds such a field leaves Escape to it rather than closing.
+ */
+export const ESCAPE_EMPTIES_FIELD = 'data-escape-empties-field';
+
+function leaveEscapeToAFieldItEmpties(event: KeyboardEvent) {
+  if (event.target instanceof Element && event.target.closest(`[${ESCAPE_EMPTIES_FIELD}]`)) {
+    event.preventDefault();
+  }
+}
+
 interface DialogContentProps {
   /** The dialog's accessible name, for a dialog whose title is not shown. */
   readonly ariaLabel?: string;
@@ -66,6 +78,7 @@ export function BottomPanelContent({
         aria-label={ariaLabel}
         aria-describedby={undefined}
         onCloseAutoFocus={onCloseAutoFocus}
+        onEscapeKeyDown={leaveEscapeToAFieldItEmpties}
         className={`fixed inset-x-0 bottom-0 z-50 flex max-h-[78dvh] flex-col rounded-t-lg border-t-2 border-border bg-panel font-sans text-foreground ${className}`}
       >
         {children}

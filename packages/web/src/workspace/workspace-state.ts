@@ -25,6 +25,8 @@ export interface WorkspaceState {
   readonly gridTiles: readonly GridTile[];
   readonly selection: TileSelection | null;
   readonly selectTile: (selection: TileSelection | null) => void;
+  /** How many times a tile has been selected, the one already selected again included. */
+  readonly tileSelectionCount: number;
   /** Moves the line in the decklist text; a selected tile of it stays selected. */
   readonly moveLine: (writtenIndex: number, destination: LineDestination) => void;
   /** Whether the mouse can drag tiles to reorder the decklist: not where touch is the main input. */
