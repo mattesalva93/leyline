@@ -1648,6 +1648,11 @@ describe('the workspace on a phone', () => {
   it('shows one step at a time on the whole screen, picked from the bottom bar', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
+    expect(
+      stepBar()
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['Lista', 'Carte', 'Foglio']);
 
     await user.click(stepBar().getByRole('button', { name: 'Carte' }));
 
@@ -1715,7 +1720,7 @@ describe('the workspace on a phone', () => {
     expect(screen.queryByRole('group', { name: 'Lingua delle carte' })).toBeNull();
   });
 
-  it('makes the PDF in a step of its own and hands it to the share menu of a phone that can', async () => {
+  it('makes the PDF from the "Foglio" step and hands it to the share menu of a phone that can', async () => {
     const share = vi.fn(async () => {});
     vi.stubGlobal('navigator', { ...navigator, canShare: () => true, share });
     vi.mocked(api.fetchImages).mockImplementation(
@@ -1723,9 +1728,10 @@ describe('the workspace on a phone', () => {
     );
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
 
-    await user.click(stepBar().getByRole('button', { name: 'PDF' }));
+    await user.click(stepBar().getByRole('button', { name: 'Foglio' }));
 
     expect(screen.getByRole('note').textContent).toContain('Stampa al 100%');
+    expect(screen.getByRole('img', { name: 'Pagina 1 di 1 come verrà stampata' })).toBeTruthy();
     expect(screen.queryByLabelText('Decklist')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Crea il PDF' }));
     await user.click(await screen.findByRole('button', { name: 'Salva o condividi' }));

@@ -16,11 +16,11 @@ export function centreViewNamed(name: string): CentreView | null {
  * Where the user is in the workspace: on a phone, the step on screen; on a wide screen, where
  * every zone is in sight, only the view of the centre follows it.
  */
-export type WorkspaceStep = 'list' | CentreView | 'pdf';
+export type WorkspaceStep = 'list' | CentreView;
 
-/** What the centre of a wide screen shows at `step`: the PDF is made from the sheet view. */
+/** What the centre of a wide screen shows at `step`: the decklist step has the cards beside it. */
 export function centreViewAt(step: WorkspaceStep): CentreView {
-  return step === 'sheet' || step === 'pdf' ? 'sheet' : 'cards';
+  return step === 'sheet' ? 'sheet' : 'cards';
 }
 
 /** The state both layouts of the workspace show, each in its own arrangement of the zones. */

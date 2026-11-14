@@ -78,8 +78,7 @@
     "stepNames": {
       "list": "Lista",
       "cards": "Carte",
-      "sheet": "Foglio",
-      "pdf": "PDF"
+      "sheet": "Foglio"
     },
     "decklistCount": "{{cards}} · {{pages}}",
     "cardCount_one": "{{count}} carta",
