@@ -1,6 +1,6 @@
-// The marks around a tile of the card grid, from its card outward: the sibling group's colour,
-// the selection and its edge, a gap, then the keyboard focus. They add up instead of replacing
-// each other, so a tile shows every state it is in.
+// The rings around a tile's card, from the card outward: the sibling group's colour, then the
+// selection and its edge. They add up instead of replacing each other, so a tile shows every
+// state it is in. The focused tile's outline stands past them (see focus-line.ts).
 
 /** The ring in the colour of the tile's sibling group, in CSS px. */
 const SIBLING_RING_PX = 2;
@@ -38,27 +38,4 @@ function ring(reachPx: number, colour: string): string {
 }
 
 /** How far the rings of a sibling, selected tile reach past its card, in CSS px. */
-const RINGS_REACH_PX = SIBLING_RING_PX + SELECTION_RING_PX + SELECTION_EDGE_PX;
-/** The clear space between the outermost ring and the focus line, in CSS px. */
-const FOCUS_GAP_PX = 3;
-/** The keyboard focus line, in CSS px. */
-const FOCUS_LINE_PX = 2;
-
-/**
- * How far the focus line reaches past the box it surrounds, in CSS px. It stands past every ring
- * whatever rings the tile wears, so it never moves as the tile is selected or split.
- */
-export const FOCUS_REACH_PX = RINGS_REACH_PX + FOCUS_GAP_PX + FOCUS_LINE_PX;
-
-/** The focus line around a box, drawn once a class such as `SHOWN_ON_GRID_CELL_FOCUS` gives it a style. */
-export const FOCUS_LINE_STYLE = {
-  outlineWidth: FOCUS_LINE_PX,
-  outlineOffset: RINGS_REACH_PX + FOCUS_GAP_PX,
-  outlineColor: 'var(--color-focus)',
-} as const;
-
-/** A cell of the card grid: it takes the keyboard focus and lets its tile draw it. */
-export const GRID_CELL_FOCUS_GROUP = 'group/grid-cell outline-none';
-
-/** Shows the focus line of an element inside a grid cell while the keyboard stands on the cell. */
-export const SHOWN_ON_GRID_CELL_FOCUS = 'group-focus-visible/grid-cell:outline-solid';
+export const RINGS_REACH_PX = SIBLING_RING_PX + SELECTION_RING_PX + SELECTION_EDGE_PX;

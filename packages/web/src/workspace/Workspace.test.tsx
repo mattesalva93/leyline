@@ -353,7 +353,7 @@ function cardRingColoursOf(tile: HTMLElement) {
   return card.style.boxShadow.match(/var\(--[\w-]+\)/g);
 }
 
-/** The line a tile draws when the keyboard stands on it. */
+/** The line a tile draws when it is the focused tile. */
 function focusOutlineOf(tile: HTMLElement | undefined) {
   const outline = tile?.querySelector<HTMLElement>('[data-focus-outline]');
   if (!outline) throw new Error('The tile draws no focus outline');
@@ -1042,7 +1042,7 @@ describe('the pile under a tile', () => {
     expect(copy?.querySelector('img')?.getAttribute('src')).toBe(card.getAttribute('src'));
   });
 
-  it('draws the keyboard focus around the card and the copies of its pile, past the deepest copy', async () => {
+  it('outlines the focused tile around its card and the copies of its pile, out to the deepest copy', async () => {
     await mountPageAndWrite('3 Sol Ring{Enter}');
     await screen.findByRole('img', { name: /^Immagine di Sol Ring/ });
     const [tile] = gridTiles();
@@ -1055,7 +1055,7 @@ describe('the pile under a tile', () => {
     expect([outline.style.right, outline.style.bottom]).toEqual(['-8px', '-8px']);
   });
 
-  it('draws the keyboard focus of a single copy around its card alone', async () => {
+  it('outlines a focused tile of a single copy around its card alone', async () => {
     await mountPageAndWrite('1 Sol Ring{Enter}');
     await screen.findByRole('img', { name: /^Immagine di Sol Ring/ });
 
@@ -2967,7 +2967,7 @@ describe('the card grid from the keyboard', () => {
     return user;
   }
 
-  it("draws the focus of a line to fix and of the tile that adds a card as far out as a card's", async () => {
+  it('outlines a focused line to fix and a focused add-card tile as far out as a focused card', async () => {
     await mountPageAndWrite('2 Nonexistent Card{Enter}1 Sol Ring{Enter}');
     await screen.findByRole('img', { name: /^Immagine di Sol Ring/ });
     const [lineToFix, card] = gridTiles();

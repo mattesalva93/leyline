@@ -7,8 +7,9 @@ import type { PrintGridTile } from './grid-tiles.ts';
 import { CARD_SHAPE } from '../card-shape.ts';
 import { COPY_PILE_FOOTPRINT_PX, CopyPile } from './CopyPile.tsx';
 import { siblingColourStyle } from './sibling-group-colours.ts';
-import { cardRingsShadow, FOCUS_REACH_PX, type CardRingStates } from './tile-rings.ts';
-import { CardAndPileFocusOutline } from './CardAndPileFocusOutline.tsx';
+import { FOCUS_REACH_PX } from './focus-line.ts';
+import { FocusedTileOutline } from './FocusedTileOutline.tsx';
+import { cardRingsShadow, type CardRingStates } from './tile-rings.ts';
 
 /** The space between two tiles in a row, which the link between siblings spans, in CSS px. */
 export const TILE_GAP_PX = 22;
@@ -164,7 +165,7 @@ export function PrintTileCard({
             />
           )}
         </button>
-        <CardAndPileFocusOutline copies={tile.quantity} />
+        <FocusedTileOutline copies={tile.quantity} />
       </div>
       {continuesRowAbove && (
         <span

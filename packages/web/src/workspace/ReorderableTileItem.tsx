@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { COPY_PILE_FOOTPRINT_PX } from './CopyPile.tsx';
 import { TILE_GAP_PX, TILE_TAB_HEIGHT_PX } from './PrintTileCard.tsx';
 import type { TileCellProps } from './tile-cell.ts';
-import { GRID_CELL_FOCUS_GROUP } from './tile-rings.ts';
+import { GRID_CELL_FOCUS_GROUP } from './focus-line.ts';
 import type { TileDragHandlers } from './use-line-drag.ts';
 
 /** How wide the bar showing where a dragged line lands is, in CSS px. */
