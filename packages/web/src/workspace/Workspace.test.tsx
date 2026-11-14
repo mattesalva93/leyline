@@ -347,10 +347,14 @@ function siblingColourOf(tile: HTMLElement) {
   return coloured?.style.getPropertyValue('--sibling-colour') || undefined;
 }
 
+/** The colours of the rings an element wears, from the element outward. */
+function ringColoursOf(ringed: HTMLElement | null | undefined) {
+  return ringed?.style.boxShadow.match(/var\(--[\w-]+\)/g);
+}
+
 /** The colours of the rings around a tile's card, from the card outward. */
 function cardRingColoursOf(tile: HTMLElement) {
-  const card = within(tile).getByRole('button', { name: /^Modifica / });
-  return card.style.boxShadow.match(/var\(--[\w-]+\)/g);
+  return ringColoursOf(within(tile).getByRole('button', { name: /^Modifica / }));
 }
 
 /** The line a tile draws when it is the focused tile. */
@@ -1616,10 +1620,7 @@ describe('the decklist summary', () => {
 
     const [notFound] = gridTiles();
     const ringed = notFound?.querySelector<HTMLElement>('[style*="box-shadow"]');
-    expect(ringed?.style.boxShadow.match(/var\(--[\w-]+\)/g)).toEqual([
-      'var(--color-accent)',
-      'var(--color-selection-edge)',
-    ]);
+    expect(ringColoursOf(ringed)).toEqual(['var(--color-accent)', 'var(--color-selection-edge)']);
   });
 
   it('takes the lines to fix in the order of the text, whatever section the grid shows them in', async () => {
