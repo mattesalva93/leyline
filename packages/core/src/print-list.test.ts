@@ -182,6 +182,23 @@ describe('listPrints with a print query', () => {
     ],
     ['a promo type', 'prere', { promoTypes: ['prerelease'] }],
     ['an accented artist, typed without accents', 'tomas', { faces: facesBy('Tomás Giorello') }],
+    ['a part of a hyphenated artist', 'sebastien', { faces: facesBy('Jean-Sébastien Rossbach') }],
+    ['an artist with an apostrophe, typed with it', "o'conn", { faces: facesBy("David O'Connor") }],
+    [
+      'an artist with an apostrophe, typed without it',
+      'oconn',
+      { faces: facesBy("David O'Connor") },
+    ],
+    ['initials, typed without their dots', 'ak ven', { faces: facesBy('A.K. Venrinn') }],
+    ['initials, typed with their dots', 'a.k.', { faces: facesBy('A.K. Venrinn') }],
+    [
+      'a word after a colon in the set name',
+      'tales',
+      { setName: 'The Lord of the Rings: Tales of Middle-earth' },
+    ],
+    ['an artist with ł, typed as l', 'gawel', { faces: facesBy('Bartłomiej Gaweł') }],
+    ['an artist with ø, typed as o', 'orjan', { faces: facesBy('Ørjan Ruttenborg Svendsen') }],
+    ['the start of an artist written without spaces', '李', { faces: facesBy('李尤松') }],
   ])('finds a print by %s alone', async (_field, query, fields) => {
     const found = await idsFound([{ ...fields, id: 'match' }, { id: 'other' }], query);
 
@@ -198,6 +215,12 @@ describe('listPrints with a print query', () => {
     const found = await idsFound([{ set: 'mh2', collectorNumber: '267' }], 'h2');
 
     expect(found).toEqual([]);
+  });
+
+  it('keeps every print for a query of nothing but symbols', async () => {
+    const found = await idsFound([{ id: 'a' }, { id: 'b' }], ' - . ★ ');
+
+    expect(found).toEqual(['a', 'b']);
   });
 
   it('keeps every print for a query of nothing but spaces', async () => {
