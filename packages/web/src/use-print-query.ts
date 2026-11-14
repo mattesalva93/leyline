@@ -1,6 +1,6 @@
 import { isBlankPrintQuery } from '@mtg-suite/core';
 import { useEffect, useState } from 'react';
-import { CARD_SEARCH_WAIT_MS } from './workspace/use-card-search.ts';
+import { SEARCH_TYPING_WAIT_MS } from './search-typing-wait.ts';
 
 /** What the user types to narrow the print picker's prints, and what the pages are searched for. */
 export interface PrintQuery {
@@ -11,7 +11,7 @@ export interface PrintQuery {
   readonly clear: () => void;
   /**
    * The print query the prints are asked for: the typed text, trimmed, once the user stops
-   * typing for `CARD_SEARCH_WAIT_MS`; empty, straight away, for a blank one (see
+   * typing for `SEARCH_TYPING_WAIT_MS`; empty, straight away, for a blank one (see
    * `isBlankPrintQuery`).
    */
   readonly searched: string;
@@ -35,7 +35,7 @@ export function usePrintQuery(tileSelectionCount: number): PrintQuery {
   if (isBlank && settled !== '') setSettled('');
   useEffect(() => {
     if (isBlank) return;
-    const timer = setTimeout(() => setSettled(trimmed), CARD_SEARCH_WAIT_MS);
+    const timer = setTimeout(() => setSettled(trimmed), SEARCH_TYPING_WAIT_MS);
     return () => clearTimeout(timer);
   }, [trimmed, isBlank]);
   return {
