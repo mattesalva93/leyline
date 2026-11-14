@@ -39,7 +39,7 @@ export function ImagelessTile({
         style={{
           ...CARD_SHAPE,
           ...FOCUS_LINE_STYLE,
-          ...(isSelected && { boxShadow: cardRingsShadow({ hasSiblings: false, isSelected }) }),
+          boxShadow: cardRingsShadow({ hasSiblings: false, isSelected }),
         }}
         className={`${SHOWN_ON_FOCUSED_TILE} flex w-full flex-col gap-1.5 overflow-hidden border-2 border-dashed p-2 text-xs ${reason === 'pending' ? 'border-border bg-panel/70' : 'border-danger bg-panel'}`}
       >

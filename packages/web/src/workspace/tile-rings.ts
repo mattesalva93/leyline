@@ -16,10 +16,10 @@ export interface CardRingStates {
 }
 
 /**
- * The rings around a card, as a `box-shadow`, all of them outside the image (ADR 0007). A card
- * with no ring keeps a thread of the background that parts its border from the pile's.
+ * The rings around a card, as a `box-shadow`, all of them outside the image (ADR 0007);
+ * `undefined` for a card with no ring.
  */
-export function cardRingsShadow({ hasSiblings, isSelected }: CardRingStates): string {
+export function cardRingsShadow({ hasSiblings, isSelected }: CardRingStates): string | undefined {
   const siblingPx = hasSiblings ? SIBLING_RING_PX : 0;
   const rings = [
     ...(hasSiblings ? [ring(siblingPx, 'var(--sibling-colour)')] : []),
@@ -30,7 +30,7 @@ export function cardRingsShadow({ hasSiblings, isSelected }: CardRingStates): st
         ]
       : []),
   ];
-  return rings.length > 0 ? rings.join(', ') : ring(1, 'var(--color-pile-thread)');
+  return rings.length > 0 ? rings.join(', ') : undefined;
 }
 
 function ring(reachPx: number, colour: string): string {

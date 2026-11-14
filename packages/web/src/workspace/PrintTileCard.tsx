@@ -24,6 +24,9 @@ const SPACE_ABOVE_SET_LINE_PX = 3;
 /** The space between a tile's card and the line under it, the same with a pile or without. */
 const BELOW_CARD_PX = COPY_PILE_FOOTPRINT_PX + FOCUS_REACH_PX + SPACE_ABOVE_SET_LINE_PX;
 
+/** What a card with no ring wears: a thread of the background that parts its border from the pile's. */
+const THREAD_OF_A_CARD_WITHOUT_RINGS = '0 0 0 1px var(--color-pile-thread)';
+
 /** The colour of the thin ring the pile's copies wear: the outermost colour of the card's rings. */
 function pileRingColourOf({ hasSiblings, isSelected }: CardRingStates): string | undefined {
   if (isSelected) return 'var(--color-accent)';
@@ -148,7 +151,10 @@ export function PrintTileCard({
           aria-label={t('tile.open', { name: line.card.name })}
           aria-pressed={isSelected}
           className="relative z-10 block w-full bg-raised"
-          style={{ ...CARD_SHAPE, boxShadow: cardRingsShadow(ringStates) }}
+          style={{
+            ...CARD_SHAPE,
+            boxShadow: cardRingsShadow(ringStates) ?? THREAD_OF_A_CARD_WITHOUT_RINGS,
+          }}
           onClick={onSelect}
           {...zoomOn(shownFace)}
         >
