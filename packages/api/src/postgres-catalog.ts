@@ -1,15 +1,19 @@
-import type { Catalog, CatalogEntry, Print } from '@mtg-suite/core';
+import type { Catalog, CatalogEntry, Print, PrintFace } from '@mtg-suite/core';
 import type { Sql } from './db.ts';
+
+/** A face as the catalog stores it: imports before artists were kept have none. */
+type StoredFace = Omit<PrintFace, 'artist'> & { readonly artist?: string };
 
 interface PrintRow extends Omit<Print, 'faces'> {
   readonly oracleId: string;
-  readonly faces: Print['faces'];
+  readonly faces: readonly StoredFace[];
 }
 
 function toPrint(row: PrintRow): Print {
   return {
     id: row.id,
     set: row.set,
+    setName: row.setName,
     collectorNumber: row.collectorNumber,
     lang: row.lang,
     printedName: row.printedName,
@@ -20,7 +24,7 @@ function toPrint(row: PrintRow): Print {
     layout: row.layout,
     setType: row.setType,
     promoTypes: row.promoTypes,
-    faces: row.faces,
+    faces: row.faces.map((face) => ({ ...face, artist: face.artist ?? '' })),
   };
 }
 
@@ -91,7 +95,7 @@ async function entriesOf(sql: Sql, oracleIds: readonly string[]): Promise<Catalo
   `;
   const prints = await sql<PrintRow[]>`
     select
-      id, oracle_id as "oracleId", set, collector_number as "collectorNumber", lang,
+      id, oracle_id as "oracleId", set, set_name as "setName", collector_number as "collectorNumber", lang,
       printed_name as "printedName",
       released_at::text as "releasedAt", image_status as "imageStatus", digital, oversized,
       layout, set_type as "setType",

@@ -9,6 +9,7 @@ export function aPrint(overrides: Partial<Print> = {}): Print {
   return {
     id: 'print-id',
     set: 'tst',
+    setName: 'Test Set',
     collectorNumber: '1',
     lang: 'en',
     printedName: 'Card Name',
@@ -22,6 +23,7 @@ export function aPrint(overrides: Partial<Print> = {}): Print {
     faces: [
       {
         name: 'Card Name',
+        artist: 'Test Artist',
         imageUris: {
           small: 'https://cards.scryfall.io/small/front/x.jpg',
           normal: 'https://cards.scryfall.io/normal/front/x.jpg',

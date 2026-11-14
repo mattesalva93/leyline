@@ -30,6 +30,7 @@ function printOf(name: string, id: string, set: string, releasedAt = '2020-01-01
     faces: [
       {
         name,
+        artist: 'Test Artist',
         imageUris: {
           small: image('small'),
           normal: image('normal'),

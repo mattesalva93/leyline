@@ -560,6 +560,7 @@ describe('generateSheetPdf', () => {
   describe('double-faced cards', () => {
     const face = (side: string) => ({
       name: side,
+      artist: '',
       imageUris: { small: `s-${side}`, normal: `n-${side}`, large: `l-${side}`, png: `p-${side}` },
     });
     const delver = aPrint({ layout: 'transform', faces: [face('front'), face('back')] });
@@ -610,6 +611,7 @@ describe('sheetImageUrls', () => {
     faces: [
       {
         name: 'Card Name',
+        artist: '',
         imageUris: {
           small: 'https://cards.scryfall.io/small/front/chosen.jpg',
           normal: 'https://cards.scryfall.io/normal/front/chosen.jpg',
@@ -705,6 +707,7 @@ describe('layoutSheet', () => {
       layout: 'transform',
       faces: ['front', 'back'].map((side) => ({
         name: side,
+        artist: '',
         imageUris: {
           small: `s-${side}`,
           normal: `n-${side}`,

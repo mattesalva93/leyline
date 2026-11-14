@@ -1,7 +1,7 @@
 // Scryfall bulk objects for tests, trimmed to the fields the import reads.
 import { Readable } from 'node:stream';
 
-const imageUris = (id: string) => ({
+export const imageUris = (id: string) => ({
   small: `https://cards.scryfall.io/small/front/${id}.jpg`,
   normal: `https://cards.scryfall.io/normal/front/${id}.jpg`,
   large: `https://cards.scryfall.io/large/front/${id}.jpg`,
@@ -15,9 +15,11 @@ export function scryfallCard(overrides: Record<string, unknown> = {}): Record<st
     id,
     oracle_id: 'aaaaaaaa-0000-0000-0000-000000000001',
     name: 'Sol Ring',
+    artist: 'Mike Bierek',
     lang: 'en',
     released_at: '2021-04-23',
     set: 'c21',
+    set_name: 'Commander 2021',
     set_type: 'commander',
     collector_number: '263',
     digital: false,
@@ -37,8 +39,8 @@ export function doubleFacedCard(overrides: Record<string, unknown> = {}): Record
     name: 'Delver of Secrets // Insectile Aberration',
     layout: 'transform',
     card_faces: [
-      { name: 'Delver of Secrets', image_uris: imageUris(`${id}-front`) },
-      { name: 'Insectile Aberration', image_uris: imageUris(`${id}-back`) },
+      { name: 'Delver of Secrets', artist: 'Nils Hamm', image_uris: imageUris(`${id}-front`) },
+      { name: 'Insectile Aberration', artist: 'Nils Hamm', image_uris: imageUris(`${id}-back`) },
     ],
     ...overrides,
   };

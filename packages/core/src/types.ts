@@ -30,6 +30,8 @@ export interface ImageUris {
 /** One printed face. Single-faced prints have one, double-faced prints two. */
 export interface PrintFace {
   readonly name: string;
+  /** Who drew this face's art; empty when the catalog does not know. */
+  readonly artist: string;
   readonly imageUris: ImageUris;
 }
 
@@ -38,6 +40,8 @@ export interface Print {
   /** Scryfall print id. */
   readonly id: string;
   readonly set: string;
+  /** The English name of the set, e.g. `Modern Horizons 2`; empty when the catalog does not know. */
+  readonly setName: string;
   readonly collectorNumber: string;
   readonly lang: Lang;
   /** The name printed on the card, in `lang`; multi-face prints use "Front // Back". */

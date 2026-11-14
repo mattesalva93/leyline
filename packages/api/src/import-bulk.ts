@@ -22,6 +22,7 @@ interface ScryfallImageUris {
 
 interface ScryfallFace {
   readonly name: string;
+  readonly artist?: string;
   readonly printed_name?: string;
   readonly oracle_id?: string;
   readonly image_uris?: ScryfallImageUris;
@@ -32,10 +33,12 @@ interface ScryfallCard {
   readonly id: string;
   readonly oracle_id?: string;
   readonly name: string;
+  readonly artist?: string;
   readonly lang: string;
   readonly printed_name?: string;
   readonly released_at: string;
   readonly set: string;
+  readonly set_name: string;
   readonly set_type: string;
   readonly promo_types?: readonly string[];
   readonly collector_number: string;
@@ -61,6 +64,7 @@ interface PrintRow {
   readonly id: string;
   readonly oracle_id: string;
   readonly set: string;
+  readonly set_name: string;
   readonly collector_number: string;
   readonly lang: string;
   readonly printed_name: string;
@@ -83,9 +87,15 @@ function pickImageUris(uris: ScryfallImageUris): ImageUris {
  * adventure) have one image for the whole card.
  */
 function facesOf(card: ScryfallCard): PrintFace[] {
-  if (card.image_uris) return [{ name: card.name, imageUris: pickImageUris(card.image_uris) }];
+  if (card.image_uris) {
+    return [
+      { name: card.name, artist: card.artist ?? '', imageUris: pickImageUris(card.image_uris) },
+    ];
+  }
   return (card.card_faces ?? []).flatMap((face) =>
-    face.image_uris ? [{ name: face.name, imageUris: pickImageUris(face.image_uris) }] : [],
+    face.image_uris
+      ? [{ name: face.name, artist: face.artist ?? '', imageUris: pickImageUris(face.image_uris) }]
+      : [],
   );
 }
 
@@ -110,6 +120,7 @@ function toRows(card: ScryfallCard): { card: CardRow; print: PrintRow } | null {
       id: card.id,
       oracle_id: oracleId,
       set: card.set,
+      set_name: card.set_name,
       collector_number: card.collector_number,
       lang: card.lang,
       printed_name: printedNameOf(card),
