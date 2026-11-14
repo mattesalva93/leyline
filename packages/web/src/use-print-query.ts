@@ -1,3 +1,4 @@
+import { isBlankPrintQuery } from '@mtg-suite/core';
 import { useEffect, useState } from 'react';
 import { CARD_SEARCH_WAIT_MS } from './workspace/use-card-search.ts';
 
@@ -10,7 +11,8 @@ export interface PrintQuery {
   readonly clear: () => void;
   /**
    * The print query the prints are asked for: the typed text, trimmed, once the user stops
-   * typing for `CARD_SEARCH_WAIT_MS`; empty, straight away, for a blank field.
+   * typing for `CARD_SEARCH_WAIT_MS`; empty, straight away, for a blank one (see
+   * `isBlankPrintQuery`).
    */
   readonly searched: string;
 }
@@ -28,17 +30,18 @@ export function usePrintQuery(tileSelectionCount: number): PrintQuery {
     setTyped('');
   }
   const trimmed = typed.trim();
+  const isBlank = isBlankPrintQuery(trimmed);
   // A blank field forgets the last search, so the next one never shows its prints first.
-  if (trimmed === '' && settled !== '') setSettled('');
+  if (isBlank && settled !== '') setSettled('');
   useEffect(() => {
-    if (trimmed === '') return;
+    if (isBlank) return;
     const timer = setTimeout(() => setSettled(trimmed), CARD_SEARCH_WAIT_MS);
     return () => clearTimeout(timer);
-  }, [trimmed]);
+  }, [trimmed, isBlank]);
   return {
     typed,
     type: setTyped,
     clear: () => setTyped(''),
-    searched: trimmed === '' ? '' : settled,
+    searched: isBlank ? '' : settled,
   };
 }

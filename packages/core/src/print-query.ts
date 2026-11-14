@@ -57,14 +57,19 @@ function searchableTextsOf(print: Print): string[] {
   });
 }
 
+/** Whether `printQuery` has no word to search for: only spaces and symbols, or nothing. */
+export function isBlankPrintQuery(printQuery: string): boolean {
+  return wordsOf(printQuery).length === 0;
+}
+
 /**
  * The prints that every word of `printQuery` starts a field of, or a word of a field: set, set
  * name, collector number, release year, the artist of a face, a promo type. A query with no
  * words keeps every print.
  */
 export function printsMatching(prints: readonly Print[], printQuery: string): readonly Print[] {
+  if (isBlankPrintQuery(printQuery)) return prints;
   const queryWords = wordsOf(printQuery);
-  if (queryWords.length === 0) return prints;
   return prints.filter((print) => {
     const texts = searchableTextsOf(print);
     return queryWords.every((word) => texts.some((text) => text.startsWith(word)));

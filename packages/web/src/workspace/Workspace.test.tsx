@@ -16,6 +16,7 @@ import { inMemoryServer } from '../in-memory-server.ts';
 import { mountApp } from '../mount-app.tsx';
 import { DESKTOP, PHONE, stubScreen } from '../test-screen.ts';
 import { PRINT_PICKER_ZOOM_WAIT_MS, TILE_ZOOM_WAIT_MS } from '../use-zoomed-card.tsx';
+import { CARD_SEARCH_WAIT_MS } from './use-card-search.ts';
 
 vi.mock('../api.ts');
 
@@ -1206,6 +1207,18 @@ describe('the print search in the print picker', () => {
     expect(searchField()).toHaveProperty('value', '');
     expect(await inspector().findByText('3 stampe disponibili')).toBeTruthy();
     expect(document.activeElement).toBe(searchField());
+  });
+
+  it('treats a search of nothing but symbols as no search', async () => {
+    const user = await openLightningBolt();
+
+    await user.type(searchField(), ' - ');
+    await act(() => new Promise((resolve) => setTimeout(resolve, CARD_SEARCH_WAIT_MS + 50)));
+
+    expect(inspector().getByText('3 stampe disponibili')).toBeTruthy();
+    expect(vi.mocked(api.fetchPrintPage).mock.calls.map((call) => call[4] ?? '')).not.toContain(
+      '-',
+    );
   });
 
   it('keeps a pasted print query to the longest the server takes', async () => {
