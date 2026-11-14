@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Tab, TabList, TabPanel, Tabs } from '../ui/Tabs.tsx';
 import { AdSlot } from './AdSlot.tsx';
 import { CardsView } from './CardsView.tsx';
 import { DecklistEditor } from '../decklist-editor/DecklistEditor.tsx';
+import { GoToSheetButton } from './GoToSheetButton.tsx';
 import type { TileSelection } from './grid-tiles.ts';
 import { Inspector } from './Inspector.tsx';
 import { PdfControl } from './PdfControl.tsx';
 import { SheetView } from './SheetView.tsx';
 import { SidePanel } from './SidePanel.tsx';
+import { Tab, TabList, TabPanel, Tabs } from '../ui/Tabs.tsx';
 import { TileWidthSlider } from './TileWidthSlider.tsx';
 import { useTileWidth } from './tile-width.ts';
 import { useFittedSidePanels } from './use-fitted-side-panels.ts';
@@ -65,7 +66,15 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
             ))}
           </TabList>
           {view === 'cards' && <TileWidthSlider width={tileWidth} onChange={setTileWidth} />}
-          <PdfControl pdf={generator.pdf} className="mr-1 ml-auto" />
+          {view === 'cards' ? (
+            <GoToSheetButton
+              sheetHasSomethingToPrint={generator.sheetLayout !== null}
+              onGoToSheet={() => state.goToStep('sheet')}
+              className="mr-1 ml-auto"
+            />
+          ) : (
+            <PdfControl pdf={generator.pdf} className="mr-1 ml-auto" />
+          )}
         </div>
         {/* The grid takes its own stop of Tab, so the panel around it takes none. */}
         <TabPanel value="cards" tabIndex={-1} className="min-h-0 flex-1 overflow-y-auto">

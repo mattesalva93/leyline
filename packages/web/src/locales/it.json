@@ -60,6 +60,8 @@
       "tokens": "Token"
     },
     "tileWidth": "Zoom",
+    "goToSheet": "Controlla il foglio →",
+    "goToSheetUnavailable": "Aggiungi almeno una carta riconosciuta per vedere il foglio",
     "views": {
       "cards": "Carte",
       "sheet": "Foglio"
