@@ -2,6 +2,7 @@ import {
   allocateEveryCopy,
   copiesByPrint,
   MAX_PRINT_QUERY_LENGTH,
+  releaseYearOf,
   type AllocationChoice,
   type Print,
   type PrintCountsByLang,
@@ -59,7 +60,7 @@ interface ReleaseYear {
 function byReleaseYear(prints: readonly Print[]): ReleaseYear[] {
   const years: { year: string; prints: Print[] }[] = [];
   for (const print of prints) {
-    const year = print.releasedAt.slice(0, 4);
+    const year = releaseYearOf(print);
     const last = years.at(-1);
     if (last?.year === year) last.prints.push(print);
     else years.push({ year, prints: [print] });

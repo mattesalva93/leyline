@@ -13,6 +13,7 @@ export {
 } from './print-list.ts';
 export { cardKeys } from './name-match.ts';
 export { isBlankPrintQuery, MAX_PRINT_QUERY_LENGTH } from './print-query.ts';
+export { releaseYearOf } from './release-year.ts';
 export {
   allocateEveryCopy,
   allocatePrintCopies,

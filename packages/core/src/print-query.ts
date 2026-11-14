@@ -1,5 +1,6 @@
 // How a print query narrows the prints of a card in the print picker.
 import { nameKey } from './name-match.ts';
+import { releaseYearOf } from './release-year.ts';
 import type { Print } from './types.ts';
 
 /** Letters of artist names that stripping accents leaves as they are, as a user types them. */
@@ -46,7 +47,7 @@ function searchableTextsOf(print: Print): string[] {
     print.set,
     print.setName,
     print.collectorNumber,
-    print.releasedAt.slice(0, 4),
+    releaseYearOf(print),
     ...print.faces.map((face) => face.artist),
     ...print.promoTypes,
   ];
