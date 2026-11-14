@@ -22,7 +22,3 @@ export const SYMBOL_BUTTON =
 /** A text field or a select. */
 export const FIELD =
   'min-h-9 rounded-md border-2 border-border bg-panel px-2 py-1 text-foreground invalid:border-warning';
-
-/** The ring around a cell of the card grid the keyboard stands on, clear of the card's own ring. */
-export const GRID_CELL_FOCUS_RING =
-  'focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-focus';

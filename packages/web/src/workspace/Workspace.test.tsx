@@ -347,6 +347,23 @@ function siblingColourOf(tile: HTMLElement) {
   return coloured?.style.getPropertyValue('--sibling-colour') || undefined;
 }
 
+/** The colours of the rings an element wears, from the element outward. */
+function ringColoursOf(ringed: HTMLElement | null | undefined) {
+  return ringed?.style.boxShadow.match(/var\(--[\w-]+\)/g);
+}
+
+/** The colours of the rings around a tile's card, from the card outward. */
+function cardRingColoursOf(tile: HTMLElement) {
+  return ringColoursOf(within(tile).getByRole('button', { name: /^Modifica / }));
+}
+
+/** The line a tile draws when it is the focused tile. */
+function focusOutlineOf(tile: HTMLElement | undefined) {
+  const outline = tile?.querySelector<HTMLElement>('[data-focus-outline]');
+  if (!outline) throw new Error('The tile draws no focus outline');
+  return outline;
+}
+
 describe('the workspace', () => {
   it('shows the decklist as tiles in the order of the text, each with its image and quantity', async () => {
     await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
@@ -386,6 +403,21 @@ describe('the workspace', () => {
     expect(otherBolt).toBe(bolt);
     expect(bolt).not.toBe(solRing);
     expect(island).toBeUndefined();
+  });
+
+  it('rings a selected sibling tile in its group colour inside the selection, edged so the board shows it', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+
+    const [selected, sibling] = gridTiles().map(cardRingColoursOf);
+
+    expect(selected).toEqual([
+      'var(--sibling-colour)',
+      'var(--color-accent)',
+      'var(--color-selection-edge)',
+    ]);
+    expect(sibling).toEqual(['var(--sibling-colour)']);
   });
 
   it('shows each section under its title with its card count, in a fixed order, its tiles in the order of the text', async () => {
@@ -1014,6 +1046,43 @@ describe('the pile under a tile', () => {
     expect(copy?.querySelector('img')?.getAttribute('src')).toBe(card.getAttribute('src'));
   });
 
+  it('outlines the focused tile around its card and the copies of its pile, out to the deepest copy', async () => {
+    await mountPageAndWrite('3 Sol Ring{Enter}');
+    await screen.findByRole('img', { name: /^Immagine di Sol Ring/ });
+    const [tile] = gridTiles();
+    const deepestCopy = pileCopiesPerTile()[0]?.[0];
+
+    const outline = focusOutlineOf(tile);
+
+    expect(deepestCopy?.style.transform).toBe('translate(8px, 8px)');
+    expect([outline.style.top, outline.style.left]).toEqual(['0px', '0px']);
+    expect([outline.style.right, outline.style.bottom]).toEqual(['-8px', '-8px']);
+  });
+
+  it('outlines a focused tile of a single copy around its card alone', async () => {
+    await mountPageAndWrite('1 Sol Ring{Enter}');
+    await screen.findByRole('img', { name: /^Immagine di Sol Ring/ });
+
+    const outline = focusOutlineOf(gridTiles()[0]);
+
+    expect([outline.style.right, outline.style.bottom]).toEqual(['0px', '0px']);
+  });
+
+  it('keeps the set and number under the deepest pile clear of the focus line around it', async () => {
+    await mountPageAndWrite('6 Sol Ring{Enter}');
+    await screen.findByRole('img', { name: /^Immagine di Sol Ring/ });
+    const [tile] = gridTiles();
+    const outline = focusOutlineOf(tile);
+    const setAndNumber = within(tile as HTMLElement).getByText('C21 #1').parentElement;
+
+    const px = (length: string | undefined) => Number.parseFloat(length ?? '');
+    const focusBelowCard =
+      -px(outline.style.bottom) + px(outline.style.outlineOffset) + px(outline.style.outlineWidth);
+
+    expect(focusBelowCard).toBeGreaterThan(0);
+    expect(px(setAndNumber?.style.marginTop)).toBeGreaterThan(focusBelowCard);
+  });
+
   it('keeps the copies decorative: hidden, without alternative text, and deaf to the pointer', async () => {
     await mountPageAndWrite('2 Sol Ring{Enter}');
     await screen.findByRole('img', { name: /^Immagine di Sol Ring/ });
@@ -1541,6 +1610,17 @@ describe('the decklist summary', () => {
     const [, notFound] = gridTiles();
     expect(notFound?.getAttribute('aria-current')).toBe('true');
     expect(scrollIntoView.mock.contexts).toContain(notFound);
+  });
+
+  it('rings the selected line to fix as it rings a selected card', async () => {
+    const user = await mountPageAndWrite('2 Nonexistent Card{Enter}');
+    await screen.findByText('Carta non trovata');
+
+    await user.click(summary().getByRole('button', { name: '1 riga da sistemare' }));
+
+    const [notFound] = gridTiles();
+    const ringed = notFound?.querySelector<HTMLElement>('[style*="box-shadow"]');
+    expect(ringColoursOf(ringed)).toEqual(['var(--color-accent)', 'var(--color-selection-edge)']);
   });
 
   it('takes the lines to fix in the order of the text, whatever section the grid shows them in', async () => {
@@ -2887,6 +2967,20 @@ describe('the card grid from the keyboard', () => {
     screen.getByRole('button', { name: 'Controlla il foglio →' }).focus();
     return user;
   }
+
+  it('outlines a focused line to fix and a focused add-card tile as far out as a focused card', async () => {
+    await mountPageAndWrite('2 Nonexistent Card{Enter}1 Sol Ring{Enter}');
+    await screen.findByRole('img', { name: /^Immagine di Sol Ring/ });
+    const [lineToFix, card] = gridTiles();
+    const lineToFixBox = lineToFix?.querySelector<HTMLElement>('[style*="outline-offset"]');
+    const addCardTile = screen.getByRole('button', { name: 'Aggiungi una carta a Mazzo' });
+
+    const cardFocusOffset = focusOutlineOf(card).style.outlineOffset;
+
+    expect(cardFocusOffset).not.toBe('');
+    expect(lineToFixBox?.style.outlineOffset).toBe(cardFocusOffset);
+    expect(addCardTile.style.outlineOffset).toBe(cardFocusOffset);
+  });
 
   it('takes one stop of Tab, on its first tile, and the next Tab leaves it', async () => {
     const user = await focusBeforeTheGrid(

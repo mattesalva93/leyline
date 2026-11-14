@@ -82,6 +82,14 @@ describe('check-theme', () => {
     expect(result.stderr).not.toContain('light theme');
   });
 
+  it('rejects an edge of the selected tile that the board hides (WCAG 1.4.11)', () => {
+    // The accent on the light board: #c5f02c on #e8e6df is 1.06:1.
+    const result = check({ theme: themeWith('light', 'selection-edge', '#c5f02c') });
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('light theme: selection-edge on background is 1.06:1');
+  });
+
   it('rejects a sibling group colour under 4.5:1 on the board or under the quantity on its tab', () => {
     const result = check({ theme: themeWith('dark', 'sibling-2', '#3a3a3a') });
 

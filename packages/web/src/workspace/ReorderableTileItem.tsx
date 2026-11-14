@@ -1,9 +1,9 @@
 import type { LineSide } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
-import { GRID_CELL_FOCUS_RING } from '../ui/board-styles.ts';
 import { COPY_PILE_FOOTPRINT_PX } from './CopyPile.tsx';
 import { TILE_GAP_PX, TILE_TAB_HEIGHT_PX } from './PrintTileCard.tsx';
 import type { TileCellProps } from './tile-cell.ts';
+import { GRID_CELL_FOCUS_GROUP } from './focus-line.ts';
 import type { TileDragHandlers } from './use-line-drag.ts';
 
 /** How wide the bar showing where a dragged line lands is, in CSS px. */
@@ -44,7 +44,7 @@ export function ReorderableTileItem({
   return (
     <li
       {...cell}
-      className={`relative min-w-0 ${GRID_CELL_FOCUS_RING} ${dragHandlers ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragged ? 'opacity-40' : ''}`}
+      className={`relative min-w-0 ${GRID_CELL_FOCUS_GROUP} ${dragHandlers ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragged ? 'opacity-40' : ''}`}
       aria-current={isSelected || undefined}
       draggable={dragHandlers !== null || undefined}
       {...dragHandlers}
