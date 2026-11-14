@@ -599,6 +599,28 @@ describe('GET /api/cards/:oracleId/prints', () => {
     expect(body.prints).toHaveLength(50);
   });
 
+  it('pages through only the prints a print query finds, counting only them', async () => {
+    const first = await printsPage(forest.oracle_id, { lang: 'it', limit: '2', q: 'S0 251' });
+    const second = await printsPage(forest.oracle_id, {
+      lang: 'it',
+      limit: '2',
+      q: 'S0 251',
+      cursor: first.body.nextCursor ?? '',
+    });
+
+    expect([first, second].map(({ body }) => body.prints.map((print) => print.id))).toEqual([
+      ['forest-it-01', 'forest-it-05'],
+      ['forest-it-09'],
+    ]);
+    expect([first, second].map(({ body }) => body.total)).toEqual([3, 3]);
+  });
+
+  it('rejects a print query longer than 200 characters', async () => {
+    const id = forest.oracle_id;
+    expect((await printsPage(id, { lang: 'it', q: 's'.repeat(201) })).status).toBe(400);
+    expect((await printsPage(id, { lang: 'it', q: 's'.repeat(200) })).status).toBe(200);
+  });
+
   it('rejects a limit, cursor or language it cannot read', async () => {
     const id = forest.oracle_id;
     expect((await printsPage(id, { lang: 'it', limit: '0' })).status).toBe(400);
