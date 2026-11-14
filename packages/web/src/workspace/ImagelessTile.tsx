@@ -7,7 +7,7 @@ import { LineToFixHint } from './LineToFixHint.tsx';
 import { pileFreeTileFrame } from './CopyPile.tsx';
 import { TILE_TAB_HEIGHT_PX } from './PrintTileCard.tsx';
 import { CARD_SHAPE } from '../card-shape.ts';
-import { cardRingsShadow } from './tile-rings.ts';
+import { cardRingsShadow, FOCUS_LINE_STYLE, SHOWN_ON_GRID_CELL_FOCUS } from './tile-rings.ts';
 
 interface ImagelessTileProps {
   readonly gridTile: ImagelessGridTile;
@@ -37,9 +37,10 @@ export function ImagelessTile({
       <div
         style={{
           ...CARD_SHAPE,
+          ...FOCUS_LINE_STYLE,
           ...(isSelected && { boxShadow: cardRingsShadow({ hasSiblings: false, isSelected }) }),
         }}
-        className={`flex w-full flex-col gap-1.5 overflow-hidden border-2 border-dashed p-2 text-xs ${reason === 'pending' ? 'border-border bg-panel/70' : 'border-danger bg-panel'}`}
+        className={`${SHOWN_ON_GRID_CELL_FOCUS} flex w-full flex-col gap-1.5 overflow-hidden border-2 border-dashed p-2 text-xs ${reason === 'pending' ? 'border-border bg-panel/70' : 'border-danger bg-panel'}`}
       >
         {reason !== 'pending' && (
           <p className="flex items-center gap-1 font-semibold text-danger">

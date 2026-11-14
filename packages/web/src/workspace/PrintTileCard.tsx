@@ -7,7 +7,8 @@ import type { PrintGridTile } from './grid-tiles.ts';
 import { CARD_SHAPE } from '../card-shape.ts';
 import { COPY_PILE_FOOTPRINT_PX, CopyPile } from './CopyPile.tsx';
 import { siblingColourStyle } from './sibling-group-colours.ts';
-import { cardRingsShadow, type CardRingStates } from './tile-rings.ts';
+import { cardRingsShadow, FOCUS_REACH_PX, type CardRingStates } from './tile-rings.ts';
+import { CardAndPileFocusOutline } from './CardAndPileFocusOutline.tsx';
 
 /** The space between two tiles in a row, which the link between siblings spans, in CSS px. */
 export const TILE_GAP_PX = 22;
@@ -17,10 +18,10 @@ export const TILE_TAB_HEIGHT_PX = 28;
 
 const LINK_BRIDGE = 'absolute top-1/2 z-10 h-3 -translate-y-1/2 bg-(--sibling-colour)';
 
-/** The space between the deepest pile and the line under the card, in CSS px. */
-const GAP_UNDER_PILE_PX = 4;
+/** The space between the focus line around the deepest pile and the line under the card, in CSS px. */
+const SPACE_ABOVE_SET_LINE_PX = 3;
 /** The space between a tile's card and the line under it, the same with a pile or without. */
-const BELOW_CARD_PX = COPY_PILE_FOOTPRINT_PX + GAP_UNDER_PILE_PX;
+const BELOW_CARD_PX = COPY_PILE_FOOTPRINT_PX + FOCUS_REACH_PX + SPACE_ABOVE_SET_LINE_PX;
 
 /** The colour of the thin ring the pile's copies wear: the outermost colour of the card's rings. */
 function pileRingColourOf({ hasSiblings, isSelected }: CardRingStates): string | undefined {
@@ -85,7 +86,8 @@ export function PrintTileCard({
         ...(siblingColour === undefined ? undefined : siblingColourStyle(siblingColour)),
       }}
     >
-      <div className="flex items-end pl-2" style={{ height: TILE_TAB_HEIGHT_PX }}>
+      {/* Above the focus line, which meets the tab instead of crossing its buttons. */}
+      <div className="relative z-20 flex items-end pl-2" style={{ height: TILE_TAB_HEIGHT_PX }}>
         <div className={`flex items-center rounded-t-md ${tabColour}`}>
           <button
             type="button"
@@ -144,7 +146,7 @@ export function PrintTileCard({
           tabIndex={-1}
           aria-label={t('tile.open', { name: line.card.name })}
           aria-pressed={isSelected}
-          className="relative z-10 block w-full bg-raised focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          className="relative z-10 block w-full bg-raised"
           style={{ ...CARD_SHAPE, boxShadow: cardRingsShadow(ringStates) }}
           onClick={onSelect}
           {...zoomOn(shownFace)}
@@ -162,6 +164,7 @@ export function PrintTileCard({
             />
           )}
         </button>
+        <CardAndPileFocusOutline copies={tile.quantity} />
       </div>
       {continuesRowAbove && (
         <span

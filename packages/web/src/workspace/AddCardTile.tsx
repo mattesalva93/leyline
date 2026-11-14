@@ -7,7 +7,7 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CARD_SHAPE } from '../card-shape.ts';
-import { GRID_CELL_FOCUS_RING, SECONDARY_BUTTON } from '../ui/board-styles.ts';
+import { SECONDARY_BUTTON } from '../ui/board-styles.ts';
 import {
   CenteredDialogContent,
   Dialog,
@@ -21,6 +21,7 @@ import { SectionPicker } from './SectionPicker.tsx';
 import { pileFreeTileFrame } from './CopyPile.tsx';
 import { TILE_TAB_HEIGHT_PX } from './PrintTileCard.tsx';
 import type { GridCellProps } from './use-grid-cell-focus.ts';
+import { FOCUS_LINE_STYLE } from './tile-rings.ts';
 
 interface AddCardTileProps {
   /**
@@ -64,8 +65,8 @@ export function AddCardTile({ section, lang, cell, onAdd }: AddCardTileProps) {
         <DialogTrigger
           {...cell}
           aria-label={tileLabel}
-          style={CARD_SHAPE}
-          className={`${GRID_CELL_FOCUS_RING} flex w-full flex-col items-center justify-center gap-1 border-2 border-dashed border-border bg-panel/50 text-sm font-semibold text-muted-foreground hover:border-accent hover:text-foreground`}
+          style={{ ...CARD_SHAPE, ...FOCUS_LINE_STYLE }}
+          className={`outline-none focus-visible:outline-solid flex w-full flex-col items-center justify-center gap-1 border-2 border-dashed border-border bg-panel/50 text-sm font-semibold text-muted-foreground hover:border-accent hover:text-foreground`}
         >
           <Icon name="plus" className="size-8" />
           {tileText}

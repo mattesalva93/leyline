@@ -353,6 +353,13 @@ function cardRingColoursOf(tile: HTMLElement) {
   return card.style.boxShadow.match(/var\(--[\w-]+\)/g);
 }
 
+/** The line a tile draws when the keyboard stands on it. */
+function focusOutlineOf(tile: HTMLElement | undefined) {
+  const outline = tile?.querySelector<HTMLElement>('[data-focus-outline]');
+  if (!outline) throw new Error('The tile draws no focus outline');
+  return outline;
+}
+
 describe('the workspace', () => {
   it('shows the decklist as tiles in the order of the text, each with its image and quantity', async () => {
     await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
@@ -1033,6 +1040,43 @@ describe('the pile under a tile', () => {
     const [copy] = pileCopiesPerTile()[0] ?? [];
 
     expect(copy?.querySelector('img')?.getAttribute('src')).toBe(card.getAttribute('src'));
+  });
+
+  it('draws the keyboard focus around the card and the copies of its pile, past the deepest copy', async () => {
+    await mountPageAndWrite('3 Sol Ring{Enter}');
+    await screen.findByRole('img', { name: /^Immagine di Sol Ring/ });
+    const [tile] = gridTiles();
+    const deepestCopy = pileCopiesPerTile()[0]?.[0];
+
+    const outline = focusOutlineOf(tile);
+
+    expect(deepestCopy?.style.transform).toBe('translate(8px, 8px)');
+    expect([outline.style.top, outline.style.left]).toEqual(['0px', '0px']);
+    expect([outline.style.right, outline.style.bottom]).toEqual(['-8px', '-8px']);
+  });
+
+  it('draws the keyboard focus of a single copy around its card alone', async () => {
+    await mountPageAndWrite('1 Sol Ring{Enter}');
+    await screen.findByRole('img', { name: /^Immagine di Sol Ring/ });
+
+    const outline = focusOutlineOf(gridTiles()[0]);
+
+    expect([outline.style.right, outline.style.bottom]).toEqual(['0px', '0px']);
+  });
+
+  it('keeps the set line under the deepest pile clear of the focus around it', async () => {
+    await mountPageAndWrite('6 Sol Ring{Enter}');
+    await screen.findByRole('img', { name: /^Immagine di Sol Ring/ });
+    const [tile] = gridTiles();
+    const outline = focusOutlineOf(tile);
+    const setLine = within(tile as HTMLElement).getByText('C21 #1').parentElement;
+
+    const px = (length: string | undefined) => Number.parseFloat(length ?? '');
+    const focusBelowCard =
+      -px(outline.style.bottom) + px(outline.style.outlineOffset) + px(outline.style.outlineWidth);
+
+    expect(focusBelowCard).toBeGreaterThan(0);
+    expect(px(setLine?.style.marginTop)).toBeGreaterThan(focusBelowCard);
   });
 
   it('keeps the copies decorative: hidden, without alternative text, and deaf to the pointer', async () => {
@@ -2922,6 +2966,20 @@ describe('the card grid from the keyboard', () => {
     screen.getByRole('button', { name: 'Controlla il foglio →' }).focus();
     return user;
   }
+
+  it("draws the focus of a line to fix and of the tile that adds a card as far out as a card's", async () => {
+    await mountPageAndWrite('2 Nonexistent Card{Enter}1 Sol Ring{Enter}');
+    await screen.findByRole('img', { name: /^Immagine di Sol Ring/ });
+    const [lineToFix, card] = gridTiles();
+    const lineToFixBox = lineToFix?.querySelector<HTMLElement>('[style*="outline-offset"]');
+    const addCardTile = screen.getByRole('button', { name: 'Aggiungi una carta a Mazzo' });
+
+    const cardFocusOffset = focusOutlineOf(card).style.outlineOffset;
+
+    expect(cardFocusOffset).not.toBe('');
+    expect(lineToFixBox?.style.outlineOffset).toBe(cardFocusOffset);
+    expect(addCardTile.style.outlineOffset).toBe(cardFocusOffset);
+  });
 
   it('takes one stop of Tab, on its first tile, and the next Tab leaves it', async () => {
     const user = await focusBeforeTheGrid(

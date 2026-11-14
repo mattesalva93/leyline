@@ -29,6 +29,11 @@ export function copyPileCopyCount(copies: number): number {
   return Math.min(Math.max(copies - 1, 0), MAX_COPIES);
 }
 
+/** How far the deepest copy of the pile of a tile holding `copies` copies stands past its card, in CSS px. */
+export function copyPileReachPx(copies: number): number {
+  return copyPileCopyCount(copies) * COPY_STEP_PX;
+}
+
 interface CopyPileProps {
   readonly copies: number;
   /** The image of the face the tile's card shows. */
