@@ -2639,6 +2639,25 @@ describe('the decklist saved on the device', () => {
     ).toEqual(['brainstorm-it-ice', 'brainstorm-it-mmq', 'brainstorm-c21']);
   });
 
+  it('brings back the choices saved before prints had a set name and artists', async () => {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+    await moveOneCopy(user, 'Brainstorm', 'ICE #1', 'MMQ #1');
+    const saved = localStorage.getItem('mtg-suite.decklist') ?? '';
+    const withoutNewFields = saved.replace(/"setName":"[^"]*",|,?"artist":"[^"]*"/g, '');
+    expect(withoutNewFields).not.toMatch(/setName|artist/);
+    localStorage.setItem('mtg-suite.decklist', withoutNewFields);
+
+    reload();
+
+    await waitFor(() =>
+      expect(gridTiles().map(tileSummary)).toEqual([
+        ['Immagine di Brainstorm', '3×', '1/2'],
+        ['Immagine di Brainstorm', '1×', '2/2'],
+      ]),
+    );
+  });
+
   it('brings back the sheet options', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });

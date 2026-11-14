@@ -36,15 +36,29 @@ function isArrayOf<T>(value: unknown, isItem: (item: unknown) => item is T): val
   return Array.isArray(value) && value.every(isItem);
 }
 
-function isPrintFace(value: unknown): value is PrintFace {
-  if (!isRecord(value) || !isString(value.name) || !isRecord(value.imageUris)) return false;
-  const { small, normal, large, png } = value.imageUris;
-  return [small, normal, large, png].every(isString);
+/** A face as saved: decklists saved before artists were kept have none. */
+type SavedFace = Omit<PrintFace, 'artist'> & { readonly artist?: string };
+
+/** A print as saved: decklists saved before set names and artists were kept have none. */
+type SavedPrint = Omit<Print, 'setName' | 'faces'> & {
+  readonly setName?: string;
+  readonly faces: readonly SavedFace[];
+};
+
+function isOptionalString(value: unknown): value is string | undefined {
+  return value === undefined || isString(value);
 }
 
-function isPrint(value: unknown): value is Print {
+function isSavedFace(value: unknown): value is SavedFace {
+  if (!isRecord(value) || !isString(value.name) || !isRecord(value.imageUris)) return false;
+  const { small, normal, large, png } = value.imageUris;
+  return [small, normal, large, png].every(isString) && isOptionalString(value.artist);
+}
+
+function isSavedPrint(value: unknown): value is SavedPrint {
   return (
     isRecord(value) &&
+    isOptionalString(value.setName) &&
     [
       value.id,
       value.set,
@@ -59,25 +73,44 @@ function isPrint(value: unknown): value is Print {
     typeof value.digital === 'boolean' &&
     typeof value.oversized === 'boolean' &&
     isArrayOf(value.promoTypes, isString) &&
-    isArrayOf(value.faces, isPrintFace) &&
+    isArrayOf(value.faces, isSavedFace) &&
     value.faces.length > 0
   );
 }
 
-function isAllocation(value: unknown): value is Allocation {
+/** `saved` with what it was saved without: an empty set name and artist, as the catalog has. */
+function printOf(saved: SavedPrint): Print {
+  return {
+    ...saved,
+    setName: saved.setName ?? '',
+    faces: saved.faces.map((face) => ({ ...face, artist: face.artist ?? '' })),
+  };
+}
+
+type SavedAllocation = Omit<Allocation, 'print'> & { readonly print: SavedPrint };
+
+function isAllocation(value: unknown): value is SavedAllocation {
   return (
     isRecord(value) &&
-    isPrint(value.print) &&
+    isSavedPrint(value.print) &&
     Number.isInteger(value.quantity) &&
     Number(value.quantity) > 0
   );
 }
 
-function isAllocationChoice(value: unknown): value is AllocationChoice {
+type SavedAllocationChoice = Omit<AllocationChoice, 'allocations'> & {
+  readonly allocations: readonly SavedAllocation[];
+};
+
+type SavedLineChoices = Omit<LineChoices, 'allocations'> & {
+  readonly allocations?: SavedAllocationChoice;
+};
+
+function isAllocationChoice(value: unknown): value is SavedAllocationChoice {
   return isRecord(value) && isString(value.oracleId) && isArrayOf(value.allocations, isAllocation);
 }
 
-function isLineChoices(value: unknown): value is LineChoices {
+function isLineChoices(value: unknown): value is SavedLineChoices {
   return (
     isRecord(value) &&
     (value.oracleId === undefined || isString(value.oracleId)) &&
@@ -85,10 +118,24 @@ function isLineChoices(value: unknown): value is LineChoices {
   );
 }
 
-function isChoicesEntry(value: unknown): value is readonly [string, LineChoices] {
+function isChoicesEntry(value: unknown): value is readonly [string, SavedLineChoices] {
   return (
     Array.isArray(value) && value.length === 2 && isString(value[0]) && isLineChoices(value[1])
   );
+}
+
+function lineChoicesOf({ allocations, ...choices }: SavedLineChoices): LineChoices {
+  if (!allocations) return choices;
+  return {
+    ...choices,
+    allocations: {
+      ...allocations,
+      allocations: allocations.allocations.map(({ print, quantity }) => ({
+        print: printOf(print),
+        quantity,
+      })),
+    },
+  };
 }
 
 function isWithin(value: unknown, limits: { readonly min: number; readonly max: number }) {
@@ -123,7 +170,11 @@ function savedDecklistOf(stored: string): SavedDecklist | null {
   ) {
     return null;
   }
-  return { decklistText, choicesByLine, sheetOptions };
+  return {
+    decklistText,
+    choicesByLine: choicesByLine.map(([key, choices]) => [key, lineChoicesOf(choices)] as const),
+    sheetOptions,
+  };
 }
 
 /** The decklist the user left on this device, or `null` when there is none to read. */
