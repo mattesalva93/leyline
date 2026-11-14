@@ -15,6 +15,13 @@ const PLAIN_LETTERS: Readonly<Record<string, string>> = {
   þ: 'th',
 };
 
+/**
+ * The longest print query taken, in characters. The longest set name and artist name on
+ * Scryfall in November 2026 (54 and 41 characters), with a set code, a collector number, a
+ * year, a promo type and the spaces between, come to about 140: room for any real search.
+ */
+export const MAX_PRINT_QUERY_LENGTH = 160;
+
 const NOT_LETTER_OR_DIGIT = /[^\p{L}\p{N}]+/gu;
 
 /**

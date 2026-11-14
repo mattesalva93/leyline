@@ -12,6 +12,7 @@ export {
   type PrintCountsByLang,
 } from './print-list.ts';
 export { cardKeys } from './name-match.ts';
+export { MAX_PRINT_QUERY_LENGTH } from './print-query.ts';
 export {
   allocateEveryCopy,
   allocatePrintCopies,

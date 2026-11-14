@@ -1,6 +1,7 @@
 import {
   allocateEveryCopy,
   copiesByPrint,
+  MAX_PRINT_QUERY_LENGTH,
   type AllocationChoice,
   type Print,
   type PrintCountsByLang,
@@ -145,6 +146,8 @@ export function PrintPicker({
           aria-label={t('printPicker.search')}
           placeholder={t('printPicker.search')}
           autoComplete="off"
+          // Longer than the server takes would answer an error, not prints.
+          maxLength={MAX_PRINT_QUERY_LENGTH}
           // The ✕ beside the field empties it: no second one from the browser.
           className={`${FIELD} min-w-0 flex-1 [&::-webkit-search-cancel-button]:appearance-none`}
           value={printQuery.typed}

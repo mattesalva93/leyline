@@ -4,6 +4,7 @@ import {
   isLang,
   isPrintCursor,
   listPrints,
+  MAX_PRINT_QUERY_LENGTH,
   resolveDecklist,
   searchCards,
   type Lang,
@@ -22,7 +23,7 @@ const MAX_DECKLIST_LENGTH = 50_000;
 /** Most prints one call returns, whatever the client asks for: keeps every response small. */
 const MAX_PRINTS_PER_PAGE = 50;
 
-/** Longest name or print query a search accepts, in characters: far above any card name. */
+/** Longest name a search accepts, in characters: far above any card name. */
 const MAX_SEARCH_LENGTH = 200;
 
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
@@ -87,11 +88,11 @@ export function createApp(deps: AppDeps): Hono {
     const { lang = 'en', limit, cursor, q } = c.req.query();
     const limitIsValid = limit === undefined || POSITIVE_INTEGER.test(limit);
     const cursorIsValid = cursor === undefined || isPrintCursor(cursor);
-    const queryIsValid = q === undefined || q.length <= MAX_SEARCH_LENGTH;
+    const queryIsValid = q === undefined || q.length <= MAX_PRINT_QUERY_LENGTH;
     if (!isLang(lang) || !limitIsValid || !cursorIsValid || !queryIsValid) {
       return c.json(
         {
-          error: `Expected the query ?lang=en|it&limit=<whole number of at least 1>&cursor=<nextCursor of the previous page>&q=<a print query of up to ${MAX_SEARCH_LENGTH} characters>.`,
+          error: `Expected the query ?lang=en|it&limit=<whole number of at least 1>&cursor=<nextCursor of the previous page>&q=<a print query of up to ${MAX_PRINT_QUERY_LENGTH} characters>.`,
         },
         400,
       );

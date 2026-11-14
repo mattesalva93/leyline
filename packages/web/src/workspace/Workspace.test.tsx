@@ -1,4 +1,4 @@
-import { defaultSheetOptions, type CatalogEntry } from '@mtg-suite/core';
+import { defaultSheetOptions, MAX_PRINT_QUERY_LENGTH, type CatalogEntry } from '@mtg-suite/core';
 import { aCard, aPrint, jpegOfSize } from '@mtg-suite/core/test-fixtures';
 import {
   act,
@@ -1206,6 +1206,17 @@ describe('the print search in the print picker', () => {
     expect(searchField()).toHaveProperty('value', '');
     expect(await inspector().findByText('3 stampe disponibili')).toBeTruthy();
     expect(document.activeElement).toBe(searchField());
+  });
+
+  it('keeps a pasted print query to the longest the server takes', async () => {
+    const user = await openLightningBolt();
+    await user.click(searchField());
+
+    await user.paste('m'.repeat(MAX_PRINT_QUERY_LENGTH + 40));
+
+    expect(searchField()).toHaveProperty('value', 'm'.repeat(MAX_PRINT_QUERY_LENGTH));
+    expect(await inspector().findByText(/^Nessuna stampa corrisponde a/)).toBeTruthy();
+    expect(inspector().queryByRole('alert')).toBeNull();
   });
 
   it('empties the search with Escape on the field, the panel staying open', async () => {

@@ -1,3 +1,4 @@
+import { MAX_PRINT_QUERY_LENGTH } from '@mtg-suite/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from './app.ts';
 import { importBulk } from './import-bulk.ts';
@@ -615,10 +616,20 @@ describe('GET /api/cards/:oracleId/prints', () => {
     expect([first, second].map(({ body }) => body.total)).toEqual([3, 3]);
   });
 
-  it('rejects a print query longer than 200 characters', async () => {
-    const id = forest.oracle_id;
-    expect((await printsPage(id, { lang: 'it', q: 's'.repeat(201) })).status).toBe(400);
-    expect((await printsPage(id, { lang: 'it', q: 's'.repeat(200) })).status).toBe(200);
+  it('takes a print query naming the longest set name and artist name together', async () => {
+    const longest = [
+      'The Lord of the Rings: Tales of Middle-earth Minigames',
+      'Poison Project (USE ANDITYA DITA INSTEAD)',
+      'ltr 1234★ 2023 startercollection',
+    ].join(' ');
+
+    expect((await printsPage(forest.oracle_id, { lang: 'it', q: longest })).status).toBe(200);
+  });
+
+  it('rejects a print query longer than any search the names call for', async () => {
+    const tooLong = 's'.repeat(MAX_PRINT_QUERY_LENGTH + 1);
+
+    expect((await printsPage(forest.oracle_id, { lang: 'it', q: tooLong })).status).toBe(400);
   });
 
   it('rejects a limit, cursor or language it cannot read', async () => {
