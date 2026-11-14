@@ -140,6 +140,146 @@ describe('listPrints', () => {
   });
 });
 
+describe('listPrints with a print query', () => {
+  /** The faces of a plain print, drawn by `artist`. */
+  const facesBy = (artist: string) => aPrint().faces.map((face) => ({ ...face, artist }));
+
+  /** The ids of the prints of a Forest with `prints` that `query` finds, in English. */
+  async function idsFound(prints: Parameters<typeof aPrint>[0][], query: string) {
+    const catalog = createInMemoryCatalog([{ card: forest, prints: prints.map(aPrint) }]);
+    const page = await listPrints(catalog, {
+      oracleId: 'forest',
+      lang: 'en',
+      today,
+      limit: 10,
+      query,
+    });
+    return page?.prints.map((print) => print.id);
+  }
+
+  it('finds only the prints every word of the query matches', async () => {
+    const found = await idsFound(
+      [
+        { id: 'mh2-267', set: 'mh2', collectorNumber: '267' },
+        { id: 'mh2-268', set: 'mh2', collectorNumber: '268' },
+        { id: 'm21-267', set: 'm21', collectorNumber: '267' },
+      ],
+      'mh2 267',
+    );
+
+    expect(found).toEqual(['mh2-267']);
+  });
+
+  it.each([
+    ['the set', 'MH2', { set: 'mh2' }],
+    ['a word of the set name', 'hor', { setName: 'Modern Horizons 2' }],
+    ['the start of the collector number', '26', { collectorNumber: '267' }],
+    ['the release year', '2003', { releasedAt: '2003-07-28' }],
+    [
+      'the artist of the back face',
+      'guay',
+      { faces: [...facesBy('Kev Walker'), ...facesBy('Rebecca Guay')] },
+    ],
+    ['a promo type', 'prere', { promoTypes: ['prerelease'] }],
+    ['an accented artist, typed without accents', 'tomas', { faces: facesBy('Tomás Giorello') }],
+    ['a part of a hyphenated artist', 'sebastien', { faces: facesBy('Jean-Sébastien Rossbach') }],
+    ['an artist with an apostrophe, typed with it', "o'conn", { faces: facesBy("David O'Connor") }],
+    [
+      'an artist with an apostrophe, typed without it',
+      'oconn',
+      { faces: facesBy("David O'Connor") },
+    ],
+    ['initials, typed without their dots', 'ak ven', { faces: facesBy('A.K. Venrinn') }],
+    ['initials, typed with their dots', 'a.k.', { faces: facesBy('A.K. Venrinn') }],
+    [
+      'a word after a colon in the set name',
+      'tales',
+      { setName: 'The Lord of the Rings: Tales of Middle-earth' },
+    ],
+    ['an artist with ł, typed as l', 'gawel', { faces: facesBy('Bartłomiej Gaweł') }],
+    ['an artist with ø, typed as o', 'orjan', { faces: facesBy('Ørjan Ruttenborg Svendsen') }],
+    ['the start of an artist written without spaces', '李', { faces: facesBy('李尤松') }],
+  ])('finds a print by %s alone', async (_field, query, fields) => {
+    const found = await idsFound([{ ...fields, id: 'match' }, { id: 'other' }], query);
+
+    expect(found).toEqual(['match']);
+  });
+
+  it('leaves out a print one word misses, even when the others match', async () => {
+    const found = await idsFound([{ set: '8ed', releasedAt: '2003-07-28' }], '2003 9ed');
+
+    expect(found).toEqual([]);
+  });
+
+  it('never matches a word in the middle of a field', async () => {
+    const found = await idsFound([{ set: 'mh2', collectorNumber: '267' }], 'h2');
+
+    expect(found).toEqual([]);
+  });
+
+  it('keeps every print for a query of nothing but symbols', async () => {
+    const found = await idsFound([{ id: 'a' }, { id: 'b' }], ' - . ★ ');
+
+    expect(found).toEqual(['a', 'b']);
+  });
+
+  it('keeps every print for a query of nothing but spaces', async () => {
+    const found = await idsFound([{ id: 'a' }, { id: 'b' }], '   ');
+
+    expect(found).toEqual(['a', 'b']);
+  });
+
+  it('pages through the matching prints once, counting only them', async () => {
+    const prints = ['2024', '2023', '2022', '2021', '2020'].map((year) =>
+      aPrint({
+        id: `forest-${year}`,
+        releasedAt: `${year}-01-01`,
+        set: year === '2022' ? 'xyz' : 'fdn',
+      }),
+    );
+    const catalog = createInMemoryCatalog([{ card: forest, prints }]);
+    const options = { oracleId: 'forest', lang: 'en', today, limit: 2, query: 'fdn' } as const;
+
+    const first = await listPrints(catalog, options);
+    const second = await listPrints(catalog, { ...options, cursor: first?.nextCursor });
+
+    expect([first, second].map((page) => page?.prints.map((print) => print.id))).toEqual([
+      ['forest-2024', 'forest-2023'],
+      ['forest-2021', 'forest-2020'],
+    ]);
+    expect([first, second].map((page) => page?.total)).toEqual([4, 4]);
+    expect(second?.nextCursor).toBeNull();
+  });
+
+  it('searches the English prints when no Italian one is printable', async () => {
+    const catalog = createInMemoryCatalog([
+      {
+        card: forest,
+        prints: [
+          aPrint({
+            id: 'forest-it-placeholder',
+            lang: 'it',
+            set: 'lea',
+            imageStatus: 'placeholder',
+          }),
+          aPrint({ id: 'forest-en-lea', lang: 'en', set: 'lea' }),
+          aPrint({ id: 'forest-en-fdn', lang: 'en', set: 'fdn' }),
+        ],
+      },
+    ]);
+
+    const page = await listPrints(catalog, {
+      oracleId: 'forest',
+      lang: 'it',
+      today,
+      limit: 10,
+      query: 'lea',
+    });
+
+    expect(page?.prints.map((print) => print.id)).toEqual(['forest-en-lea']);
+  });
+});
+
 describe('isPrintCursor', () => {
   it('accepts the cursors listPrints hands out and nothing else', async () => {
     const catalog = createInMemoryCatalog([

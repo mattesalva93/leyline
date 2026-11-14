@@ -25,8 +25,15 @@ export function inMemoryServer(entries: readonly CatalogEntry[]): typeof api {
     },
     searchCardsByName: (query, lang) =>
       searchCards(catalog, { query, lang, today: TODAY, limit: CARD_SEARCH_LIMIT }),
-    fetchPrintPage: async (oracleId, lang, limit, cursor) => {
-      const page = await listPrints(catalog, { oracleId, lang, today: TODAY, limit, cursor });
+    fetchPrintPage: async (oracleId, lang, limit, cursor, printQuery) => {
+      const page = await listPrints(catalog, {
+        oracleId,
+        lang,
+        today: TODAY,
+        limit,
+        cursor,
+        query: printQuery,
+      });
       if (!page) throw new Error(`No card ${oracleId}`);
       return page;
     },

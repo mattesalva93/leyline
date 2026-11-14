@@ -1,9 +1,7 @@
 import type { Candidate, Lang } from '@mtg-suite/core';
 import { useEffect, useState } from 'react';
 import { searchCardsByName } from '../api.ts';
-
-/** How long the user may pause between two keys before the search starts, in ms. */
-export const CARD_SEARCH_WAIT_MS = 250;
+import { SEARCH_TYPING_WAIT_MS } from '../search-typing-wait.ts';
 
 /**
  * How many characters a name needs before it is searched: fewer match too many cards for the
@@ -26,7 +24,7 @@ interface Answer {
 
 /**
  * The cards whose name comes close to `query`, in `lang`, searched once the user stops typing
- * for `CARD_SEARCH_WAIT_MS`: an answer to an older query never shows.
+ * for `SEARCH_TYPING_WAIT_MS`: an answer to an older query never shows.
  */
 export function useCardSearch(query: string, lang: Lang): CardSearchState {
   const trimmed = query.trim();
@@ -40,7 +38,7 @@ export function useCardSearch(query: string, lang: Lang): CardSearchState {
         (cards) => isCurrent && setAnswer({ searchKey, state: { status: 'found', cards } }),
         () => isCurrent && setAnswer({ searchKey, state: { status: 'failed' } }),
       );
-    }, CARD_SEARCH_WAIT_MS);
+    }, SEARCH_TYPING_WAIT_MS);
     return () => {
       isCurrent = false;
       clearTimeout(timer);

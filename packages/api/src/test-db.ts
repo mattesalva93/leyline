@@ -14,6 +14,9 @@ export async function createTestDb(): Promise<TestDb> {
   const url = process.env.DATABASE_URL ?? DEFAULT_URL;
   const schema = `test_${randomUUID().replaceAll('-', '')}`;
   const admin = postgres(url, { onnotice: () => {} });
+  // In `public`, as docker/postgres/init does: created by a test's `migrate`, it would land in
+  // that test's schema, out of sight of the others.
+  await admin`create extension if not exists pg_trgm`;
   await admin`create schema ${admin(schema)}`;
   const sql = connect(url, { schema });
   return {

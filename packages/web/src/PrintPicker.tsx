@@ -1,6 +1,8 @@
 import {
   allocateEveryCopy,
   copiesByPrint,
+  MAX_PRINT_QUERY_LENGTH,
+  releaseYearOf,
   type AllocationChoice,
   type Print,
   type PrintCountsByLang,
@@ -11,9 +13,11 @@ import { useTranslation } from 'react-i18next';
 import { setAndNumberOf } from './print-label.ts';
 import { PRINT_TILE_GAP, PRINT_TILE_MIN_WIDTH } from './print-picker-geometry.ts';
 import { SMALL_IMAGE } from './scryfall-image-sizes.ts';
-import { SECONDARY_BUTTON } from './ui/board-styles.ts';
+import { ESCAPE_EMPTIES_FIELD } from './ui/Dialog.tsx';
+import { FIELD, SECONDARY_BUTTON, SYMBOL_BUTTON } from './ui/board-styles.ts';
 import type { PrintPages } from './use-print-pages.ts';
 import type { PrintPickerView } from './use-print-picker-view.ts';
+import type { PrintQuery } from './use-print-query.ts';
 import { PRINT_PICKER_ZOOM_WAIT_MS, useZoomedCard } from './use-zoomed-card.tsx';
 import { CARD_SHAPE } from './card-shape.ts';
 import { LanguagePicker } from './LanguagePicker.tsx';
@@ -37,6 +41,8 @@ interface PrintPickerProps {
   readonly pickerView: PrintPickerView;
   /** How many prints the card has in each language; `null` while not known. */
   readonly printCounts: PrintCountsByLang | null;
+  /** What the user typed to narrow the prints, which `printPages` are already narrowed by. */
+  readonly printQuery: PrintQuery;
   /** The prints of the card in the picker view's language: copies can go to prints of either one. */
   readonly printPages: PrintPages;
   /** Called with the allocations a tap on a print sets: every copy on it. */
@@ -54,7 +60,7 @@ interface ReleaseYear {
 function byReleaseYear(prints: readonly Print[]): ReleaseYear[] {
   const years: { year: string; prints: Print[] }[] = [];
   for (const print of prints) {
-    const year = print.releasedAt.slice(0, 4);
+    const year = releaseYearOf(print);
     const last = years.at(-1);
     if (last?.year === year) last.prints.push(print);
     else years.push({ year, prints: [print] });
@@ -63,7 +69,8 @@ function byReleaseYear(prints: readonly Print[]): ReleaseYear[] {
 }
 
 /**
- * The grid of the prints a line can use, grouped by release year, newest first. Tapping a print
+ * The grid of the prints a line can use, grouped by release year, newest first; a print query
+ * typed above it narrows them. Tapping a print
  * puts every copy on it; its +/− counter adds or takes off one copy of the line on that print.
  * More prints load as the user scrolls near the end of the grid, or until the print to show is
  * among them. A print the pointer rests on shows enlarged beside the picker.
@@ -72,6 +79,7 @@ export function PrintPicker({
   line,
   pickerView: { printsLang, changePrintsLang, printToShow, onPrintShown },
   printCounts,
+  printQuery,
   printPages,
   onAllocationChoice,
   onPrintQuantityChange,
@@ -81,6 +89,8 @@ export function PrintPicker({
   const printButtons = useRef(new Map<string, HTMLButtonElement>());
   const { zoomOn, zoomedCard } = useZoomedCard(PRINT_PICKER_ZOOM_WAIT_MS);
   const { prints, total, hasMore, isLoading, lastRequestFailed, loadMore } = printPages;
+  const searchFieldRef = useRef<HTMLInputElement>(null);
+  const isSearching = printQuery.searched !== '';
 
   useEffect(() => {
     const endOfGrid = endOfGridRef.current;
@@ -120,7 +130,7 @@ export function PrintPicker({
         {t('panel.prints')}
         {total !== null && (
           <span className="font-mono text-xs text-muted-foreground">
-            {t('panel.printCount', { count: total })}
+            {t(isSearching ? 'printPicker.foundCount' : 'panel.printCount', { count: total })}
           </span>
         )}
       </h3>
@@ -130,6 +140,46 @@ export function PrintPicker({
         onChange={changePrintsLang}
         printCounts={printCounts}
       />
+      <div className="mt-2 flex items-center gap-1">
+        <input
+          ref={searchFieldRef}
+          type="search"
+          aria-label={t('printPicker.search')}
+          placeholder={t('printPicker.search')}
+          autoComplete="off"
+          // Longer than the server takes would answer an error, not prints.
+          maxLength={MAX_PRINT_QUERY_LENGTH}
+          // The ✕ beside the field empties it: no second one from the browser.
+          className={`${FIELD} min-w-0 flex-1 [&::-webkit-search-cancel-button]:appearance-none`}
+          value={printQuery.typed}
+          onChange={(event) => printQuery.type(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== 'Escape' || printQuery.typed === '') return;
+            // Handled here: the panel around the picker leaves the tile be.
+            event.preventDefault();
+            printQuery.clear();
+          }}
+          {...(printQuery.typed === '' ? {} : { [ESCAPE_EMPTIES_FIELD]: '' })}
+        />
+        {printQuery.typed !== '' && (
+          <button
+            type="button"
+            className={SYMBOL_BUTTON}
+            aria-label={t('printPicker.clearSearch')}
+            onClick={() => {
+              printQuery.clear();
+              searchFieldRef.current?.focus();
+            }}
+          >
+            {t('printPicker.clearSymbol')}
+          </button>
+        )}
+      </div>
+      {isSearching && total === 0 && (
+        <p className="mt-3 text-muted-foreground">
+          {t('printPicker.noMatch', { query: printQuery.searched })}
+        </p>
+      )}
       {byReleaseYear(prints).map(({ year, prints: printsOfYear }) => (
         <section key={year} aria-label={year}>
           <h4 className="mt-3 mb-1.5 font-mono text-xs font-bold">{year}</h4>

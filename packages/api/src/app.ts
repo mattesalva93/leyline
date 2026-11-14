@@ -4,6 +4,7 @@ import {
   isLang,
   isPrintCursor,
   listPrints,
+  MAX_PRINT_QUERY_LENGTH,
   resolveDecklist,
   searchCards,
   type Lang,
@@ -84,13 +85,14 @@ export function createApp(deps: AppDeps): Hono {
   });
 
   app.get('/api/cards/:oracleId/prints', async (c) => {
-    const { lang = 'en', limit, cursor } = c.req.query();
+    const { lang = 'en', limit, cursor, q } = c.req.query();
     const limitIsValid = limit === undefined || POSITIVE_INTEGER.test(limit);
-    if (!isLang(lang) || !limitIsValid || (cursor !== undefined && !isPrintCursor(cursor))) {
+    const cursorIsValid = cursor === undefined || isPrintCursor(cursor);
+    const queryIsValid = q === undefined || q.length <= MAX_PRINT_QUERY_LENGTH;
+    if (!isLang(lang) || !limitIsValid || !cursorIsValid || !queryIsValid) {
       return c.json(
         {
-          error:
-            'Expected the query ?lang=en|it&limit=<whole number of at least 1>&cursor=<nextCursor of the previous page>.',
+          error: `Expected the query ?lang=en|it&limit=<whole number of at least 1>&cursor=<nextCursor of the previous page>&q=<a print query of up to ${MAX_PRINT_QUERY_LENGTH} characters>.`,
         },
         400,
       );
@@ -101,6 +103,7 @@ export function createApp(deps: AppDeps): Hono {
       today: today(),
       limit: Math.min(Number(limit ?? MAX_PRINTS_PER_PAGE), MAX_PRINTS_PER_PAGE),
       cursor,
+      query: q,
     });
     if (!page) return c.json({ error: 'No card has this oracle id.' }, 404);
     return c.json(page);

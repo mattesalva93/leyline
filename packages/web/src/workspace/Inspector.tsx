@@ -62,7 +62,13 @@ export function Inspector({
         {...PRINT_PICKER_SCROLL_ROOT_PROPS}
       >
         {content === 'sheetOptions' && <SheetSettings state={state} />}
-        {panelLine && <SelectedLinePanel generator={generator} panelLine={panelLine} />}
+        {panelLine && (
+          <SelectedLinePanel
+            generator={generator}
+            panelLine={panelLine}
+            tileSelectionCount={state.tileSelectionCount}
+          />
+        )}
         {lineToFix && (
           <div className="flex flex-col gap-4">
             <LineToFixPanel generator={generator} lineToFix={lineToFix} />

@@ -1,4 +1,4 @@
-import { defaultSheetOptions, type CatalogEntry } from '@mtg-suite/core';
+import { defaultSheetOptions, MAX_PRINT_QUERY_LENGTH, type CatalogEntry } from '@mtg-suite/core';
 import { aCard, aPrint, jpegOfSize } from '@mtg-suite/core/test-fixtures';
 import {
   act,
@@ -16,6 +16,7 @@ import { inMemoryServer } from '../in-memory-server.ts';
 import { mountApp } from '../mount-app.tsx';
 import { DESKTOP, PHONE, stubScreen } from '../test-screen.ts';
 import { PRINT_PICKER_ZOOM_WAIT_MS, TILE_ZOOM_WAIT_MS } from '../use-zoomed-card.tsx';
+import { SEARCH_TYPING_WAIT_MS } from '../search-typing-wait.ts';
 
 vi.mock('../api.ts');
 
@@ -30,6 +31,7 @@ function printOf(name: string, id: string, set: string, releasedAt = '2020-01-01
     faces: [
       {
         name,
+        artist: 'Test Artist',
         imageUris: {
           small: image('small'),
           normal: image('normal'),
@@ -1060,8 +1062,8 @@ describe("the print picker opened on the tile's print", () => {
   /** Makes the server send one print per page, as for a card with many prints. */
   function onePrintPerPage() {
     const server = inMemoryServer(CATALOG);
-    vi.mocked(api.fetchPrintPage).mockImplementation((oracleId, lang, _limit, cursor) =>
-      server.fetchPrintPage(oracleId, lang, 1, cursor),
+    vi.mocked(api.fetchPrintPage).mockImplementation((oracleId, lang, _limit, cursor, printQuery) =>
+      server.fetchPrintPage(oracleId, lang, 1, cursor, printQuery),
     );
   }
 
@@ -1152,6 +1154,180 @@ describe("the print picker opened on the tile's print", () => {
     expect(
       within(phonePanel()).getByRole('radio', { name: 'Italiano (2)', checked: true }),
     ).toBeTruthy();
+  });
+});
+
+describe('the print search in the print picker', () => {
+  const inspector = () => within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
+  const searchField = () => inspector().getByRole('searchbox', { name: 'Cerca variante' });
+
+  /** The print picker's years and the prints under each, as set and number. */
+  function pickerYears() {
+    const picker = inspector().getByRole('region', { name: /^Stampe di / });
+    return within(picker)
+      .queryAllByRole('region')
+      .map((year) => [
+        year.getAttribute('aria-label'),
+        within(year)
+          .getAllByRole('group', { name: /^Copie con / })
+          .map((group) => group.getAttribute('aria-label')?.replace('Copie con ', '')),
+      ]);
+  }
+
+  /** Opens the panel of `1 Lightning Bolt`: TST (2020), M10 (2019) and 2X2 (2018), in English. */
+  async function openLightningBolt() {
+    const user = await mountPageAndWrite('1 Lightning Bolt{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Lightning Bolt' }));
+    await inspector().findByText('3 stampe disponibili');
+    return user;
+  }
+
+  it('shows only the prints found, still by year, with how many were found', async () => {
+    const user = await openLightningBolt();
+
+    await user.type(searchField(), '201');
+
+    expect(await inspector().findByText('2 stampe trovate')).toBeTruthy();
+    expect(pickerYears()).toEqual([
+      ['2019', ['M10 #1']],
+      ['2018', ['2X2 #1']],
+    ]);
+  });
+
+  it('says so when no print matches, and the ✕ brings every print back', async () => {
+    const user = await openLightningBolt();
+
+    await user.type(searchField(), 'zzz');
+
+    expect(await inspector().findByText('Nessuna stampa corrisponde a "zzz"')).toBeTruthy();
+    expect(pickerYears()).toEqual([]);
+
+    await user.click(inspector().getByRole('button', { name: 'Svuota la ricerca' }));
+
+    expect(searchField()).toHaveProperty('value', '');
+    expect(await inspector().findByText('3 stampe disponibili')).toBeTruthy();
+    expect(document.activeElement).toBe(searchField());
+  });
+
+  it('treats a search of nothing but symbols as no search', async () => {
+    const user = await openLightningBolt();
+
+    await user.type(searchField(), ' - ');
+    await act(() => new Promise((resolve) => setTimeout(resolve, SEARCH_TYPING_WAIT_MS + 50)));
+
+    expect(inspector().getByText('3 stampe disponibili')).toBeTruthy();
+    expect(vi.mocked(api.fetchPrintPage).mock.calls.map((call) => call[4] ?? '')).not.toContain(
+      '-',
+    );
+  });
+
+  it('keeps a pasted print query to the longest the server takes', async () => {
+    const user = await openLightningBolt();
+    await user.click(searchField());
+
+    await user.paste('m'.repeat(MAX_PRINT_QUERY_LENGTH + 40));
+
+    expect(searchField()).toHaveProperty('value', 'm'.repeat(MAX_PRINT_QUERY_LENGTH));
+    expect(await inspector().findByText(/^Nessuna stampa corrisponde a/)).toBeTruthy();
+    expect(inspector().queryByRole('alert')).toBeNull();
+  });
+
+  it('empties the search with Escape on the field, the panel staying open', async () => {
+    const user = await openLightningBolt();
+    await user.type(searchField(), 'm10');
+    await inspector().findByText('1 stampa trovata');
+
+    await user.keyboard('{Escape}');
+
+    expect(searchField()).toHaveProperty('value', '');
+    expect(await inspector().findByText('3 stampe disponibili')).toBeTruthy();
+    expect(document.activeElement).toBe(searchField());
+  });
+
+  it('keeps the search when the user taps a print, changes its copies or the language', async () => {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+    await user.type(await inspector().findByRole('searchbox', { name: 'Cerca variante' }), 'ice');
+    await inspector().findByText('1 stampa trovata');
+
+    await user.click(inspector().getByRole('button', { name: 'Una copia in più con ICE #1' }));
+    await user.click(inspector().getByRole('button', { name: 'Una copia in meno con ICE #1' }));
+    const counter = inspector().getByRole('group', { name: 'Copie con ICE #1' });
+    const [icePrint] = within(counter.closest('li') ?? counter).getAllByRole('button');
+    if (!icePrint) throw new Error('no ICE print');
+    await user.click(icePrint);
+    expect(searchField()).toHaveProperty('value', 'ice');
+
+    await user.click(inspector().getByRole('radio', { name: 'Inglese (1)' }));
+
+    expect(searchField()).toHaveProperty('value', 'ice');
+    expect(await inspector().findByText('Nessuna stampa corrisponde a "ice"')).toBeTruthy();
+  });
+
+  it('empties the search when the user picks a sibling tile', async () => {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+    await user.type(await inspector().findByRole('searchbox', { name: 'Cerca variante' }), 'mmq');
+    await user.click(
+      await inspector().findByRole('button', { name: 'Una copia in più con MMQ #1' }),
+    );
+
+    await user.click(tileAt(1).getByRole('button', { name: 'Modifica Brainstorm' }));
+
+    expect(searchField()).toHaveProperty('value', '');
+    expect(await inspector().findByText('2 stampe disponibili')).toBeTruthy();
+  });
+
+  it('empties the search when the user opens the selected tile again with Enter', async () => {
+    const user = await openLightningBolt();
+    await user.type(searchField(), 'm10');
+    await inspector().findByText('1 stampa trovata');
+
+    gridTiles()[0]?.focus();
+    await user.keyboard('{Enter}');
+
+    expect(searchField()).toHaveProperty('value', '');
+    expect(await inspector().findByText('3 stampe disponibili')).toBeTruthy();
+  });
+
+  it('never shows the answer to an older search that arrives after a newer one', async () => {
+    const server = inMemoryServer(CATALOG);
+    let answerOlderSearch = () => {};
+    vi.mocked(api.fetchPrintPage).mockImplementation(
+      (oracleId, lang, limit, cursor, printQuery) => {
+        const page = server.fetchPrintPage(oracleId, lang, limit, cursor, printQuery);
+        if (printQuery !== '2x2') return page;
+        return new Promise((resolve) => (answerOlderSearch = () => resolve(page)));
+      },
+    );
+    const user = await openLightningBolt();
+    await user.type(searchField(), '2x2');
+    await waitFor(() =>
+      expect(vi.mocked(api.fetchPrintPage).mock.calls.map((call) => call[4])).toContain('2x2'),
+    );
+
+    await user.clear(searchField());
+    await user.type(searchField(), 'm10');
+    await inspector().findByText('1 stampa trovata');
+    await act(async () => answerOlderSearch());
+
+    expect(pickerYears()).toEqual([['2019', ['M10 #1']]]);
+  });
+
+  it('empties the search with Escape on a phone without closing the panel', async () => {
+    stubScreen(PHONE);
+    const user = await mountPageAndWrite('1 Lightning Bolt{Enter}');
+    await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+    await user.click(await screen.findByRole('button', { name: 'Modifica Lightning Bolt' }));
+    const phonePanel = () => within(screen.getByRole('dialog', { name: 'Riga selezionata' }));
+    const field = await phonePanel().findByRole('searchbox', { name: 'Cerca variante' });
+    await user.type(field, 'm10');
+    await phonePanel().findByText('1 stampa trovata');
+
+    await user.keyboard('{Escape}');
+
+    expect(field).toHaveProperty('value', '');
+    expect(await phonePanel().findByText('3 stampe disponibili')).toBeTruthy();
   });
 });
 
@@ -2461,6 +2637,25 @@ describe('the decklist saved on the device', () => {
     expect(
       images.map((image) => /brainstorm-[\w-]+/.exec(image.getAttribute('src') ?? '')?.[0]),
     ).toEqual(['brainstorm-it-ice', 'brainstorm-it-mmq', 'brainstorm-c21']);
+  });
+
+  it('brings back the choices saved before prints had a set name and artists', async () => {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+    await moveOneCopy(user, 'Brainstorm', 'ICE #1', 'MMQ #1');
+    const saved = localStorage.getItem('mtg-suite.decklist') ?? '';
+    const withoutNewFields = saved.replace(/"setName":"[^"]*",|,?"artist":"[^"]*"/g, '');
+    expect(withoutNewFields).not.toMatch(/setName|artist/);
+    localStorage.setItem('mtg-suite.decklist', withoutNewFields);
+
+    reload();
+
+    await waitFor(() =>
+      expect(gridTiles().map(tileSummary)).toEqual([
+        ['Immagine di Brainstorm', '3×', '1/2'],
+        ['Immagine di Brainstorm', '1×', '2/2'],
+      ]),
+    );
   });
 
   it('brings back the sheet options', async () => {

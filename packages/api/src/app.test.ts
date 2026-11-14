@@ -1,8 +1,15 @@
+import { MAX_PRINT_QUERY_LENGTH } from '@mtg-suite/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from './app.ts';
 import { importBulk } from './import-bulk.ts';
 import { migrate } from './db.ts';
-import { bulkStream, doubleFacedCard, scryfallCard, textStream } from './scryfall-fixtures.ts';
+import {
+  bulkStream,
+  doubleFacedCard,
+  imageUris,
+  scryfallCard,
+  textStream,
+} from './scryfall-fixtures.ts';
 import { createTestDb, type TestDb } from './test-db.ts';
 
 /** A Commander deck's worth of real card names, for the 100-line batch. */
@@ -403,6 +410,36 @@ describe('POST /api/decklists/resolve', () => {
     ]);
   });
 
+  it("keeps each print's set name and the artist of each of its faces", async () => {
+    await importBulk(
+      db.sql,
+      bulkStream([
+        scryfallCard({ id: 'sol-ring-c21', set_name: 'Commander 2021', artist: 'Mike Bierek' }),
+        doubleFacedCard({
+          id: 'delver-isd',
+          set_name: 'Innistrad',
+          artist: 'Nils Hamm // Nils Hamm',
+          card_faces: [
+            { name: 'Delver of Secrets', artist: 'Nils Hamm', image_uris: imageUris('front') },
+            { name: 'Insectile Aberration', artist: 'Kev Walker', image_uris: imageUris('back') },
+          ],
+        }),
+      ]),
+    );
+
+    const { body } = await resolve('1 Sol Ring\n1 Delver of Secrets');
+
+    expect(body.lines).toMatchObject([
+      { defaultPrint: { setName: 'Commander 2021', faces: [{ artist: 'Mike Bierek' }] } },
+      {
+        defaultPrint: {
+          setName: 'Innistrad',
+          faces: [{ artist: 'Nils Hamm' }, { artist: 'Kev Walker' }],
+        },
+      },
+    ]);
+  });
+
   it('never defaults to digital, art series, oversized, token or playtest prints', async () => {
     const newer = { released_at: '2025-06-01' };
     await importBulk(
@@ -561,6 +598,38 @@ describe('GET /api/cards/:oracleId/prints', () => {
     const { body } = await printsPage(forest.oracle_id, { lang: 'it' });
 
     expect(body.prints).toHaveLength(50);
+  });
+
+  it('pages through only the prints a print query finds, counting only them', async () => {
+    const first = await printsPage(forest.oracle_id, { lang: 'it', limit: '2', q: 'S0 251' });
+    const second = await printsPage(forest.oracle_id, {
+      lang: 'it',
+      limit: '2',
+      q: 'S0 251',
+      cursor: first.body.nextCursor ?? '',
+    });
+
+    expect([first, second].map(({ body }) => body.prints.map((print) => print.id))).toEqual([
+      ['forest-it-01', 'forest-it-05'],
+      ['forest-it-09'],
+    ]);
+    expect([first, second].map(({ body }) => body.total)).toEqual([3, 3]);
+  });
+
+  it('takes a print query naming the longest set name and artist name together', async () => {
+    const longest = [
+      'The Lord of the Rings: Tales of Middle-earth Minigames',
+      'Poison Project (USE ANDITYA DITA INSTEAD)',
+      'ltr 1234★ 2023 startercollection',
+    ].join(' ');
+
+    expect((await printsPage(forest.oracle_id, { lang: 'it', q: longest })).status).toBe(200);
+  });
+
+  it('rejects a print query longer than any search the names call for', async () => {
+    const tooLong = 's'.repeat(MAX_PRINT_QUERY_LENGTH + 1);
+
+    expect((await printsPage(forest.oracle_id, { lang: 'it', q: tooLong })).status).toBe(400);
   });
 
   it('rejects a limit, cursor or language it cannot read', async () => {
@@ -724,5 +793,38 @@ describe('GET /api/cards/:oracleId/print-counts', () => {
     const { status } = await printCounts('aaaaaaaa-0000-0000-0000-00000000dead');
 
     expect(status).toBe(404);
+  });
+});
+
+describe('a catalog imported before set names and artists', () => {
+  let oldDb: TestDb;
+
+  beforeAll(async () => {
+    oldDb = await createTestDb();
+    await migrate(oldDb.sql);
+    // The catalog as an older import left it: no set name column, faces without an artist.
+    await oldDb.sql`alter table prints drop column set_name`;
+    await oldDb.sql`insert into cards values ('forest', 'Forest')`;
+    await oldDb.sql`
+      insert into prints values (
+        'forest-old', 'forest', 'lea', '294', 'en', 'Forest', '1993-08-05', 'highres_scan',
+        false, false, 'normal', 'expansion', '{}',
+        ${oldDb.sql.json([{ name: 'Forest', imageUris: imageUris('forest-old') }])}
+      )
+    `;
+  });
+
+  afterAll(async () => {
+    await oldDb.drop();
+  });
+
+  it('serves its prints with an empty set name and artist once migrated', async () => {
+    await migrate(oldDb.sql);
+
+    const response = await createApp({ sql: oldDb.sql }).request('/api/cards/forest/prints');
+
+    expect(await response.json()).toMatchObject({
+      prints: [{ id: 'forest-old', setName: '', faces: [{ name: 'Forest', artist: '' }] }],
+    });
   });
 });

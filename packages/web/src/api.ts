@@ -1,4 +1,11 @@
-import type { Candidate, DecklistLine, Lang, PrintCountsByLang, PrintPage } from '@mtg-suite/core';
+import {
+  isBlankPrintQuery,
+  type Candidate,
+  type DecklistLine,
+  type Lang,
+  type PrintCountsByLang,
+  type PrintPage,
+} from '@mtg-suite/core';
 
 export async function resolveDecklistText(text: string, lang: Lang): Promise<DecklistLine[]> {
   const response = await fetch('/api/decklists/resolve', {
@@ -41,15 +48,20 @@ export async function fetchImages(
   return new Map(entries);
 }
 
-/** One page of the prints `oracleId` can print with in `lang`, `limit` at most (the server caps it). */
+/**
+ * One page of the prints `oracleId` can print with in `lang`, `limit` at most (the server caps
+ * it); with a `printQuery` that is not blank, only the prints it finds.
+ */
 export async function fetchPrintPage(
   oracleId: string,
   lang: Lang,
   limit: number,
   cursor: string | null,
+  printQuery = '',
 ): Promise<PrintPage> {
   const query = new URLSearchParams({ lang, limit: String(limit) });
   if (cursor) query.set('cursor', cursor);
+  if (!isBlankPrintQuery(printQuery)) query.set('q', printQuery);
   const response = await fetch(`/api/cards/${encodeURIComponent(oracleId)}/prints?${query}`, {
     headers: { accept: 'application/json' },
   });
