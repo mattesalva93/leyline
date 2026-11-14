@@ -2,7 +2,7 @@
 
 export const HARD_SHADOW = 'shadow-[4px_4px_0_var(--color-border)]';
 
-/** A panel lying on the board: the decklist, the inspector, the tool rail. */
+/** A panel lying on the board: the decklist, the inspector. */
 export const BOARD_PANEL = `rounded-lg border-2 border-border bg-panel ${HARD_SHADOW}`;
 
 /** Small capitals in the monospace face: panel titles and short labels. */

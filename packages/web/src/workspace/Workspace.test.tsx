@@ -284,6 +284,11 @@ describe('the generator page', () => {
   });
 });
 
+/** The tab named `name` at the head of the centre, on a wide screen. */
+function centreTab(name: 'Carte' | 'Foglio') {
+  return within(screen.getByRole('tablist')).getByRole('tab', { name });
+}
+
 /** The card grid, every section of it. */
 function cardGrid() {
   return screen.getByRole('region', { name: 'Griglia delle carte' });
@@ -437,11 +442,29 @@ describe('the workspace', () => {
     expect(notFound?.textContent).toContain('2 Nonexistent Card');
   });
 
+  it('picks the view of the centre from its tabs, «Carte» and «Foglio», the arrows moving between them', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    expect(centreTab('Carte').getAttribute('aria-selected')).toBe('true');
+
+    centreTab('Carte').focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(centreTab('Foglio').getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tabpanel', { name: 'Foglio' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
+
+    await user.keyboard('{ArrowLeft}');
+
+    expect(centreTab('Carte').getAttribute('aria-selected')).toBe('true');
+    expect(cardGrid()).toBeTruthy();
+  });
+
   it('switches to the sheet view, with the page, the 100% reminder and the sheet options', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}2 Nonexistent Card{Enter}');
     await screen.findByText('Carta non trovata');
 
-    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+    await user.click(centreTab('Foglio'));
 
     expect(screen.getByRole('img', { name: 'Pagina 1 di 1 come verrà stampata' })).toBeTruthy();
     expect(screen.getByRole('note').textContent).toContain('Stampa al 100%');
@@ -456,7 +479,7 @@ describe('the workspace', () => {
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
     expect(screen.getByRole('button', { name: 'Scarica il PDF' })).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+    await user.click(centreTab('Foglio'));
 
     expect(screen.getByRole('button', { name: 'Scarica il PDF' })).toBeTruthy();
   });
@@ -2197,7 +2220,7 @@ describe('the landing page', () => {
     expect(screen.getByLabelText('Decklist')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Aggiungi una carta/ })).toBeNull();
-    expect(screen.queryByRole('navigation', { name: 'Viste' })).toBeNull();
+    expect(screen.queryByRole('tablist')).toBeNull();
     expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
     expect(screen.queryByRole('complementary')).toBeNull();
   });
@@ -2661,7 +2684,7 @@ describe('the decklist saved on the device', () => {
   it('brings back the sheet options', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
-    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+    await user.click(centreTab('Foglio'));
     await user.selectOptions(screen.getByLabelText('Formato della pagina'), 'Letter (USA)');
     await user.selectOptions(
       screen.getByLabelText('Qualità delle immagini'),
@@ -2675,7 +2698,7 @@ describe('the decklist saved on the device', () => {
 
     reload();
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
-    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+    await user.click(centreTab('Foglio'));
 
     const field = (label: string) => screen.getByLabelText<HTMLInputElement>(label);
     expect(field('Formato della pagina').value).toBe('Letter');
@@ -2726,7 +2749,7 @@ describe('a new decklist', () => {
   it('goes to the landing page once the user confirms, and opens there after a reload', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
-    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+    await user.click(centreTab('Foglio'));
     await user.selectOptions(screen.getByLabelText('Formato della pagina'), 'Letter (USA)');
 
     await user.click(screen.getByRole('button', { name: 'Nuova decklist' }));
@@ -2745,7 +2768,7 @@ describe('a new decklist', () => {
     expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
     await user.type(screen.getByLabelText('Decklist'), '4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
-    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+    await user.click(centreTab('Foglio'));
     expect(screen.getByLabelText<HTMLSelectElement>('Formato della pagina').value).toBe('A4');
   });
 
