@@ -7,6 +7,7 @@ import type { PrintGridTile } from './grid-tiles.ts';
 import { CARD_SHAPE } from '../card-shape.ts';
 import { COPY_PILE_FOOTPRINT_PX, CopyPile } from './CopyPile.tsx';
 import { siblingColourStyle } from './sibling-group-colours.ts';
+import { cardRingsShadow, type CardRingStates } from './tile-rings.ts';
 
 /** The space between two tiles in a row, which the link between siblings spans, in CSS px. */
 export const TILE_GAP_PX = 22;
@@ -21,18 +22,10 @@ const GAP_UNDER_PILE_PX = 4;
 /** The space between a tile's card and the line under it, the same with a pile or without. */
 const BELOW_CARD_PX = COPY_PILE_FOOTPRINT_PX + GAP_UNDER_PILE_PX;
 
-/** The colour of the ring of the selected tile or of a tile with siblings; none for the others. */
-function ringColourOf(hasSiblings: boolean, isSelected: boolean): string | undefined {
+/** The colour of the thin ring the pile's copies wear: the outermost colour of the card's rings. */
+function pileRingColourOf({ hasSiblings, isSelected }: CardRingStates): string | undefined {
   if (isSelected) return 'var(--color-accent)';
   return hasSiblings ? 'var(--sibling-colour)' : undefined;
-}
-
-/**
- * The card's outline, all of it outside the image (ADR 0007): its ring when it has one, else a
- * thread of the background that keeps its border apart from the pile's.
- */
-function cardOutline(ringColour: string | undefined): string {
-  return ringColour ? `0 0 0 2px ${ringColour}` : '0 0 0 1px var(--color-pile-thread)';
 }
 
 interface PrintTileCardProps {
@@ -82,7 +75,7 @@ export function PrintTileCard({
   const shownFace = (isFlipped && backFace) || frontFace;
   const warningLabel = tile.warning && t(`tile.printWarning.${tile.warning}`);
   const tabColour = hasSiblings ? 'bg-(--sibling-colour)' : 'bg-foreground';
-  const ringColour = ringColourOf(hasSiblings, isSelected);
+  const ringStates = { hasSiblings, isSelected };
   const quantityLabel = { name: line.card.name, print: setAndNumberOf(tile.print, t) };
   return (
     <div
@@ -144,7 +137,7 @@ export function PrintTileCard({
         <CopyPile
           copies={tile.quantity}
           imageUrl={shownFace?.imageUris.normal}
-          ringColour={ringColour}
+          ringColour={pileRingColourOf(ringStates)}
         />
         <button
           type="button"
@@ -152,7 +145,7 @@ export function PrintTileCard({
           aria-label={t('tile.open', { name: line.card.name })}
           aria-pressed={isSelected}
           className="relative z-10 block w-full bg-raised focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-accent"
-          style={{ ...CARD_SHAPE, boxShadow: cardOutline(ringColour) }}
+          style={{ ...CARD_SHAPE, boxShadow: cardRingsShadow(ringStates) }}
           onClick={onSelect}
           {...zoomOn(shownFace)}
         >

@@ -347,6 +347,12 @@ function siblingColourOf(tile: HTMLElement) {
   return coloured?.style.getPropertyValue('--sibling-colour') || undefined;
 }
 
+/** The colours of the rings around a tile's card, from the card outward. */
+function cardRingColoursOf(tile: HTMLElement) {
+  const card = within(tile).getByRole('button', { name: /^Modifica / });
+  return card.style.boxShadow.match(/var\(--[\w-]+\)/g);
+}
+
 describe('the workspace', () => {
   it('shows the decklist as tiles in the order of the text, each with its image and quantity', async () => {
     await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
@@ -386,6 +392,21 @@ describe('the workspace', () => {
     expect(otherBolt).toBe(bolt);
     expect(bolt).not.toBe(solRing);
     expect(island).toBeUndefined();
+  });
+
+  it('rings a selected sibling tile in its group colour inside the selection, edged so the board shows it', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+
+    const [selected, sibling] = gridTiles().map(cardRingColoursOf);
+
+    expect(selected).toEqual([
+      'var(--sibling-colour)',
+      'var(--color-accent)',
+      'var(--color-selection-edge)',
+    ]);
+    expect(sibling).toEqual(['var(--sibling-colour)']);
   });
 
   it('shows each section under its title with its card count, in a fixed order, its tiles in the order of the text', async () => {
@@ -1541,6 +1562,20 @@ describe('the decklist summary', () => {
     const [, notFound] = gridTiles();
     expect(notFound?.getAttribute('aria-current')).toBe('true');
     expect(scrollIntoView.mock.contexts).toContain(notFound);
+  });
+
+  it('rings the selected line to fix as it rings a selected card', async () => {
+    const user = await mountPageAndWrite('2 Nonexistent Card{Enter}');
+    await screen.findByText('Carta non trovata');
+
+    await user.click(summary().getByRole('button', { name: '1 riga da sistemare' }));
+
+    const [notFound] = gridTiles();
+    const ringed = notFound?.querySelector<HTMLElement>('[style*="box-shadow"]');
+    expect(ringed?.style.boxShadow.match(/var\(--[\w-]+\)/g)).toEqual([
+      'var(--color-accent)',
+      'var(--color-selection-edge)',
+    ]);
   });
 
   it('takes the lines to fix in the order of the text, whatever section the grid shows them in', async () => {
