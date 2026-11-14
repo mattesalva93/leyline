@@ -2,17 +2,25 @@ import type { LineDestination } from '@mtg-suite/core';
 import type { Generator } from '../use-generator.ts';
 import type { GridSection } from './grid-sections.ts';
 import type { GridTile, ImagelessGridTile, TileSelection } from './grid-tiles.ts';
-import type { CentreView } from './ToolRail.tsx';
+
+/** What the centre of the workspace shows: the card grid, or the sheet as it will print. */
+export const CENTRE_VIEWS = ['cards', 'sheet'] as const;
+export type CentreView = (typeof CENTRE_VIEWS)[number];
+
+/** The view named `name`, or null for a name that is no view. */
+export function centreViewNamed(name: string): CentreView | null {
+  return CENTRE_VIEWS.find((view) => view === name) ?? null;
+}
 
 /**
  * Where the user is in the workspace: on a phone, the step on screen; on a wide screen, where
  * every zone is in sight, only the view of the centre follows it.
  */
-export type WorkspaceStep = 'list' | CentreView | 'pdf';
+export type WorkspaceStep = 'list' | CentreView;
 
-/** What the centre of a wide screen shows at `step`: the PDF is made from the sheet view. */
+/** What the centre of a wide screen shows at `step`: the decklist step has the cards beside it. */
 export function centreViewAt(step: WorkspaceStep): CentreView {
-  return step === 'sheet' || step === 'pdf' ? 'sheet' : 'cards';
+  return step === 'sheet' ? 'sheet' : 'cards';
 }
 
 /** The state both layouts of the workspace show, each in its own arrangement of the zones. */

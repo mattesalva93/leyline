@@ -8,8 +8,8 @@ import { CardsView } from './CardsView.tsx';
 import { DecklistCount } from './DecklistCount.tsx';
 import { DecklistEditor } from '../decklist-editor/DecklistEditor.tsx';
 import { DecklistSummary } from './DecklistSummary.tsx';
-import { PdfStep } from './PdfStep.tsx';
 import { PhoneLinePanel } from './PhoneLinePanel.tsx';
+import { PhonePdfStrip } from './PhonePdfStrip.tsx';
 import { lineToFixOf, LineToFixPanel } from './LineToFixPanel.tsx';
 import { panelLineOf, SelectedLinePanel } from './SelectedLinePanel.tsx';
 import { SheetSettings } from './SheetSettings.tsx';
@@ -18,11 +18,11 @@ import { TILE_WIDTH_PX } from './tile-width.ts';
 import { focusCurrentGridCell } from './use-grid-cell-focus.ts';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 
-const STEPS: readonly WorkspaceStep[] = ['list', 'cards', 'sheet', 'pdf'];
+const STEPS: readonly WorkspaceStep[] = ['list', 'cards', 'sheet'];
 
 /**
  * The workspace on a phone: one step at a time on the whole screen (the decklist, the cards, the
- * sheet, the PDF), picked from the bar at the foot of the screen.
+ * sheet with its PDF button), picked from the bar at the foot of the screen.
  */
 export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
   const { t } = useTranslation();
@@ -80,8 +80,9 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
             </BoardPanel>
           </div>
         )}
-        {step === 'pdf' && <PdfStep generator={generator} />}
       </div>
+      {/* Outside the scrolling step, so the PDF button stays in reach above the bar. */}
+      {step === 'sheet' && <PhonePdfStrip pdf={generator.pdf} />}
       <nav
         aria-label={t('workspace.steps')}
         className="grid h-14 shrink-0 border-t-2 border-border bg-panel"

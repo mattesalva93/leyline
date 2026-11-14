@@ -272,17 +272,29 @@ describe('the generator page', () => {
   });
 
   it('keeps the PDF button disabled until every line is resolved', async () => {
-    const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt');
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    await user.click(centreTab('Foglio'));
+    await user.type(screen.getByLabelText('Decklist'), '1 Lightning Bolt');
     const pdfButton = screen.getByRole<HTMLButtonElement>('button', { name: 'Scarica il PDF' });
     expect(pdfButton.disabled).toBe(true);
 
     await user.keyboard('{Enter}');
-    await screen.findByRole('button', { name: 'Modifica Lightning Bolt' });
 
-    expect(pdfButton.disabled).toBe(false);
+    await waitFor(() => expect(pdfButton.disabled).toBe(false));
   });
 });
+
+/** The text that describes `element` to a screen reader, through its `aria-describedby`. */
+function descriptionOf(element: HTMLElement) {
+  const ids = element.getAttribute('aria-describedby')?.split(' ') ?? [];
+  return ids.map((id) => document.getElementById(id)?.textContent).join(' ');
+}
+
+/** The tab named `name` at the head of the centre, on a wide screen. */
+function centreTab(name: 'Carte' | 'Foglio') {
+  return within(screen.getByRole('tablist')).getByRole('tab', { name });
+}
 
 /** The card grid, every section of it. */
 function cardGrid() {
@@ -437,11 +449,29 @@ describe('the workspace', () => {
     expect(notFound?.textContent).toContain('2 Nonexistent Card');
   });
 
+  it('picks the view of the centre from its tabs, «Carte» and «Foglio», the arrows moving between them', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    expect(centreTab('Carte').getAttribute('aria-selected')).toBe('true');
+
+    centreTab('Carte').focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(centreTab('Foglio').getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tabpanel', { name: 'Foglio' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
+
+    await user.keyboard('{ArrowLeft}');
+
+    expect(centreTab('Carte').getAttribute('aria-selected')).toBe('true');
+    expect(cardGrid()).toBeTruthy();
+  });
+
   it('switches to the sheet view, with the page, the 100% reminder and the sheet options', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}2 Nonexistent Card{Enter}');
     await screen.findByText('Carta non trovata');
 
-    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+    await user.click(centreTab('Foglio'));
 
     expect(screen.getByRole('img', { name: 'Pagina 1 di 1 come verrà stampata' })).toBeTruthy();
     expect(screen.getByRole('note').textContent).toContain('Stampa al 100%');
@@ -451,14 +481,52 @@ describe('the workspace', () => {
     expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
   });
 
-  it('keeps the PDF button in reach in both views', async () => {
+  it('offers the PDF in the sheet view only, the cards view leading there from «Controlla il foglio →»', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
-    expect(screen.getByRole('button', { name: 'Scarica il PDF' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Scarica il PDF' })).toBeNull();
 
-    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+    await user.click(screen.getByRole('button', { name: 'Controlla il foglio →' }));
 
+    expect(centreTab('Foglio').getAttribute('aria-selected')).toBe('true');
     expect(screen.getByRole('button', { name: 'Scarica il PDF' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Controlla il foglio →' })).toBeNull();
+  });
+
+  it.each([
+    ['an empty decklist', ''],
+    ['only lines it could not recognise', '2 Nonexistent Card{Enter}'],
+  ])(
+    'keeps «Controlla il foglio →» disabled with %s, saying why beside it, the «Foglio» tab still open',
+    async (_kind, decklistText) => {
+      const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+      await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+      await user.clear(screen.getByLabelText('Decklist'));
+      if (decklistText) await user.type(screen.getByLabelText('Decklist'), decklistText);
+      await waitFor(() => expect(gridTiles()).toHaveLength(decklistText ? 1 : 0));
+
+      const toSheet = screen.getByRole<HTMLButtonElement>('button', {
+        name: 'Controlla il foglio →',
+      });
+      expect(toSheet.disabled).toBe(true);
+      expect(descriptionOf(toSheet)).toBe(
+        'Aggiungi almeno una carta riconosciuta per vedere il foglio',
+      );
+      await user.click(centreTab('Foglio'));
+      expect(centreTab('Foglio').getAttribute('aria-selected')).toBe('true');
+    },
+  );
+
+  it('opens «Controlla il foglio →» once one card is recognised, a line to fix left beside it', async () => {
+    await mountPageAndWrite('1 Lightning{Enter}4 Sol Ring{Enter}');
+    await screen.findByText('Quale carta intendevi?');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    const toSheet = screen.getByRole<HTMLButtonElement>('button', {
+      name: 'Controlla il foglio →',
+    });
+    expect(toSheet.disabled).toBe(false);
+    expect(descriptionOf(toSheet)).toBe('');
   });
 
   it('lets go of the selected tile when a line is written above it, never showing another line', async () => {
@@ -1580,6 +1648,11 @@ describe('the workspace on a phone', () => {
   it('shows one step at a time on the whole screen, picked from the bottom bar', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
+    expect(
+      stepBar()
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['Lista', 'Carte', 'Foglio']);
 
     await user.click(stepBar().getByRole('button', { name: 'Carte' }));
 
@@ -1647,7 +1720,7 @@ describe('the workspace on a phone', () => {
     expect(screen.queryByRole('group', { name: 'Lingua delle carte' })).toBeNull();
   });
 
-  it('makes the PDF in a step of its own and hands it to the share menu of a phone that can', async () => {
+  it('makes the PDF from the "Foglio" step and hands it to the share menu of a phone that can', async () => {
     const share = vi.fn(async () => {});
     vi.stubGlobal('navigator', { ...navigator, canShare: () => true, share });
     vi.mocked(api.fetchImages).mockImplementation(
@@ -1655,9 +1728,10 @@ describe('the workspace on a phone', () => {
     );
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
 
-    await user.click(stepBar().getByRole('button', { name: 'PDF' }));
+    await user.click(stepBar().getByRole('button', { name: 'Foglio' }));
 
     expect(screen.getByRole('note').textContent).toContain('Stampa al 100%');
+    expect(screen.getByRole('img', { name: 'Pagina 1 di 1 come verrà stampata' })).toBeTruthy();
     expect(screen.queryByLabelText('Decklist')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Crea il PDF' }));
     await user.click(await screen.findByRole('button', { name: 'Salva o condividi' }));
@@ -2197,7 +2271,7 @@ describe('the landing page', () => {
     expect(screen.getByLabelText('Decklist')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Aggiungi una carta/ })).toBeNull();
-    expect(screen.queryByRole('navigation', { name: 'Viste' })).toBeNull();
+    expect(screen.queryByRole('tablist')).toBeNull();
     expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
     expect(screen.queryByRole('complementary')).toBeNull();
   });
@@ -2661,7 +2735,7 @@ describe('the decklist saved on the device', () => {
   it('brings back the sheet options', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
-    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+    await user.click(centreTab('Foglio'));
     await user.selectOptions(screen.getByLabelText('Formato della pagina'), 'Letter (USA)');
     await user.selectOptions(
       screen.getByLabelText('Qualità delle immagini'),
@@ -2675,7 +2749,7 @@ describe('the decklist saved on the device', () => {
 
     reload();
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
-    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+    await user.click(centreTab('Foglio'));
 
     const field = (label: string) => screen.getByLabelText<HTMLInputElement>(label);
     expect(field('Formato della pagina').value).toBe('Letter');
@@ -2726,7 +2800,7 @@ describe('a new decklist', () => {
   it('goes to the landing page once the user confirms, and opens there after a reload', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
-    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+    await user.click(centreTab('Foglio'));
     await user.selectOptions(screen.getByLabelText('Formato della pagina'), 'Letter (USA)');
 
     await user.click(screen.getByRole('button', { name: 'Nuova decklist' }));
@@ -2745,7 +2819,7 @@ describe('a new decklist', () => {
     expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
     await user.type(screen.getByLabelText('Decklist'), '4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
-    await user.click(screen.getByRole('button', { name: 'Foglio' }));
+    await user.click(centreTab('Foglio'));
     expect(screen.getByLabelText<HTMLSelectElement>('Formato della pagina').value).toBe('A4');
   });
 
@@ -2806,11 +2880,11 @@ function focusableTile(name: string) {
 }
 
 describe('the card grid from the keyboard', () => {
-  /** Mounts the page with `decklistText` and puts the focus on the PDF button, just before the grid. */
+  /** Mounts the page with `decklistText` and puts the focus on the button just before the grid. */
   async function focusBeforeTheGrid(decklistText: string, lastCardName: string) {
     const user = await mountPageAndWrite(decklistText);
     await screen.findByRole('button', { name: `Modifica ${lastCardName}` });
-    screen.getByRole('button', { name: 'Scarica il PDF' }).focus();
+    screen.getByRole('button', { name: 'Controlla il foglio →' }).focus();
     return user;
   }
 
@@ -2886,7 +2960,7 @@ describe('the card grid from the keyboard', () => {
   it('opens the line panel of a folded inspector with Enter', async () => {
     const user = await focusBeforeTheGrid('4 Sol Ring{Enter}', 'Sol Ring');
     await user.click(screen.getByRole('button', { name: 'Richiudi il pannello «Riepilogo»' }));
-    screen.getByRole('button', { name: 'Scarica il PDF' }).focus();
+    screen.getByRole('button', { name: 'Controlla il foglio →' }).focus();
     await user.tab();
 
     await user.keyboard('{Enter}');

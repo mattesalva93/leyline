@@ -8,9 +8,8 @@ import { panelLineOf, SelectedLinePanel } from './SelectedLinePanel.tsx';
 import { SheetSettings } from './SheetSettings.tsx';
 import { SidePanel } from './SidePanel.tsx';
 import type { SidePanelOnScreen } from './use-fitted-side-panels.ts';
-import type { CentreView } from './ToolRail.tsx';
 import { focusCurrentGridCell } from './use-grid-cell-focus.ts';
-import type { WorkspaceState } from './workspace-state.ts';
+import type { CentreView, WorkspaceState } from './workspace-state.ts';
 
 /**
  * The side zone of the workspace: the sheet options in the "sheet" view; otherwise the panel of

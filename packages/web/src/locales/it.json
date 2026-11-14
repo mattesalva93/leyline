@@ -60,7 +60,8 @@
       "tokens": "Token"
     },
     "tileWidth": "Zoom",
-    "toolRail": "Viste",
+    "goToSheet": "Controlla il foglio →",
+    "goToSheetUnavailable": "Aggiungi almeno una carta riconosciuta per vedere il foglio",
     "views": {
       "cards": "Carte",
       "sheet": "Foglio"
@@ -77,8 +78,7 @@
     "stepNames": {
       "list": "Lista",
       "cards": "Carte",
-      "sheet": "Foglio",
-      "pdf": "PDF"
+      "sheet": "Foglio"
     },
     "decklistCount": "{{cards}} · {{pages}}",
     "cardCount_one": "{{count}} carta",
