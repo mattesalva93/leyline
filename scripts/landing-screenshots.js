@@ -90,7 +90,7 @@ const HOW_TO_REACH_STEP = {
     await waitUntilEverythingIsOnScreen(page);
   },
   async setUpSheet(page) {
-    await page.getByRole('button', { name: 'Foglio' }).click();
+    await page.getByRole('tab', { name: 'Foglio' }).click();
     await page.getByText('Pagina 1 di').waitFor();
     await waitUntilEverythingIsOnScreen(page);
   },
