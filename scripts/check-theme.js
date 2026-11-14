@@ -34,6 +34,7 @@ const PAIRS = [
     ['accent', 'chrome'],
     ['focus', 'background'],
     ['focus', 'panel'],
+    ['selection-edge', 'background'],
   ].map(([front, back]) => ({ front, back, minimum: NON_TEXT_MINIMUM })),
 ];
 
