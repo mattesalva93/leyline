@@ -83,6 +83,34 @@ export function createPostgresCatalog(sql: Sql): Catalog {
       const [entry] = await entriesOf(sql, [oracleId]);
       return entry ?? null;
     },
+
+    async findTokensCreatedBy(printIds) {
+      if (printIds.length === 0) return [];
+      // A print with no parts of its own (Scryfall lists them on English prints only) takes
+      // those of the English print with its set and number.
+      const links = await sql<{ creatorPrintId: string; tokenPrintId: string; oracleId: string }[]>`
+        with asked as (
+          select p.id, coalesce(en.id, p.id) as parts_print_id
+          from prints p
+          left join prints en
+            on en.oracle_id = p.oracle_id and en.set = p.set
+            and en.collector_number = p.collector_number and en.lang = 'en'
+          where p.id = any(${[...printIds]}::text[])
+        )
+        select
+          a.id as "creatorPrintId", l.token_print_id as "tokenPrintId", t.oracle_id as "oracleId"
+        from asked a
+        join token_links l on l.creator_print_id = a.parts_print_id
+        join prints t on t.id = l.token_print_id
+        order by a.id, l.position
+      `;
+      const entries = await entriesOf(sql, [...new Set(links.map((link) => link.oracleId))]);
+      const byId = new Map(entries.map((entry) => [entry.card.oracleId, entry]));
+      return links.flatMap(({ creatorPrintId, tokenPrintId, oracleId }) => {
+        const token = byId.get(oracleId);
+        return token ? [{ creatorPrintId, tokenPrintId, token }] : [];
+      });
+    },
   };
 }
 

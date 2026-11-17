@@ -12,6 +12,7 @@ export {
   type PrintCountsByLang,
 } from './print-list.ts';
 export { cardKeys } from './name-match.ts';
+export { isTokenLayout } from './print-order.ts';
 export { isBlankPrintQuery, MAX_PRINT_QUERY_LENGTH } from './print-query.ts';
 export { printedBackFace, printedFaces } from './printed-faces.ts';
 export { releaseYearOf } from './release-year.ts';
@@ -39,7 +40,13 @@ export {
   type CardToAdd,
   type LineInText,
 } from './add-card.ts';
+export { addTokensToSection, type TokensAddition } from './add-tokens.ts';
 export { printTiles, type PrintTile } from './print-tile.ts';
+export {
+  tokenQueryLineOf,
+  suggestTokens,
+  type TokenSuggestionOptions,
+} from './suggested-tokens.ts';
 export { cellAfterArrow, type Arrow, type CellGroup, type CellPlace } from './grid-moves.ts';
 export {
   changeTileQuantity,

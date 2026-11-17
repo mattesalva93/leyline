@@ -22,6 +22,7 @@ export async function createCatalogTables(sql: Sql, suffix: '' | '_staging'): Pr
   const cards = sql(`cards${suffix}`);
   const prints = sql(`prints${suffix}`);
   const names = sql(`card_names${suffix}`);
+  const tokenLinks = sql(`token_links${suffix}`);
   await sql`
     create table if not exists ${cards} (
       oracle_id text not null,
@@ -64,6 +65,15 @@ export async function createCatalogTables(sql: Sql, suffix: '' | '_staging'): Pr
   `;
   await sql`
     create index if not exists ${sql(`prints${suffix}_oracle_id_idx`)} on ${prints} (oracle_id)
+  `;
+  // The tokens a print creates: its Scryfall `all_parts` with `component: "token"`, in order.
+  await sql`
+    create table if not exists ${tokenLinks} (
+      creator_print_id text not null,
+      position integer not null,
+      token_print_id text not null,
+      constraint ${sql(`token_links${suffix}_pkey`)} primary key (creator_print_id, position)
+    )
   `;
 }
 

@@ -1,5 +1,5 @@
 // Streams a Scryfall bulk file into the catalog and swaps it in atomically (ADR 0002).
-import { cardKeys, type ImageUris, type PrintFace } from '@mtg-suite/core';
+import { cardKeys, isTokenLayout, type ImageUris, type PrintFace } from '@mtg-suite/core';
 import type { Readable } from 'node:stream';
 import { createInterface } from 'node:readline';
 import { createCatalogTables, type Sql } from './db.ts';
@@ -28,6 +28,12 @@ interface ScryfallFace {
   readonly image_uris?: ScryfallImageUris;
 }
 
+/** A card Scryfall relates to another one: a token it creates, a meld or combo piece. */
+interface ScryfallRelatedCard {
+  readonly id: string;
+  readonly component: string;
+}
+
 /** The fields of a Scryfall card object the import reads. */
 interface ScryfallCard {
   readonly id: string;
@@ -48,6 +54,7 @@ interface ScryfallCard {
   readonly image_status: string;
   readonly image_uris?: ScryfallImageUris;
   readonly card_faces?: readonly ScryfallFace[];
+  readonly all_parts?: readonly ScryfallRelatedCard[];
 }
 
 interface CardRow {
@@ -76,6 +83,12 @@ interface PrintRow {
   readonly set_type: string;
   readonly promo_types: readonly string[];
   readonly faces: readonly PrintFace[];
+}
+
+interface TokenLinkRow {
+  readonly creator_print_id: string;
+  readonly position: number;
+  readonly token_print_id: string;
 }
 
 function pickImageUris(uris: ScryfallImageUris): ImageUris {
@@ -110,7 +123,25 @@ function printedNameOf(card: ScryfallCard): string {
   return faces.map((face) => face.printed_name ?? face.name).join(' // ');
 }
 
-function toRows(card: ScryfallCard): { card: CardRow; print: PrintRow } | null {
+/**
+ * The tokens `card` creates, emblems and markers such as The Monarch included. A token creates
+ * none: among its parts Scryfall lists, as tokens, itself and the tokens that create it, with
+ * no way to tell those from the ones it creates.
+ */
+function tokenLinksOf(card: ScryfallCard): TokenLinkRow[] {
+  if (isTokenLayout(card.layout)) return [];
+  return (card.all_parts ?? [])
+    .filter((part) => part.component === 'token')
+    .map((part, position) => ({
+      creator_print_id: card.id,
+      position,
+      token_print_id: part.id,
+    }));
+}
+
+function toRows(
+  card: ScryfallCard,
+): { card: CardRow; print: PrintRow; tokenLinks: TokenLinkRow[] } | null {
   // Reversible cards carry the oracle id on their faces only.
   const oracleId = card.oracle_id ?? card.card_faces?.[0]?.oracle_id;
   if (!oracleId || !LANGS.has(card.lang)) return null;
@@ -133,6 +164,7 @@ function toRows(card: ScryfallCard): { card: CardRow; print: PrintRow } | null {
       promo_types: card.promo_types ?? [],
       faces: facesOf(card),
     },
+    tokenLinks: tokenLinksOf(card),
   };
 }
 
@@ -158,13 +190,14 @@ export async function importBulk(sql: Sql, bulk: Readable): Promise<{ prints: nu
 async function importLocked(sql: Sql, bulk: Readable): Promise<{ prints: number }> {
   // The daily schedule counts from the start, so a long import does not push the next one later.
   const startedAt = new Date();
-  await sql`drop table if exists prints_staging, cards_staging, card_names_staging`;
+  await sql`drop table if exists prints_staging, cards_staging, card_names_staging, token_links_staging`;
   await createCatalogTables(sql, '_staging');
 
   let imported = 0;
   let cards = new Map<string, CardRow>();
   let names = new Map<string, NameRow>();
   let prints: PrintRow[] = [];
+  let tokenLinks: TokenLinkRow[] = [];
   const flush = async () => {
     if (prints.length === 0) return;
     await sql`
@@ -176,10 +209,12 @@ async function importLocked(sql: Sql, bulk: Readable): Promise<{ prints: number 
       on conflict (key, oracle_id) do nothing
     `;
     await sql`insert into prints_staging ${sql(prints)}`;
+    if (tokenLinks.length > 0) await sql`insert into token_links_staging ${sql(tokenLinks)}`;
     imported += prints.length;
     cards = new Map();
     names = new Map();
     prints = [];
+    tokenLinks = [];
   };
 
   // `crlfDelay: Infinity` treats "\r\n" as one line break even when split across chunks.
@@ -189,6 +224,7 @@ async function importLocked(sql: Sql, bulk: Readable): Promise<{ prints: number 
     if (!rows) continue;
     cards.set(rows.card.oracle_id, rows.card);
     prints.push(rows.print);
+    tokenLinks.push(...rows.tokenLinks);
     for (const key of cardKeys(rows.card.name, [rows.print.printed_name])) {
       names.set(`${key}\n${rows.card.oracle_id}`, { key, oracle_id: rows.card.oracle_id });
     }
@@ -197,15 +233,16 @@ async function importLocked(sql: Sql, bulk: Readable): Promise<{ prints: number 
   await flush();
 
   await sql.begin(async (tx) => {
-    await tx`drop table if exists prints, cards, card_names`;
+    await tx`drop table if exists prints, cards, card_names, token_links`;
     await tx`alter table cards_staging rename to cards`;
     await tx`alter table prints_staging rename to prints`;
     await tx`alter table card_names_staging rename to card_names`;
+    await tx`alter table token_links_staging rename to token_links`;
     // Indexes keep their names across a table rename: drop the suffix so the next import can
     // create its staging indexes again. Renaming a primary key's index renames the constraint.
     const indexes = await tx<{ indexname: string }[]>`
       select indexname from pg_indexes
-      where schemaname = current_schema() and tablename in ('cards', 'prints', 'card_names')
+      where schemaname = current_schema() and tablename in ('cards', 'prints', 'card_names', 'token_links')
     `;
     for (const { indexname } of indexes) {
       await tx`alter index ${tx(indexname)} rename to ${tx(indexname.replace('_staging_', '_'))}`;
