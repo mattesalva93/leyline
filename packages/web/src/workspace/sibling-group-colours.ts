@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { GridTile } from './grid-tiles.ts';
-import { touchingGroupColoursOf } from './touching-group-colours.ts';
+import { regionPaletteIndicesOf } from './region-palette-indices.ts';
 
 /** How many `--color-sibling-*` tokens the theme holds: `pnpm check:theme` holds the theme to it. */
 const SIBLING_PALETTE_SIZE = 4;
@@ -17,11 +17,12 @@ export function siblingGroupColoursOf(
   const cells = gridTiles.map((gridTile) =>
     gridTile.kind === 'print' && gridTile.siblingCount > 1 ? gridTile.writtenIndex : null,
   );
-  const colours = touchingGroupColoursOf(cells, columns, SIBLING_PALETTE_SIZE);
+  const paletteIndices = regionPaletteIndicesOf(cells, columns, SIBLING_PALETTE_SIZE);
   return new Map(
-    [...colours].map(([writtenIndex, colour]) => [
+    [...paletteIndices].map(([writtenIndex, paletteIndex]) => [
       writtenIndex,
-      `var(--color-sibling-${colour + 1})`,
+      // The tokens count from 1.
+      `var(--color-sibling-${paletteIndex + 1})`,
     ]),
   );
 }
