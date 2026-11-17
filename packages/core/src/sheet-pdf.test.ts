@@ -612,6 +612,17 @@ describe('generateSheetPdf', () => {
       ).toEqual(['1:1:1 sol', '1:1:2 sol', '1:1:3 bolt', '1:2:1 front', '1:2:2 back']);
     });
 
+    it('print only the front of an art series card: its back is no card to play', async () => {
+      const artSeries = aPrint({ layout: 'art_series', faces: [face('front'), face('back')] });
+      const sheet = sheetOf(resolvedLine(1, artSeries), resolvedLine(1, solRing));
+
+      expect(sheetImageUrls(sheet)).toEqual(['l-front', 'l-sol']);
+      expect(await pdfCells(resolvedLine(1, artSeries), resolvedLine(1, solRing))).toEqual([
+        '1:1:1 front',
+        '1:1:2 sol',
+      ]);
+    });
+
     it('never split a pair across pages', async () => {
       const layout = await pdfCells(resolvedLine(8, solRing), resolvedLine(1, delver));
 

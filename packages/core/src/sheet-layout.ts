@@ -1,4 +1,5 @@
 import { copiesByPrint } from './allocation.ts';
+import { printedFaces } from './printed-faces.ts';
 import type {
   BoxMm,
   CropMark,
@@ -75,7 +76,7 @@ function copiesOf(sheet: Sheet): Copy[] {
 function lineCopies(line: DecklistLine): Copy[] {
   if (line.status !== 'resolved') return [];
   return copiesByPrint(line).flatMap(({ print, quantity }) => {
-    const copy = print.faces.map((face) => ({ face }));
+    const copy = printedFaces(print).map((face) => ({ face }));
     return Array.from({ length: quantity }, () => copy);
   });
 }

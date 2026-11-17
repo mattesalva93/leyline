@@ -1,4 +1,11 @@
-import type { Candidate, DecklistSection, Lang, LineSide, Print } from '@mtg-suite/core';
+import {
+  printedBackFace,
+  type Candidate,
+  type DecklistSection,
+  type Lang,
+  type LineSide,
+  type Print,
+} from '@mtg-suite/core';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ZoomOn } from '../use-zoomed-card.tsx';
@@ -95,7 +102,8 @@ export function CardGridSection({
             onSelect(selected ? null : { writtenIndex: gridTile.writtenIndex, printId });
           const printId = gridTile.kind === 'print' ? gridTile.tile.print.id : null;
           const isFlipped = flippedTileKeys.has(gridTile.key);
-          const isDoubleFaced = gridTile.kind === 'print' && gridTile.tile.print.faces.length > 1;
+          const isDoubleFaced =
+            gridTile.kind === 'print' && printedBackFace(gridTile.tile.print) !== undefined;
           const cell = {
             ...cellPropsOf(gridTile.key),
             'aria-label': tileCellLabel(gridTile, isFlipped, t),
