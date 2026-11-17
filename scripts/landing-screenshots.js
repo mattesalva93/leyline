@@ -15,6 +15,7 @@ import {
   TUTORIAL_STEPS,
   tutorialScreenshotFileName,
 } from '../packages/web/src/landing-page/tutorial-steps.ts';
+import { waitUntilImagesOnScreenArrived } from './wait-for-images.js';
 
 const SCREENSHOT_DIR = fileURLToPath(
   new URL('../packages/web/src/landing-page/screenshots/', import.meta.url),
@@ -35,13 +36,6 @@ const appAddress = flags.app ?? 'http://127.0.0.1:5173';
 
 // What runs in the page is kept as text: here, in Node, `document` does not exist.
 
-/** Runs in the page: whether every image on screen has arrived (the others load lazily). */
-const EVERY_IMAGE_ON_SCREEN_ARRIVED = `[...document.images].every((image) => {
-  const { top, bottom, width } = image.getBoundingClientRect();
-  const isOnScreen = width > 0 && bottom > 0 && top < innerHeight;
-  return !isOnScreen || (image.complete && image.naturalWidth > 0);
-})`;
-
 /**
  * Runs in the page: resolves once the images an SVG draws, as the page preview does, are ready
  * to paint and the page has painted again. An SVG image does not tell when it has arrived, so
@@ -57,8 +51,7 @@ const EVERY_SVG_IMAGE_PAINTED = `Promise.all(
 
 /** Waits until the page has fetched what it asked for and shows every card image on screen. */
 async function waitUntilEverythingIsOnScreen(page) {
-  await page.waitForLoadState('networkidle');
-  await page.waitForFunction(EVERY_IMAGE_ON_SCREEN_ARRIVED);
+  await waitUntilImagesOnScreenArrived(page);
   await page.evaluate(EVERY_SVG_IMAGE_PAINTED);
 }
 

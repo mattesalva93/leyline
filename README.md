@@ -20,6 +20,7 @@ pnpm build            # production build of web and api
 pnpm sheet:preview    # render a sample sheet to .preview/sheet-*.png (needs pdftoppm: brew install poppler)
 pnpm landing:screenshots  # retake the landing page's tutorial screenshots from the running app (see scripts/landing-screenshots.js)
 pnpm check:phone-width   # check in the running app that the phone workspace is never wider than the screen (see scripts/check-phone-width.js)
+pnpm web:preview       # screenshot the running app at phone and desktop widths into .preview/web-*.png (see scripts/web-preview.js)
 ```
 
 `pnpm import:catalog --file all-cards.jsonl.gz` imports a bulk file downloaded earlier.

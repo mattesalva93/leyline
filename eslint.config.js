@@ -105,6 +105,19 @@ const webNoJsxLiterals = {
   },
 };
 
+/**
+ * An invisible space reads as a plain one: inside a string it must be spelled as an escape
+ * (`'\u00a0'`), so the reader sees it.
+ */
+const noInvisibleWhitespace = {
+  rules: {
+    'no-irregular-whitespace': [
+      'error',
+      { skipStrings: false, skipTemplates: false, skipRegExps: false, skipJSXText: false },
+    ],
+  },
+};
+
 export default tseslint.config(
   { ignores: ['**/dist/**', '**/coverage/**', '**/node_modules/**', 'research/**'] },
   js.configs.recommended,
@@ -117,5 +130,6 @@ export default tseslint.config(
   webNoApi,
   apiNoWeb,
   webNoJsxLiterals,
+  noInvisibleWhitespace,
   prettier,
 );

@@ -22,6 +22,10 @@ Before any `git commit` → read `docs/agents/commits.md`.
 
 Changing the sheet layout or the PDF → run `pnpm sheet:preview` and look at `.preview/sheet-*.png`; show those images when asking the user a layout question.
 
+## Web preview
+
+Changing a web layout → start `pnpm dev`, run `pnpm web:preview` and look at `.preview/web-*.png`; a phone layout also runs `pnpm check:phone-width`.
+
 ## Sources of truth
 
 Each fact has one home; other files point to it, never restate it.
