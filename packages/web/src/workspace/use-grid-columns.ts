@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 
 /**
  * How many columns the grid of tiles given `gridRef` lays them in, and how wide they are, updated
@@ -13,16 +13,19 @@ export function useGridColumns(): {
   const [grid, setGrid] = useState<HTMLElement | null>(null);
   const [columns, setColumns] = useState(1);
   const [columnWidthPx, setColumnWidthPx] = useState(Number.POSITIVE_INFINITY);
-  useEffect(() => {
+  // A layout effect: the first measure lands before the grid is painted, so its tabs never jump.
+  useLayoutEffect(() => {
     if (!grid || typeof ResizeObserver === 'undefined') return;
-    // The grid changes width with the window and the side panels.
-    const observer = new ResizeObserver(() => {
+    const measure = () => {
       // Laid out, the template lists each column's width in px.
       const columnWidths = getComputedStyle(grid).gridTemplateColumns.split(' ');
       setColumns(columnWidths.length);
       const columnWidth = Number.parseFloat(columnWidths[0] ?? '');
       if (Number.isFinite(columnWidth)) setColumnWidthPx(columnWidth);
-    });
+    };
+    measure();
+    // The grid changes width with the window and the side panels.
+    const observer = new ResizeObserver(measure);
     observer.observe(grid);
     return () => observer.disconnect();
   }, [grid]);
