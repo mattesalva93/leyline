@@ -5,14 +5,13 @@ import { TILE_ZOOM_WAIT_MS, useZoomedCard } from '../use-zoomed-card.tsx';
 import { CardGridSection, type CardGridSectionProps } from './CardGridSection.tsx';
 import { gridCellKeysOf, type GridSection } from './grid-sections.ts';
 import { OnlyAddTileRow } from './OnlyAddTileRow.tsx';
-import { siblingGroupColoursOf } from './sibling-group-colours.ts';
 import { SideboardDropZone } from './SideboardDropZone.tsx';
 import { isOnEmptyGridSpace, useGridCellFocus } from './use-grid-cell-focus.ts';
 import { useLineDrag } from './use-line-drag.ts';
 
 interface CardGridProps extends Omit<
   CardGridSectionProps,
-  'section' | 'siblingGroupColours' | 'zoomOn' | 'lineDrag' | 'cellPropsOf'
+  'section' | 'zoomOn' | 'lineDrag' | 'cellPropsOf'
 > {
   readonly sections: readonly GridSection[];
   /** Whether the mouse can drag tiles to reorder the decklist: not where touch is the main input. */
@@ -42,7 +41,6 @@ export function CardGrid({
   const lineDrag = useLineDrag(onMoveLine);
   // `null` where touch is the main input: there no tile can be dragged.
   const mouseLineDrag = tilesAreDraggable ? lineDrag : null;
-  const siblingGroupColours = siblingGroupColoursOf(sections);
   const hasSideboard = sections.some((section) => section.name === 'sideboard');
   // A tile can be selected from outside the grid, such as the first line to fix: bring it in.
   useEffect(() => {
@@ -66,7 +64,6 @@ export function CardGrid({
           <CardGridSection
             key={section.name}
             section={section}
-            siblingGroupColours={siblingGroupColours}
             selection={selection}
             onSelect={onSelect}
             zoomOn={zoomOn}

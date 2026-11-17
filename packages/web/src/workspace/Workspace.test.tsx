@@ -388,7 +388,8 @@ describe('the workspace', () => {
     ]);
   });
 
-  it('gives two consecutive groups of sibling tiles different colours, and a tile without siblings none', async () => {
+  it('gives two groups of sibling tiles one above the other different colours, and a tile without siblings none', async () => {
+    // jsdom lays nothing out, so the grid counts one column: each tile stands under the one before.
     const user = await mountPageAndWrite('4 Sol Ring{Enter}4 Lightning Bolt{Enter}1 Island{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
     await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));

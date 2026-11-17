@@ -8,6 +8,7 @@ import { dropMarkSideOf, isSelected, type GridTile, type TileSelection } from '.
 import { ImagelessTile } from './ImagelessTile.tsx';
 import { PrintTileCard } from './PrintTileCard.tsx';
 import { ReorderableTileItem } from './ReorderableTileItem.tsx';
+import { siblingGroupColoursOf } from './sibling-group-colours.ts';
 import { tileCellLabel, tileKeyHandler } from './tile-cell.ts';
 import { TILE_GRID_CLASS, tileGridStyle } from './tile-grid.ts';
 import { useColumnCount } from './use-column-count.ts';
@@ -16,8 +17,6 @@ import type { LineDrag } from './use-line-drag.ts';
 
 export interface CardGridSectionProps {
   readonly section: GridSection;
-  /** The colour of each line split into sibling tiles, by its written index. */
-  readonly siblingGroupColours: ReadonlyMap<number, string>;
   /** The narrowest a tile gets, in CSS px: the grid stretches tiles to fill its rows. */
   readonly tileWidthPx: number;
   readonly selection: TileSelection | null;
@@ -47,7 +46,6 @@ function dropMarkOf(gridTile: GridTile, lineDrag: LineDrag | null): LineSide | n
 /** One section of the card grid: its title with its card count, then its tiles, then the add tile. */
 export function CardGridSection({
   section,
-  siblingGroupColours,
   tileWidthPx,
   selection,
   isResolving,
@@ -64,6 +62,7 @@ export function CardGridSection({
   const { t } = useTranslation();
   const titleId = useId();
   const { gridRef, columns } = useColumnCount();
+  const siblingGroupColours = siblingGroupColoursOf(section.gridTiles, columns);
   const [flippedTileKeys, setFlippedTileKeys] = useState<ReadonlySet<string>>(new Set());
   const flip = (tileKey: string) =>
     setFlippedTileKeys((keys) => {
