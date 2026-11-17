@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { FoldedCopyBreakdown } from './FoldedCopyBreakdown.tsx';
-import { LanguagePicker } from './LanguagePicker.tsx';
+import { LanguageSegments } from './LanguageSegments.tsx';
 import type { LinePanelProps } from './LinePanel.tsx';
 import { LineQuantityField } from './LineQuantityField.tsx';
 import { PrintCountHeading } from './PrintCountHeading.tsx';
@@ -39,7 +39,7 @@ export function PhoneLineSettings({
       <PrintPickerSection line={line} className="border-t-2 border-border pt-3">
         <PrintCountHeading total={printPages.total} isSearching={printQuery.searched !== ''} />
         <div className="mt-2 flex items-center gap-2">
-          <LanguagePicker
+          <LanguageSegments
             label={t('printPicker.lang')}
             selectedLang={pickerView.printsLang}
             onChange={pickerView.changePrintsLang}

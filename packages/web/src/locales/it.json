@@ -244,6 +244,7 @@
     "foundCount_other": "{{count}} stampe trovate",
     "noMatch": "Nessuna stampa corrisponde a \"{{query}}\"",
     "langWithPrintCount": "{{lang}} ({{count}})",
+    "langCodeWithPrintCount": "{{lang}} {{count}}",
     "back": "Indietro",
     "setAndNumber": "{{set}} #{{number}}",
     "quality": {

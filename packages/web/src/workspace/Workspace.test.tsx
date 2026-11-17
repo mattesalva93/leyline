@@ -2207,6 +2207,31 @@ describe('the line panel on a phone', () => {
     ).toBe('false');
   });
 
+  it('names each language of the prints by its code and its prints, one with none not to be picked', async () => {
+    const user = await mountPageAndWrite('1 Trinisphere{Enter}');
+    const panel = await openPanelOf(user, 'Trinisphere');
+
+    const languages = within(await panel.findByRole('group', { name: 'Lingua delle stampe' }));
+
+    expect(await languages.findByText('IT 0')).toBeTruthy();
+    expect(languages.getByText('EN 2')).toBeTruthy();
+    expect(languages.getByRole('radio', { name: 'Italiano (0)' })).toHaveProperty('disabled', true);
+    expect(languages.getByRole('radio', { name: 'Inglese (2)', checked: true })).toBeTruthy();
+  });
+
+  it('picks the language of the prints from the keyboard, as one choice among the languages', async () => {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    const panel = await openPanelOf(user, 'Brainstorm');
+    const languages = within(await panel.findByRole('group', { name: 'Lingua delle stampe' }));
+    await languages.findByText('IT 2');
+
+    languages.getByRole('radio', { name: 'Italiano (2)', checked: true }).focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(languages.getByRole('radio', { name: 'Inglese (1)', checked: true })).toBeTruthy();
+    expect(await panel.findByRole('group', { name: 'Copie con C21 #1' })).toBeTruthy();
+  });
+
   it('heads the panel of a line to fix with its title and a button that closes it', async () => {
     const user = await mountPageAndWrite('2 Nonexistent Card{Enter}');
     await user.click(await screen.findByRole('button', { name: '1 riga da sistemare' }));
