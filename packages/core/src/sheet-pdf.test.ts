@@ -416,6 +416,21 @@ describe('generateSheetPdf', () => {
     ]);
   });
 
+  it('prints a plane as Scryfall serves it, upright like any card', async () => {
+    // Planes are played sideways, but Scryfall already serves them upright: turning them again
+    // would clip the copyright line away (ADR 0014).
+    const plane = aPrint({ layout: 'planar' });
+    const scryfallImage = new Map([[largeUrl, jpegOfSize(672, 936)]]);
+
+    const [page] = await readPdf(
+      await generateSheetPdf(sheetOf(resolvedLine(1, plane)), scryfallImage),
+    );
+
+    expect(page?.imagesMm.map((image) => rounded(image.drawn))).toEqual([
+      { x: 10.41, y: 192.5, width: 63.18, height: 88 },
+    ]);
+  });
+
   it('continues on a new page after nine cards', async () => {
     const pages = await readPdf(
       await generateSheetPdf(sheetOf(resolvedLine(10, print)), cardRatioImage),

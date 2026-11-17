@@ -1,33 +1,18 @@
-import { comparePrintSortKeys, printSortKey } from './print-order.ts';
+import { comparePrintSortKeys, printPreference, printSortKey } from './print-order.ts';
 import type { Candidate, Lang, Print, PrintWarning } from './types.ts';
-
-const TOKEN_LAYOUTS = new Set(['token', 'double_faced_token', 'emblem']);
 
 /** Whether Scryfall has a scan of the print, not a stand-in picture or nothing at all. */
 export function hasRealImage(print: Print): boolean {
   return print.imageStatus !== 'placeholder' && print.imageStatus !== 'missing';
 }
 
-/** Whether a print can stand in for a playable paper card. */
-function isPrintable(print: Print): boolean {
-  return (
-    !print.digital &&
-    !print.oversized &&
-    print.layout !== 'art_series' &&
-    !TOKEN_LAYOUTS.has(print.layout) &&
-    print.setType !== 'token' &&
-    !print.promoTypes.includes('playtest') &&
-    hasRealImage(print)
-  );
-}
-
 /**
- * The printable paper prints in `lang` already released on `today` (ISO date), newest first.
- * Scryfall lists previewed prints before their release date.
+ * The printable prints in `lang` already released on `today` (ISO date), most preferred kind
+ * first, then newest first. Scryfall lists previewed prints before their release date.
  */
 export function printablePrints(prints: readonly Print[], lang: Lang, today: string): Print[] {
   return prints
-    .filter((print) => print.lang === lang && isPrintable(print) && print.releasedAt <= today)
+    .filter((print) => print.lang === lang && hasRealImage(print) && print.releasedAt <= today)
     .sort((a, b) => comparePrintSortKeys(printSortKey(a), printSortKey(b)));
 }
 
@@ -75,4 +60,13 @@ export function defaultPrintFor(
     return { defaultPrint: english, printWarning: english && 'languageFallback' };
   }
   return { defaultPrint: print, printWarning: qualityWarning(print, english !== null) };
+}
+
+/**
+ * How far down the order of preference a card's default print sits, so that of two cards
+ * sharing a name the one with a regular paper print comes first: art series, for one, are
+ * separate cards named after the card. A card with no default print comes last.
+ */
+export function defaultPrintPreference(candidate: Pick<Candidate, 'defaultPrint'>): number {
+  return candidate.defaultPrint ? printPreference(candidate.defaultPrint) : Infinity;
 }

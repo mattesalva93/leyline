@@ -440,7 +440,7 @@ describe('POST /api/decklists/resolve', () => {
     ]);
   });
 
-  it('never defaults to digital, art series, oversized, token or playtest prints', async () => {
+  it('defaults to a paper print over newer digital, art series, oversized and playtest ones, and to a token when that is all a card has', async () => {
     const newer = { released_at: '2025-06-01' };
     await importBulk(
       db.sql,
@@ -486,7 +486,7 @@ describe('POST /api/decklists/resolve', () => {
 
     expect(body.lines).toMatchObject([
       { status: 'resolved', card: { name: 'Sol Ring' }, defaultPrint: { id: 'sol-ring-paper' } },
-      { status: 'resolved', card: { name: 'Goblin' }, defaultPrint: null },
+      { status: 'resolved', card: { name: 'Goblin' }, defaultPrint: { id: 'goblin-token' } },
     ]);
   });
 
@@ -528,7 +528,7 @@ describe('GET /api/cards/:oracleId/prints', () => {
     name: 'Forest',
     set_type: 'expansion',
   };
-  /** Forest has hundreds of prints: 60 Italian ones across 30 years, newest first by index. */
+  /** Forest has hundreds of prints: 60 Italian paper ones across 30 years, newest first by index. */
   const italianForests = Array.from({ length: 60 }, (_, index) =>
     scryfallCard({
       ...forest,
@@ -566,7 +566,7 @@ describe('GET /api/cards/:oracleId/prints', () => {
     };
   }
 
-  it('pages through the printable prints in the asked language, newest first, with the total', async () => {
+  it('pages through the printable prints in the asked language, paper ones first, newest first, with the total', async () => {
     const ids: string[] = [];
     let cursor: string | null = null;
     let pages = 0;
@@ -575,14 +575,14 @@ describe('GET /api/cards/:oracleId/prints', () => {
       if (cursor) query.cursor = cursor;
       const { status, body } = await printsPage(forest.oracle_id, query);
       expect(status).toBe(200);
-      expect(body.total).toBe(60);
+      expect(body.total).toBe(61);
       ids.push(...body.prints.map((print) => print.id));
       cursor = body.nextCursor;
       pages += 1;
     } while (cursor);
 
     expect(pages).toBe(3);
-    expect(ids).toEqual(italianForests.map((card) => card.id));
+    expect(ids).toEqual([...italianForests.map((card) => card.id), 'forest-it-mtgo']);
   });
 
   it('never returns more than 50 prints in one call, whatever the client asks for', async () => {
@@ -590,7 +590,7 @@ describe('GET /api/cards/:oracleId/prints', () => {
 
     expect(status).toBe(200);
     expect(body.prints).toHaveLength(50);
-    expect(body.total).toBe(60);
+    expect(body.total).toBe(61);
     expect(body.nextCursor).not.toBeNull();
   });
 

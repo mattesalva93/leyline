@@ -1,6 +1,11 @@
 import { printablePrints } from './default-print.ts';
 import { printsMatching } from './print-query.ts';
-import { comparePrintSortKeys, printSortKey, type PrintSortKey } from './print-order.ts';
+import {
+  comparePrintSortKeys,
+  isPrintSortKey,
+  printSortKey,
+  type PrintSortKey,
+} from './print-order.ts';
 import { LANGS, type Catalog, type Lang, type PrintPage } from './types.ts';
 
 export interface ListPrintsOptions {
@@ -16,22 +21,14 @@ export interface ListPrintsOptions {
   readonly query?: string | undefined;
 }
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
 function decodeCursor(cursor: unknown): PrintSortKey | null {
   if (typeof cursor !== 'string') return null;
-  let key: unknown;
   try {
-    key = JSON.parse(cursor);
+    const key: unknown = JSON.parse(cursor);
+    return isPrintSortKey(key) ? key : null;
   } catch {
     return null;
   }
-  const isKey =
-    Array.isArray(key) &&
-    key.length === 4 &&
-    key.every((part) => typeof part === 'string') &&
-    ISO_DATE.test(key[0] as string);
-  return isKey ? (key as unknown as PrintSortKey) : null;
 }
 
 /** Whether `value` is a cursor `listPrints` handed out. */

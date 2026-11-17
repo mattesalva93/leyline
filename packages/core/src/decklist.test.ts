@@ -245,27 +245,73 @@ describe('resolveDecklist', () => {
     expect(line).toMatchObject({ status: 'resolved', quantity: 1, card: solRing });
   });
 
-  it('picks the most recent printable paper print as default', async () => {
-    const newer = '2026-01-01';
-    const unprintable = [
-      aPrint({ id: 'digital', releasedAt: newer, digital: true }),
-      aPrint({ id: 'art-series', releasedAt: newer, layout: 'art_series' }),
-      aPrint({ id: 'oversized', releasedAt: newer, oversized: true }),
-      aPrint({ id: 'token-layout', releasedAt: newer, layout: 'token' }),
-      aPrint({ id: 'token-set', releasedAt: newer, setType: 'token' }),
-      aPrint({ id: 'playtest', releasedAt: newer, setType: 'funny', promoTypes: ['playtest'] }),
-      aPrint({ id: 'placeholder', releasedAt: newer, imageStatus: 'placeholder' }),
-      aPrint({ id: 'missing', releasedAt: newer, imageStatus: 'missing' }),
+  it('prefers a paper print over playtest, oversized, art series, token and digital ones', async () => {
+    // Most preferred first, each newer than the one before it: only the order can pick.
+    const byPreference = [
+      aPrint({ id: 'paper', releasedAt: '2010-01-01' }),
+      aPrint({ id: 'playtest', releasedAt: '2011-01-01', promoTypes: ['playtest'] }),
+      aPrint({ id: 'oversized', releasedAt: '2012-01-01', oversized: true }),
+      aPrint({ id: 'art-series', releasedAt: '2013-01-01', layout: 'art_series' }),
+      aPrint({ id: 'token', releasedAt: '2014-01-01', layout: 'token', setType: 'token' }),
+      aPrint({ id: 'digital', releasedAt: '2015-01-01', digital: true }),
     ];
+
+    const defaults = await Promise.all(
+      byPreference.map(async (_, first) => {
+        const catalog = createInMemoryCatalog([
+          { card: solRing, prints: byPreference.slice(first) },
+        ]);
+        const [line] = await resolveDecklist('1 Sol Ring', catalog, { today, lang: 'en' });
+        return line?.status === 'resolved' ? line.defaultPrint?.id : line?.status;
+      }),
+    );
+
+    expect(defaults).toEqual(['paper', 'playtest', 'oversized', 'art-series', 'token', 'digital']);
+  });
+
+  it('defaults to the most recent print of the most preferred kind', async () => {
     const older = aPrint({ id: 'older', releasedAt: '2010-01-01' });
     const latestPaper = aPrint({ id: 'latest-paper', releasedAt: '2024-06-01' });
+    const newerDigital = aPrint({ id: 'digital', releasedAt: '2026-01-01', digital: true });
     const catalog = createInMemoryCatalog([
-      { card: solRing, prints: [older, ...unprintable, latestPaper] },
+      { card: solRing, prints: [older, newerDigital, latestPaper] },
     ]);
 
     const [line] = await resolveDecklist('1 Sol Ring', catalog, { today, lang: 'en' });
 
     expect(line).toMatchObject({ status: 'resolved', defaultPrint: { id: 'latest-paper' } });
+  });
+
+  it('ranks a print by the least preferred kind it belongs to', async () => {
+    const digitalPlaytest = aPrint({
+      id: 'digital-playtest',
+      releasedAt: '2026-01-01',
+      digital: true,
+      promoTypes: ['playtest'],
+    });
+    const token = aPrint({ id: 'token', releasedAt: '2010-01-01', layout: 'token' });
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [digitalPlaytest, token] }]);
+
+    const [line] = await resolveDecklist('1 Sol Ring', catalog, { today, lang: 'en' });
+
+    expect(line).toMatchObject({ defaultPrint: { id: 'token' } });
+  });
+
+  it('never defaults to a print Scryfall has no scan of', async () => {
+    const paper = aPrint({ id: 'paper', releasedAt: '2010-01-01' });
+    const placeholder = aPrint({
+      id: 'placeholder',
+      releasedAt: '2026-01-01',
+      imageStatus: 'placeholder',
+    });
+    const missing = aPrint({ id: 'missing', releasedAt: '2026-01-01', imageStatus: 'missing' });
+    const catalog = createInMemoryCatalog([
+      { card: solRing, prints: [placeholder, missing, paper] },
+    ]);
+
+    const [line] = await resolveDecklist('1 Sol Ring', catalog, { today, lang: 'en' });
+
+    expect(line).toMatchObject({ defaultPrint: { id: 'paper' } });
   });
 
   it('ignores prints that are not released yet when picking the default', async () => {
@@ -290,12 +336,49 @@ describe('resolveDecklist', () => {
 
   it('resolves a card without printable prints with no default print', async () => {
     const catalog = createInMemoryCatalog([
-      { card: solRing, prints: [aPrint({ id: 'digital', digital: true })] },
+      { card: solRing, prints: [aPrint({ id: 'missing', imageStatus: 'missing' })] },
     ]);
 
     const [line] = await resolveDecklist('1 Sol Ring', catalog, { today, lang: 'en' });
 
     expect(line).toMatchObject({ status: 'resolved', defaultPrint: null });
+  });
+
+  it('leaves a line ambiguous between a token and a paper card that only look alike', async () => {
+    const goblinToken = aCard({ oracleId: 'goblin-a', name: 'Goblin A' });
+    const goblinCard = aCard({ oracleId: 'goblin-b', name: 'Goblin B' });
+    const catalog = createInMemoryCatalog([
+      {
+        card: goblinToken,
+        prints: [aPrint({ id: 'token', layout: 'token', printedName: 'Goblin A' })],
+      },
+      { card: goblinCard, prints: [aPrint({ id: 'paper', printedName: 'Goblin B' })] },
+    ]);
+
+    const [line] = await resolveDecklist('1 Goblin', catalog, { today, lang: 'en' });
+
+    expect(line).toMatchObject({ status: 'ambiguous' });
+  });
+
+  it('resolves a playtest-only card by name to the print its set and number name', async () => {
+    const boltfire = aCard({ oracleId: 'boltfire', name: 'Boltfire' });
+    const playtest = aPrint({
+      id: 'mb2-559',
+      set: 'mb2',
+      collectorNumber: '559',
+      promoTypes: ['playtest'],
+    });
+    const catalog = createInMemoryCatalog([{ card: boltfire, prints: [playtest] }]);
+
+    const lines = await resolveDecklist('1 Boltfire\n1 Boltfire (MB2) 559', catalog, {
+      today,
+      lang: 'en',
+    });
+
+    expect(lines).toMatchObject([
+      { status: 'resolved', defaultPrint: { id: 'mb2-559' } },
+      { status: 'resolved', defaultPrint: { id: 'mb2-559' } },
+    ]);
   });
 
   it('resolves a double-faced card by its full name, its front face, or its back face', async () => {

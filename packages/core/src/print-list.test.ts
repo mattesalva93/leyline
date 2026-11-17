@@ -14,7 +14,7 @@ const today = '2026-11-07';
 const forest = aCard({ oracleId: 'forest', name: 'Forest' });
 
 describe('listPrints', () => {
-  it('lists the printable prints of a card in the asked language, newest first', async () => {
+  it('lists the printable prints of a card in the asked language, paper ones first, each kind newest first', async () => {
     const catalog = createInMemoryCatalog([
       {
         card: forest,
@@ -30,7 +30,11 @@ describe('listPrints', () => {
             releasedAt: '2025-01-01',
             layout: 'art_series',
           }),
+          aPrint({ id: 'forest-token-it', lang: 'it', layout: 'token', setType: 'token' }),
+          aPrint({ id: 'forest-playtest-it', lang: 'it', promoTypes: ['playtest'] }),
+          aPrint({ id: 'forest-oversized-it', lang: 'it', oversized: true }),
           aPrint({ id: 'forest-placeholder-it', lang: 'it', imageStatus: 'placeholder' }),
+          aPrint({ id: 'forest-missing-it', lang: 'it', imageStatus: 'missing' }),
           aPrint({ id: 'forest-preview-it', lang: 'it', releasedAt: '2027-01-01' }),
         ],
       },
@@ -42,8 +46,13 @@ describe('listPrints', () => {
       'forest-2024-it',
       'forest-2021-it',
       'forest-2019-it',
+      'forest-playtest-it',
+      'forest-oversized-it',
+      'forest-art-it',
+      'forest-token-it',
+      'forest-mtgo-it',
     ]);
-    expect(page?.total).toBe(3);
+    expect(page?.total).toBe(8);
     expect(page?.nextCursor).toBeNull();
   });
 
@@ -304,6 +313,8 @@ describe('countPrintsByLang', () => {
           aPrint({ id: 'forest-en-2024', lang: 'en', releasedAt: '2024-02-09' }),
           aPrint({ id: 'forest-en-2019', lang: 'en', releasedAt: '2019-05-03' }),
           aPrint({ id: 'forest-en-mtgo', lang: 'en', digital: true }),
+          aPrint({ id: 'forest-en-token', lang: 'en', layout: 'token' }),
+          aPrint({ id: 'forest-en-missing', lang: 'en', imageStatus: 'missing' }),
           aPrint({ id: 'forest-en-preview', lang: 'en', releasedAt: '2027-01-01' }),
         ],
       },
@@ -311,7 +322,7 @@ describe('countPrintsByLang', () => {
 
     expect(await countPrintsByLang(catalog, { oracleId: 'forest', today })).toEqual({
       it: 0,
-      en: 2,
+      en: 4,
     });
   });
 
