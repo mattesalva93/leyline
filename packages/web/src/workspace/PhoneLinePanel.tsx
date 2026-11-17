@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PRINT_PICKER_SCROLL_ROOT_PROPS } from '../PrintPicker.tsx';
+import { PRINT_PICKER_SCROLL_ROOT_PROPS } from '../print-picker-marks.ts';
 import { PRIMARY_BUTTON } from '../ui/board-styles.ts';
 import { BottomPanelContent, Dialog, DialogClose } from '../ui/Dialog.tsx';
 
