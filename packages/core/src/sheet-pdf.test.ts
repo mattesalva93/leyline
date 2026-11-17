@@ -416,6 +416,21 @@ describe('generateSheetPdf', () => {
     ]);
   });
 
+  it('prints a plane as Scryfall serves it, upright like any card', async () => {
+    // Planes are played sideways, but Scryfall already serves them upright: turning them again
+    // would clip the copyright line away (ADR 0014).
+    const plane = aPrint({ layout: 'planar' });
+    const scryfallImage = new Map([[largeUrl, jpegOfSize(672, 936)]]);
+
+    const [page] = await readPdf(
+      await generateSheetPdf(sheetOf(resolvedLine(1, plane)), scryfallImage),
+    );
+
+    expect(page?.imagesMm.map((image) => rounded(image.drawn))).toEqual([
+      { x: 10.41, y: 192.5, width: 63.18, height: 88 },
+    ]);
+  });
+
   it('continues on a new page after nine cards', async () => {
     const pages = await readPdf(
       await generateSheetPdf(sheetOf(resolvedLine(10, print)), cardRatioImage),
@@ -595,6 +610,17 @@ describe('generateSheetPdf', () => {
       expect(
         await pdfCells(resolvedLine(2, solRing), resolvedLine(1, delver), resolvedLine(1, bolt)),
       ).toEqual(['1:1:1 sol', '1:1:2 sol', '1:1:3 bolt', '1:2:1 front', '1:2:2 back']);
+    });
+
+    it('print only the front of an art series card: its back is no card to play', async () => {
+      const artSeries = aPrint({ layout: 'art_series', faces: [face('front'), face('back')] });
+      const sheet = sheetOf(resolvedLine(1, artSeries), resolvedLine(1, solRing));
+
+      expect(sheetImageUrls(sheet)).toEqual(['l-front', 'l-sol']);
+      expect(await pdfCells(resolvedLine(1, artSeries), resolvedLine(1, solRing))).toEqual([
+        '1:1:1 front',
+        '1:1:2 sol',
+      ]);
     });
 
     it('never split a pair across pages', async () => {

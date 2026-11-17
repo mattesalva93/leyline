@@ -1,3 +1,4 @@
+import { printedBackFace } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
 import { setAndNumberOf } from '../print-label.ts';
 import { NORMAL_IMAGE } from '../scryfall-image-sizes.ts';
@@ -72,7 +73,8 @@ export function PrintTileCard({
   const { line, tile, siblingIndex, siblingCount } = gridTile;
   const hasSiblings = siblingCount > 1;
   const isLastSibling = siblingIndex === siblingCount - 1;
-  const [frontFace, backFace] = tile.print.faces;
+  const frontFace = tile.print.faces[0];
+  const backFace = printedBackFace(tile.print);
   const shownFace = (isFlipped && backFace) || frontFace;
   const warningLabel = tile.warning && t(`tile.printWarning.${tile.warning}`);
   const quantityBackgroundClass = hasSiblings ? 'bg-(--sibling-colour)' : 'bg-foreground';

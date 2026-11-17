@@ -1,5 +1,6 @@
 import { copiesByPrint } from './allocation.ts';
 import { defaultPrintFor, hasRealImage, qualityWarning } from './default-print.ts';
+import { namedCandidate, withoutOutranked } from './same-name-preference.ts';
 import { SIDEBOARD_PREFIX, sectionOpenedBy } from './decklist-section.ts';
 import { LINE_BREAK } from './line-breaks.ts';
 import { MIN_SIMILARITY, cardKeys, nameKey, trigramSimilarity, trigrams } from './name-match.ts';
@@ -126,13 +127,11 @@ function resolveLine(
     const { lang: explicitLang, ...candidate } = explicit;
     return resolvedLine({ ...base, lang: explicitLang }, candidate);
   }
-  const matches = closest.map((entry) => ({
-    card: entry.card,
-    ...defaultPrintFor(entry.prints, lang, today),
-  }));
-  // Cards that can be printed win: art series, for one, are separate cards sharing the name.
-  const printable = matches.filter((match) => match.defaultPrint);
-  const candidates = printable.length > 0 ? printable : matches;
+  const candidates = withoutOutranked(
+    closest.map((entry) =>
+      namedCandidate(entry, { card: entry.card, ...defaultPrintFor(entry.prints, lang, today) }),
+    ),
+  );
   const [match] = candidates;
   if (!match) return { ...base, status: 'notFound' };
   if (candidates.length > 1) return { ...base, status: 'ambiguous', candidates };

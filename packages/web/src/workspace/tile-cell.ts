@@ -1,3 +1,4 @@
+import { printedBackFace } from '@mtg-suite/core';
 import type { TFunction } from 'i18next';
 import type { KeyboardEvent } from 'react';
 import { setAndNumberOf } from '../print-label.ts';
@@ -20,7 +21,7 @@ export function tileCellLabel(gridTile: GridTile, isFlipped: boolean, t: TFuncti
     return [gridTile.writtenLine.trim(), t(`tile.imageless.${gridTile.reason}`)].join(', ');
   }
   const { line, tile } = gridTile;
-  const backFace = tile.print.faces[1];
+  const backFace = printedBackFace(tile.print);
   return [
     line.card.name,
     setAndNumberOf(tile.print, t),

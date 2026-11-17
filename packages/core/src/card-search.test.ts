@@ -81,6 +81,29 @@ describe('searchCards', () => {
     expect(found.map((candidate) => candidate.card.oracleId)).toEqual(['forest', 'forest-art']);
   });
 
+  it('keeps a token named exactly so before the paper cards whose name only starts so', async () => {
+    const goblinToken = {
+      card: aCard({ oracleId: 'goblin-token', name: 'Goblin' }),
+      prints: [aPrint({ id: 'goblin-token', layout: 'token', setType: 'token' })],
+    };
+    const catalogWithToken = createInMemoryCatalog([
+      entry('goblin-guide', 'Goblin Guide'),
+      goblinToken,
+    ]);
+
+    const found = await searchCards(catalogWithToken, {
+      query: 'goblin',
+      lang: 'en',
+      today: '2026-11-13',
+      limit: 8,
+    });
+
+    expect(found.map((candidate) => candidate.card.oracleId)).toEqual([
+      'goblin-token',
+      'goblin-guide',
+    ]);
+  });
+
   it('returns no more cards than the limit', async () => {
     expect(await search('lightning', 2)).toHaveLength(2);
   });
