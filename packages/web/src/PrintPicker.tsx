@@ -1,4 +1,5 @@
 import {
+  moveEveryCopy,
   moveTileCopies,
   copiesByPrint,
   MAX_PRINT_QUERY_LENGTH,
@@ -47,8 +48,8 @@ interface PrintPickerProps {
   readonly printQuery: PrintQuery;
   /** The prints of the card in the picker view's language: copies can go to prints of either one. */
   readonly printPages: PrintPages;
-  /** Called with the allocations a tap on `toPrint` sets: the tile's copies moved onto it. */
-  readonly onTileCopiesMove: (allocations: AllocationChoice, toPrint: Print) => void;
+  /** Called with the choice a tap on `toPrint` sets: the tile's copies moved onto it. */
+  readonly onTileCopiesMove: (choice: AllocationChoice, toPrint: Print) => void;
   /** Called by a print's +/− counter with the copies it now prints, the line's changing as many. */
   readonly onPrintQuantityChange: (print: Print, quantity: number) => void;
 }
@@ -211,7 +212,14 @@ export function PrintPicker({
                       if (element) printButtons.current.set(print.id, element);
                       else printButtons.current.delete(print.id);
                     }}
-                    onClick={() => onTileCopiesMove(moveTileCopies(line, tilePrint, print), print)}
+                    onClick={() =>
+                      onTileCopiesMove(
+                        tilePrint
+                          ? moveTileCopies(line, tilePrint, print)
+                          : moveEveryCopy(line, print),
+                        print,
+                      )
+                    }
                     // Beside the whole picker, so the zoomed card hides none of the other prints.
                     {...zoomOn(frontFace, `[${PRINT_PICKER}]`)}
                   >

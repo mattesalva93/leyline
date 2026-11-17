@@ -41,7 +41,7 @@ export function SelectedLinePanel({
   readonly panelLine: PanelLine;
   /** Grows each time the user selects a tile, the one already selected included. */
   readonly tileSelectionCount: number;
-  /** Moves the selection to another tile, as its copies move: no press of a tile. */
+  /** Moves the selection to the tile the copies moved to, without counting as a press of a tile. */
   readonly onSelectionMove: (selection: TileSelection) => void;
 }) {
   const linePanel = (
@@ -53,8 +53,8 @@ export function SelectedLinePanel({
       tileSelectionCount={tileSelectionCount}
       printWarning={tileWarning}
       onQuantityChange={(quantity) => generator.changeLineQuantity(writtenIndex, quantity)}
-      onTileCopiesMove={(allocations, toPrint) => {
-        generator.chooseAllocations(writtenIndex, allocations);
+      onTileCopiesMove={(choice, toPrint) => {
+        generator.chooseAllocations(writtenIndex, choice);
         onSelectionMove({ writtenIndex, printId: toPrint.id });
       }}
       onPrintQuantityChange={(print, quantity) =>

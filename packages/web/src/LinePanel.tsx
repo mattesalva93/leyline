@@ -28,8 +28,8 @@ interface LinePanelProps {
   /** What to warn about the print of the tile the panel was opened from. */
   readonly printWarning: PrintWarning | null;
   readonly onQuantityChange: (quantity: number) => void;
-  /** Called with the allocations a tap in the print picker sets, moving the tile's copies to `toPrint`. */
-  readonly onTileCopiesMove: (allocations: AllocationChoice, toPrint: Print) => void;
+  /** Called with the choice a tap in the print picker sets, moving the tile's copies to `toPrint`. */
+  readonly onTileCopiesMove: (choice: AllocationChoice, toPrint: Print) => void;
   /** Gives `print` `quantity` copies, the line's quantity changing as many. */
   readonly onPrintQuantityChange: (print: Print, quantity: number) => void;
 }

@@ -52,8 +52,12 @@ export function Workspace({ generator }: { readonly generator: Generator }) {
   const gridSections = gridSectionsOf(generator.cardLines);
   const gridTiles = gridTilesOf(generator.cardLines);
   const linesToFix = linesToFixOf(gridTiles);
+  const inCurrentText = (selection: TileSelection): SelectionInText => ({
+    ...selection,
+    writtenLineCount: generator.writtenLineCount,
+  });
   const selectTile = (selection: TileSelection | null) => {
-    setSelectionInText(selection && { ...selection, writtenLineCount: generator.writtenLineCount });
+    setSelectionInText(selection && inCurrentText(selection));
     if (selection) setTileSelectionCount((count) => count + 1);
   };
   const selection = currentSelection(selectionInText, generator.writtenLineCount, gridTiles);
@@ -65,8 +69,7 @@ export function Workspace({ generator }: { readonly generator: Generator }) {
     gridTiles,
     selection,
     selectTile,
-    moveSelection: (moved) =>
-      setSelectionInText({ ...moved, writtenLineCount: generator.writtenLineCount }),
+    moveSelection: (moved) => setSelectionInText(inCurrentText(moved)),
     tileSelectionCount,
     moveLine: (writtenIndex, destination) => {
       const move = generator.moveLine(writtenIndex, destination);

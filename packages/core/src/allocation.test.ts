@@ -5,12 +5,14 @@ import {
   copiesAllocatedTo,
   copiesByPrint,
   fitAllocations,
+  moveEveryCopy,
   moveTileCopies,
   previewPrint,
   createInMemoryCatalog,
   resolveDecklist,
   unallocatedCopies,
   type DecklistLine,
+  type Print,
   type ResolvedLine,
 } from './index.ts';
 import { aCard, aPrint } from './test-fixtures.ts';
@@ -33,6 +35,11 @@ function resolved(line: DecklistLine | undefined): ResolvedLine {
 async function forestLine(quantity: number): Promise<ResolvedLine> {
   const [line] = await resolveDecklist(`${quantity} Forest`, catalog, { today, lang: 'en' });
   return resolved(line);
+}
+
+/** `line` with `copies` of its copies allocated to `print`. */
+function allocated(line: ResolvedLine, print: Print, copies: number): ResolvedLine {
+  return resolved(applyAllocationChoice(line, allocatePrintCopies(line, print, copies)));
 }
 
 /** The line's allocations as (print id, quantity) pairs. */
@@ -127,9 +134,7 @@ describe('moveTileCopies', () => {
 
   /** 4 Forest split 2 + 1 + 1: two M21, one ZNR, one left with the default print FDN. */
   async function forestSplitTwoOneOne(): Promise<ResolvedLine> {
-    const line = await forestLine(4);
-    const twoM21 = resolved(applyAllocationChoice(line, allocatePrintCopies(line, forestM21, 2)));
-    return resolved(applyAllocationChoice(line, allocatePrintCopies(twoM21, forestZnr, 1)));
+    return allocated(allocated(await forestLine(4), forestM21, 2), forestZnr, 1);
   }
 
   /** The line's tiles as (print id, copies) pairs, in the order they print. */
@@ -175,21 +180,23 @@ describe('moveTileCopies', () => {
     ]);
   });
 
-  it('moves every copy of the line when no tile is picked', async () => {
-    const line = await forestSplitTwoOneOne();
+  it('moves every copy of a line that has a single tile', async () => {
+    const line = await forestLine(4);
 
-    expect(tilesOf(applyAllocationChoice(line, moveTileCopies(line, null, forestNeo)))).toEqual([
-      ['forest-neo', 4],
-    ]);
+    expect(
+      tilesOf(applyAllocationChoice(line, moveTileCopies(line, forestFdn, forestNeo))),
+    ).toEqual([['forest-neo', 4]]);
   });
 
   it('moves the copies left with the default print too, along with its tile', async () => {
-    const split = await forestSplitTwoOneOne();
-    const line = resolved(applyAllocationChoice(split, allocatePrintCopies(split, forestFdn, 1)));
-    const twoOnFdn = { ...line, quantity: 5 };
+    // 5 Forest: two M21, one ZNR, and an FDN tile of two: one allocated to FDN, one left with it.
+    const five = await forestLine(5);
+    const twoM21 = allocated(five, forestM21, 2);
+    const oneZnr = allocated(twoM21, forestZnr, 1);
+    const line = allocated(oneZnr, forestFdn, 1);
 
     expect(
-      tilesOf(applyAllocationChoice(twoOnFdn, moveTileCopies(twoOnFdn, forestFdn, forestNeo))),
+      tilesOf(applyAllocationChoice(line, moveTileCopies(line, forestFdn, forestNeo))),
     ).toEqual([
       ['forest-m21', 2],
       ['forest-znr', 1],
@@ -205,6 +212,17 @@ describe('moveTileCopies', () => {
       { print: { id: 'forest-znr' }, quantity: 1 },
       { print: { id: 'forest-m21' }, quantity: 2 },
     ]);
+  });
+});
+
+describe('moveEveryCopy', () => {
+  it('moves every copy of the line onto one print, whatever tiles it had', async () => {
+    const line = await forestLine(4);
+    const split = allocated(allocated(line, forestM21, 2), forestZnr, 1);
+
+    expect(
+      copiesByPrint(resolved(applyAllocationChoice(split, moveEveryCopy(split, forestZnr)))),
+    ).toMatchObject([{ print: { id: 'forest-znr' }, quantity: 4 }]);
   });
 });
 
@@ -253,7 +271,7 @@ describe('applyAllocationChoice', () => {
       (await resolveDecklist('4 Sol Ring', lowresDefault, { today, lang: 'it' }))[0],
     );
 
-    expect(applyAllocationChoice(line, moveTileCopies(line, null, solRingItOld))).toMatchObject({
+    expect(applyAllocationChoice(line, moveEveryCopy(line, solRingItOld))).toMatchObject({
       printWarning: null,
     });
     expect(applyAllocationChoice(line, allocatePrintCopies(line, solRingItOld, 3))).toMatchObject({
@@ -264,7 +282,7 @@ describe('applyAllocationChoice', () => {
   it('never warns about an English print the user chose for copies of an Italian line', async () => {
     const line = await solRingLine('it');
 
-    expect(applyAllocationChoice(line, moveTileCopies(line, null, solRingC21))).toMatchObject({
+    expect(applyAllocationChoice(line, moveEveryCopy(line, solRingC21))).toMatchObject({
       lang: 'it',
       printWarning: null,
     });
@@ -292,7 +310,7 @@ describe('applyAllocationChoice', () => {
   it('stops warning once every copy leaves the English print standing in', async () => {
     const { line, english2016 } = await italianLineWithEnglishOnly();
 
-    expect(applyAllocationChoice(line, moveTileCopies(line, null, english2016))).toMatchObject({
+    expect(applyAllocationChoice(line, moveEveryCopy(line, english2016))).toMatchObject({
       lang: 'it',
       printWarning: null,
     });
@@ -300,7 +318,7 @@ describe('applyAllocationChoice', () => {
 
   it('never prints more copies than the line asks for', async () => {
     const line = await solRingLine('it');
-    const fourOld = moveTileCopies(line, null, solRingItOld);
+    const fourOld = moveEveryCopy(line, solRingItOld);
 
     expect(applyAllocationChoice({ ...line, quantity: 3 }, fourOld)).toMatchObject({
       allocations: [{ print: { id: 'sol-ring-it-old' }, quantity: 3 }],
@@ -331,7 +349,7 @@ describe('applyAllocationChoice', () => {
 
   it('leaves the line as it is once it resolves to another card than the choice', async () => {
     const italian = await solRingLine('it');
-    const oldItalian = moveTileCopies(italian, null, solRingItOld);
+    const oldItalian = moveEveryCopy(italian, solRingItOld);
 
     expect(applyAllocationChoice(italian, { ...oldItalian, oracleId: 'goblin' })).toBe(italian);
   });

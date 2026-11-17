@@ -349,6 +349,14 @@ function tileSummary(tile: HTMLElement) {
   ];
 }
 
+/** The button of the print `setAndNumber` in the open print picker: a tap moves copies onto it. */
+function printButtonOf(setAndNumber: string): HTMLElement {
+  const counter = screen.getByRole('group', { name: `Copie con ${setAndNumber}` });
+  const [printButton] = within(counter.closest('li') ?? counter).getAllByRole('button');
+  if (!printButton) throw new Error(`no print button for ${setAndNumber}`);
+  return printButton;
+}
+
 /** The colour of the sibling group a tile belongs to, if it has siblings. */
 function siblingColourOf(tile: HTMLElement) {
   const coloured = tile.querySelector<HTMLElement>('[style*="--sibling-colour"]');
@@ -1423,12 +1431,6 @@ describe("the print picker opened on the tile's print", () => {
     );
   }
 
-  /** The button of the print `setAndNumber` in the print picker. */
-  function printButton(setAndNumber: string) {
-    const counter = screen.getByRole('group', { name: `Copie con ${setAndNumber}` });
-    return within(counter.closest('li') ?? counter).getAllByRole('button')[0];
-  }
-
   /**
    * Gives `4 Brainstorm` a tile on each of its prints: ICE (Italian, the default), MMQ (Italian,
    * second in its list) and C21 (English), in that order in the grid.
@@ -1457,7 +1459,7 @@ describe("the print picker opened on the tile's print", () => {
 
     await user.click(tileAt(1).getByRole('button', { name: 'Modifica Brainstorm' }));
 
-    await waitFor(() => expect(document.activeElement).toBe(printButton('MMQ #1')));
+    await waitFor(() => expect(document.activeElement).toBe(printButtonOf('MMQ #1')));
     expect(
       within(inspector()).getByRole('radio', { name: 'Italiano (2)', checked: true }),
     ).toBeTruthy();
@@ -1468,11 +1470,11 @@ describe("the print picker opened on the tile's print", () => {
     await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
     await splitBrainstorm(user, inspector);
     await user.click(tileAt(1).getByRole('button', { name: 'Modifica Brainstorm' }));
-    await waitFor(() => expect(document.activeElement).toBe(printButton('MMQ #1')));
+    await waitFor(() => expect(document.activeElement).toBe(printButtonOf('MMQ #1')));
 
     await user.click(tileAt(2).getByRole('button', { name: 'Modifica Brainstorm' }));
 
-    await waitFor(() => expect(document.activeElement).toBe(printButton('C21 #1')));
+    await waitFor(() => expect(document.activeElement).toBe(printButtonOf('C21 #1')));
     expect(
       within(inspector()).getByRole('radio', { name: 'Inglese (1)', checked: true }),
     ).toBeTruthy();
@@ -1484,7 +1486,7 @@ describe("the print picker opened on the tile's print", () => {
     await user.click(await within(inspector()).findByRole('radio', { name: 'Inglese (1)' }));
     await user.click(await screen.findByRole('button', { name: 'Una copia in più con C21 #1' }));
     await user.click(tileAt(1).getByRole('button', { name: 'Modifica Brainstorm' }));
-    await waitFor(() => expect(document.activeElement).toBe(printButton('C21 #1')));
+    await waitFor(() => expect(document.activeElement).toBe(printButtonOf('C21 #1')));
 
     await user.click(screen.getByRole('button', { name: 'Una copia in meno con C21 #1' }));
 
@@ -1506,7 +1508,7 @@ describe("the print picker opened on the tile's print", () => {
 
     await user.click(tileAt(1).getByRole('button', { name: 'Modifica Brainstorm' }));
 
-    await waitFor(() => expect(document.activeElement).toBe(printButton('MMQ #1')));
+    await waitFor(() => expect(document.activeElement).toBe(printButtonOf('MMQ #1')));
     expect(
       within(phonePanel()).getByRole('radio', { name: 'Italiano (2)', checked: true }),
     ).toBeTruthy();
@@ -1516,40 +1518,35 @@ describe("the print picker opened on the tile's print", () => {
 describe('tapping a print in the print picker', () => {
   const SWORDS = 'Swords to Plowshares';
 
-  /** The id of the print a tile shows, read from its image. */
-  function printIdOf(tile: HTMLElement) {
-    const src = within(tile)
-      .getByRole('img', { name: /^Immagine di / })
-      .getAttribute('src');
-    return src?.match(/\/front\/(.+)\.jpg$/)?.[1];
+  /** The set and number a tile shows under its card. */
+  function setAndNumberOf(tile: HTMLElement) {
+    return within(tile).getByText(/^[A-Z0-9]+ #\d+$/).textContent;
   }
 
-  /** Each tile of the grid as (print id, quantity), sorted by print id. */
-  function tilesByPrint() {
+  /** Each tile of the grid as (set and number, quantity), sorted by set. */
+  function tilesBySetAndNumber() {
     return gridTiles()
-      .map((tile) => [printIdOf(tile), within(tile).queryByText(/×$/)?.textContent])
+      .map((tile) => [setAndNumberOf(tile), within(tile).queryByText(/×$/)?.textContent])
       .sort(([a], [b]) => String(a).localeCompare(String(b)));
   }
 
-  /** Presses the tile of the print `printId`. */
-  async function pressTileOf(user: ReturnType<typeof userEvent.setup>, printId: string) {
-    const tile = gridTiles().find((each) => printIdOf(each) === printId);
-    if (!tile) throw new Error(`no tile of ${printId}`);
+  /** Presses the tile showing the print `setAndNumber`. */
+  async function pressTileOf(user: ReturnType<typeof userEvent.setup>, setAndNumber: string) {
+    const tile = gridTiles().find((each) => setAndNumberOf(each) === setAndNumber);
+    if (!tile) throw new Error(`no tile of ${setAndNumber}`);
     await user.click(within(tile).getByRole('button', { name: `Modifica ${SWORDS}` }));
   }
 
   /** Taps the print `setAndNumber` in the print picker. */
   async function tapPrint(user: ReturnType<typeof userEvent.setup>, setAndNumber: string) {
-    const counter = await screen.findByRole('group', { name: `Copie con ${setAndNumber}` });
-    const [printButton] = within(counter.closest('li') ?? counter).getAllByRole('button');
-    if (!printButton) throw new Error(`no print button for ${setAndNumber}`);
-    await user.click(printButton);
+    await screen.findByRole('group', { name: `Copie con ${setAndNumber}` });
+    await user.click(printButtonOf(setAndNumber));
   }
 
-  /** The print of the selected tile. */
-  function selectedPrintId() {
+  /** The set and number of the selected tile's print. */
+  function selectedSetAndNumber() {
     const pressed = screen.getByRole('button', { name: `Modifica ${SWORDS}`, pressed: true });
-    return printIdOf(pressed.closest('li') ?? pressed);
+    return setAndNumberOf(pressed.closest('li') ?? pressed);
   }
 
   /** Splits `4 Swords to Plowshares` 2 + 1 + 1: two ICE (the default), one MMQ, one C21. */
@@ -1562,16 +1559,16 @@ describe('tapping a print in the print picker', () => {
     const user = await mountPageAndWrite(`4 ${SWORDS}{Enter}`);
     await user.click(await screen.findByRole('button', { name: `Modifica ${SWORDS}` }));
     await splitTwoOneOne(user);
-    await pressTileOf(user, 'swords-mmq');
+    await pressTileOf(user, 'MMQ #1');
 
     await tapPrint(user, 'STA #1');
 
-    expect(tilesByPrint()).toEqual([
-      ['swords-c21', '1×'],
-      ['swords-ice', '2×'],
-      ['swords-sta', '1×'],
+    expect(tilesBySetAndNumber()).toEqual([
+      ['C21 #1', '1×'],
+      ['ICE #1', '2×'],
+      ['STA #1', '1×'],
     ]);
-    expect(selectedPrintId()).toBe('swords-sta');
+    expect(selectedSetAndNumber()).toBe('STA #1');
   });
 
   it('moves only the copies of the selected tile on a phone, the selection following them onto a tile they join', async () => {
@@ -1584,16 +1581,16 @@ describe('tapping a print in the print picker', () => {
     await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
     await user.click(screen.getByRole('button', { name: 'Una copia in più con C21 #1' }));
     await user.click(within(phonePanel()).getByRole('button', { name: 'Fatto' }));
-    await pressTileOf(user, 'swords-mmq');
+    await pressTileOf(user, 'MMQ #1');
 
     await tapPrint(user, 'STA #1');
     // The selection is now on STA: tapping C21 moves the STA copy, not the two ICE ones.
     await tapPrint(user, 'C21 #1');
     await user.click(within(phonePanel()).getByRole('button', { name: 'Fatto' }));
 
-    expect(tilesByPrint()).toEqual([
-      ['swords-c21', '2×'],
-      ['swords-ice', '4×'],
+    expect(tilesBySetAndNumber()).toEqual([
+      ['C21 #1', '2×'],
+      ['ICE #1', '4×'],
     ]);
   });
 });
@@ -1693,10 +1690,7 @@ describe('the print search in the print picker', () => {
 
     await user.click(inspector().getByRole('button', { name: 'Una copia in più con ICE #1' }));
     await user.click(inspector().getByRole('button', { name: 'Una copia in meno con ICE #1' }));
-    const counter = inspector().getByRole('group', { name: 'Copie con ICE #1' });
-    const [icePrint] = within(counter.closest('li') ?? counter).getAllByRole('button');
-    if (!icePrint) throw new Error('no ICE print');
-    await user.click(icePrint);
+    await user.click(printButtonOf('ICE #1'));
     expect(searchField()).toHaveProperty('value', 'ice');
 
     await user.click(inspector().getByRole('radio', { name: 'Inglese (1)' }));
@@ -1826,10 +1820,8 @@ describe('the copy breakdown in the line panel', () => {
   it('adds a copy to a print and to the line with its plus, even once every copy is allocated, asking the server nothing', async () => {
     const user = await mountPageAndWrite('2 Sol Ring{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
-    const leaPrint = within(
-      (await screen.findByRole('group', { name: 'Copie con LEA #1' })).closest('li') as HTMLElement,
-    ).getAllByRole('button')[0] as HTMLElement;
-    await user.click(leaPrint);
+    await screen.findByRole('group', { name: 'Copie con LEA #1' });
+    await user.click(printButtonOf('LEA #1'));
     expect(breakdown().prints).toEqual([['Inglese', 'LEA #1', '2']]);
     const requestsBefore = vi.mocked(api.resolveDecklistText).mock.calls.length;
 
@@ -1862,10 +1854,7 @@ describe('the copy breakdown in the line panel', () => {
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
     await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
 
-    const leaPrint = within(
-      screen.getByRole('group', { name: 'Copie con LEA #1' }).closest('li') as HTMLElement,
-    ).getAllByRole('button')[0] as HTMLElement;
-    await user.click(leaPrint);
+    await user.click(printButtonOf('LEA #1'));
 
     expect(decklistValue()).toBe('4 Sol Ring\n');
     expect(breakdown().prints).toEqual([['Inglese', 'LEA #1', '4']]);
