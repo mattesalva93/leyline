@@ -2,6 +2,7 @@
 //   pnpm web:preview                                        /proxy at 360, 390 and 1280 px
 //   pnpm web:preview --width 360 --width 430                at the widths given
 //   pnpm web:preview --line "4 Lightning Bolt" --line "1 Sol Ring" --step cards
+//   pnpm web:preview --example --zoom 110 --width 1280     the example decklist at the least zoom
 //   pnpm web:preview --app https://localhost                from an app running elsewhere
 // Writes .preview/web-<width>.png. Needs the app running (pnpm dev; the staging stack on
 // https://localhost serves its last image, not the working tree), with the catalog in PostgreSQL
@@ -16,26 +17,46 @@ import italian from '../packages/web/src/locales/it.json' with { type: 'json' };
 const PREVIEW_DIR = fileURLToPath(new URL('../.preview/', import.meta.url));
 const DEFAULT_WIDTHS = ['360', '390', '1280'];
 const SCREEN_HEIGHT = 800;
-const { steps: WORKSPACE_STEP_BAR, stepNames: WORKSPACE_STEP_LABELS } = italian.workspace;
+const {
+  steps: WORKSPACE_STEP_BAR,
+  stepNames: WORKSPACE_STEP_LABELS,
+  tileWidth: ZOOM_SLIDER,
+} = italian.workspace;
 
 const { values: flags } = parseArgs({
   options: {
     app: { type: 'string', default: 'http://127.0.0.1:5173' },
     width: { type: 'string', multiple: true, default: DEFAULT_WIDTHS },
     line: { type: 'string', multiple: true, default: [] },
+    example: { type: 'boolean', default: false },
+    zoom: { type: 'string' },
     step: { type: 'string' },
     path: { type: 'string', default: '/proxy' },
   },
 });
+if (flags.example && flags.line.length > 0) {
+  throw new Error('--example and --line both write the decklist: pick one');
+}
 if (flags.step && !(flags.step in WORKSPACE_STEP_LABELS)) {
   throw new Error(`--step is one of: ${Object.keys(WORKSPACE_STEP_LABELS).join(', ')}`);
 }
 
-/** Writes the decklist lines, each ended so the app recognises it, and opens the step asked. */
+/**
+ * Writes the decklist lines, each ended so the app recognises it, or loads the example decklist,
+ * then sets the zoom and opens the step asked.
+ */
 async function setUpWorkspace(page) {
-  await page.getByLabel('Decklist').fill(flags.line.map((line) => `${line}\n`).join(''));
+  if (flags.example) {
+    await page.getByRole('button', { name: italian.landingPage.tryExample }).click();
+  } else {
+    await page.getByLabel('Decklist').fill(flags.line.map((line) => `${line}\n`).join(''));
+  }
   // The lines are recognised by the api: the workspace replaces the landing page once it answers.
   await page.waitForLoadState('networkidle');
+  if (flags.zoom) {
+    // Only a wide screen has the zoom slider: a phone shows its tiles at the default.
+    await page.getByRole('slider', { name: ZOOM_SLIDER }).fill(flags.zoom);
+  }
   if (!flags.step) return;
   // A wide screen shows every step at once: only a phone has the step bar.
   const stepBar = page.getByRole('navigation', { name: WORKSPACE_STEP_BAR });
@@ -55,7 +76,7 @@ try {
     });
     const page = await context.newPage();
     await page.goto(`${flags.app}${flags.path}`);
-    if (flags.line.length > 0) await setUpWorkspace(page);
+    if (flags.line.length > 0 || flags.example) await setUpWorkspace(page);
     await waitUntilImagesOnScreenArrived(page);
     const path = `${PREVIEW_DIR}web-${width}.png`;
     await page.screenshot({ path });
