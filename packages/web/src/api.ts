@@ -3,8 +3,10 @@ import {
   type Candidate,
   type DecklistLine,
   type Lang,
+  type LineCard,
   type PrintCountsByLang,
   type PrintPage,
+  type SuggestedToken,
 } from '@mtg-suite/core';
 
 export async function resolveDecklistText(text: string, lang: Lang): Promise<DecklistLine[]> {
@@ -15,6 +17,20 @@ export async function resolveDecklistText(text: string, lang: Lang): Promise<Dec
   });
   if (!response.ok) throw new Error(`Resolve failed with ${response.status}`);
   return ((await response.json()) as { lines: DecklistLine[] }).lines;
+}
+
+/** The tokens the cards of `lines` create, none of them already among `lines`. */
+export async function fetchSuggestedTokens(
+  lines: readonly LineCard[],
+  lang: Lang,
+): Promise<SuggestedToken[]> {
+  const response = await fetch('/api/decklists/suggested-tokens', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', accept: 'application/json' },
+    body: JSON.stringify({ lines, lang }),
+  });
+  if (!response.ok) throw new Error(`Suggested tokens failed with ${response.status}`);
+  return ((await response.json()) as { tokens: SuggestedToken[] }).tokens;
 }
 
 /**

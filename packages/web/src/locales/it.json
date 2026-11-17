@@ -100,6 +100,11 @@
       "close": "Chiudi"
     }
   },
+  "suggestedTokens": {
+    "title": "Pedine proposte",
+    "add": "Aggiungi {{token}}",
+    "addAll": "Aggiungi tutte le pedine"
+  },
   "summary": {
     "cards": "Carte",
     "pages": "Pagine",

@@ -1,5 +1,6 @@
 import {
   addCardToSection,
+  addTokensToSection,
   applyAllocationChoice,
   applyCandidateChoice,
   changeTileQuantity as changeTileQuantityInText,
@@ -26,6 +27,7 @@ import {
   type Print,
   type SheetLayout,
   type SheetOptions,
+  type SuggestedToken,
 } from '@mtg-suite/core';
 import { useEffect, useRef, useState } from 'react';
 import { fetchPrintPage, resolveDecklistText } from './api.ts';
@@ -35,6 +37,7 @@ import { allocationsSplitOverPrints, type LineSplitOverPrints } from './line-spl
 import { loadSavedDecklist } from './saved-decklist.ts';
 import { useDecklistUnderWay } from './use-decklist-under-way.ts';
 import { useSheetPdf, type SheetPdf } from './use-sheet-pdf.ts';
+import { useSuggestedTokens } from './use-suggested-tokens.ts';
 
 /**
  * What the server resolved each written line to, in each language asked for, keyed by
@@ -100,6 +103,10 @@ export interface Generator {
    * line of its own at the end of the section, already resolved.
    */
   readonly addCard: (section: DecklistSection, candidate: Candidate) => void;
+  /** The tokens the cards of the decklist create that it does not hold yet. */
+  readonly suggestedTokens: readonly SuggestedToken[];
+  /** Writes a line of each of `tokens` into the Tokens section, already resolved. */
+  readonly addSuggestedTokens: (tokens: readonly SuggestedToken[]) => void;
   /**
    * Whether a decklist is under way: one the device kept on entering, or one with a line
    * recognised since. Until then the device keeps no decklist.
@@ -413,6 +420,26 @@ export function useGenerator(): Generator {
     );
   }
 
+  /**
+   * Writes the tokens' lines into the decklist text, every other line with its choices. The
+   * lines added keep the resolutions they came with, and a header the addition writes names no
+   * card: nothing is asked of the server.
+   */
+  function addSuggestedTokens(tokens: readonly SuggestedToken[]) {
+    const addition = addTokensToSection(decklistText, tokens);
+    const nextWrittenLines = writtenLinesOf(addition.text);
+    addition.previousWrittenIndexes.forEach((previousIndex, nextIndex) => {
+      if (previousIndex !== null) return;
+      const added = addition.lines.find(({ writtenIndex }) => writtenIndex === nextIndex);
+      keepResolution(nextWrittenLines[nextIndex] ?? '', added?.line ?? null);
+    });
+    const choices = choicesOfEveryLine();
+    writeRewrittenLines(
+      nextWrittenLines,
+      addition.previousWrittenIndexes.map((index) => (index === null ? undefined : choices[index])),
+    );
+  }
+
   function startNewDecklist() {
     setPendingSplit(null);
     setLastResolveFailed(false);
@@ -463,6 +490,7 @@ export function useGenerator(): Generator {
     hasRecognisedLine: recognisedLines.length > 0,
     decklist: { decklistText, choicesByLine, sheetOptions },
   });
+  const suggestedTokens = useSuggestedTokens(recognisedLines, defaultLang);
   const unresolvedCount = cardLines.length - recognisedLines.length;
   const sheet = { options: sheetOptions, lines: recognisedLines };
   const sheetLayout = hasPrintableCopies(sheet) ? layoutSheet(sheet) : null;
@@ -487,6 +515,8 @@ export function useGenerator(): Generator {
       updateChoicesAt(writtenIndex, { allocations }),
     moveLine,
     addCard,
+    suggestedTokens,
+    addSuggestedTokens,
     isDecklistUnderWay: decklistUnderWay.isDecklistUnderWay,
     startNewDecklist,
     sheetOptions,

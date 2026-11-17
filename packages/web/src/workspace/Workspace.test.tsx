@@ -3578,3 +3578,66 @@ describe('the card grid from the keyboard', () => {
     expect(focusableTile('2 Nonexistent Card, Carta non trovata')).toBeTruthy();
   });
 });
+
+describe('the suggested tokens', () => {
+  const tokenEntry = (oracleId: string, name: string, set: string, number: string) => ({
+    card: aCard({ oracleId, name }),
+    prints: [{ ...printOf(name, `${oracleId}-${set}`, set), collectorNumber: number }],
+  });
+  const TREASURE = tokenEntry('treasure', 'Treasure', 'tsnc', '16');
+  const SOLDIER = tokenEntry('soldier', 'Soldier', 'twar', '3');
+  const GOLD_FORGER = catalogEntry('gold-forger', 'Gold Forger');
+  const RAISE_THE_ALARM = catalogEntry('raise-the-alarm', 'Raise the Alarm');
+
+  beforeEach(() => {
+    const server = inMemoryServer(
+      [...CATALOG, TREASURE, SOLDIER, GOLD_FORGER, RAISE_THE_ALARM],
+      [
+        { creatorPrintId: 'gold-forger-tst', tokenPrintId: 'treasure-tsnc' },
+        { creatorPrintId: 'raise-the-alarm-tst', tokenPrintId: 'soldier-twar' },
+      ],
+    );
+    Object.entries(server).forEach(([call, answer]) => {
+      vi.mocked(api[call as keyof typeof api]).mockImplementation(answer as never);
+    });
+  });
+
+  it('adds a suggested token as a line of the Tokens section, named by set and number', async () => {
+    const user = await mountPageAndWrite('1 Gold Forger{Enter}');
+
+    await user.click(await screen.findByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' }));
+
+    expect(decklistValue()).toContain('Tokens\n1 Treasure (TSNC) 16');
+    expect(await screen.findByRole('button', { name: 'Modifica Treasure' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' })).toBeNull();
+  });
+
+  it('adds every suggested token at once', async () => {
+    const user = await mountPageAndWrite('1 Gold Forger{Enter}1 Raise the Alarm{Enter}');
+    await screen.findByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' });
+
+    await user.click(screen.getByRole('button', { name: 'Aggiungi tutte le pedine' }));
+
+    expect(decklistValue()).toContain('Tokens\n1 Treasure (TSNC) 16\n1 Soldier (TWAR) 3');
+    expect(screen.queryByRole('region', { name: 'Pedine proposte' })).toBeNull();
+  });
+
+  it('no longer suggests the token of a card taken out, but keeps a token line already added', async () => {
+    const user = await mountPageAndWrite('1 Gold Forger{Enter}1 Raise the Alarm{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' }));
+    await screen.findByRole('button', { name: 'Modifica Treasure' });
+
+    const decklist = screen.getByLabelText<HTMLTextAreaElement>('Decklist');
+    await user.type(decklist, '{Backspace}', {
+      initialSelectionStart: 0,
+      initialSelectionEnd: '1 Gold Forger\n1 Raise the Alarm\n'.length,
+    });
+
+    expect(decklistValue()).not.toContain('Gold Forger');
+    expect(decklistValue()).toContain('1 Treasure (TSNC) 16');
+    expect(screen.getByRole('button', { name: 'Modifica Treasure' })).toBeTruthy();
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' })).toBeNull(),
+    );
+  });
+});
