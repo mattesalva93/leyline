@@ -28,8 +28,8 @@ interface LinePanelProps {
   /** What to warn about the print of the tile the panel was opened from. */
   readonly printWarning: PrintWarning | null;
   readonly onQuantityChange: (quantity: number) => void;
-  /** Called with the allocations the user set in the print picker. */
-  readonly onAllocationChoice: (allocations: AllocationChoice) => void;
+  /** Called with the choice a tap in the print picker sets, moving the tile's copies to `toPrint`. */
+  readonly onTileCopiesMove: (choice: AllocationChoice, toPrint: Print) => void;
   /** Gives `print` `quantity` copies, the line's quantity changing as many. */
   readonly onPrintQuantityChange: (print: Print, quantity: number) => void;
 }
@@ -41,7 +41,7 @@ export function LinePanel({
   tileSelectionCount,
   printWarning,
   onQuantityChange,
-  onAllocationChoice,
+  onTileCopiesMove,
   onPrintQuantityChange,
 }: LinePanelProps) {
   const { t } = useTranslation();
@@ -107,11 +107,12 @@ export function LinePanel({
       <CopyBreakdown line={line} openingQuantity={openingQuantity} />
       <PrintPicker
         line={line}
+        tilePrint={tilePrint}
         pickerView={pickerView}
         printCounts={printCounts}
         printQuery={printQuery}
         printPages={printPages}
-        onAllocationChoice={onAllocationChoice}
+        onTileCopiesMove={onTileCopiesMove}
         onPrintQuantityChange={onPrintQuantityChange}
       />
     </div>

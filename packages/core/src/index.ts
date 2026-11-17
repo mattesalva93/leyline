@@ -15,12 +15,13 @@ export { cardKeys } from './name-match.ts';
 export { isBlankPrintQuery, MAX_PRINT_QUERY_LENGTH } from './print-query.ts';
 export { releaseYearOf } from './release-year.ts';
 export {
-  allocateEveryCopy,
   allocatePrintCopies,
   applyAllocationChoice,
   copiesAllocatedTo,
   copiesByPrint,
   fitAllocations,
+  moveEveryCopy,
+  moveTileCopies,
   unallocatedCopies,
 } from './allocation.ts';
 export { SECTION_BEFORE_ANY_HEADER, sectionOfEachWrittenLine } from './decklist-section.ts';
