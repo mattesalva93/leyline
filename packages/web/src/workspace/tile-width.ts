@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 /** The narrowest a tile gets in the card grid, in CSS px, as the tile width slider sets it. */
-export const TILE_WIDTH_PX = { min: 80, max: 280, step: 10, default: 150 } as const;
+export const TILE_WIDTH_PX = { min: 110, max: 280, step: 10, default: 150 } as const;
 
 const STORAGE_KEY = 'mtg-suite.tileWidth';
 

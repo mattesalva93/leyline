@@ -1229,14 +1229,23 @@ describe('the tile width slider', () => {
   it('comes back as the user left it after a reload', async () => {
     await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
-    fireEvent.change(screen.getByRole('slider', { name: 'Zoom' }), { target: { value: '100' } });
+    fireEvent.change(screen.getByRole('slider', { name: 'Zoom' }), { target: { value: '200' } });
     cleanup();
 
     mountApp('/proxy');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
 
-    expect(screen.getByRole<HTMLInputElement>('slider', { name: 'Zoom' }).value).toBe('100');
-    expect(tileMinWidth()).toBe('100');
+    expect(screen.getByRole<HTMLInputElement>('slider', { name: 'Zoom' }).value).toBe('200');
+    expect(tileMinWidth()).toBe('200');
+  });
+
+  it('opens at its default when the device kept a zoom narrower than the least it allows', async () => {
+    localStorage.setItem('mtg-suite.tileWidth', '80');
+
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    expect(screen.getByRole<HTMLInputElement>('slider', { name: 'Zoom' }).value).toBe('150');
   });
 });
 
