@@ -124,6 +124,10 @@
     "it": "Italiano",
     "en": "Inglese"
   },
+  "langCode": {
+    "it": "IT",
+    "en": "EN"
+  },
   "decklist": {
     "label": "Decklist",
     "placeholder": "4 Sol Ring\n1 Counterspell",
@@ -182,7 +186,8 @@
     "increase": "Una copia in più",
     "minus": "−",
     "plus": "+",
-    "close": "Fatto",
+    "close": "Chiudi",
+    "closeSymbol": "✕",
     "prints": "Altre stampe",
     "printCount_one": "1 stampa disponibile",
     "printCount_other": "{{count}} stampe disponibili",
@@ -256,6 +261,8 @@
     "title": "Ripartizione delle copie",
     "total_one": "Totale: {{count}} copia",
     "total_other": "Totale: {{count}} copie",
-    "changeSinceOpened": "{{change}} rispetto a {{count}}"
+    "changeSinceOpened": "{{change}} rispetto a {{count}}",
+    "printSummary": "{{lang}} {{print}} ×{{count}}",
+    "printSummarySeparator": " · "
   }
 }

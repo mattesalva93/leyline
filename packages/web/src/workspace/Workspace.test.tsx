@@ -1503,7 +1503,7 @@ describe("the print picker opened on the tile's print", () => {
     await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
     const phonePanel = () => screen.getByRole('dialog', { name: 'Riga selezionata' });
     await splitBrainstorm(user, phonePanel);
-    await user.click(within(phonePanel()).getByRole('button', { name: 'Fatto' }));
+    await user.click(within(phonePanel()).getByRole('button', { name: 'Chiudi' }));
     onePrintPerPage();
 
     await user.click(tileAt(1).getByRole('button', { name: 'Modifica Brainstorm' }));
@@ -1580,13 +1580,13 @@ describe('tapping a print in the print picker', () => {
     // The panel covers the tiles and their minus: the pluses split the line 4 + 1 + 1.
     await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
     await user.click(screen.getByRole('button', { name: 'Una copia in più con C21 #1' }));
-    await user.click(within(phonePanel()).getByRole('button', { name: 'Fatto' }));
+    await user.click(within(phonePanel()).getByRole('button', { name: 'Chiudi' }));
     await pressTileOf(user, 'MMQ #1');
 
     await tapPrint(user, 'STA #1');
     // The selection is now on STA: tapping C21 moves the STA copy, not the two ICE ones.
     await tapPrint(user, 'C21 #1');
-    await user.click(within(phonePanel()).getByRole('button', { name: 'Fatto' }));
+    await user.click(within(phonePanel()).getByRole('button', { name: 'Chiudi' }));
 
     expect(tilesBySetAndNumber()).toEqual([
       ['C21 #1', '2×'],
@@ -2074,7 +2074,7 @@ describe('the workspace on a phone', () => {
     expect(panel.getByRole('group', { name: 'Copie' })).toBeTruthy();
     expect(await panel.findByRole('region', { name: 'Stampe di Sol Ring' })).toBeTruthy();
     await user.click(panel.getByRole('button', { name: 'Una copia in più' }));
-    await user.click(panel.getByRole('button', { name: 'Fatto' }));
+    await user.click(panel.getByRole('button', { name: 'Chiudi' }));
 
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(gridTiles().map(tileSummary)).toEqual([['Immagine di Sol Ring', '5×', undefined]]);
@@ -2129,7 +2129,7 @@ describe('the workspace on a phone', () => {
 
     const panel = within(screen.getByRole('dialog', { name: 'Riga da sistemare' }));
     expect(panel.getByText('2 Nonexistent Card')).toBeTruthy();
-    await user.click(panel.getByRole('button', { name: 'Fatto' }));
+    await user.click(panel.getByRole('button', { name: 'Chiudi' }));
 
     expect(stepBar().getByRole('button', { name: 'Carte' }).getAttribute('aria-current')).toBe(
       'step',
@@ -2143,6 +2143,80 @@ describe('the workspace on a phone', () => {
     await user.click(stepBar().getByRole('button', { name: 'Carte' }));
 
     expect(document.querySelectorAll('[data-ad-slot]')).toHaveLength(0);
+  });
+});
+
+describe('the line panel on a phone', () => {
+  beforeEach(() => {
+    stubScreen(PHONE);
+  });
+
+  /** Opens the panel of the first tile of `card`, in the "Carte" step. */
+  async function openPanelOf(user: ReturnType<typeof userEvent.setup>, card: string) {
+    await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+    await user.click(await screen.findByRole('button', { name: `Modifica ${card}` }));
+    return within(screen.getByRole('dialog', { name: 'Riga selezionata' }));
+  }
+
+  it('heads the panel with the card, its name and a button that closes it, and has no other', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const panel = await openPanelOf(user, 'Sol Ring');
+
+    const header = within(panel.getByRole('banner'));
+    expect(header.getByRole('heading', { name: 'Sol Ring' })).toBeTruthy();
+    expect(header.getByRole('img', { name: 'Immagine di Sol Ring' })).toBeTruthy();
+    expect(panel.queryByRole('button', { name: 'Fatto' })).toBeNull();
+    await user.click(header.getByRole('button', { name: 'Chiudi' }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('folds the copy breakdown into a line naming each print used, and opens it by hand', async () => {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    const panel = await openPanelOf(user, 'Brainstorm');
+    await user.click(await panel.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
+    await user.click(panel.getByRole('radio', { name: 'Inglese (1)' }));
+    await user.click(await panel.findByRole('button', { name: 'Una copia in più con C21 #1' }));
+
+    const fold = panel.getByRole('button', { name: /^Ripartizione delle copie/ });
+    expect(fold.getAttribute('aria-expanded')).toBe('false');
+    expect(fold.textContent).toBe(
+      'Ripartizione delle copie IT ICE #1 ×4 · IT MMQ #1 ×1 · EN C21 #1 ×1',
+    );
+    expect(panel.queryByRole('region', { name: 'Ripartizione delle copie' })).toBeNull();
+    await user.click(fold);
+
+    const breakdown = within(panel.getByRole('region', { name: 'Ripartizione delle copie' }));
+    expect(breakdown.getByText('Totale: 6 copie')).toBeTruthy();
+    expect(breakdown.getByText('+2 rispetto a 4')).toBeTruthy();
+  });
+
+  it('opens the copy breakdown folded each time the panel opens', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const panel = await openPanelOf(user, 'Sol Ring');
+    await user.click(panel.getByRole('button', { name: /^Ripartizione delle copie/ }));
+    await user.click(panel.getByRole('button', { name: 'Chiudi' }));
+
+    await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+
+    const reopened = within(screen.getByRole('dialog', { name: 'Riga selezionata' }));
+    expect(
+      reopened
+        .getByRole('button', { name: /^Ripartizione delle copie/ })
+        .getAttribute('aria-expanded'),
+    ).toBe('false');
+  });
+
+  it('heads the panel of a line to fix with its title and a button that closes it', async () => {
+    const user = await mountPageAndWrite('2 Nonexistent Card{Enter}');
+    await user.click(await screen.findByRole('button', { name: '1 riga da sistemare' }));
+    const panel = within(screen.getByRole('dialog', { name: 'Riga da sistemare' }));
+
+    const header = within(panel.getByRole('banner'));
+    expect(header.getByRole('heading', { name: 'Riga da sistemare' })).toBeTruthy();
+    await user.click(header.getByRole('button', { name: 'Chiudi' }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });
 
@@ -2388,7 +2462,7 @@ describe('the workspace across screen sizes', () => {
 
     const panel = within(screen.getByRole('dialog', { name: 'Riga selezionata' }));
     expect(panel.getByRole('heading', { name: 'Lightning Bolt' })).toBeTruthy();
-    await user.click(panel.getByRole('button', { name: 'Fatto' }));
+    await user.click(panel.getByRole('button', { name: 'Chiudi' }));
     await user.click(stepBar().getByRole('button', { name: 'Lista' }));
     expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Decklist' }).value).toBe(
       '4 Sol Ring\n1 Lightning Bolt\n',

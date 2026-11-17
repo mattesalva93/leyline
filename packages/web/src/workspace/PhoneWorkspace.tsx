@@ -8,6 +8,7 @@ import { CardsView } from './CardsView.tsx';
 import { DecklistCount } from './DecklistCount.tsx';
 import { DecklistEditor } from '../decklist-editor/DecklistEditor.tsx';
 import { DecklistSummary } from './DecklistSummary.tsx';
+import { PhoneLineHeading } from './PhoneLineHeading.tsx';
 import { PhoneLinePanel } from './PhoneLinePanel.tsx';
 import { PhonePdfStrip } from './PhonePdfStrip.tsx';
 import { lineToFixOf, LineToFixPanel } from './LineToFixPanel.tsx';
@@ -102,6 +103,15 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
       </nav>
       <PhoneLinePanel
         title={t(panelLine ? 'workspace.inspector.line' : 'workspace.inspector.lineToFix')}
+        heading={
+          panelLine ? (
+            <PhoneLineHeading line={panelLine.line} />
+          ) : (
+            <h2 className="text-lg leading-tight font-bold">
+              {t('workspace.inspector.lineToFix')}
+            </h2>
+          )
+        }
         onClose={() => state.selectTile(null)}
         onClosed={() => {
           if (isLinePanelOpenedByKeyboard.current) focusCurrentGridCell();
@@ -110,6 +120,7 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
       >
         {panelLine ? (
           <SelectedLinePanel
+            layout="phone"
             generator={generator}
             panelLine={panelLine}
             tileSelectionCount={state.tileSelectionCount}
