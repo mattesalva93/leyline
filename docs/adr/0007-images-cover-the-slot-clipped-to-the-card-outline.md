@@ -1,6 +1,6 @@
 # 0007: Images cover the slot, clipped to the card's outline
 
-**Status:** accepted (2026-11-07, recorded 2026-11-09); supersedes ADR 0004
+**Status:** accepted (2026-11-07, recorded 2026-11-09); supersedes ADR 0004; superseded by ADR 0013 (2026-11-17)
 
 ## Decision
 
