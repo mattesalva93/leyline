@@ -87,34 +87,46 @@ export function addCardToSection(
     };
   }
   const newLine = `1 ${candidate.card.name}`;
-  const lineOf = (writtenLine: string) =>
-    resolvedLine({ text: writtenLine, quantity: 1, lang }, candidate);
+  const written = writeLineAtSectionEnd(text, newLine, section);
+  const writtenLine = writtenLinesOf(written.text)[written.writtenIndex] ?? newLine;
+  return {
+    added: 'line',
+    ...written,
+    line: resolvedLine({ text: writtenLine, quantity: 1, lang }, candidate),
+  };
+}
+
+/**
+ * The decklist text with `newLine` written after the last card of `section`. A section the
+ * text has no header of opens at its end.
+ */
+export function writeLineAtSectionEnd(
+  text: string,
+  newLine: string,
+  section: DecklistSection,
+): LineMove & { readonly writtenIndex: number } {
   if (text.trim() === '') {
     // A line above every header is in the main deck: any other section needs its header first.
     const writtenLinesAdded =
       section === SECTION_BEFORE_ANY_HEADER ? [newLine] : [HEADER_OF_SECTION[section], newLine];
     return {
-      added: 'line',
       text: writtenLinesAdded.join('\n'),
       previousWrittenIndexes: writtenLinesAdded.map(() => null),
       writtenIndex: writtenLinesAdded.length - 1,
-      line: lineOf(newLine),
     };
   }
   // Written at the end first, then moved: the move knows where a section ends and how to open it.
+  const writtenLines = writtenLinesOf(text);
   const appendedIndex = writtenLines.length;
   const move = moveWrittenLine([...writtenLines, newLine].join('\n'), appendedIndex, {
     section,
     nextTo: null,
   });
-  const writtenIndex = move.previousWrittenIndexes.indexOf(appendedIndex);
   return {
-    added: 'line',
     text: move.text,
     previousWrittenIndexes: move.previousWrittenIndexes.map((index) =>
       index === appendedIndex ? null : index,
     ),
-    writtenIndex,
-    line: lineOf(writtenLinesOf(move.text)[writtenIndex] ?? newLine),
+    writtenIndex: move.previousWrittenIndexes.indexOf(appendedIndex),
   };
 }

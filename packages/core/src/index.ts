@@ -39,6 +39,7 @@ export {
   type CardToAdd,
   type LineInText,
 } from './add-card.ts';
+export { addTokensToSection, type TokensAddition } from './add-tokens.ts';
 export { printTiles, type PrintTile } from './print-tile.ts';
 export { lineCardOf, suggestTokens, type TokenSuggestionOptions } from './suggested-tokens.ts';
 export { cellAfterArrow, type Arrow, type CellGroup, type CellPlace } from './grid-moves.ts';
