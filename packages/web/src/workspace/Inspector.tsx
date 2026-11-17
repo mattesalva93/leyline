@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PRINT_PICKER_SCROLL_ROOT_PROPS } from '../PrintPicker.tsx';
+import { PRINT_PICKER_SCROLL_ROOT_PROPS } from '../print-picker-marks.ts';
 import { SECONDARY_BUTTON } from '../ui/board-styles.ts';
 import { DecklistSummary } from './DecklistSummary.tsx';
 import { lineToFixOf, LineToFixPanel } from './LineToFixPanel.tsx';
@@ -63,6 +63,7 @@ export function Inspector({
         {content === 'sheetOptions' && <SheetSettings state={state} />}
         {panelLine && (
           <SelectedLinePanel
+            layout="inspector"
             generator={generator}
             panelLine={panelLine}
             tileSelectionCount={state.tileSelectionCount}

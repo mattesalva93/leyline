@@ -2,7 +2,7 @@ import { LANGS, type Lang, type PrintCountsByLang } from '@mtg-suite/core';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
-interface LanguagePickerProps {
+export interface LanguagePickerProps {
   readonly label: string;
   readonly selectedLang: Lang;
   readonly onChange: (lang: Lang) => void;

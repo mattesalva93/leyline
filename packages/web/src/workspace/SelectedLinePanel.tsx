@@ -1,5 +1,6 @@
 import type { Print, PrintWarning, ResolvedLine } from '@mtg-suite/core';
 import { LinePanel } from '../LinePanel.tsx';
+import { PhoneLineSettings } from '../PhoneLineSettings.tsx';
 import type { Generator } from '../use-generator.ts';
 import { isSelected, type GridTile, type TileSelection } from './grid-tiles.ts';
 import { RemoveLineButton } from './RemoveLineButton.tsx';
@@ -30,13 +31,16 @@ export function panelLineOf(
   };
 }
 
-/** The `LinePanel` of `panelLine`, its changes going to the generator. */
+/** The settings of `panelLine`, laid out for `layout`, its changes going to the generator. */
 export function SelectedLinePanel({
+  layout,
   generator,
   panelLine: { writtenIndex, line, tileWarning, tilePrint },
   tileSelectionCount,
   onSelectionMove,
 }: {
+  /** The inspector's `LinePanel`, or the phone's layout under the header of its panel. */
+  readonly layout: 'inspector' | 'phone';
   readonly generator: Generator;
   readonly panelLine: PanelLine;
   /** Grows each time the user selects a tile, the one already selected included. */
@@ -44,8 +48,9 @@ export function SelectedLinePanel({
   /** Moves the selection to the tile the copies moved to, without counting as a press of a tile. */
   readonly onSelectionMove: (selection: TileSelection) => void;
 }) {
+  const LineSettings = layout === 'phone' ? PhoneLineSettings : LinePanel;
   const linePanel = (
-    <LinePanel
+    <LineSettings
       // A new line starts its panel afresh, on the print of its tile.
       key={writtenIndex}
       line={line}

@@ -61,8 +61,8 @@ export function SideDrawerContent({ ariaLabel, className = '', children }: Dialo
   );
 }
 
-/** A panel that rises from the bottom edge of the screen, full width. */
-export function BottomPanelContent({
+/** A panel over the whole screen, as a phone shows a step of its own. */
+export function FullScreenPanelContent({
   ariaLabel,
   className = '',
   onCloseAutoFocus,
@@ -73,13 +73,12 @@ export function BottomPanelContent({
 }) {
   return (
     <RadixDialog.Portal>
-      <RadixDialog.Overlay className={OVERLAY} />
       <RadixDialog.Content
         aria-label={ariaLabel}
         aria-describedby={undefined}
         onCloseAutoFocus={onCloseAutoFocus}
         onEscapeKeyDown={leaveEscapeToAFieldItEmpties}
-        className={`fixed inset-x-0 bottom-0 z-50 flex max-h-[78dvh] flex-col rounded-t-lg border-t-2 border-border bg-panel font-sans text-foreground ${className}`}
+        className={`fixed inset-x-0 top-0 z-50 flex h-dvh flex-col bg-panel font-sans text-foreground ${className}`}
       >
         {children}
       </RadixDialog.Content>

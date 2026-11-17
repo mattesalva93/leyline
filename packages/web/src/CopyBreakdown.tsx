@@ -6,18 +6,20 @@ interface CopyBreakdownProps {
   readonly line: ResolvedLine;
   /** How many copies the line printed when its panel opened. */
   readonly openingQuantity: number;
+  /** False where a title of its own already names the breakdown. */
+  readonly hasTitle?: boolean;
 }
 
 /**
  * How the line's copies divide among the prints they use, in either language, in the order of
  * its tiles; then the line's total, and how far it moved since the panel opened.
  */
-export function CopyBreakdown({ line, openingQuantity }: CopyBreakdownProps) {
+export function CopyBreakdown({ line, openingQuantity, hasTitle = true }: CopyBreakdownProps) {
   const { t } = useTranslation();
   const change = line.quantity - openingQuantity;
   return (
     <section aria-label={t('copyBreakdown.title')} className="flex flex-col gap-1 text-sm">
-      <h3 className="font-semibold">{t('copyBreakdown.title')}</h3>
+      {hasTitle && <h3 className="font-semibold">{t('copyBreakdown.title')}</h3>}
       <ul className="flex flex-col gap-0.5">
         {printTiles(line).map(({ print, quantity }) => (
           <li key={print.id} className="grid grid-cols-[1fr_auto_3ch] gap-x-3">
