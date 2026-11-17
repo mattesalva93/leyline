@@ -6,7 +6,7 @@ import type {
   CreatedToken,
   DecklistLine,
   Lang,
-  LineCard,
+  TokenQueryLine,
   Print,
   SuggestedToken,
 } from './types.ts';
@@ -19,29 +19,29 @@ export interface TokenSuggestionOptions {
 }
 
 /** What `line` tells which tokens its card creates, or `null` when it is not resolved. */
-export function lineCardOf(line: DecklistLine): LineCard | null {
+export function tokenQueryLineOf(line: DecklistLine): TokenQueryLine | null {
   if (line.status !== 'resolved') return null;
   return { oracleId: line.card.oracleId, previewPrintId: previewPrint(line)?.id ?? null };
 }
 
 /**
- * The tokens the cards of `lineCards` create, one per token card, first creator first: each at
+ * The tokens the cards of `queryLines` create, one per token card, first creator first: each at
  * the print the first card creating it names, or at the token's default print when that one is
- * not printable or not out yet. A token one of `lineCards` already is, in any print, is no
+ * not printable or not out yet. A token one of `queryLines` already is, in any print, is no
  * suggestion.
  */
 export async function suggestTokens(
   catalog: Catalog,
-  lineCards: readonly LineCard[],
+  queryLines: readonly TokenQueryLine[],
   { lang, today }: TokenSuggestionOptions,
 ): Promise<SuggestedToken[]> {
-  const printIds = lineCards.flatMap((lineCard) => lineCard.previewPrintId ?? []);
+  const printIds = queryLines.flatMap((queryLine) => queryLine.previewPrintId ?? []);
   const created = await catalog.findTokensCreatedBy([...new Set(printIds)]);
-  const inDecklist = new Set(lineCards.map((lineCard) => lineCard.oracleId));
+  const inDecklist = new Set(queryLines.map((queryLine) => queryLine.oracleId));
   const byToken = new Map<string, { created: CreatedToken; createdBy: number[] }>();
-  lineCards.forEach((lineCard, index) => {
+  queryLines.forEach((queryLine, index) => {
     for (const link of created) {
-      if (link.creatorPrintId !== lineCard.previewPrintId) continue;
+      if (link.creatorPrintId !== queryLine.previewPrintId) continue;
       const oracleId = link.token.card.oracleId;
       if (inDecklist.has(oracleId)) continue;
       const suggestion = byToken.get(oracleId) ?? { created: link, createdBy: [] };

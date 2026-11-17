@@ -3,7 +3,7 @@ import {
   type Candidate,
   type DecklistLine,
   type Lang,
-  type LineCard,
+  type TokenQueryLine,
   type PrintCountsByLang,
   type PrintPage,
   type SuggestedToken,
@@ -21,7 +21,7 @@ export async function resolveDecklistText(text: string, lang: Lang): Promise<Dec
 
 /** The tokens the cards of `lines` create, none of them already among `lines`. */
 export async function fetchSuggestedTokens(
-  lines: readonly LineCard[],
+  lines: readonly TokenQueryLine[],
   lang: Lang,
 ): Promise<SuggestedToken[]> {
   const response = await fetch('/api/decklists/suggested-tokens', {

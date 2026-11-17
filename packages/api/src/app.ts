@@ -9,7 +9,7 @@ import {
   searchCards,
   suggestTokens,
   type Lang,
-  type LineCard,
+  type TokenQueryLine,
 } from '@mtg-suite/core';
 import { Hono } from 'hono';
 import type { Sql } from './db.ts';
@@ -28,8 +28,8 @@ const MAX_PRINTS_PER_PAGE = 50;
 /** Longest name a search accepts, in characters: far above any card name. */
 const MAX_SEARCH_LENGTH = 200;
 
-/** Most lines a token suggestion takes: as many as the longest decklist can hold. */
-const MAX_LINE_CARDS = 5_000;
+/** Most lines a token suggestion takes: far above a 100-card deck. */
+const MAX_TOKEN_QUERY_LINES = 5_000;
 
 /** Longest Scryfall id accepted: they are 36-character UUIDs. */
 const MAX_ID_LENGTH = 64;
@@ -53,18 +53,18 @@ function isId(value: unknown): value is string {
   return typeof value === 'string' && value.length <= MAX_ID_LENGTH;
 }
 
-function isLineCard(value: unknown): value is LineCard {
+function isTokenQueryLine(value: unknown): value is TokenQueryLine {
   if (typeof value !== 'object' || value === null) return false;
-  const { oracleId, previewPrintId } = value as Partial<Record<keyof LineCard, unknown>>;
+  const { oracleId, previewPrintId } = value as Partial<Record<keyof TokenQueryLine, unknown>>;
   return isId(oracleId) && (previewPrintId === null || isId(previewPrintId));
 }
 
 /** `{ lines, lang? }` from a token suggestion request body, or `null` when it is not one. */
-function tokenSuggestionRequest(body: unknown): { lines: LineCard[]; lang: Lang } | null {
+function tokenSuggestionRequest(body: unknown): { lines: TokenQueryLine[]; lang: Lang } | null {
   if (typeof body !== 'object' || body === null) return null;
   const { lines, lang = 'en' } = body as { lines?: unknown; lang?: unknown };
-  if (!Array.isArray(lines) || lines.length > MAX_LINE_CARDS) return null;
-  return lines.every(isLineCard) && isLang(lang) ? { lines, lang } : null;
+  if (!Array.isArray(lines) || lines.length > MAX_TOKEN_QUERY_LINES) return null;
+  return lines.every(isTokenQueryLine) && isLang(lang) ? { lines, lang } : null;
 }
 
 export function createApp(deps: AppDeps): Hono {
@@ -96,7 +96,7 @@ export function createApp(deps: AppDeps): Hono {
     if (!request) {
       return c.json(
         {
-          error: `Expected a JSON body { "lines": up to ${MAX_LINE_CARDS} of { "oracleId": string, "previewPrintId": string | null }, "lang"?: "en" | "it" }.`,
+          error: `Expected a JSON body { "lines": up to ${MAX_TOKEN_QUERY_LINES} of { "oracleId": string, "previewPrintId": string | null }, "lang"?: "en" | "it" }.`,
         },
         400,
       );

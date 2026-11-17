@@ -41,7 +41,11 @@ export {
 } from './add-card.ts';
 export { addTokensToSection, type TokensAddition } from './add-tokens.ts';
 export { printTiles, type PrintTile } from './print-tile.ts';
-export { lineCardOf, suggestTokens, type TokenSuggestionOptions } from './suggested-tokens.ts';
+export {
+  tokenQueryLineOf,
+  suggestTokens,
+  type TokenSuggestionOptions,
+} from './suggested-tokens.ts';
 export { cellAfterArrow, type Arrow, type CellGroup, type CellPlace } from './grid-moves.ts';
 export {
   changeTileQuantity,

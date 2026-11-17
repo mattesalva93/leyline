@@ -1,4 +1,9 @@
-import { lineCardOf, type DecklistLine, type Lang, type SuggestedToken } from '@mtg-suite/core';
+import {
+  tokenQueryLineOf,
+  type DecklistLine,
+  type Lang,
+  type SuggestedToken,
+} from '@mtg-suite/core';
 import { useEffect, useState } from 'react';
 import { fetchSuggestedTokens } from './api.ts';
 
@@ -11,11 +16,11 @@ export function useSuggestedTokens(
   lines: readonly DecklistLine[],
   lang: Lang,
 ): readonly SuggestedToken[] {
-  const lineCards = lines.flatMap((line) => lineCardOf(line) ?? []);
-  const requestKey = JSON.stringify([lang, lineCards]);
+  const queryLines = lines.flatMap((line) => tokenQueryLineOf(line) ?? []);
+  const requestKey = JSON.stringify([lang, queryLines]);
   const [suggested, setSuggested] = useState<readonly SuggestedToken[]>([]);
   useEffect(() => {
-    const [requestLang, requestLines] = JSON.parse(requestKey) as [Lang, typeof lineCards];
+    const [requestLang, requestLines] = JSON.parse(requestKey) as [Lang, typeof queryLines];
     if (requestLines.length === 0) return;
     let isCurrent = true;
     fetchSuggestedTokens(requestLines, requestLang).then(
@@ -28,7 +33,7 @@ export function useSuggestedTokens(
       isCurrent = false;
     };
   }, [requestKey]);
-  if (lineCards.length === 0) return [];
-  const inDecklist = new Set(lineCards.map((lineCard) => lineCard.oracleId));
+  if (queryLines.length === 0) return [];
+  const inDecklist = new Set(queryLines.map((queryLine) => queryLine.oracleId));
   return suggested.filter((token) => !inDecklist.has(token.candidate.card.oracleId));
 }

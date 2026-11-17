@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createInMemoryCatalog,
-  lineCardOf,
+  tokenQueryLineOf,
   resolveDecklist,
   suggestTokens,
   type CatalogEntry,
@@ -226,7 +226,7 @@ describe('suggestTokens', () => {
   });
 });
 
-describe('lineCardOf', () => {
+describe('tokenQueryLineOf', () => {
   it('tells the card of a resolved line and the print its preview shows, and nothing of other lines', async () => {
     const lines = await resolveDecklist(
       'Gold Forger\nXyzzy Plover',
@@ -237,7 +237,7 @@ describe('lineCardOf', () => {
       },
     );
 
-    expect(lines.map(lineCardOf)).toEqual([
+    expect(lines.map(tokenQueryLineOf)).toEqual([
       { oracleId: 'gold-forger', previewPrintId: 'gold-forger-tst' },
       null,
     ]);

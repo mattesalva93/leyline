@@ -175,8 +175,8 @@ export interface NotFoundLine extends DecklistLineBase {
 /** One entry of a decklist. */
 export type DecklistLine = ResolvedLine | AmbiguousLine | NotFoundLine;
 
-/** What a resolved line tells which tokens its card creates: the card, and the print it shows. */
-export interface LineCard {
+/** A resolved line as a token suggestion reads it: its card, and the print it shows. */
+export interface TokenQueryLine {
   readonly oracleId: string;
   /** The print the line's preview shows (`previewPrint`); `null` when it has none. */
   readonly previewPrintId: string | null;
@@ -190,7 +190,7 @@ export interface SuggestedToken {
   readonly candidate: Candidate & { readonly defaultPrint: Print };
   /** The language a line written with `candidate`'s default print resolves in. */
   readonly lang: Lang;
-  /** Where the lines creating the token sit among the `LineCard`s asked about, in their order. */
+  /** Where the lines creating the token sit among the `TokenQueryLine`s asked, in their order. */
   readonly createdBy: readonly number[];
 }
 
