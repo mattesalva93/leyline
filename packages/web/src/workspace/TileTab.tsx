@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from '../ui/Icon.tsx';
 import {
   QUANTITY_COUNT_MIN_PX,
+  QUANTITY_COUNT_PADDING_PX,
+  QUANTITY_FONT_PX,
   TILE_TAB_BUTTON_PX,
   TILE_TAB_GAP_PX,
-  TILE_TAB_HEIGHT,
+  TILE_TAB_HEIGHT_CSS,
   WARNING_MARK_PX,
   type TileTabRows,
 } from './tile-tab-geometry.ts';
@@ -14,6 +16,15 @@ const BUTTON_SIZE: CSSProperties = { width: TILE_TAB_BUTTON_PX, height: TILE_TAB
 
 const BUTTON_STATES =
   'hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-accent';
+
+/** The copies of the tile, which its minus and plus change. */
+export interface TileTabQuantity {
+  readonly count: number;
+  readonly decreaseLabel: string;
+  readonly increaseLabel: string;
+  /** Gives the tile `count` copies of its print; at zero the tile goes. */
+  readonly onChange: (count: number) => void;
+}
 
 /** The flip of a double-faced card, which turns the tile to its other face. */
 export interface TileTabFlip {
@@ -25,17 +36,37 @@ export interface TileTabFlip {
 interface TileTabProps {
   /** One row with the flip and the warning beside the quantity, or two with them above it. */
   readonly rows: TileTabRows;
-  /** The tab's background: the sibling group's colour, or the plain one. */
-  readonly quantityColourClass: string;
-  readonly quantity: number;
-  readonly decreaseLabel: string;
-  readonly increaseLabel: string;
-  /** Gives the tile `quantity` copies of its print; at zero the tile goes. */
-  readonly onQuantityChange: (quantity: number) => void;
+  /** The quantity's background: the sibling group's colour, or the plain one. */
+  readonly quantityBackgroundClass: string;
+  readonly quantity: TileTabQuantity;
   /** `null` for a single-faced print. */
   readonly flip: TileTabFlip | null;
   /** What the mark of the print's warning says: `null` for a print without one. */
   readonly warningLabel: string | null;
+}
+
+/** The minus or the plus of the quantity. */
+function QuantityStepButton({
+  symbol,
+  label,
+  onClick,
+}: {
+  readonly symbol: string;
+  readonly label: string;
+  readonly onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      tabIndex={-1}
+      className={`rounded-t-md font-mono font-bold text-panel ${BUTTON_STATES}`}
+      style={{ ...BUTTON_SIZE, fontSize: QUANTITY_FONT_PX }}
+      aria-label={label}
+      onClick={onClick}
+    >
+      {symbol}
+    </button>
+  );
 }
 
 /**
@@ -46,44 +77,34 @@ interface TileTabProps {
  */
 export function TileTab({
   rows,
-  quantityColourClass,
+  quantityBackgroundClass,
   quantity,
-  decreaseLabel,
-  increaseLabel,
-  onQuantityChange,
   flip,
   warningLabel,
 }: TileTabProps) {
   const { t } = useTranslation();
-  const quantityButtonClass = `rounded-t-md font-mono text-sm font-bold text-panel ${BUTTON_STATES}`;
   const quantityGroup = (
-    <div className={`flex shrink-0 items-center rounded-t-md ${quantityColourClass}`}>
-      <button
-        type="button"
-        tabIndex={-1}
-        className={quantityButtonClass}
-        style={BUTTON_SIZE}
-        aria-label={decreaseLabel}
-        onClick={() => onQuantityChange(quantity - 1)}
-      >
-        {t('panel.minus')}
-      </button>
+    <div className={`flex shrink-0 items-center rounded-t-md ${quantityBackgroundClass}`}>
+      <QuantityStepButton
+        symbol={t('panel.minus')}
+        label={quantity.decreaseLabel}
+        onClick={() => quantity.onChange(quantity.count - 1)}
+      />
       <span
-        className="px-1 py-0.5 text-center font-mono text-sm font-bold text-panel tabular-nums"
-        style={{ minWidth: QUANTITY_COUNT_MIN_PX }}
+        className="py-0.5 text-center font-mono font-bold text-panel tabular-nums"
+        style={{
+          minWidth: QUANTITY_COUNT_MIN_PX,
+          paddingInline: QUANTITY_COUNT_PADDING_PX,
+          fontSize: QUANTITY_FONT_PX,
+        }}
       >
-        {t('line.quantity', { count: quantity })}
+        {t('line.quantity', { count: quantity.count })}
       </span>
-      <button
-        type="button"
-        tabIndex={-1}
-        className={quantityButtonClass}
-        style={BUTTON_SIZE}
-        aria-label={increaseLabel}
-        onClick={() => onQuantityChange(quantity + 1)}
-      >
-        {t('panel.plus')}
-      </button>
+      <QuantityStepButton
+        symbol={t('panel.plus')}
+        label={quantity.increaseLabel}
+        onClick={() => quantity.onChange(quantity.count + 1)}
+      />
     </div>
   );
   const flipButton = flip && (
@@ -117,7 +138,7 @@ export function TileTab({
     return (
       <div
         className={`${tabClass} flex flex-col items-center justify-end`}
-        style={{ height: TILE_TAB_HEIGHT }}
+        style={{ height: TILE_TAB_HEIGHT_CSS }}
       >
         {(flipButton || warningMark) && (
           <div className="flex items-end" style={{ columnGap: TILE_TAB_GAP_PX }}>
@@ -132,7 +153,7 @@ export function TileTab({
   return (
     <div
       className={`${tabClass} grid grid-cols-[1fr_auto_1fr] items-end`}
-      style={{ height: TILE_TAB_HEIGHT, columnGap: TILE_TAB_GAP_PX }}
+      style={{ height: TILE_TAB_HEIGHT_CSS, columnGap: TILE_TAB_GAP_PX }}
     >
       <div className="flex justify-end">{flipButton}</div>
       {quantityGroup}

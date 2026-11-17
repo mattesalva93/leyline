@@ -2,7 +2,7 @@ import type { LineSide } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
 import { COPY_PILE_FOOTPRINT_PX } from './CopyPile.tsx';
 import { TILE_GAP_PX } from './PrintTileCard.tsx';
-import { TILE_TAB_HEIGHT } from './tile-tab-geometry.ts';
+import { TILE_TAB_HEIGHT_CSS } from './tile-tab-geometry.ts';
 import type { TileCellProps } from './tile-cell.ts';
 import { GRID_CELL_FOCUS_GROUP } from './focus-line.ts';
 import type { TileDragHandlers } from './use-line-drag.ts';
@@ -58,7 +58,7 @@ export function ReorderableTileItem({
           className="absolute bottom-0 z-20 rounded-full bg-accent"
           style={{
             // Beside the card, below its tab.
-            top: TILE_TAB_HEIGHT,
+            top: TILE_TAB_HEIGHT_CSS,
             width: DROP_MARK_WIDTH_PX,
             [dropMarkSide === 'before' ? 'left' : 'right']: DROP_MARK_OFFSET_PX[dropMarkSide],
           }}

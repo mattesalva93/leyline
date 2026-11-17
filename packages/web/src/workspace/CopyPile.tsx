@@ -12,6 +12,11 @@ const COPY_STEP_PX = 4;
  */
 export const COPY_PILE_FOOTPRINT_PX = MAX_COPIES * COPY_STEP_PX;
 
+/** The width of the card of a tile `tileWidthPx` wide, which leaves its pile's room beside it. */
+export function cardWidthOf(tileWidthPx: number): number {
+  return tileWidthPx - COPY_PILE_FOOTPRINT_PX;
+}
+
 /**
  * The room a tile without a pile leaves beside its card, below the tab height `tabHeight` (a CSS
  * length), so its card lines up with a print's.
