@@ -2057,6 +2057,13 @@ describe('the workspace on a phone', () => {
     expect(topBar.getByText('12 carte · 2 pagine')).toBeTruthy();
   });
 
+  it('breaks the top bar count only between the cards and the pages, on a narrow screen', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    const count = await within(screen.getByRole('banner')).findByText('4 carte · 1 pagina');
+
+    expect(count.textContent).toBe('4 carte · 1 pagina');
+  });
+
   it("raises the tapped tile's line panel from the bottom, with the inspector's settings", async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     await user.click(stepBar().getByRole('button', { name: 'Carte' }));

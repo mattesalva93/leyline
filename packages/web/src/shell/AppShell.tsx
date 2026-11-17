@@ -49,14 +49,16 @@ export function AppShell({ areas }: { readonly areas: readonly ShellArea[] }) {
             </>
           )}
         </PhoneMenu>
-        <span className="font-mono text-base font-bold">{t('shell.appName')}</span>
+        <span className="shrink-0 font-mono text-base font-bold whitespace-nowrap">
+          {t('shell.appName')}
+        </span>
         <AreaNav
           areas={areas}
           placement="topBar"
           className="hidden min-w-0 items-center gap-1 lg:flex"
         />
         <ScryfallCredit className="ml-auto" />
-        <div ref={setTopBarSlot} className="empty:hidden" />
+        <div ref={setTopBarSlot} className="min-w-0 empty:hidden" />
         <InfoDialog
           isOpen={isInfoOpen}
           onOpenChange={setIsInfoOpen}
