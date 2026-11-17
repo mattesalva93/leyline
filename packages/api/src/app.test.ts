@@ -578,6 +578,15 @@ describe('POST /api/decklists/suggested-tokens', () => {
       part('combo-card', 'combo_piece', 'Combo Card'),
     ],
   });
+  // Scryfall lists the parts of a card on its English prints only.
+  const italianForger = scryfallCard({
+    id: 'forger-snc-it',
+    oracle_id: forgerOracle,
+    name: 'Gold Forger',
+    printed_name: "Forgiatore d'Oro",
+    lang: 'it',
+    set: 'snc',
+  });
   const meldHalf = scryfallCard({ id: 'meld-half', oracle_id: meldOracle, name: 'Other Half' });
   const comboCard = scryfallCard({
     id: 'combo-card',
@@ -588,7 +597,7 @@ describe('POST /api/decklists/suggested-tokens', () => {
   beforeAll(async () => {
     await importBulk(
       db.sql,
-      bulkStream([forger, treasure, monarch, meldHalf, comboCard, scryfallCard()]),
+      bulkStream([italianForger, forger, treasure, monarch, meldHalf, comboCard, scryfallCard()]),
     );
   });
 
@@ -608,6 +617,17 @@ describe('POST /api/decklists/suggested-tokens', () => {
         createdBy: [0],
       },
       { candidate: { card: { name: 'The Monarch' } }, createdBy: [0] },
+    ]);
+  });
+
+  it('suggests for an Italian print the tokens its English print of the same set and number creates', async () => {
+    const { body } = await suggestTokens([
+      { oracleId: forgerOracle, previewPrintId: 'forger-snc-it' },
+    ]);
+
+    expect(body.tokens).toMatchObject([
+      { candidate: { card: { name: 'Treasure' } } },
+      { candidate: { card: { name: 'The Monarch' } } },
     ]);
   });
 

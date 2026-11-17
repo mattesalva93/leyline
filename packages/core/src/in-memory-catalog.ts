@@ -28,6 +28,18 @@ export function createInMemoryCatalog(
 ): Catalog {
   const entryOfPrint = (printId: string) =>
     entries.find((entry) => entry.prints.some((print) => print.id === printId));
+  /** The English print with the set and number of `printId`, which holds its parts. */
+  const partsPrintId = (printId: string) => {
+    const prints = entryOfPrint(printId)?.prints ?? [];
+    const asked = prints.find((print) => print.id === printId);
+    const english = prints.find(
+      (print) =>
+        print.lang === 'en' &&
+        print.set === asked?.set &&
+        print.collectorNumber === asked.collectorNumber,
+    );
+    return english?.id ?? printId;
+  };
   return {
     findByNames: async () => entries,
     searchByName: async (key, { minSimilarity, limit }) =>
@@ -43,9 +55,12 @@ export function createInMemoryCatalog(
         .map((match) => match.entry),
     findCard: async (oracleId) => entries.find((entry) => entry.card.oracleId === oracleId) ?? null,
     findTokensCreatedBy: async (printIds) =>
-      tokenLinks.flatMap((link) => {
-        const token = printIds.includes(link.creatorPrintId) && entryOfPrint(link.tokenPrintId);
-        return token ? [{ ...link, token }] : [];
-      }),
+      printIds.flatMap((creatorPrintId) =>
+        tokenLinks.flatMap((link) => {
+          const token =
+            link.creatorPrintId === partsPrintId(creatorPrintId) && entryOfPrint(link.tokenPrintId);
+          return token ? [{ creatorPrintId, tokenPrintId: link.tokenPrintId, token }] : [];
+        }),
+      ),
   };
 }

@@ -93,8 +93,9 @@ export interface Catalog {
   findCard(oracleId: string): Promise<CatalogEntry | null>;
   /**
    * The tokens each of `printIds` creates: the token prints its Scryfall `all_parts` names as
-   * tokens, in that order, each with its card and all that card's prints. Token prints the
-   * catalog does not hold are left out.
+   * tokens, in that order, each with its card and all that card's prints. Scryfall lists parts
+   * on English prints only: a print of another language takes those of the English print with
+   * its set and number. Token prints the catalog does not hold are left out.
    */
   findTokensCreatedBy(printIds: readonly string[]): Promise<readonly CreatedToken[]>;
 }
