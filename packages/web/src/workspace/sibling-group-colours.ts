@@ -1,25 +1,28 @@
 import type { CSSProperties } from 'react';
-import type { GridSection } from './grid-sections.ts';
+import type { GridTile } from './grid-tiles.ts';
+import { regionPaletteIndicesOf } from './region-palette-indices.ts';
 
 /** How many `--color-sibling-*` tokens the theme holds: `pnpm check:theme` holds the theme to it. */
 const SIBLING_PALETTE_SIZE = 4;
 
 /**
- * The colour of each line split into sibling tiles, by its written index. The lines take the
- * theme's sibling palette in the order of the card grid, across its sections, and start it over
- * once it runs out: two consecutive groups never share a colour.
+ * The colour of each line split into sibling tiles, by its written index, in a grid of
+ * `columns` columns: two groups of sibling tiles side by side or one above the other never share a
+ * colour while the theme's sibling palette allows it.
  */
 export function siblingGroupColoursOf(
-  sections: readonly GridSection[],
+  gridTiles: readonly GridTile[],
+  columns: number,
 ): ReadonlyMap<number, string> {
-  const splitLines = sections
-    .flatMap((section) => section.gridTiles)
-    .filter((gridTile) => gridTile.kind === 'print' && gridTile.siblingCount > 1)
-    .map((gridTile) => gridTile.writtenIndex);
+  const cells = gridTiles.map((gridTile) =>
+    gridTile.kind === 'print' && gridTile.siblingCount > 1 ? gridTile.writtenIndex : null,
+  );
+  const paletteIndices = regionPaletteIndicesOf(cells, columns, SIBLING_PALETTE_SIZE);
   return new Map(
-    [...new Set(splitLines)].map((writtenIndex, groupIndex) => [
+    [...paletteIndices].map(([writtenIndex, paletteIndex]) => [
       writtenIndex,
-      `var(--color-sibling-${(groupIndex % SIBLING_PALETTE_SIZE) + 1})`,
+      // The tokens count from 1.
+      `var(--color-sibling-${paletteIndex + 1})`,
     ]),
   );
 }

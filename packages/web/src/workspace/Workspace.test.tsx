@@ -388,7 +388,8 @@ describe('the workspace', () => {
     ]);
   });
 
-  it('gives two consecutive groups of sibling tiles different colours, and a tile without siblings none', async () => {
+  it('gives two groups of sibling tiles one above the other different colours, and a tile without siblings none', async () => {
+    // jsdom lays nothing out, so the grid counts one column: each tile stands under the one before.
     const user = await mountPageAndWrite('4 Sol Ring{Enter}4 Lightning Bolt{Enter}1 Island{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
     await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
@@ -635,6 +636,106 @@ describe('the workspace', () => {
     expect(onlyTile && tileSummary(onlyTile)).toEqual(['Immagine di Sol Ring', '4×', undefined]);
     const tileButton = screen.getByRole('button', { name: 'Modifica Sol Ring' });
     expect(tileButton.getAttribute('aria-pressed')).toBe('true');
+  });
+});
+
+describe('the colours of sibling groups in a grid of several columns', () => {
+  /**
+   * Makes each section of the card grid lay its tiles in `columns` columns, as a browser's
+   * layout does: jsdom lays nothing out.
+   */
+  function layOutCardGridIn(columns: number) {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        readonly onResize: ResizeObserverCallback;
+        constructor(onResize: ResizeObserverCallback) {
+          this.onResize = onResize;
+        }
+        observe() {
+          this.onResize([{ contentRect: { width: 1200 } } as ResizeObserverEntry], this as never);
+        }
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    const laidOutColumns = Array.from({ length: columns }, () => '120px').join(' ');
+    const computedStyleOf = window.getComputedStyle.bind(window);
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((element, pseudoElement) =>
+      element instanceof HTMLElement && element.style.gridTemplateColumns.includes('auto-fill')
+        ? ({ gridTemplateColumns: laidOutColumns } as CSSStyleDeclaration)
+        : computedStyleOf(element, pseudoElement),
+    );
+  }
+
+  /** Splits the `nth` line of `card` into two sibling tiles, a copy moving onto the print `to`. */
+  async function splitLine(
+    user: ReturnType<typeof userEvent.setup>,
+    card: string,
+    nth: number,
+    to: string,
+  ) {
+    const editButtons = await screen.findAllByRole('button', { name: `Modifica ${card}` });
+    const editButton = editButtons[nth];
+    if (!editButton) throw new Error(`no line ${nth} of ${card}`);
+    await user.click(editButton);
+    await user.click(await screen.findByRole('button', { name: `Una copia in più con ${to}` }));
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.mocked(window.getComputedStyle).mockRestore();
+  });
+
+  it('never gives a group the colour of the group above it', async () => {
+    // 8 columns, five groups of two tiles: the fifth stands under the first.
+    layOutCardGridIn(8);
+    const user = await mountPageAndWrite(
+      '4 Sol Ring{Enter}4 Lightning Bolt{Enter}4 Sol Ring{Enter}4 Lightning Bolt{Enter}4 Sol Ring{Enter}',
+    );
+    // From the last line up, so the lines still to split keep their place among their card's.
+    await splitLine(user, 'Sol Ring', 2, 'LEA #1');
+    await splitLine(user, 'Lightning Bolt', 1, 'M10 #1');
+    await splitLine(user, 'Sol Ring', 1, 'LEA #1');
+    await splitLine(user, 'Lightning Bolt', 0, 'M10 #1');
+    await splitLine(user, 'Sol Ring', 0, 'LEA #1');
+
+    const colours = gridTiles().map(siblingColourOf);
+
+    expect(colours).toHaveLength(10);
+    expect(colours[8]).toBeTruthy();
+    expect(colours[8]).not.toBe(colours[0]);
+    expect(colours[9]).not.toBe(colours[1]);
+  });
+
+  it('lets two groups with a tile without siblings between them share a colour', async () => {
+    layOutCardGridIn(8);
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Island{Enter}4 Lightning Bolt{Enter}');
+    await splitLine(user, 'Lightning Bolt', 0, 'M10 #1');
+    await splitLine(user, 'Sol Ring', 0, 'LEA #1');
+
+    const [solRing, , island, bolt] = gridTiles().map(siblingColourOf);
+
+    expect(island).toBeUndefined();
+    expect(solRing).toBeTruthy();
+    expect(bolt).toBe(solRing);
+  });
+
+  it('lets two groups that only meet at a corner share a colour', async () => {
+    // 3 columns: Sol Ring ends the first row in its middle cell; Lightning Bolt starts at the end
+    // of the second row, under Island, and wraps under Mountain.
+    layOutCardGridIn(3);
+    const user = await mountPageAndWrite(
+      '4 Sol Ring{Enter}1 Island{Enter}1 Mountain{Enter}1 Ponder{Enter}4 Lightning Bolt{Enter}',
+    );
+    await splitLine(user, 'Lightning Bolt', 0, 'M10 #1');
+    await splitLine(user, 'Sol Ring', 0, 'LEA #1');
+
+    const colours = gridTiles().map(siblingColourOf);
+
+    expect(colours[0]).toBeTruthy();
+    expect(colours[5]).toBe(colours[0]);
+    expect(colours[6]).toBe(colours[0]);
   });
 });
 
