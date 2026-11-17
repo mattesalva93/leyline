@@ -66,6 +66,7 @@ export function Inspector({
             generator={generator}
             panelLine={panelLine}
             tileSelectionCount={state.tileSelectionCount}
+            onSelectionMove={state.moveSelection}
           />
         )}
         {lineToFix && (

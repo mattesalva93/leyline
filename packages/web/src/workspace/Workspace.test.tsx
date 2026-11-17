@@ -119,6 +119,7 @@ const CATALOG = [
   catalogEntry('lightning-bolt', 'Lightning Bolt', 'tst', 'm10', '2x2'),
   catalogEntry('lightning-helix', 'Lightning Helix'),
   COUNTERSPELL,
+  catalogEntry('swords', 'Swords to Plowshares', 'ice', 'mmq', 'c21', 'sta'),
   // The rest of the example decklist.
   catalogEntry('ponder', 'Ponder'),
   catalogEntry('island', 'Island'),
@@ -1512,6 +1513,91 @@ describe("the print picker opened on the tile's print", () => {
   });
 });
 
+describe('tapping a print in the print picker', () => {
+  const SWORDS = 'Swords to Plowshares';
+
+  /** The id of the print a tile shows, read from its image. */
+  function printIdOf(tile: HTMLElement) {
+    const src = within(tile)
+      .getByRole('img', { name: /^Immagine di / })
+      .getAttribute('src');
+    return src?.match(/\/front\/(.+)\.jpg$/)?.[1];
+  }
+
+  /** Each tile of the grid as (print id, quantity), sorted by print id. */
+  function tilesByPrint() {
+    return gridTiles()
+      .map((tile) => [printIdOf(tile), within(tile).queryByText(/×$/)?.textContent])
+      .sort(([a], [b]) => String(a).localeCompare(String(b)));
+  }
+
+  /** Presses the tile of the print `printId`. */
+  async function pressTileOf(user: ReturnType<typeof userEvent.setup>, printId: string) {
+    const tile = gridTiles().find((each) => printIdOf(each) === printId);
+    if (!tile) throw new Error(`no tile of ${printId}`);
+    await user.click(within(tile).getByRole('button', { name: `Modifica ${SWORDS}` }));
+  }
+
+  /** Taps the print `setAndNumber` in the print picker. */
+  async function tapPrint(user: ReturnType<typeof userEvent.setup>, setAndNumber: string) {
+    const counter = await screen.findByRole('group', { name: `Copie con ${setAndNumber}` });
+    const [printButton] = within(counter.closest('li') ?? counter).getAllByRole('button');
+    if (!printButton) throw new Error(`no print button for ${setAndNumber}`);
+    await user.click(printButton);
+  }
+
+  /** The print of the selected tile. */
+  function selectedPrintId() {
+    const pressed = screen.getByRole('button', { name: `Modifica ${SWORDS}`, pressed: true });
+    return printIdOf(pressed.closest('li') ?? pressed);
+  }
+
+  /** Splits `4 Swords to Plowshares` 2 + 1 + 1: two ICE (the default), one MMQ, one C21. */
+  async function splitTwoOneOne(user: ReturnType<typeof userEvent.setup>) {
+    await moveOneCopy(user, SWORDS, 'ICE #1', 'MMQ #1');
+    await moveOneCopy(user, SWORDS, 'ICE #1', 'C21 #1');
+  }
+
+  it('moves only the copies of the selected tile, which keeps the selection on its new print', async () => {
+    const user = await mountPageAndWrite(`4 ${SWORDS}{Enter}`);
+    await user.click(await screen.findByRole('button', { name: `Modifica ${SWORDS}` }));
+    await splitTwoOneOne(user);
+    await pressTileOf(user, 'swords-mmq');
+
+    await tapPrint(user, 'STA #1');
+
+    expect(tilesByPrint()).toEqual([
+      ['swords-c21', '1×'],
+      ['swords-ice', '2×'],
+      ['swords-sta', '1×'],
+    ]);
+    expect(selectedPrintId()).toBe('swords-sta');
+  });
+
+  it('moves only the copies of the selected tile on a phone, the selection following them onto a tile they join', async () => {
+    stubScreen(PHONE);
+    const user = await mountPageAndWrite(`4 ${SWORDS}{Enter}`);
+    await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+    await user.click(await screen.findByRole('button', { name: `Modifica ${SWORDS}` }));
+    const phonePanel = () => screen.getByRole('dialog', { name: 'Riga selezionata' });
+    // The panel covers the tiles and their minus: the pluses split the line 4 + 1 + 1.
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con MMQ #1' }));
+    await user.click(screen.getByRole('button', { name: 'Una copia in più con C21 #1' }));
+    await user.click(within(phonePanel()).getByRole('button', { name: 'Fatto' }));
+    await pressTileOf(user, 'swords-mmq');
+
+    await tapPrint(user, 'STA #1');
+    // The selection is now on STA: tapping C21 moves the STA copy, not the two ICE ones.
+    await tapPrint(user, 'C21 #1');
+    await user.click(within(phonePanel()).getByRole('button', { name: 'Fatto' }));
+
+    expect(tilesByPrint()).toEqual([
+      ['swords-c21', '2×'],
+      ['swords-ice', '4×'],
+    ]);
+  });
+});
+
 describe('the print search in the print picker', () => {
   const inspector = () => within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
   const searchField = () => inspector().getByRole('searchbox', { name: 'Cerca variante' });
@@ -1771,18 +1857,18 @@ describe('the copy breakdown in the line panel', () => {
     );
   });
 
-  it('still puts every copy on a tapped print, the line keeping its quantity', async () => {
+  it("moves the selected tile's copies onto a tapped print, the line keeping its quantity", async () => {
     const user = await mountPageAndWrite('3 Sol Ring{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
     await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
 
-    const c21Print = within(
-      screen.getByRole('group', { name: 'Copie con C21 #1' }).closest('li') as HTMLElement,
+    const leaPrint = within(
+      screen.getByRole('group', { name: 'Copie con LEA #1' }).closest('li') as HTMLElement,
     ).getAllByRole('button')[0] as HTMLElement;
-    await user.click(c21Print);
+    await user.click(leaPrint);
 
     expect(decklistValue()).toBe('4 Sol Ring\n');
-    expect(breakdown().prints).toEqual([['Inglese', 'C21 #1', '4']]);
+    expect(breakdown().prints).toEqual([['Inglese', 'LEA #1', '4']]);
   });
 });
 

@@ -65,6 +65,8 @@ export function Workspace({ generator }: { readonly generator: Generator }) {
     gridTiles,
     selection,
     selectTile,
+    moveSelection: (moved) =>
+      setSelectionInText({ ...moved, writtenLineCount: generator.writtenLineCount }),
     tileSelectionCount,
     moveLine: (writtenIndex, destination) => {
       const move = generator.moveLine(writtenIndex, destination);

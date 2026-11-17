@@ -37,6 +37,8 @@ const COUNTER_BUTTON =
 interface PrintPickerProps {
   /** The line whose copies the picker allocates: the prints its copies use are marked. */
   readonly line: ResolvedLine;
+  /** The print of the tile the picker was opened from: a tap moves its copies; `null` for none. */
+  readonly tilePrint: Print | null;
   /** The language of the prints shown, and the print to bring into view. */
   readonly pickerView: PrintPickerView;
   /** How many prints the card has in each language; `null` while not known. */
@@ -45,8 +47,8 @@ interface PrintPickerProps {
   readonly printQuery: PrintQuery;
   /** The prints of the card in the picker view's language: copies can go to prints of either one. */
   readonly printPages: PrintPages;
-  /** Called with the allocations a tap on a print sets: every copy on it. */
-  readonly onAllocationChoice: (allocations: AllocationChoice) => void;
+  /** Called with the allocations a tap on `toPrint` sets: the tile's copies moved onto it. */
+  readonly onTileCopiesMove: (allocations: AllocationChoice, toPrint: Print) => void;
   /** Called by a print's +/− counter with the copies it now prints, the line's changing as many. */
   readonly onPrintQuantityChange: (print: Print, quantity: number) => void;
 }
@@ -70,18 +72,19 @@ function byReleaseYear(prints: readonly Print[]): ReleaseYear[] {
 
 /**
  * The grid of the prints a line can use, grouped by release year, newest first; a print query
- * typed above it narrows them. Tapping a print
- * puts every copy on it; its +/− counter adds or takes off one copy of the line on that print.
+ * typed above it narrows them. Tapping a print moves the copies of the tile the picker was opened
+ * from onto it; its +/− counter adds or takes off one copy of the line on that print.
  * More prints load as the user scrolls near the end of the grid, or until the print to show is
  * among them. A print the pointer rests on shows enlarged beside the picker.
  */
 export function PrintPicker({
   line,
+  tilePrint,
   pickerView: { printsLang, changePrintsLang, printToShow, onPrintShown },
   printCounts,
   printQuery,
   printPages,
-  onAllocationChoice,
+  onTileCopiesMove,
   onPrintQuantityChange,
 }: PrintPickerProps) {
   const { t } = useTranslation();
@@ -208,7 +211,7 @@ export function PrintPicker({
                       if (element) printButtons.current.set(print.id, element);
                       else printButtons.current.delete(print.id);
                     }}
-                    onClick={() => onAllocationChoice(moveTileCopies(line, null, print))}
+                    onClick={() => onTileCopiesMove(moveTileCopies(line, tilePrint, print), print)}
                     // Beside the whole picker, so the zoomed card hides none of the other prints.
                     {...zoomOn(frontFace, `[${PRINT_PICKER}]`)}
                   >

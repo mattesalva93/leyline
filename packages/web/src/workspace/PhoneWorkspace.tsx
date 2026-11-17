@@ -113,6 +113,7 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
             generator={generator}
             panelLine={panelLine}
             tileSelectionCount={state.tileSelectionCount}
+            onSelectionMove={state.moveSelection}
           />
         ) : lineToFix ? (
           <LineToFixPanel generator={generator} lineToFix={lineToFix} />
