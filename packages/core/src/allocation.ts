@@ -82,9 +82,25 @@ export function allocatePrintCopies(
   };
 }
 
-/** The allocation choice printing every copy of `line` with `print`. */
-export function allocateEveryCopy(line: ResolvedLine, print: Print): AllocationChoice {
-  return { oracleId: line.card.oracleId, allocations: [{ print, quantity: line.quantity }] };
+/**
+ * The allocation choice moving every copy of the tile of `fromPrint` onto `toPrint`, which joins
+ * the tile of `toPrint` if the line has one and becomes the most recently changed allocation.
+ * With no tile to move from, every copy of the line moves.
+ */
+export function moveTileCopies(
+  line: ResolvedLine,
+  fromPrint: Print | null,
+  toPrint: Print,
+): AllocationChoice {
+  const { oracleId } = line.card;
+  if (!fromPrint) return { oracleId, allocations: [{ print: toPrint, quantity: line.quantity }] };
+  if (fromPrint.id === toPrint.id) return { oracleId, allocations: line.allocations };
+  const tileCopies = copiesByPrint(line).find(({ print }) => print.id === fromPrint.id);
+  const others = line.allocations.filter(
+    ({ print }) => print.id !== fromPrint.id && print.id !== toPrint.id,
+  );
+  const quantity = (tileCopies?.quantity ?? 0) + copiesAllocatedTo(line, toPrint);
+  return { oracleId, allocations: [...others, { print: toPrint, quantity }] };
 }
 
 /**

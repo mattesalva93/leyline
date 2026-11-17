@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
-  allocateEveryCopy,
   allocatePrintCopies,
   applyAllocationChoice,
   copiesAllocatedTo,
   copiesByPrint,
   fitAllocations,
+  moveTileCopies,
   previewPrint,
   createInMemoryCatalog,
   resolveDecklist,
@@ -122,13 +122,88 @@ describe('fitAllocations', () => {
   });
 });
 
-describe('allocateEveryCopy', () => {
-  it('prints every copy of the line with one print, replacing the allocations it had', async () => {
-    const line = await forestLine(4);
-    const threeM21 = resolved(applyAllocationChoice(line, allocatePrintCopies(line, forestM21, 3)));
+describe('moveTileCopies', () => {
+  const forestNeo = aPrint({ id: 'forest-neo', set: 'neo', releasedAt: '2022-02-18' });
 
-    expect(allocateEveryCopy(threeM21, forestZnr).allocations).toMatchObject([
-      { print: { id: 'forest-znr' }, quantity: 4 },
+  /** 4 Forest split 2 + 1 + 1: two M21, one ZNR, one left with the default print FDN. */
+  async function forestSplitTwoOneOne(): Promise<ResolvedLine> {
+    const line = await forestLine(4);
+    const twoM21 = resolved(applyAllocationChoice(line, allocatePrintCopies(line, forestM21, 2)));
+    return resolved(applyAllocationChoice(line, allocatePrintCopies(twoM21, forestZnr, 1)));
+  }
+
+  /** The line's tiles as (print id, copies) pairs, in the order they print. */
+  function tilesOf(line: DecklistLine) {
+    return copiesByPrint(resolved(line)).map(({ print, quantity }) => [print.id, quantity]);
+  }
+
+  it('moves the copies of one tile onto the tapped print, the other tiles left as they are', async () => {
+    const line = await forestSplitTwoOneOne();
+
+    expect(
+      tilesOf(applyAllocationChoice(line, moveTileCopies(line, forestZnr, forestNeo))),
+    ).toEqual([
+      ['forest-m21', 2],
+      ['forest-neo', 1],
+      ['forest-fdn', 1],
+    ]);
+  });
+
+  it('joins the tile of the tapped print when it already has one, adding up their copies', async () => {
+    const line = await forestSplitTwoOneOne();
+
+    const joined = resolved(
+      applyAllocationChoice(line, moveTileCopies(line, forestZnr, forestM21)),
+    );
+
+    expect(tilesOf(joined)).toEqual([
+      ['forest-m21', 3],
+      ['forest-fdn', 1],
+    ]);
+    expect(copiesAllocatedTo(joined, forestM21)).toBe(3);
+  });
+
+  it('changes nothing when the tapped print is the one of the tile', async () => {
+    const line = await forestSplitTwoOneOne();
+
+    expect(
+      tilesOf(applyAllocationChoice(line, moveTileCopies(line, forestZnr, forestZnr))),
+    ).toEqual([
+      ['forest-m21', 2],
+      ['forest-znr', 1],
+      ['forest-fdn', 1],
+    ]);
+  });
+
+  it('moves every copy of the line when no tile is picked', async () => {
+    const line = await forestSplitTwoOneOne();
+
+    expect(tilesOf(applyAllocationChoice(line, moveTileCopies(line, null, forestNeo)))).toEqual([
+      ['forest-neo', 4],
+    ]);
+  });
+
+  it('moves the copies left with the default print too, along with its tile', async () => {
+    const split = await forestSplitTwoOneOne();
+    const line = resolved(applyAllocationChoice(split, allocatePrintCopies(split, forestFdn, 1)));
+    const twoOnFdn = { ...line, quantity: 5 };
+
+    expect(
+      tilesOf(applyAllocationChoice(twoOnFdn, moveTileCopies(twoOnFdn, forestFdn, forestNeo))),
+    ).toEqual([
+      ['forest-m21', 2],
+      ['forest-znr', 1],
+      ['forest-neo', 2],
+    ]);
+  });
+
+  it('makes the tapped print the most recently changed: the first to lose copies', async () => {
+    const line = await forestSplitTwoOneOne();
+    const joined = moveTileCopies(line, forestFdn, forestM21);
+
+    expect(fitAllocations(joined, 3).allocations).toMatchObject([
+      { print: { id: 'forest-znr' }, quantity: 1 },
+      { print: { id: 'forest-m21' }, quantity: 2 },
     ]);
   });
 });
@@ -178,7 +253,7 @@ describe('applyAllocationChoice', () => {
       (await resolveDecklist('4 Sol Ring', lowresDefault, { today, lang: 'it' }))[0],
     );
 
-    expect(applyAllocationChoice(line, allocateEveryCopy(line, solRingItOld))).toMatchObject({
+    expect(applyAllocationChoice(line, moveTileCopies(line, null, solRingItOld))).toMatchObject({
       printWarning: null,
     });
     expect(applyAllocationChoice(line, allocatePrintCopies(line, solRingItOld, 3))).toMatchObject({
@@ -189,7 +264,7 @@ describe('applyAllocationChoice', () => {
   it('never warns about an English print the user chose for copies of an Italian line', async () => {
     const line = await solRingLine('it');
 
-    expect(applyAllocationChoice(line, allocateEveryCopy(line, solRingC21))).toMatchObject({
+    expect(applyAllocationChoice(line, moveTileCopies(line, null, solRingC21))).toMatchObject({
       lang: 'it',
       printWarning: null,
     });
@@ -217,7 +292,7 @@ describe('applyAllocationChoice', () => {
   it('stops warning once every copy leaves the English print standing in', async () => {
     const { line, english2016 } = await italianLineWithEnglishOnly();
 
-    expect(applyAllocationChoice(line, allocateEveryCopy(line, english2016))).toMatchObject({
+    expect(applyAllocationChoice(line, moveTileCopies(line, null, english2016))).toMatchObject({
       lang: 'it',
       printWarning: null,
     });
@@ -225,7 +300,7 @@ describe('applyAllocationChoice', () => {
 
   it('never prints more copies than the line asks for', async () => {
     const line = await solRingLine('it');
-    const fourOld = allocateEveryCopy(line, solRingItOld);
+    const fourOld = moveTileCopies(line, null, solRingItOld);
 
     expect(applyAllocationChoice({ ...line, quantity: 3 }, fourOld)).toMatchObject({
       allocations: [{ print: { id: 'sol-ring-it-old' }, quantity: 3 }],
@@ -256,7 +331,7 @@ describe('applyAllocationChoice', () => {
 
   it('leaves the line as it is once it resolves to another card than the choice', async () => {
     const italian = await solRingLine('it');
-    const oldItalian = allocateEveryCopy(italian, solRingItOld);
+    const oldItalian = moveTileCopies(italian, null, solRingItOld);
 
     expect(applyAllocationChoice(italian, { ...oldItalian, oracleId: 'goblin' })).toBe(italian);
   });

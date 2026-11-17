@@ -1,5 +1,5 @@
 import {
-  allocateEveryCopy,
+  moveTileCopies,
   copiesByPrint,
   MAX_PRINT_QUERY_LENGTH,
   releaseYearOf,
@@ -208,7 +208,7 @@ export function PrintPicker({
                       if (element) printButtons.current.set(print.id, element);
                       else printButtons.current.delete(print.id);
                     }}
-                    onClick={() => onAllocationChoice(allocateEveryCopy(line, print))}
+                    onClick={() => onAllocationChoice(moveTileCopies(line, null, print))}
                     // Beside the whole picker, so the zoomed card hides none of the other prints.
                     {...zoomOn(frontFace, `[${PRINT_PICKER}]`)}
                   >
