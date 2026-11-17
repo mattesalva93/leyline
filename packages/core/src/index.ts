@@ -44,6 +44,7 @@ export { addTokensToSection, type TokensAddition } from './add-tokens.ts';
 export { printTiles, type PrintTile } from './print-tile.ts';
 export {
   tokenQueryLineOf,
+  tokenCreatorNamesOf,
   suggestTokens,
   type TokenSuggestionOptions,
 } from './suggested-tokens.ts';

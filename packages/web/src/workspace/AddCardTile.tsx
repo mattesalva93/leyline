@@ -18,8 +18,7 @@ import {
 import { Icon } from '../ui/Icon.tsx';
 import { CardSearchPanel } from './CardSearchPanel.tsx';
 import { SectionPicker } from './SectionPicker.tsx';
-import { pileFreeTileFrame } from './CopyPile.tsx';
-import { TILE_TAB_HEIGHT_CSS } from './tile-tab-geometry.ts';
+import { PileFreeTileFrame } from './PileFreeTileFrame.tsx';
 import type { GridCellProps } from './use-grid-cell-focus.ts';
 import { FOCUS_LINE_STYLE, SHOWN_ON_OWN_FOCUS } from './focus-line.ts';
 
@@ -61,7 +60,7 @@ export function AddCardTile({ section, lang, cell, onAdd }: AddCardTileProps) {
         setIsOpen(open);
       }}
     >
-      <div style={pileFreeTileFrame(TILE_TAB_HEIGHT_CSS)}>
+      <PileFreeTileFrame>
         <DialogTrigger
           {...cell}
           aria-label={tileLabel}
@@ -71,7 +70,7 @@ export function AddCardTile({ section, lang, cell, onAdd }: AddCardTileProps) {
           <Icon name="plus" className="size-8" />
           {tileText}
         </DialogTrigger>
-      </div>
+      </PileFreeTileFrame>
       <CenteredDialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-3 overflow-y-auto">
         <DialogTitle className="font-semibold">
           {t('workspace.addCard.title', {

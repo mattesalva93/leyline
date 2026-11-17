@@ -104,6 +104,16 @@ describe('moveWrittenLine', () => {
     expect(move.text).toBe('1 Sol Ring\n\nSideboard\n4 Forest');
   });
 
+  it('opens a missing section before the Tokens section, which stays the last', () => {
+    const move = moveWrittenLine('4 Forest\n1 Sol Ring\n\nTokens\n1 Treasure', 0, {
+      section: 'sideboard',
+      nextTo: null,
+    });
+
+    expect(move.text).toBe('1 Sol Ring\n\nSideboard\n4 Forest\n\nTokens\n1 Treasure');
+    expect(move.previousWrittenIndexes).toEqual([1, 2, null, 0, null, 3, 4]);
+  });
+
   it.each(['commander', 'mainDeck', 'lands', 'sideboard', 'tokens'] as const)(
     'opens the %s section with a header that reads as that section',
     (section) => {

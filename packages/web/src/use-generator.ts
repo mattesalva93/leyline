@@ -105,6 +105,8 @@ export interface Generator {
   readonly addCard: (section: DecklistSection, candidate: Candidate) => void;
   /** The tokens the cards of the decklist create that it does not hold yet. */
   readonly suggestedTokens: readonly SuggestedToken[];
+  /** The names of the cards creating one of `suggestedTokens`, in the language of their lines. */
+  readonly creatorNamesOfSuggestedToken: (token: SuggestedToken) => readonly string[];
   /** Writes a line of each of `tokens` into the Tokens section, already resolved. */
   readonly addSuggestedTokens: (tokens: readonly SuggestedToken[]) => void;
   /**
@@ -490,7 +492,10 @@ export function useGenerator(): Generator {
     hasRecognisedLine: recognisedLines.length > 0,
     decklist: { decklistText, choicesByLine, sheetOptions },
   });
-  const suggestedTokens = useSuggestedTokens(recognisedLines, defaultLang);
+  const { suggestedTokens, creatorNamesOfSuggestedToken } = useSuggestedTokens(
+    recognisedLines,
+    defaultLang,
+  );
   const unresolvedCount = cardLines.length - recognisedLines.length;
   const sheet = { options: sheetOptions, lines: recognisedLines };
   const sheetLayout = hasPrintableCopies(sheet) ? layoutSheet(sheet) : null;
@@ -516,6 +521,7 @@ export function useGenerator(): Generator {
     moveLine,
     addCard,
     suggestedTokens,
+    creatorNamesOfSuggestedToken,
     addSuggestedTokens,
     isDecklistUnderWay: decklistUnderWay.isDecklistUnderWay,
     startNewDecklist,

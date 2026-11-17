@@ -1,5 +1,5 @@
 import type { LineDestination } from '@mtg-suite/core';
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TILE_ZOOM_WAIT_MS, useZoomedCard } from '../use-zoomed-card.tsx';
 import { CardGridSection, type CardGridSectionProps } from './CardGridSection.tsx';
@@ -17,6 +17,8 @@ interface CardGridProps extends Omit<
   /** Whether the mouse can drag tiles to reorder the decklist: not where touch is the main input. */
   readonly tilesAreDraggable: boolean;
   readonly onMoveLine: (writtenIndex: number, destination: LineDestination) => void;
+  /** What ends the grid after its last section, such as the suggested tokens. */
+  readonly afterSections?: ReactNode;
 }
 
 /**
@@ -33,6 +35,7 @@ export function CardGrid({
   onSelect,
   tilesAreDraggable,
   onMoveLine,
+  afterSections,
   ...sectionProps
 }: CardGridProps) {
   const { t } = useTranslation();
@@ -72,6 +75,7 @@ export function CardGrid({
             {...sectionProps}
           />
         ))}
+        {afterSections}
         {sections.length === 0 && (
           <OnlyAddTileRow
             tileWidthPx={sectionProps.tileWidthPx}

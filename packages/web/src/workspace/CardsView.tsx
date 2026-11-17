@@ -3,7 +3,7 @@ import type { TileSelection } from './grid-tiles.ts';
 import { SuggestedTokens } from './SuggestedTokens.tsx';
 import type { WorkspaceState } from './workspace-state.ts';
 
-/** The centre of the workspace in the "cards" view: the tokens to add, then the card grid. */
+/** The centre of the workspace in the "cards" view: the card grid, ending with the tokens to add. */
 export function CardsView({
   state: { generator, gridSections, selection, selectTile, moveLine, tilesAreDraggable },
   tileWidthPx,
@@ -16,7 +16,6 @@ export function CardsView({
 }) {
   return (
     <>
-      <SuggestedTokens tokens={generator.suggestedTokens} onAdd={generator.addSuggestedTokens} />
       <CardGrid
         sections={gridSections}
         tileWidthPx={tileWidthPx}
@@ -31,6 +30,14 @@ export function CardsView({
         onAddCard={generator.addCard}
         tilesAreDraggable={tilesAreDraggable}
         onMoveLine={moveLine}
+        afterSections={
+          <SuggestedTokens
+            tokens={generator.suggestedTokens}
+            creatorNamesOfSuggestedToken={generator.creatorNamesOfSuggestedToken}
+            tileWidthPx={tileWidthPx}
+            onAdd={generator.addSuggestedTokens}
+          />
+        }
       />
     </>
   );

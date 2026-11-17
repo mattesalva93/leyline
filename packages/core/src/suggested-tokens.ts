@@ -8,6 +8,7 @@ import type {
   Lang,
   TokenQueryLine,
   Print,
+  ResolvedLine,
   SuggestedToken,
 } from './types.ts';
 
@@ -22,6 +23,26 @@ export interface TokenSuggestionOptions {
 export function tokenQueryLineOf(line: DecklistLine): TokenQueryLine | null {
   if (line.status !== 'resolved') return null;
   return { oracleId: line.card.oracleId, previewPrintId: previewPrint(line)?.id ?? null };
+}
+
+/**
+ * The names of the cards of `lines` creating `token`, first creator first, each card once, as
+ * the print its line shows reads it: `lines` are the ones whose `TokenQueryLine`s were asked for
+ * the suggestion.
+ */
+export function tokenCreatorNamesOf(
+  token: SuggestedToken,
+  lines: readonly DecklistLine[],
+): string[] {
+  const queriedLines = lines.filter(
+    (line): line is ResolvedLine => tokenQueryLineOf(line) !== null,
+  );
+  const creatingLines = token.createdBy.flatMap((index) => queriedLines[index] ?? []);
+  const firstLineOfEachCard = creatingLines.filter(
+    (line, index) =>
+      creatingLines.findIndex(({ card }) => card.oracleId === line.card.oracleId) === index,
+  );
+  return firstLineOfEachCard.map((line) => previewPrint(line)?.printedName ?? line.card.name);
 }
 
 /**

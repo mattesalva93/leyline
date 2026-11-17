@@ -1,45 +1,56 @@
 import type { SuggestedToken } from '@mtg-suite/core';
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LABEL, SECONDARY_BUTTON } from '../ui/board-styles.ts';
-
-/** A token as the list names it: its name, then the set and number its line is written with. */
-function tokenLabel({ candidate: { card, defaultPrint } }: SuggestedToken): string {
-  return `${card.name} (${defaultPrint.set.toUpperCase()} ${defaultPrint.collectorNumber})`;
-}
+import { SECONDARY_BUTTON } from '../ui/board-styles.ts';
+import { SuggestedTokenTile } from './SuggestedTokenTile.tsx';
+import { GRID_SECTION_TITLE_ROW_CLASS, TILE_GRID_CLASS, tileGridStyle } from './tile-grid.ts';
 
 /**
- * The tokens the decklist's cards create, each with a button that adds it to the decklist, and
- * one that adds them all. Nothing shows while there is none. Kept minimal until its design.
+ * The tokens the decklist's cards create, at the end of the card grid: a tile for each, and a
+ * button that adds them all. Nothing shows while there is none.
  */
 export function SuggestedTokens({
   tokens,
+  creatorNamesOfSuggestedToken,
+  tileWidthPx,
   onAdd,
 }: {
   readonly tokens: readonly SuggestedToken[];
+  readonly creatorNamesOfSuggestedToken: (token: SuggestedToken) => readonly string[];
+  /** The narrowest a tile gets, in CSS px, as in the card grid. */
+  readonly tileWidthPx: number;
   readonly onAdd: (tokens: readonly SuggestedToken[]) => void;
 }) {
   const { t } = useTranslation();
+  const titleId = useId();
   if (tokens.length === 0) return null;
-  const title = t('suggestedTokens.title');
   return (
-    <section aria-label={title} className="mb-4 flex flex-col gap-2">
-      <h2 className={LABEL}>{title}</h2>
-      <ul className="flex flex-wrap gap-2">
+    <section aria-labelledby={titleId}>
+      <div
+        className={`${GRID_SECTION_TITLE_ROW_CLASS} flex flex-wrap items-center gap-x-3 gap-y-1`}
+      >
+        <h2 id={titleId} className="font-semibold text-muted-foreground">
+          {t('suggestedTokens.title')}
+        </h2>
+        <button
+          type="button"
+          className={`${SECONDARY_BUTTON} text-sm`}
+          onClick={() => onAdd(tokens)}
+        >
+          {t('suggestedTokens.addAll')}
+        </button>
+      </div>
+      <ul className={TILE_GRID_CLASS} style={tileGridStyle(tileWidthPx)}>
         {tokens.map((token) => (
-          <li key={token.candidate.card.oracleId}>
-            <button type="button" className={SECONDARY_BUTTON} onClick={() => onAdd([token])}>
-              {t('suggestedTokens.add', { token: tokenLabel(token) })}
-            </button>
+          <li key={token.candidate.card.oracleId} aria-label={token.candidate.card.name}>
+            <SuggestedTokenTile
+              token={token}
+              creatorNames={creatorNamesOfSuggestedToken(token)}
+              onAdd={() => onAdd([token])}
+            />
           </li>
         ))}
       </ul>
-      <button
-        type="button"
-        className={`${SECONDARY_BUTTON} self-start`}
-        onClick={() => onAdd(tokens)}
-      >
-        {t('suggestedTokens.addAll')}
-      </button>
     </section>
   );
 }

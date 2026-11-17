@@ -5,8 +5,7 @@ import { CandidateButtons } from './CandidateButtons.tsx';
 import { lineNameOf, type ImagelessGridTile } from './grid-tiles.ts';
 import { LineToFixHint } from './LineToFixHint.tsx';
 import { RemoveLineButton } from './RemoveLineButton.tsx';
-import { pileFreeTileFrame } from './CopyPile.tsx';
-import { TILE_TAB_HEIGHT_CSS } from './tile-tab-geometry.ts';
+import { PileFreeTileFrame } from './PileFreeTileFrame.tsx';
 import { CARD_SHAPE } from '../card-shape.ts';
 import { FOCUS_LINE_STYLE, SHOWN_ON_FOCUSED_TILE } from './focus-line.ts';
 import { cardRingsShadow } from './tile-rings.ts';
@@ -38,7 +37,7 @@ export function ImagelessTile({
   const { t } = useTranslation();
   const { reason, line, writtenLine } = gridTile;
   return (
-    <div style={pileFreeTileFrame(TILE_TAB_HEIGHT_CSS)}>
+    <PileFreeTileFrame>
       <div
         style={{
           ...CARD_SHAPE,
@@ -78,6 +77,6 @@ export function ImagelessTile({
           />
         )}
       </div>
-    </div>
+    </PileFreeTileFrame>
   );
 }
