@@ -9,7 +9,7 @@ export function writtenLinesOf(text: string): string[] {
 }
 
 /** The decklist text without the line written at `writtenIndex`, every other line as it was. */
-function withoutWrittenLine(text: string, writtenIndex: number): string {
+export function withoutWrittenLine(text: string, writtenIndex: number): string {
   return writtenLinesOf(text).toSpliced(writtenIndex, 1).join('\n');
 }
 

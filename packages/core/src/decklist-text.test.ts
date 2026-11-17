@@ -7,6 +7,7 @@ import {
   createInMemoryCatalog,
   resolveDecklist,
   type DecklistLine,
+  withoutWrittenLine,
   type ResolvedLine,
 } from './index.ts';
 import { aCard, aPrint } from './test-fixtures.ts';
@@ -105,5 +106,15 @@ describe('changeTileQuantity', () => {
 
     expect(change.text).toBe('Deck\n\n// sideboard next\nSideboard\n1 Forest');
     expect(change.line).toBeNull();
+  });
+});
+
+describe('withoutWrittenLine', () => {
+  it('removes only the line written at the index, keeping blank lines, comments and headers', () => {
+    const text = 'Deck\n2 Forest\n\n// sideboard next\nSideboard\n1 Nonexistent Card\n1 Forest';
+
+    expect(withoutWrittenLine(text, 5)).toBe(
+      'Deck\n2 Forest\n\n// sideboard next\nSideboard\n1 Forest',
+    );
   });
 });
