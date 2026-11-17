@@ -1,5 +1,5 @@
 // Streams a Scryfall bulk file into the catalog and swaps it in atomically (ADR 0002).
-import { cardKeys, type ImageUris, type PrintFace } from '@mtg-suite/core';
+import { cardKeys, isTokenLayout, type ImageUris, type PrintFace } from '@mtg-suite/core';
 import type { Readable } from 'node:stream';
 import { createInterface } from 'node:readline';
 import { createCatalogTables, type Sql } from './db.ts';
@@ -124,12 +124,14 @@ function printedNameOf(card: ScryfallCard): string {
 }
 
 /**
- * The tokens `card` creates, emblems and markers such as The Monarch included. A token lists
- * itself among its own parts, as a token: that is no token it creates.
+ * The tokens `card` creates, emblems and markers such as The Monarch included. A token creates
+ * none: among its parts Scryfall lists, as tokens, itself and the tokens that create it, with
+ * no way to tell those from the ones it creates.
  */
 function tokenLinksOf(card: ScryfallCard): TokenLinkRow[] {
+  if (isTokenLayout(card.layout)) return [];
   return (card.all_parts ?? [])
-    .filter((part) => part.component === 'token' && part.id !== card.id)
+    .filter((part) => part.component === 'token')
     .map((part, position) => ({
       creator_print_id: card.id,
       position,

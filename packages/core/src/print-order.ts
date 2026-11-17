@@ -2,12 +2,17 @@ import type { Print } from './types.ts';
 
 const TOKEN_LAYOUTS = new Set(['token', 'double_faced_token', 'emblem']);
 
+/** Whether a Scryfall `layout` is a token's or an emblem's. */
+export function isTokenLayout(layout: string): boolean {
+  return TOKEN_LAYOUTS.has(layout);
+}
+
 /** The kinds of print less preferred than a regular paper one, most preferred first (ADR 0014). */
 const LESS_PREFERRED_KINDS = [
   (print: Print) => print.promoTypes.includes('playtest'),
   (print: Print) => print.oversized,
   (print: Print) => print.layout === 'art_series',
-  (print: Print) => TOKEN_LAYOUTS.has(print.layout) || print.setType === 'token',
+  (print: Print) => isTokenLayout(print.layout) || print.setType === 'token',
   (print: Print) => print.digital,
 ] as const;
 

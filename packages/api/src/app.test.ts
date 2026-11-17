@@ -551,9 +551,11 @@ describe('POST /api/decklists/suggested-tokens', () => {
     collector_number: '16',
     layout: 'token',
     set_type: 'token',
+    // Scryfall lists, as tokens, the token itself and other tokens that create it.
     all_parts: [
       part('treasure-tsnc', 'token', 'Treasure'),
       part('forger-snc', 'combo_piece', 'Gold Forger'),
+      part('monarch-tcn2', 'token', 'The Monarch'),
     ],
   });
   const monarch = scryfallCard({
@@ -631,7 +633,7 @@ describe('POST /api/decklists/suggested-tokens', () => {
     ]);
   });
 
-  it('suggests nothing for a card that creates no token, nor for a token, which Scryfall lists among its own parts', async () => {
+  it('suggests nothing for a card that creates no token, nor for a token, whatever tokens Scryfall lists among its parts', async () => {
     const { body } = await suggestTokens([
       {
         oracleId: 'aaaaaaaa-0000-0000-0000-000000000001',
