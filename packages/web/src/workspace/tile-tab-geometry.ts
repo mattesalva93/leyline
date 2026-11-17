@@ -20,7 +20,7 @@ export const QUANTITY_COUNT_MIN_PX = Math.ceil(
   WIDEST_COUNT_CHARACTERS * MONO_CHARACTER_EM * QUANTITY_FONT_PX + 2 * QUANTITY_COUNT_PADDING_PX,
 );
 /** The width of the quantity with its minus and plus, up to two digits. */
-export const TILE_TAB_QUANTITY_PX = 2 * TILE_TAB_BUTTON_PX + QUANTITY_COUNT_MIN_PX;
+const TILE_TAB_QUANTITY_PX = 2 * TILE_TAB_BUTTON_PX + QUANTITY_COUNT_MIN_PX;
 /** The width of the mark of a print's warning, the widest thing beside the quantity. */
 export const WARNING_MARK_PX = 28;
 
