@@ -4,6 +4,7 @@ import {
   tokenQueryLineOf,
   resolveDecklist,
   suggestTokens,
+  tokenCreatorsOf,
   type CatalogEntry,
   type TokenLink,
 } from './index.ts';
@@ -241,5 +242,32 @@ describe('tokenQueryLineOf', () => {
       { oracleId: 'gold-forger', previewPrintId: 'gold-forger-tst' },
       null,
     ]);
+  });
+});
+
+describe('tokenCreatorsOf', () => {
+  it('tells the cards of the decklist creating a suggested token, past the lines naming no card', async () => {
+    const smotheringTithe = creator('smothering-tithe', 'Smothering Tithe');
+    const catalog = createInMemoryCatalog(
+      [goldForger, smotheringTithe, treasure],
+      [
+        { creatorPrintId: 'gold-forger-tst', tokenPrintId: 'treasure-tsnc' },
+        { creatorPrintId: 'smothering-tithe-tst', tokenPrintId: 'treasure-tsnc' },
+      ],
+    );
+    const lines = await resolveDecklist(
+      'Xyzzy Plover\nGold Forger\nXyzzy Plover\nSmothering Tithe',
+      catalog,
+      { lang: 'en', today },
+    );
+    const suggested = await suggestTokens(
+      catalog,
+      lines.flatMap((line) => tokenQueryLineOf(line) ?? []),
+      { lang: 'en', today },
+    );
+
+    expect(suggested.map((token) => tokenCreatorsOf(token, lines).map(({ name }) => name))).toEqual(
+      [['Gold Forger', 'Smothering Tithe']],
+    );
   });
 });

@@ -1,6 +1,7 @@
 import { defaultPrintFor, hasRealImage } from './default-print.ts';
 import { namedPrint, previewPrint, type PrintRef } from './decklist.ts';
 import type {
+  Card,
   Catalog,
   CatalogEntry,
   CreatedToken,
@@ -8,6 +9,7 @@ import type {
   Lang,
   TokenQueryLine,
   Print,
+  ResolvedLine,
   SuggestedToken,
 } from './types.ts';
 
@@ -22,6 +24,17 @@ export interface TokenSuggestionOptions {
 export function tokenQueryLineOf(line: DecklistLine): TokenQueryLine | null {
   if (line.status !== 'resolved') return null;
   return { oracleId: line.card.oracleId, previewPrintId: previewPrint(line)?.id ?? null };
+}
+
+/**
+ * The cards of `lines` creating `token`, first creator first: `lines` are the ones whose
+ * `TokenQueryLine`s were asked for the suggestion.
+ */
+export function tokenCreatorsOf(token: SuggestedToken, lines: readonly DecklistLine[]): Card[] {
+  const queriedLines = lines.filter(
+    (line): line is ResolvedLine => tokenQueryLineOf(line) !== null,
+  );
+  return token.createdBy.flatMap((index) => queriedLines[index]?.card ?? []);
 }
 
 /**
