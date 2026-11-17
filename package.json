@@ -26,7 +26,8 @@
     "import:daily": "pnpm --filter @mtg-suite/api run import:daily",
     "import:debug": "pnpm --filter @mtg-suite/api run import:debug",
     "sheet:preview": "pnpm --filter @mtg-suite/api run sheet:preview",
-    "landing:screenshots": "node scripts/landing-screenshots.js"
+    "landing:screenshots": "node scripts/landing-screenshots.js",
+    "check:phone-width": "node scripts/check-phone-width.js"
   },
   "lint-staged": {
     "*.{ts,tsx,js,mjs,cjs}": [
