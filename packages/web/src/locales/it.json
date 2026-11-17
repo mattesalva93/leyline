@@ -103,7 +103,9 @@
   "suggestedTokens": {
     "title": "Pedine proposte",
     "add": "Aggiungi {{token}}",
-    "addAll": "Aggiungi tutte le pedine"
+    "addOne": "Aggiungi",
+    "addAll": "Aggiungi tutte le pedine",
+    "createdBy": "da {{cards}}"
   },
   "summary": {
     "cards": "Carte",

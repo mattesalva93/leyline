@@ -3602,6 +3602,19 @@ describe('the suggested tokens', () => {
     });
   });
 
+  it('shows each suggested token after the card grid, with its image and the cards creating it', async () => {
+    await mountPageAndWrite('1 Gold Forger{Enter}1 Raise the Alarm{Enter}');
+
+    const suggestions = await screen.findByRole('region', { name: 'Pedine proposte' });
+    const grid = screen.getByRole('region', { name: 'Griglia delle carte' });
+    expect(
+      grid.compareDocumentPosition(suggestions) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    const treasure = within(suggestions).getByRole('listitem', { name: 'Treasure' });
+    expect(within(treasure).getByRole('img', { name: 'Immagine di Treasure' })).toBeTruthy();
+    expect(within(treasure).getByText('da Gold Forger')).toBeTruthy();
+  });
+
   it('adds a suggested token as a line of the Tokens section, named by set and number', async () => {
     const user = await mountPageAndWrite('1 Gold Forger{Enter}');
 
