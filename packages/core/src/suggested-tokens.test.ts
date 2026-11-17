@@ -156,6 +156,29 @@ describe('suggestTokens', () => {
     expect(writtenPrints(suggested)).toEqual(['Treasure told 7']);
   });
 
+  it("takes the token's default print when the print a card names is not out yet", async () => {
+    const previewed = {
+      ...treasure,
+      prints: [
+        aPrint({
+          id: 'treasure-next',
+          set: 'tnxt',
+          collectorNumber: '1',
+          releasedAt: '2027-01-01',
+        }),
+        aPrint({ id: 'treasure-old', set: 'told', collectorNumber: '7', releasedAt: '2010-01-01' }),
+      ],
+    };
+
+    const suggested = await suggestFor(
+      [goldForger, previewed],
+      [{ creatorPrintId: 'gold-forger-tst', tokenPrintId: 'treasure-next' }],
+      ['gold-forger'],
+    );
+
+    expect(writtenPrints(suggested)).toEqual(['Treasure told 7']);
+  });
+
   it('suggests the token in the default language, falling back to English as lines do', async () => {
     const italianTreasure = aPrint({
       id: 'treasure-tsnc-it',

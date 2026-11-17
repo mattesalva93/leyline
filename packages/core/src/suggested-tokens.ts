@@ -26,8 +26,9 @@ export function lineCardOf(line: DecklistLine): LineCard | null {
 
 /**
  * The tokens the cards of `lineCards` create, one per token card, first creator first: each at
- * the print the first card creating it names, or at the token's default print when that one has
- * no scan. A token one of `lineCards` already is, in any print, is no suggestion.
+ * the print the first card creating it names, or at the token's default print when that one is
+ * not printable or not out yet. A token one of `lineCards` already is, in any print, is no
+ * suggestion.
  */
 export async function suggestTokens(
   catalog: Catalog,
@@ -57,7 +58,7 @@ export async function suggestTokens(
   });
 }
 
-/** The named token print when it has a scan, otherwise the token's default print. */
+/** The named token print when it is printable and out already, else the token's default print. */
 function printToWrite(
   token: CatalogEntry,
   tokenPrintId: string,
@@ -65,7 +66,7 @@ function printToWrite(
   today: string,
 ): Print | null {
   const named = token.prints.find((print) => print.id === tokenPrintId);
-  if (named && hasRealImage(named)) return named;
+  if (named && hasRealImage(named) && named.releasedAt <= today) return named;
   return defaultPrintFor(token.prints, lang, today).defaultPrint;
 }
 
