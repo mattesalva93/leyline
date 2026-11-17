@@ -148,7 +148,9 @@
     "lowResolution": "L'immagine di questa stampa è a bassa risoluzione.",
     "lowResolutionWithoutEnglish": "L'immagine di questa stampa è a bassa risoluzione e non esiste una versione inglese da usare al suo posto.",
     "showEnglishPrints": "Mostra le stampe inglesi",
-    "languageFallback": "Nessuna stampa in {{lang}} con un'immagine: viene usata quella inglese."
+    "languageFallback": "Nessuna stampa in {{lang}} con un'immagine: viene usata quella inglese.",
+    "remove": "Rimuovi dalla lista",
+    "removeNamed": "Rimuovi {{name}} dalla lista"
   },
   "zoomedCard": {
     "alt": "{{name}}, ingrandita"

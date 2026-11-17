@@ -2,8 +2,9 @@ import { useTranslation } from 'react-i18next';
 import { SECONDARY_BUTTON } from '../ui/board-styles.ts';
 import { Icon } from '../ui/Icon.tsx';
 import { CandidateButtons } from './CandidateButtons.tsx';
-import type { ImagelessGridTile } from './grid-tiles.ts';
+import { lineNameOf, type ImagelessGridTile } from './grid-tiles.ts';
 import { LineToFixHint } from './LineToFixHint.tsx';
+import { RemoveLineButton } from './RemoveLineButton.tsx';
 import { pileFreeTileFrame } from './CopyPile.tsx';
 import { TILE_TAB_HEIGHT_PX } from './PrintTileCard.tsx';
 import { CARD_SHAPE } from '../card-shape.ts';
@@ -17,6 +18,8 @@ interface ImagelessTileProps {
   /** Opens the line's panel: only a resolved line has one. */
   readonly onSelect: () => void;
   readonly onPickCandidate: (oracleId: string) => void;
+  /** Takes the line out of the decklist text. */
+  readonly onRemove: () => void;
 }
 
 /**
@@ -30,6 +33,7 @@ export function ImagelessTile({
   isSelected,
   onSelect,
   onPickCandidate,
+  onRemove,
 }: ImagelessTileProps) {
   const { t } = useTranslation();
   const { reason, line, writtenLine } = gridTile;
@@ -64,6 +68,14 @@ export function ImagelessTile({
           >
             {t('tile.open', { name: line.card.name })}
           </button>
+        )}
+        {reason !== 'pending' && (
+          <RemoveLineButton
+            lineName={lineNameOf(gridTile)}
+            isInGridCell
+            className={`${reason === 'noPrint' ? '' : 'mt-auto'} px-2 py-1 text-xs`}
+            onRemove={onRemove}
+          />
         )}
       </div>
     </div>

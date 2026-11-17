@@ -23,6 +23,7 @@ export function CardsView({
       onOpenLinePanel={onOpenLinePanel}
       onPickCandidate={generator.pickCandidate}
       onTileQuantityChange={generator.changeTileQuantity}
+      onRemoveLine={generator.removeLine}
       defaultLang={generator.defaultLang}
       onAddCard={generator.addCard}
       tilesAreDraggable={tilesAreDraggable}

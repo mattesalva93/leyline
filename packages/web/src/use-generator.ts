@@ -5,6 +5,7 @@ import {
   changeTileQuantity as changeTileQuantityInText,
   changeWritesALineBreak,
   writtenLinesOf,
+  withoutWrittenLine,
   copyCount,
   defaultSheetOptions,
   fitAllocations,
@@ -89,6 +90,8 @@ export interface Generator {
   readonly changeLineQuantity: (writtenIndex: number, quantity: number) => void;
   /** Gives the tile of `print` on the line at `writtenIndex` `quantity` copies; at zero it goes. */
   readonly changeTileQuantity: (writtenIndex: number, print: Print, quantity: number) => void;
+  /** Takes the line at `writtenIndex` out of the decklist text, the other lines keeping their choices. */
+  readonly removeLine: (writtenIndex: number) => void;
   readonly chooseAllocations: (writtenIndex: number, allocations: AllocationChoice) => void;
   /** Moves the line at `writtenIndex` to `destination` in the decklist text, with its choices. */
   readonly moveLine: (writtenIndex: number, destination: LineDestination) => LineMove;
@@ -322,9 +325,8 @@ export function useGenerator(): Generator {
     const line = displayedLine(writtenIndex);
     if (!resolution || line?.status !== 'resolved') return;
     const change = changeTileQuantityInText(decklistText, { writtenIndex, line, print }, quantity);
-    const nextWrittenLines = writtenLinesOf(change.text);
     if (!change.line) {
-      writeRewrittenLines(nextWrittenLines, choicesOfEveryLine().toSpliced(writtenIndex, 1));
+      removeLine(writtenIndex);
       return;
     }
     keepResolutionOfRewrittenLine(resolution, change.line.quantity);
@@ -333,8 +335,15 @@ export function useGenerator(): Generator {
       allocations: change.line.allocations,
     };
     writeRewrittenLines(
-      nextWrittenLines,
+      writtenLinesOf(change.text),
       choicesOfEveryLine().with(writtenIndex, { ...choicesAt(writtenIndex), allocations }),
+    );
+  }
+
+  function removeLine(writtenIndex: number) {
+    writeRewrittenLines(
+      writtenLinesOf(withoutWrittenLine(decklistText, writtenIndex)),
+      choicesOfEveryLine().toSpliced(writtenIndex, 1),
     );
   }
 
@@ -473,6 +482,7 @@ export function useGenerator(): Generator {
     pickCandidate: (writtenIndex, oracleId) => updateChoicesAt(writtenIndex, { oracleId }),
     changeLineQuantity,
     changeTileQuantity,
+    removeLine,
     chooseAllocations: (writtenIndex, allocations) =>
       updateChoicesAt(writtenIndex, { allocations }),
     moveLine,
