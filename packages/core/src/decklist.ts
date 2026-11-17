@@ -29,7 +29,7 @@ export interface ResolveOptions {
 }
 
 /** The print an Arena or MTGO line names: Scryfall set code and collector number, lowercase. */
-interface PrintRef {
+export interface PrintRef {
   readonly set: string;
   readonly collectorNumber: string;
 }
@@ -143,7 +143,7 @@ function resolveLine(
  * the print exists in it, the print's own otherwise. When the print in `lang` has no real image,
  * another language's stands in, with a warning.
  */
-function namedPrint(
+export function namedPrint(
   entries: readonly CatalogEntry[],
   ref: PrintRef,
   lang: Lang,

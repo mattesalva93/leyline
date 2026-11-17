@@ -1,5 +1,5 @@
 import { cardKeys, trigramSimilarity, trigrams } from './name-match.ts';
-import type { Catalog, CatalogEntry } from './types.ts';
+import type { Catalog, CatalogEntry, TokenLink } from './types.ts';
 
 /** How a card's name keys answer a name search: lower `group` first, then higher `similarity`. */
 interface SearchMatch {
@@ -21,8 +21,13 @@ function searchMatch(entry: CatalogEntry, key: string, minSimilarity: number): S
   return similarity >= minSimilarity ? { entry, group: 2, similarity } : null;
 }
 
-/** A `Catalog` over a fixed list of entries, for tests. */
-export function createInMemoryCatalog(entries: readonly CatalogEntry[]): Catalog {
+/** A `Catalog` over a fixed list of entries and the tokens their prints create, for tests. */
+export function createInMemoryCatalog(
+  entries: readonly CatalogEntry[],
+  tokenLinks: readonly TokenLink[] = [],
+): Catalog {
+  const entryOfPrint = (printId: string) =>
+    entries.find((entry) => entry.prints.some((print) => print.id === printId));
   return {
     findByNames: async () => entries,
     searchByName: async (key, { minSimilarity, limit }) =>
@@ -37,5 +42,10 @@ export function createInMemoryCatalog(entries: readonly CatalogEntry[]): Catalog
         .slice(0, limit)
         .map((match) => match.entry),
     findCard: async (oracleId) => entries.find((entry) => entry.card.oracleId === oracleId) ?? null,
+    findTokensCreatedBy: async (printIds) =>
+      tokenLinks.flatMap((link) => {
+        const token = printIds.includes(link.creatorPrintId) && entryOfPrint(link.tokenPrintId);
+        return token ? [{ ...link, token }] : [];
+      }),
   };
 }

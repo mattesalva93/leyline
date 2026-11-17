@@ -83,6 +83,25 @@ export function createPostgresCatalog(sql: Sql): Catalog {
       const [entry] = await entriesOf(sql, [oracleId]);
       return entry ?? null;
     },
+
+    async findTokensCreatedBy(printIds) {
+      if (printIds.length === 0) return [];
+      const links = await sql<{ creatorPrintId: string; tokenPrintId: string; oracleId: string }[]>`
+        select
+          l.creator_print_id as "creatorPrintId", l.token_print_id as "tokenPrintId",
+          p.oracle_id as "oracleId"
+        from token_links l
+        join prints p on p.id = l.token_print_id
+        where l.creator_print_id = any(${[...printIds]}::text[])
+        order by l.creator_print_id, l.position
+      `;
+      const entries = await entriesOf(sql, [...new Set(links.map((link) => link.oracleId))]);
+      const byId = new Map(entries.map((entry) => [entry.card.oracleId, entry]));
+      return links.flatMap(({ creatorPrintId, tokenPrintId, oracleId }) => {
+        const token = byId.get(oracleId);
+        return token ? [{ creatorPrintId, tokenPrintId, token }] : [];
+      });
+    },
   };
 }
 

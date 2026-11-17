@@ -522,6 +522,115 @@ describe('POST /api/decklists/resolve', () => {
   });
 });
 
+async function suggestTokens(lines: unknown, lang?: unknown) {
+  const response = await createApp({ sql: db.sql }).request('/api/decklists/suggested-tokens', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ lines, lang }),
+  });
+  return { status: response.status, body: (await response.json()) as { tokens: unknown[] } };
+}
+
+/** A Scryfall `all_parts` entry pointing at the card `id`. */
+const part = (id: string, component: string, name: string) => ({
+  object: 'related_card',
+  id,
+  component,
+  name,
+});
+
+describe('POST /api/decklists/suggested-tokens', () => {
+  const forgerOracle = 'aaaaaaaa-0000-0000-0000-00000000f0f0';
+  const treasureOracle = 'aaaaaaaa-0000-0000-0000-00000000aaaa';
+  const meldOracle = 'aaaaaaaa-0000-0000-0000-00000000be1d';
+  const treasure = scryfallCard({
+    id: 'treasure-tsnc',
+    oracle_id: treasureOracle,
+    name: 'Treasure',
+    set: 'tsnc',
+    collector_number: '16',
+    layout: 'token',
+    set_type: 'token',
+    all_parts: [
+      part('treasure-tsnc', 'token', 'Treasure'),
+      part('forger-snc', 'combo_piece', 'Gold Forger'),
+    ],
+  });
+  const monarch = scryfallCard({
+    id: 'monarch-tcn2',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-00000000aaab',
+    name: 'The Monarch',
+    set: 'tcn2',
+    collector_number: '1',
+    layout: 'token',
+    set_type: 'token',
+  });
+  const forger = scryfallCard({
+    id: 'forger-snc',
+    oracle_id: forgerOracle,
+    name: 'Gold Forger',
+    set: 'snc',
+    all_parts: [
+      part('forger-snc', 'combo_piece', 'Gold Forger'),
+      part('treasure-tsnc', 'token', 'Treasure'),
+      part('monarch-tcn2', 'token', 'The Monarch'),
+      part('meld-half', 'meld_part', 'Other Half'),
+      part('combo-card', 'combo_piece', 'Combo Card'),
+    ],
+  });
+  const meldHalf = scryfallCard({ id: 'meld-half', oracle_id: meldOracle, name: 'Other Half' });
+  const comboCard = scryfallCard({
+    id: 'combo-card',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-00000000c0b0',
+    name: 'Combo Card',
+  });
+
+  beforeAll(async () => {
+    await importBulk(
+      db.sql,
+      bulkStream([forger, treasure, monarch, meldHalf, comboCard, scryfallCard()]),
+    );
+  });
+
+  it('suggests the tokens, emblems and markers a card creates, never its meld or combo pieces', async () => {
+    const { status, body } = await suggestTokens([
+      { oracleId: forgerOracle, previewPrintId: 'forger-snc' },
+    ]);
+
+    expect(status).toBe(200);
+    expect(body.tokens).toMatchObject([
+      {
+        candidate: {
+          card: { name: 'Treasure' },
+          defaultPrint: { set: 'tsnc', collectorNumber: '16' },
+        },
+        lang: 'en',
+        createdBy: [0],
+      },
+      { candidate: { card: { name: 'The Monarch' } }, createdBy: [0] },
+    ]);
+  });
+
+  it('suggests nothing for a card that creates no token, nor for a token, which Scryfall lists among its own parts', async () => {
+    const { body } = await suggestTokens([
+      {
+        oracleId: 'aaaaaaaa-0000-0000-0000-000000000001',
+        previewPrintId: '00000000-0000-0000-0000-000000000001',
+      },
+      { oracleId: treasureOracle, previewPrintId: 'treasure-tsnc' },
+      { oracleId: 'no-such-card', previewPrintId: null },
+    ]);
+
+    expect(body.tokens).toEqual([]);
+  });
+
+  it('rejects a body without its lines, or in a language the catalog does not hold', async () => {
+    expect((await suggestTokens(42)).status).toBe(400);
+    expect((await suggestTokens([{ oracleId: 42, previewPrintId: null }])).status).toBe(400);
+    expect((await suggestTokens([], 'ja')).status).toBe(400);
+  });
+});
+
 describe('GET /api/cards/:oracleId/prints', () => {
   const forest = {
     oracle_id: 'aaaaaaaa-0000-0000-0000-0000000000f0',

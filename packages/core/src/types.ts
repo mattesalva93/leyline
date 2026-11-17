@@ -91,6 +91,23 @@ export interface Catalog {
   ): Promise<readonly CatalogEntry[]>;
   /** The card with oracle id `oracleId` and all its prints, or `null` when there is none. */
   findCard(oracleId: string): Promise<CatalogEntry | null>;
+  /**
+   * The tokens each of `printIds` creates: the token prints its Scryfall `all_parts` names as
+   * tokens, in that order, each with its card and all that card's prints. Token prints the
+   * catalog does not hold are left out.
+   */
+  findTokensCreatedBy(printIds: readonly string[]): Promise<readonly CreatedToken[]>;
+}
+
+/** A print and a token print its Scryfall `all_parts` names as a token it creates. */
+export interface TokenLink {
+  readonly creatorPrintId: string;
+  readonly tokenPrintId: string;
+}
+
+/** A `TokenLink` with the token's card and all its prints. */
+export interface CreatedToken extends TokenLink {
+  readonly token: CatalogEntry;
 }
 
 /** One page of the prints a card can print with, as the print picker shows them. */
@@ -157,6 +174,25 @@ export interface NotFoundLine extends DecklistLineBase {
 
 /** One entry of a decklist. */
 export type DecklistLine = ResolvedLine | AmbiguousLine | NotFoundLine;
+
+/** What a resolved line tells which tokens its card creates: the card, and the print it shows. */
+export interface LineCard {
+  readonly oracleId: string;
+  /** The print the line's preview shows (`previewPrint`); `null` when it has none. */
+  readonly previewPrintId: string | null;
+}
+
+/**
+ * A token the cards of the decklist create, offered to the user to add to the Tokens section,
+ * with the print a line of it would be written with.
+ */
+export interface SuggestedToken {
+  readonly candidate: Candidate & { readonly defaultPrint: Print };
+  /** The language a line written with `candidate`'s default print resolves in. */
+  readonly lang: Lang;
+  /** Where the lines creating the token sit among the `LineCard`s asked about, in their order. */
+  readonly createdBy: readonly number[];
+}
 
 /** The `DecklistSection`s a decklist can have, in the order the card grid shows them. */
 export const DECKLIST_SECTIONS = ['commander', 'mainDeck', 'lands', 'sideboard', 'tokens'] as const;

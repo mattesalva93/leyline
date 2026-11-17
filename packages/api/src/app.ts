@@ -7,7 +7,9 @@ import {
   MAX_PRINT_QUERY_LENGTH,
   resolveDecklist,
   searchCards,
+  suggestTokens,
   type Lang,
+  type LineCard,
 } from '@mtg-suite/core';
 import { Hono } from 'hono';
 import type { Sql } from './db.ts';
@@ -26,6 +28,12 @@ const MAX_PRINTS_PER_PAGE = 50;
 /** Longest name a search accepts, in characters: far above any card name. */
 const MAX_SEARCH_LENGTH = 200;
 
+/** Most lines a token suggestion takes: as many as the longest decklist can hold. */
+const MAX_LINE_CARDS = 5_000;
+
+/** Longest Scryfall id accepted: they are 36-character UUIDs. */
+const MAX_ID_LENGTH = 64;
+
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 
 /** The UTC date, like Scryfall's release dates. */
@@ -39,6 +47,24 @@ function resolveRequest(body: unknown): { text: string; lang: Lang } | null {
   const { text, lang = 'en' } = body as { text?: unknown; lang?: unknown };
   if (typeof text !== 'string' || text.length > MAX_DECKLIST_LENGTH) return null;
   return isLang(lang) ? { text, lang } : null;
+}
+
+function isId(value: unknown): value is string {
+  return typeof value === 'string' && value.length <= MAX_ID_LENGTH;
+}
+
+function isLineCard(value: unknown): value is LineCard {
+  if (typeof value !== 'object' || value === null) return false;
+  const { oracleId, previewPrintId } = value as Partial<Record<keyof LineCard, unknown>>;
+  return isId(oracleId) && (previewPrintId === null || isId(previewPrintId));
+}
+
+/** `{ lines, lang? }` from a token suggestion request body, or `null` when it is not one. */
+function tokenSuggestionRequest(body: unknown): { lines: LineCard[]; lang: Lang } | null {
+  if (typeof body !== 'object' || body === null) return null;
+  const { lines, lang = 'en' } = body as { lines?: unknown; lang?: unknown };
+  if (!Array.isArray(lines) || lines.length > MAX_LINE_CARDS) return null;
+  return lines.every(isLineCard) && isLang(lang) ? { lines, lang } : null;
 }
 
 export function createApp(deps: AppDeps): Hono {
@@ -63,6 +89,23 @@ export function createApp(deps: AppDeps): Hono {
       lang: request.lang,
     });
     return c.json({ lines });
+  });
+
+  app.post('/api/decklists/suggested-tokens', async (c) => {
+    const request = tokenSuggestionRequest(await c.req.json().catch(() => null));
+    if (!request) {
+      return c.json(
+        {
+          error: `Expected a JSON body { "lines": up to ${MAX_LINE_CARDS} of { "oracleId": string, "previewPrintId": string | null }, "lang"?: "en" | "it" }.`,
+        },
+        400,
+      );
+    }
+    const tokens = await suggestTokens(catalog, request.lines, {
+      today: today(),
+      lang: request.lang,
+    });
+    return c.json({ tokens });
   });
 
   app.get('/api/cards/search', async (c) => {
