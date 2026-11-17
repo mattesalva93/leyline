@@ -2061,7 +2061,7 @@ describe('the workspace on a phone', () => {
     await mountPageAndWrite('4 Sol Ring{Enter}');
     const count = await within(screen.getByRole('banner')).findByText('4 carte · 1 pagina');
 
-    expect(count.textContent).toBe('4 carte · 1 pagina');
+    expect(count.textContent).toBe('4\u00a0carte · 1\u00a0pagina');
   });
 
   it("raises the tapped tile's line panel from the bottom, with the inspector's settings", async () => {
