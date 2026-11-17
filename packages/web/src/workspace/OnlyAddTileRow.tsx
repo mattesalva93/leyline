@@ -2,7 +2,7 @@ import type { Candidate, DecklistSection, Lang } from '@mtg-suite/core';
 import { AddCardTile } from './AddCardTile.tsx';
 import { ONLY_ADD_TILE_KEY } from './grid-sections.ts';
 import { TILE_GRID_CLASS, tileGridStyle } from './tile-grid.ts';
-import { useColumnCount } from './use-column-count.ts';
+import { useGridColumns } from './use-grid-columns.ts';
 import { cellGroupProps, type CellPropsOf } from './use-grid-cell-focus.ts';
 
 interface OnlyAddTileRowProps {
@@ -14,7 +14,7 @@ interface OnlyAddTileRowProps {
 
 /** The card grid of a decklist with no card: a lone add tile, naming no section. */
 export function OnlyAddTileRow({ tileWidthPx, lang, cellPropsOf, onAddCard }: OnlyAddTileRowProps) {
-  const { gridRef, columns } = useColumnCount();
+  const { gridRef, columns } = useGridColumns();
   return (
     <ul
       ref={gridRef}

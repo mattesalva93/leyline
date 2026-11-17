@@ -11,7 +11,9 @@ import { ReorderableTileItem } from './ReorderableTileItem.tsx';
 import { siblingGroupColoursOf } from './sibling-group-colours.ts';
 import { tileCellLabel, tileKeyHandler } from './tile-cell.ts';
 import { TILE_GRID_CLASS, tileGridStyle } from './tile-grid.ts';
-import { useColumnCount } from './use-column-count.ts';
+import { cardWidthOf } from './CopyPile.tsx';
+import { tileTabHeightStyle, tileTabRowsOn } from './tile-tab-geometry.ts';
+import { useGridColumns } from './use-grid-columns.ts';
 import { cellGroupProps, type CellPropsOf } from './use-grid-cell-focus.ts';
 import type { LineDrag } from './use-line-drag.ts';
 
@@ -63,7 +65,8 @@ export function CardGridSection({
 }: CardGridSectionProps) {
   const { t } = useTranslation();
   const titleId = useId();
-  const { gridRef, columns } = useColumnCount();
+  const { gridRef, columns, columnWidthPx } = useGridColumns();
+  const tabRows = tileTabRowsOn(cardWidthOf(columnWidthPx));
   const siblingGroupColours = siblingGroupColoursOf(section.gridTiles, columns);
   const [flippedTileKeys, setFlippedTileKeys] = useState<ReadonlySet<string>>(new Set());
   const flip = (tileKey: string) =>
@@ -83,7 +86,7 @@ export function CardGridSection({
       <ul
         ref={gridRef}
         className={TILE_GRID_CLASS}
-        style={tileGridStyle(tileWidthPx)}
+        style={{ ...tileGridStyle(tileWidthPx), ...tileTabHeightStyle(tabRows) }}
         {...cellGroupProps(columns)}
       >
         {section.gridTiles.map((gridTile, index) => {
@@ -116,6 +119,7 @@ export function CardGridSection({
                 gridTile={gridTile}
                 siblingColour={siblingGroupColours.get(gridTile.writtenIndex)}
                 isSelected={selected}
+                tabRows={tabRows}
                 isFlipped={isFlipped}
                 onFlip={() => flip(gridTile.key)}
                 continuesRowAbove={gridTile.siblingIndex > 0 && index % columns === 0}
