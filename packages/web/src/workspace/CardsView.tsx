@@ -33,7 +33,7 @@ export function CardsView({
         afterSections={
           <SuggestedTokens
             tokens={generator.suggestedTokens}
-            creatorsOfSuggestedToken={generator.creatorsOfSuggestedToken}
+            creatorNamesOfSuggestedToken={generator.creatorNamesOfSuggestedToken}
             tileWidthPx={tileWidthPx}
             onAdd={generator.addSuggestedTokens}
           />

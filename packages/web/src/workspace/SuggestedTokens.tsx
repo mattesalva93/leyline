@@ -1,4 +1,4 @@
-import type { Card, SuggestedToken } from '@mtg-suite/core';
+import type { SuggestedToken } from '@mtg-suite/core';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SECONDARY_BUTTON } from '../ui/board-styles.ts';
@@ -11,12 +11,12 @@ import { GRID_SECTION_TITLE_ROW_CLASS, TILE_GRID_CLASS, tileGridStyle } from './
  */
 export function SuggestedTokens({
   tokens,
-  creatorsOfSuggestedToken,
+  creatorNamesOfSuggestedToken,
   tileWidthPx,
   onAdd,
 }: {
   readonly tokens: readonly SuggestedToken[];
-  readonly creatorsOfSuggestedToken: (token: SuggestedToken) => readonly Card[];
+  readonly creatorNamesOfSuggestedToken: (token: SuggestedToken) => readonly string[];
   /** The narrowest a tile gets, in CSS px, as in the card grid. */
   readonly tileWidthPx: number;
   readonly onAdd: (tokens: readonly SuggestedToken[]) => void;
@@ -45,7 +45,7 @@ export function SuggestedTokens({
           <li key={token.candidate.card.oracleId} aria-label={token.candidate.card.name}>
             <SuggestedTokenTile
               token={token}
-              creators={creatorsOfSuggestedToken(token)}
+              creatorNames={creatorNamesOfSuggestedToken(token)}
               onAdd={() => onAdd([token])}
             />
           </li>

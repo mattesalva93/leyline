@@ -1,7 +1,6 @@
 import {
-  tokenCreatorsOf,
+  tokenCreatorNamesOf,
   tokenQueryLineOf,
-  type Card,
   type DecklistLine,
   type Lang,
   type SuggestedToken,
@@ -11,8 +10,8 @@ import { fetchSuggestedTokens } from './api.ts';
 
 export interface TokenSuggestions {
   readonly suggestedTokens: readonly SuggestedToken[];
-  /** The cards creating one of `suggestedTokens`, first creator first. */
-  readonly creatorsOfSuggestedToken: (token: SuggestedToken) => readonly Card[];
+  /** The names of the cards creating one of `suggestedTokens`, as their lines show them. */
+  readonly creatorNamesOfSuggestedToken: (token: SuggestedToken) => readonly string[];
 }
 
 /** The tokens the server suggested, with the lines asked: their `createdBy` point among these. */
@@ -49,12 +48,12 @@ export function useSuggestedTokens(lines: readonly DecklistLine[], lang: Lang): 
       isCurrent = false;
     };
   }, [request]);
-  const creatorsOfSuggestedToken = (token: SuggestedToken) =>
-    tokenCreatorsOf(token, answer.askedLines);
-  if (queryLines.length === 0) return { suggestedTokens: [], creatorsOfSuggestedToken };
+  const creatorNamesOfSuggestedToken = (token: SuggestedToken) =>
+    tokenCreatorNamesOf(token, answer.askedLines);
+  if (queryLines.length === 0) return { suggestedTokens: [], creatorNamesOfSuggestedToken };
   const inDecklist = new Set(queryLines.map((queryLine) => queryLine.oracleId));
   const suggestedTokens = answer.tokens.filter(
     (token) => !inDecklist.has(token.candidate.card.oracleId),
   );
-  return { suggestedTokens, creatorsOfSuggestedToken };
+  return { suggestedTokens, creatorNamesOfSuggestedToken };
 }

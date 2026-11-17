@@ -4,7 +4,7 @@ import {
   tokenQueryLineOf,
   resolveDecklist,
   suggestTokens,
-  tokenCreatorsOf,
+  tokenCreatorNamesOf,
   type CatalogEntry,
   type TokenLink,
 } from './index.ts';
@@ -245,7 +245,7 @@ describe('tokenQueryLineOf', () => {
   });
 });
 
-describe('tokenCreatorsOf', () => {
+describe('tokenCreatorNamesOf', () => {
   it('tells the cards of the decklist creating a suggested token, past the lines naming no card', async () => {
     const smotheringTithe = creator('smothering-tithe', 'Smothering Tithe');
     const catalog = createInMemoryCatalog(
@@ -266,9 +266,33 @@ describe('tokenCreatorsOf', () => {
       { lang: 'en', today },
     );
 
-    expect(suggested.map((token) => tokenCreatorsOf(token, lines).map(({ name }) => name))).toEqual(
-      [['Gold Forger', 'Smothering Tithe']],
+    expect(suggested.map((token) => tokenCreatorNamesOf(token, lines))).toEqual([
+      ['Gold Forger', 'Smothering Tithe'],
+    ]);
+  });
+
+  it('names a card creating the token as the print of its line reads it, in its language', async () => {
+    const krenko = {
+      card: aCard({ oracleId: 'krenko', name: 'Krenko, Mob Boss' }),
+      prints: [
+        aPrint({ id: 'krenko-en', printedName: 'Krenko, Mob Boss' }),
+        aPrint({ id: 'krenko-it', lang: 'it', printedName: 'Krenko, Capocosca' }),
+      ],
+    };
+    const catalog = createInMemoryCatalog(
+      [krenko, treasure],
+      [{ creatorPrintId: 'krenko-en', tokenPrintId: 'treasure-tsnc' }],
     );
+    const lines = await resolveDecklist('Krenko, Mob Boss', catalog, { lang: 'it', today });
+    const suggested = await suggestTokens(
+      catalog,
+      lines.flatMap((line) => tokenQueryLineOf(line) ?? []),
+      { lang: 'it', today },
+    );
+
+    expect(suggested.map((token) => tokenCreatorNamesOf(token, lines))).toEqual([
+      ['Krenko, Capocosca'],
+    ]);
   });
 
   it('names a card creating the token once, though two lines hold it', async () => {
@@ -286,8 +310,6 @@ describe('tokenCreatorsOf', () => {
       { lang: 'en', today },
     );
 
-    expect(suggested.map((token) => tokenCreatorsOf(token, lines).map(({ name }) => name))).toEqual(
-      [['Gold Forger']],
-    );
+    expect(suggested.map((token) => tokenCreatorNamesOf(token, lines))).toEqual([['Gold Forger']]);
   });
 });

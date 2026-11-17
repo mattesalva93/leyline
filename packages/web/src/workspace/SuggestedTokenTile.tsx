@@ -1,4 +1,4 @@
-import type { Card, SuggestedToken } from '@mtg-suite/core';
+import type { SuggestedToken } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
 import { CARD_SHAPE } from '../card-shape.ts';
 import { Icon } from '../ui/Icon.tsx';
@@ -15,11 +15,11 @@ function tokenLabel({ candidate: { card, defaultPrint } }: SuggestedToken): stri
  */
 export function SuggestedTokenTile({
   token,
-  creators,
+  creatorNames,
   onAdd,
 }: {
   readonly token: SuggestedToken;
-  readonly creators: readonly Card[];
+  readonly creatorNames: readonly string[];
   readonly onAdd: () => void;
 }) {
   const { t } = useTranslation();
@@ -53,7 +53,7 @@ export function SuggestedTokenTile({
         </div>
       </PileFreeTileFrame>
       <p className="text-xs leading-tight text-muted-foreground">
-        {t('suggestedTokens.createdBy', { cards: creators.map(({ name }) => name).join(', ') })}
+        {t('suggestedTokens.createdBy', { cards: creatorNames.join(', ') })}
       </p>
     </>
   );

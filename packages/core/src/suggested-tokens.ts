@@ -1,7 +1,6 @@
 import { defaultPrintFor, hasRealImage } from './default-print.ts';
 import { namedPrint, previewPrint, type PrintRef } from './decklist.ts';
 import type {
-  Card,
   Catalog,
   CatalogEntry,
   CreatedToken,
@@ -27,15 +26,23 @@ export function tokenQueryLineOf(line: DecklistLine): TokenQueryLine | null {
 }
 
 /**
- * The cards of `lines` creating `token`, first creator first, each once: `lines` are the ones
- * whose `TokenQueryLine`s were asked for the suggestion.
+ * The names of the cards of `lines` creating `token`, first creator first, each card once, as
+ * the print its line shows reads it: `lines` are the ones whose `TokenQueryLine`s were asked for
+ * the suggestion.
  */
-export function tokenCreatorsOf(token: SuggestedToken, lines: readonly DecklistLine[]): Card[] {
+export function tokenCreatorNamesOf(
+  token: SuggestedToken,
+  lines: readonly DecklistLine[],
+): string[] {
   const queriedLines = lines.filter(
     (line): line is ResolvedLine => tokenQueryLineOf(line) !== null,
   );
-  const creators = token.createdBy.flatMap((index) => queriedLines[index]?.card ?? []);
-  return [...new Map(creators.map((card) => [card.oracleId, card])).values()];
+  const creatingLines = token.createdBy.flatMap((index) => queriedLines[index] ?? []);
+  const firstLineOfEachCard = creatingLines.filter(
+    (line, index) =>
+      creatingLines.findIndex(({ card }) => card.oracleId === line.card.oracleId) === index,
+  );
+  return firstLineOfEachCard.map((line) => previewPrint(line)?.printedName ?? line.card.name);
 }
 
 /**

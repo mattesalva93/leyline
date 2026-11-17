@@ -19,7 +19,6 @@ import {
   unprintedLines,
   type AllocationChoice,
   type Candidate,
-  type Card,
   type DecklistLine,
   type DecklistSection,
   type Lang,
@@ -106,8 +105,8 @@ export interface Generator {
   readonly addCard: (section: DecklistSection, candidate: Candidate) => void;
   /** The tokens the cards of the decklist create that it does not hold yet. */
   readonly suggestedTokens: readonly SuggestedToken[];
-  /** The cards of the decklist creating one of `suggestedTokens`, first creator first. */
-  readonly creatorsOfSuggestedToken: (token: SuggestedToken) => readonly Card[];
+  /** The names of the cards creating one of `suggestedTokens`, in the language of their lines. */
+  readonly creatorNamesOfSuggestedToken: (token: SuggestedToken) => readonly string[];
   /** Writes a line of each of `tokens` into the Tokens section, already resolved. */
   readonly addSuggestedTokens: (tokens: readonly SuggestedToken[]) => void;
   /**
@@ -493,7 +492,7 @@ export function useGenerator(): Generator {
     hasRecognisedLine: recognisedLines.length > 0,
     decklist: { decklistText, choicesByLine, sheetOptions },
   });
-  const { suggestedTokens, creatorsOfSuggestedToken } = useSuggestedTokens(
+  const { suggestedTokens, creatorNamesOfSuggestedToken } = useSuggestedTokens(
     recognisedLines,
     defaultLang,
   );
@@ -522,7 +521,7 @@ export function useGenerator(): Generator {
     moveLine,
     addCard,
     suggestedTokens,
-    creatorsOfSuggestedToken,
+    creatorNamesOfSuggestedToken,
     addSuggestedTokens,
     isDecklistUnderWay: decklistUnderWay.isDecklistUnderWay,
     startNewDecklist,
