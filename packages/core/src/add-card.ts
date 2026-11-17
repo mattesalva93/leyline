@@ -98,7 +98,7 @@ export function addCardToSection(
 
 /**
  * The decklist text with `newLine` written after the last card of `section`. A section the
- * text has no header of opens at its end.
+ * text has no header of opens at its end, before the Tokens section if it has one.
  */
 export function writeLineAtSectionEnd(
   text: string,

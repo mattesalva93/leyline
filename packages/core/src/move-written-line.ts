@@ -54,14 +54,33 @@ function endOfSection(lines: readonly PlacedLine[], section: DecklistSection): n
   return last === -1 ? null : last + 1;
 }
 
-/** `lines` with the header of `section` written at the end, after a blank line. */
-function withSectionOpened(lines: readonly PlacedLine[], section: DecklistSection): PlacedLine[] {
-  const endsBlank = lines.at(-1)?.writtenLine.trim() === '';
+/**
+ * `lines` with the header of `section` written after a blank line, and where its first line goes:
+ * at the end, or before the Tokens header, so the Tokens section stays the last.
+ */
+function withSectionOpened(
+  lines: readonly PlacedLine[],
+  section: DecklistSection,
+): { readonly lines: PlacedLine[]; readonly at: number } {
   const written = (writtenLine: string): PlacedLine => ({
     writtenLine,
     previousWrittenIndex: null,
   });
-  return [...lines, ...(endsBlank ? [] : [written('')]), written(HEADER_OF_SECTION[section])];
+  const tokensHeader = lines.findIndex(
+    ({ writtenLine }) => sectionOpenedBy(writtenLine) === 'tokens',
+  );
+  const [before, after] =
+    tokensHeader === -1 ? [lines, []] : [lines.slice(0, tokensHeader), lines.slice(tokensHeader)];
+  const endsBlank = before.at(-1)?.writtenLine.trim() === '';
+  const opened = [
+    ...before,
+    ...(endsBlank ? [] : [written('')]),
+    written(HEADER_OF_SECTION[section]),
+  ];
+  return {
+    lines: [...opened, ...(after.length > 0 ? [written(''), ...after] : [])],
+    at: opened.length,
+  };
 }
 
 /**
@@ -83,7 +102,8 @@ function writtenInSection(
 
 /**
  * The decklist text with the line written at `writtenIndex` moved to `destination`, into its
- * section, which a header opens at the end of the text if the text has none yet. Blank lines,
+ * section, which a header opens at the end of the text, or before its Tokens section, if the text
+ * has none yet. Blank lines,
  * comments and headers stay where they are.
  */
 export function moveWrittenLine(
@@ -105,8 +125,13 @@ export function moveWrittenLine(
     at = target + (nextTo.side === 'after' ? 1 : 0);
   } else {
     const end = endOfSection(others, section);
-    if (end === null) others = withSectionOpened(others, section);
-    at = end ?? others.length;
+    if (end === null) {
+      const opened = withSectionOpened(others, section);
+      others = opened.lines;
+      at = opened.at;
+    } else {
+      at = end;
+    }
   }
   const placed = others.toSpliced(at, 0, movedLine);
   const writtenLines = placed.map(({ writtenLine }) => writtenLine);
