@@ -3602,14 +3602,12 @@ describe('the suggested tokens', () => {
     });
   });
 
-  it('shows each suggested token after the card grid, with its image and the cards creating it', async () => {
+  it('ends the card grid with the suggested tokens, each with its image and the cards creating it', async () => {
     await mountPageAndWrite('1 Gold Forger{Enter}1 Raise the Alarm{Enter}');
 
     const suggestions = await screen.findByRole('region', { name: 'Pedine proposte' });
     const grid = screen.getByRole('region', { name: 'Griglia delle carte' });
-    expect(
-      grid.compareDocumentPosition(suggestions) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    expect(within(grid).getAllByRole('region').at(-1)).toBe(suggestions);
     const treasure = within(suggestions).getByRole('listitem', { name: 'Treasure' });
     expect(within(treasure).getByRole('img', { name: 'Immagine di Treasure' })).toBeTruthy();
     expect(within(treasure).getByText('da Gold Forger')).toBeTruthy();
@@ -3629,7 +3627,7 @@ describe('the suggested tokens', () => {
     const user = await mountPageAndWrite('1 Gold Forger{Enter}1 Raise the Alarm{Enter}');
     await screen.findByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' });
 
-    await user.click(screen.getByRole('button', { name: 'Aggiungi tutte le pedine' }));
+    await user.click(screen.getByRole('button', { name: 'Aggiungi tutte' }));
 
     expect(decklistValue()).toContain('Tokens\n1 Treasure (TSNC) 16\n1 Soldier (TWAR) 3');
     expect(screen.queryByRole('region', { name: 'Pedine proposte' })).toBeNull();

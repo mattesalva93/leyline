@@ -493,7 +493,10 @@ export function useGenerator(): Generator {
     hasRecognisedLine: recognisedLines.length > 0,
     decklist: { decklistText, choicesByLine, sheetOptions },
   });
-  const { suggestedTokens, creatorsOf } = useSuggestedTokens(recognisedLines, defaultLang);
+  const { suggestedTokens, creatorsOfSuggestedToken } = useSuggestedTokens(
+    recognisedLines,
+    defaultLang,
+  );
   const unresolvedCount = cardLines.length - recognisedLines.length;
   const sheet = { options: sheetOptions, lines: recognisedLines };
   const sheetLayout = hasPrintableCopies(sheet) ? layoutSheet(sheet) : null;
@@ -519,7 +522,7 @@ export function useGenerator(): Generator {
     moveLine,
     addCard,
     suggestedTokens,
-    creatorsOfSuggestedToken: creatorsOf,
+    creatorsOfSuggestedToken,
     addSuggestedTokens,
     isDecklistUnderWay: decklistUnderWay.isDecklistUnderWay,
     startNewDecklist,

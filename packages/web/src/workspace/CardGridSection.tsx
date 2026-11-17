@@ -17,7 +17,7 @@ import { PrintTileCard } from './PrintTileCard.tsx';
 import { ReorderableTileItem } from './ReorderableTileItem.tsx';
 import { siblingGroupColoursOf } from './sibling-group-colours.ts';
 import { tileCellLabel, tileKeyHandler } from './tile-cell.ts';
-import { TILE_GRID_CLASS, tileGridStyle } from './tile-grid.ts';
+import { GRID_SECTION_TITLE_ROW_CLASS, TILE_GRID_CLASS, tileGridStyle } from './tile-grid.ts';
 import { cardWidthOf } from './CopyPile.tsx';
 import { tileTabHeightStyle, tileTabRowsOn } from './tile-tab-geometry.ts';
 import { useGridColumns } from './use-grid-columns.ts';
@@ -84,7 +84,7 @@ export function CardGridSection({
     });
   return (
     <section aria-labelledby={titleId}>
-      <h2 id={titleId} className="px-6 pt-3 pb-2 font-semibold">
+      <h2 id={titleId} className={`${GRID_SECTION_TITLE_ROW_CLASS} font-semibold`}>
         {t(`workspace.sections.${section.name}`)}{' '}
         <span className="text-sm font-normal text-muted-foreground">
           {t('workspace.cardCount', { count: section.cardCount })}

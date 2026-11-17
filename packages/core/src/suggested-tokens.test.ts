@@ -270,4 +270,24 @@ describe('tokenCreatorsOf', () => {
       [['Gold Forger', 'Smothering Tithe']],
     );
   });
+
+  it('names a card creating the token once, though two lines hold it', async () => {
+    const catalog = createInMemoryCatalog(
+      [goldForger, treasure],
+      [{ creatorPrintId: 'gold-forger-tst', tokenPrintId: 'treasure-tsnc' }],
+    );
+    const lines = await resolveDecklist('Gold Forger\nSideboard\nGold Forger', catalog, {
+      lang: 'en',
+      today,
+    });
+    const suggested = await suggestTokens(
+      catalog,
+      lines.flatMap((line) => tokenQueryLineOf(line) ?? []),
+      { lang: 'en', today },
+    );
+
+    expect(suggested.map((token) => tokenCreatorsOf(token, lines).map(({ name }) => name))).toEqual(
+      [['Gold Forger']],
+    );
+  });
 });

@@ -27,14 +27,15 @@ export function tokenQueryLineOf(line: DecklistLine): TokenQueryLine | null {
 }
 
 /**
- * The cards of `lines` creating `token`, first creator first: `lines` are the ones whose
- * `TokenQueryLine`s were asked for the suggestion.
+ * The cards of `lines` creating `token`, first creator first, each once: `lines` are the ones
+ * whose `TokenQueryLine`s were asked for the suggestion.
  */
 export function tokenCreatorsOf(token: SuggestedToken, lines: readonly DecklistLine[]): Card[] {
   const queriedLines = lines.filter(
     (line): line is ResolvedLine => tokenQueryLineOf(line) !== null,
   );
-  return token.createdBy.flatMap((index) => queriedLines[index]?.card ?? []);
+  const creators = token.createdBy.flatMap((index) => queriedLines[index]?.card ?? []);
+  return [...new Map(creators.map((card) => [card.oracleId, card])).values()];
 }
 
 /**
