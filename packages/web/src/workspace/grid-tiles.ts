@@ -42,6 +42,11 @@ export interface TileSelection {
   readonly printId: string | null;
 }
 
+/** What names the line of an imageless tile: its card once resolved, otherwise the line as written. */
+export function lineNameOf({ line, writtenLine }: ImagelessGridTile): string {
+  return line?.status === 'resolved' ? line.card.name : writtenLine.trim();
+}
+
 export function isSelected(gridTile: GridTile, selection: TileSelection | null): boolean {
   if (selection?.writtenIndex !== gridTile.writtenIndex) return false;
   return gridTile.kind === 'print' ? gridTile.tile.print.id === selection.printId : true;

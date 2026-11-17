@@ -3,11 +3,13 @@ import type { Generator } from '../use-generator.ts';
 import { CandidateButtons } from './CandidateButtons.tsx';
 import {
   isSelected,
+  lineNameOf,
   type GridTile,
   type ImagelessGridTile,
   type TileSelection,
 } from './grid-tiles.ts';
 import { LineToFixHint } from './LineToFixHint.tsx';
+import { RemoveLineButton } from './RemoveLineButton.tsx';
 
 /**
  * The selected tile when it stands for a line with no `LinePanel` (still to recognise, not found
@@ -24,12 +26,13 @@ export function lineToFixOf(
 /** A line to fix as it is written, what is wrong with it, and the cards an ambiguous one could mean. */
 export function LineToFixPanel({
   generator,
-  lineToFix: { reason, writtenIndex, writtenLine, line },
+  lineToFix,
 }: {
   readonly generator: Generator;
   readonly lineToFix: ImagelessGridTile;
 }) {
   const { t } = useTranslation();
+  const { reason, writtenIndex, writtenLine, line } = lineToFix;
   return (
     <div className="flex flex-col gap-3 text-sm">
       <p className="font-mono break-words">{writtenLine.trim()}</p>
@@ -39,6 +42,13 @@ export function LineToFixPanel({
         <CandidateButtons
           candidates={line.candidates}
           onPick={(oracleId) => generator.pickCandidate(writtenIndex, oracleId)}
+        />
+      )}
+      {reason !== 'pending' && (
+        <RemoveLineButton
+          lineName={lineNameOf(lineToFix)}
+          className="self-start"
+          onRemove={() => generator.removeLine(writtenIndex)}
         />
       )}
     </div>

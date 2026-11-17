@@ -2,6 +2,7 @@ import type { Print, PrintWarning, ResolvedLine } from '@mtg-suite/core';
 import { LinePanel } from '../LinePanel.tsx';
 import type { Generator } from '../use-generator.ts';
 import { isSelected, type GridTile, type TileSelection } from './grid-tiles.ts';
+import { RemoveLineButton } from './RemoveLineButton.tsx';
 
 /** A line that has a `LinePanel`: a resolved one, with where it is written. */
 export interface PanelLine {
@@ -40,7 +41,7 @@ export function SelectedLinePanel({
   /** Grows each time the user selects a tile, the one already selected included. */
   readonly tileSelectionCount: number;
 }) {
-  return (
+  const linePanel = (
     <LinePanel
       // A new line starts its panel afresh, on the print of its tile.
       key={writtenIndex}
@@ -54,5 +55,17 @@ export function SelectedLinePanel({
         generator.changeTileQuantity(writtenIndex, print, quantity)
       }
     />
+  );
+  // Opened from an imageless tile, the line has no print to take its copies off: it goes whole.
+  if (tilePrint) return linePanel;
+  return (
+    <div className="flex flex-col gap-4">
+      {linePanel}
+      <RemoveLineButton
+        lineName={line.card.name}
+        className="self-start"
+        onRemove={() => generator.removeLine(writtenIndex)}
+      />
+    </div>
   );
 }
