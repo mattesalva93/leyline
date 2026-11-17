@@ -57,7 +57,7 @@ export function LinePanel({
     () => {
       const panel = panelRef.current;
       const gridWidth = panel ? contentWidthOf(panel) : window.innerWidth;
-      return printPageSize(gridWidth, window.innerHeight);
+      return printPageSize(gridWidth, window.innerHeight, 'auto-fill');
     },
   );
   const frontFace = previewPrint(line)?.faces[0];
