@@ -19,7 +19,7 @@ import { Icon } from '../ui/Icon.tsx';
 import { CardSearchPanel } from './CardSearchPanel.tsx';
 import { SectionPicker } from './SectionPicker.tsx';
 import { pileFreeTileFrame } from './CopyPile.tsx';
-import { TILE_TAB_HEIGHT_PX } from './PrintTileCard.tsx';
+import { TILE_TAB_HEIGHT } from './tile-tab-geometry.ts';
 import type { GridCellProps } from './use-grid-cell-focus.ts';
 import { FOCUS_LINE_STYLE, SHOWN_ON_OWN_FOCUS } from './focus-line.ts';
 
@@ -61,7 +61,7 @@ export function AddCardTile({ section, lang, cell, onAdd }: AddCardTileProps) {
         setIsOpen(open);
       }}
     >
-      <div style={pileFreeTileFrame(TILE_TAB_HEIGHT_PX)}>
+      <div style={pileFreeTileFrame(TILE_TAB_HEIGHT)}>
         <DialogTrigger
           {...cell}
           aria-label={tileLabel}

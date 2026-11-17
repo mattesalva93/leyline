@@ -13,12 +13,12 @@ const COPY_STEP_PX = 4;
 export const COPY_PILE_FOOTPRINT_PX = MAX_COPIES * COPY_STEP_PX;
 
 /**
- * The room a tile without a pile leaves beside its card, below the tab height `tabHeightPx`, so
- * its card lines up with a print's.
+ * The room a tile without a pile leaves beside its card, below the tab height `tabHeight` (a CSS
+ * length), so its card lines up with a print's.
  */
-export function pileFreeTileFrame(tabHeightPx: number): CSSProperties {
+export function pileFreeTileFrame(tabHeight: string): CSSProperties {
   return {
-    paddingTop: tabHeightPx,
+    paddingTop: tabHeight,
     paddingRight: COPY_PILE_FOOTPRINT_PX,
     paddingBottom: COPY_PILE_FOOTPRINT_PX,
   };
