@@ -36,9 +36,7 @@ export function CardVersionCaption({
   const print = candidate.defaultPrint;
   return (
     <span aria-hidden className="line-clamp-2 h-[2lh] text-[11px] leading-tight">
-      {print && (
-        <span className="font-semibold whitespace-nowrap">{setAndNumberOf(print, t)} </span>
-      )}
+      {print && <span className="font-semibold">{setAndNumberOf(print, t)} </span>}
       <span className={`font-light ${isOverImage ? 'text-white/80' : 'text-muted-foreground'}`}>
         {powerToughnessAndKeywordsOf(candidate.card, lang)}
       </span>
