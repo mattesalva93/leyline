@@ -1,5 +1,5 @@
 import { copiesByPrint } from './allocation.ts';
-import { defaultPrintFor, hasRealImage, qualityWarning } from './default-print.ts';
+import { hasRealImage, qualityWarning } from './default-print.ts';
 import { namedCandidate, withoutOutranked } from './same-name-preference.ts';
 import { SIDEBOARD_PREFIX, sectionOpenedBy } from './decklist-section.ts';
 import { LINE_BREAK } from './line-breaks.ts';
@@ -128,9 +128,7 @@ function resolveLine(
     return resolvedLine({ ...base, lang: explicitLang }, candidate);
   }
   const candidates = withoutOutranked(
-    closest.map((entry) =>
-      namedCandidate(entry, { card: entry.card, ...defaultPrintFor(entry.prints, lang, today) }),
-    ),
+    closest.map((entry) => namedCandidate(entry, { lang, today })),
   );
   const [match] = candidates;
   if (!match) return { ...base, status: 'notFound' };

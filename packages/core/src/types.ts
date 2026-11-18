@@ -174,6 +174,16 @@ export interface Candidate {
   readonly printWarning: PrintWarning | null;
 }
 
+/** A card a name search found. */
+export interface FoundCard extends Candidate {
+  /**
+   * How many cards `listCardsNamed` lists for the name of its front face. A found card missing
+   * from that list, such as an art series card the card it is named after outranks, is not
+   * counted.
+   */
+  readonly sameNamedCardCount: number;
+}
+
 export interface ResolvedLine extends DecklistLineBase, Candidate {
   readonly status: 'resolved';
   readonly allocations: readonly Allocation[];

@@ -17,11 +17,21 @@ export function nameKey(name: string): string {
 
 const FACE_SEPARATOR = ' // ';
 
+/** The name of a multi-face name's front face ("Front" of "Front // Back"); others as they are. */
+function frontFaceName(name: string): string {
+  return name.split(FACE_SEPARATOR)[0] ?? name;
+}
+
+/** The lookup key of the front face of `name` (see `frontFaceName`). */
+export function frontFaceKey(name: string): string {
+  return nameKey(frontFaceName(name));
+}
+
 /** Keys a line may use for a name: the full name, and its front face for multi-face names. */
 function nameKeys(name: string): string[] {
-  const [frontFace] = name.split(FACE_SEPARATOR);
+  const frontFace = frontFaceName(name);
   const keys = [nameKey(name)];
-  if (frontFace !== undefined && frontFace !== name) keys.push(nameKey(frontFace));
+  if (frontFace !== name) keys.push(nameKey(frontFace));
   return keys;
 }
 

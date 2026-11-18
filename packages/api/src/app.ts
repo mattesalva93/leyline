@@ -3,6 +3,7 @@ import {
   countPrintsByLang,
   isLang,
   isPrintCursor,
+  listCardsNamed,
   listPrints,
   MAX_PRINT_QUERY_LENGTH,
   resolveDecklist,
@@ -25,8 +26,8 @@ const MAX_DECKLIST_LENGTH = 50_000;
 /** Most prints one call returns, whatever the client asks for: keeps every response small. */
 const MAX_PRINTS_PER_PAGE = 50;
 
-/** Longest name a search accepts, in characters: far above any card name. */
-const MAX_SEARCH_LENGTH = 200;
+/** Longest name a search or a same-name listing accepts, in characters: far above any card name. */
+const MAX_NAME_LENGTH = 200;
 
 /** Most lines a token suggestion takes: far above a 100-card deck. */
 const MAX_TOKEN_QUERY_LINES = 5_000;
@@ -47,6 +48,18 @@ function resolveRequest(body: unknown): { text: string; lang: Lang } | null {
   const { text, lang = 'en' } = body as { text?: unknown; lang?: unknown };
   if (typeof text !== 'string' || text.length > MAX_DECKLIST_LENGTH) return null;
   return isLang(lang) ? { text, lang } : null;
+}
+
+/** Whether a card name asked in a query is neither blank nor longer than `MAX_NAME_LENGTH`. */
+function isValidNameQuery(value: string | undefined): value is string {
+  return value !== undefined && value.trim() !== '' && value.length <= MAX_NAME_LENGTH;
+}
+
+/** The 400 body of a request whose `param` or `lang` query is missing or wrong. */
+function nameQueryError(param: string): { error: string } {
+  return {
+    error: `Expected the query ?${param}=<a name of up to ${MAX_NAME_LENGTH} characters>&lang=en|it.`,
+  };
 }
 
 function isId(value: unknown): value is string {
@@ -110,20 +123,20 @@ export function createApp(deps: AppDeps): Hono {
 
   app.get('/api/cards/search', async (c) => {
     const { q, lang = 'en' } = c.req.query();
-    if (q === undefined || q.trim() === '' || q.length > MAX_SEARCH_LENGTH || !isLang(lang)) {
-      return c.json(
-        {
-          error: `Expected the query ?q=<a name of up to ${MAX_SEARCH_LENGTH} characters>&lang=en|it.`,
-        },
-        400,
-      );
-    }
+    if (!isValidNameQuery(q) || !isLang(lang)) return c.json(nameQueryError('q'), 400);
     const cards = await searchCards(catalog, {
       query: q,
       lang,
       today: today(),
       limit: CARD_SEARCH_LIMIT,
     });
+    return c.json({ cards });
+  });
+
+  app.get('/api/cards/named', async (c) => {
+    const { name, lang = 'en' } = c.req.query();
+    if (!isValidNameQuery(name) || !isLang(lang)) return c.json(nameQueryError('name'), 400);
+    const cards = await listCardsNamed(catalog, { name, lang, today: today() });
     return c.json({ cards });
   });
 

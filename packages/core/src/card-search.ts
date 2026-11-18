@@ -1,7 +1,7 @@
-import { defaultPrintFor } from './default-print.ts';
 import { MIN_SIMILARITY, nameKey } from './name-match.ts';
+import { withSameNamedCardCounts } from './same-named-cards.ts';
 import { afterPreferredSameNamed, namedCandidate } from './same-name-preference.ts';
-import type { Candidate, Catalog, Lang } from './types.ts';
+import type { Catalog, FoundCard, Lang } from './types.ts';
 
 /** How many cards a name search returns: few enough to show each with its image. */
 export const CARD_SEARCH_LIMIT = 8;
@@ -21,18 +21,18 @@ export interface CardSearch {
  * The cards whose name matches `query`, best match first, each with its default print: named
  * exactly so, then named starting so, then named about so, forgiving misspellings as resolving
  * a decklist line does. A card sharing a name with another whose default print is more preferred
- * comes right after it: a card before the art series card named after it.
+ * comes right after it: a card before the art series card named after it. Each card tells how
+ * many cards share the name of its front face.
  */
 export async function searchCards(
   catalog: Catalog,
   { query, lang, today, limit }: CardSearch,
-): Promise<Candidate[]> {
+): Promise<FoundCard[]> {
   const key = nameKey(query);
   if (key === '') return [];
   const entries = await catalog.searchByName(key, { minSimilarity: MIN_SIMILARITY, limit });
-  return afterPreferredSameNamed(
-    entries.map((entry) =>
-      namedCandidate(entry, { card: entry.card, ...defaultPrintFor(entry.prints, lang, today) }),
-    ),
+  const found = afterPreferredSameNamed(
+    entries.map((entry) => namedCandidate(entry, { lang, today })),
   );
+  return withSameNamedCardCounts(catalog, found, { lang, today });
 }
