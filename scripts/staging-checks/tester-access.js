@@ -5,6 +5,10 @@ import { PUBLIC_PATHS } from './public-paths.js';
 /** The challenge that makes a browser show its own login prompt. */
 const BASIC_CHALLENGE = /^Basic\b/;
 
+function basicAuthorization(username, password) {
+  return { Authorization: `Basic ${btoa(`${username}:${password}`)}` };
+}
+
 /**
  * @param {{
  *   anonymousRequest: import('playwright').APIRequestContext,
@@ -13,12 +17,11 @@ const BASIC_CHALLENGE = /^Basic\b/;
  * }} staging
  */
 export async function testerAccessFailures({ anonymousRequest, appAddress, testerCredential }) {
-  const wrongPassword = `${testerCredential.password}-wrong`;
+  const { username, password } = testerCredential;
   const attempts = {
     'no credential': {},
-    'a wrong password': {
-      Authorization: `Basic ${btoa(`${testerCredential.username}:${wrongPassword}`)}`,
-    },
+    'a wrong password': basicAuthorization(username, `${password}-wrong`),
+    'an unknown username': basicAuthorization(`${username}-unknown`, password),
   };
   const failures = [];
   for (const path of PUBLIC_PATHS) {
