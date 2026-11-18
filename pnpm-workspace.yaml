@@ -10,3 +10,8 @@ audit:
     # picomatch ReDoS, no fixed version yet. It reaches only dev tooling (vite, knip), never the
     # production dependencies (`pnpm audit --prod`), and its globs come from our own config.
     - GHSA-fc5q-39xc-vjpf
+
+peerDependencyRules:
+  allowedVersions:
+    # It runs on ESLint 10 through @eslint/compat's fixupPluginRules (eslint.config.js).
+    eslint-plugin-react>eslint: '10'

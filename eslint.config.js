@@ -1,4 +1,5 @@
 // @ts-check
+import { fixupPluginRules } from '@eslint/compat';
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
 import react from 'eslint-plugin-react';
@@ -91,7 +92,8 @@ const apiNoWeb = {
  */
 const webNoJsxLiterals = {
   files: ['packages/web/**/*.tsx'],
-  plugins: { react, 'react-hooks': reactHooks },
+  // eslint-plugin-react still calls the context methods ESLint 10 removed.
+  plugins: { react: fixupPluginRules(react), 'react-hooks': reactHooks },
   languageOptions: { globals: globals.browser },
   settings: { react: { version: 'detect' } },
   rules: {
