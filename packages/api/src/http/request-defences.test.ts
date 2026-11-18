@@ -62,6 +62,20 @@ describe('the request body limit', () => {
     ]);
   });
 
+  it('logs the network of the client behind the trusted proxy, not the proxy', async () => {
+    const { origin, securityLog } = await serveApp({ trustedProxyHost: 'localhost' });
+
+    await fetch(`${origin}/api/decklists/resolve`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.7' },
+      body: JSON.stringify({ text: 'x'.repeat(MIB) }),
+    });
+
+    expect(securityLog.events).toEqual([
+      expect.objectContaining({ kind: 'body-too-large', clientNetwork: '203.0.113.0' }),
+    ]);
+  });
+
   it('stops reading a body streamed without a length once it passes 1 MiB', async () => {
     const { origin } = await serveApp();
     const chunk = new TextEncoder().encode('x'.repeat(64 * 1024));
