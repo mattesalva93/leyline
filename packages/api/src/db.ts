@@ -2,7 +2,7 @@ import postgres from 'postgres';
 
 export type Sql = postgres.Sql;
 
-export interface ConnectOptions {
+interface ConnectOptions {
   /** Schema to work in, before `public`. Tests use one per file. */
   readonly schema?: string;
 }

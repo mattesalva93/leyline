@@ -1,7 +1,7 @@
 import { LARGE_IMAGE } from './scryfall-image-sizes.ts';
 
 /** A box on screen, in CSS px from the viewport's top left corner. */
-export interface ScreenBox {
+interface ScreenBox {
   readonly left: number;
   readonly top: number;
   readonly right: number;
@@ -15,7 +15,7 @@ export const ZOOMED_CARD_PX = {
 } as const;
 
 /** The space the zoomed card keeps from what it stands beside and from the screen's edges. */
-export const ZOOMED_CARD_GAP_PX = 20;
+const ZOOMED_CARD_GAP_PX = 20;
 
 interface ZoomedCardPlacementInput {
   /** The card the pointer rests on: the zoomed card centres on it in height. */

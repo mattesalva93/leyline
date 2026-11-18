@@ -8,7 +8,7 @@ import {
 import { useEffect, useState } from 'react';
 import { fetchSuggestedTokens } from './api.ts';
 
-export interface TokenSuggestions {
+interface TokenSuggestions {
   readonly suggestedTokens: readonly SuggestedToken[];
   /** The names of the cards creating one of `suggestedTokens`, as their lines show them. */
   readonly creatorNamesOfSuggestedToken: (token: SuggestedToken) => readonly string[];

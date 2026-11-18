@@ -20,7 +20,7 @@ export const SIDE_PANEL_WIDTH_PX = {
 export const SIDE_PANEL_KEY_STEP_PX = 20;
 
 /** `width` brought within the narrowest and the widest `panel` gets. */
-export function clampSidePanelWidth(panel: SidePanelName, width: number): number {
+function clampSidePanelWidth(panel: SidePanelName, width: number): number {
   const { min, max } = SIDE_PANEL_WIDTH_PX[panel];
   return Math.min(max, Math.max(min, width));
 }

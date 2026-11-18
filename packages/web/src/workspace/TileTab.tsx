@@ -18,7 +18,7 @@ const BUTTON_STATES =
   'hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-accent';
 
 /** The copies of the tile, which its minus and plus change. */
-export interface TileTabQuantity {
+interface TileTabQuantity {
   readonly count: number;
   readonly decreaseLabel: string;
   readonly increaseLabel: string;
@@ -27,7 +27,7 @@ export interface TileTabQuantity {
 }
 
 /** The flip of a double-faced card, which turns the tile to its other face. */
-export interface TileTabFlip {
+interface TileTabFlip {
   readonly label: string;
   readonly isFlipped: boolean;
   readonly onFlip: () => void;

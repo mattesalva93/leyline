@@ -1,7 +1,7 @@
 import { CARD_MM } from '@mtg-suite/core';
 
 /** Narrowest a print shows in the print picker grid, in CSS px; the grid stretches it to fit. */
-export const PRINT_TILE_MIN_WIDTH = 104;
+const PRINT_TILE_MIN_WIDTH = 104;
 /** Space between tiles, in CSS px. */
 export const PRINT_TILE_GAP = 8;
 /** Height of the set and quality lines and the copy counter under a tile's image, in CSS px. */

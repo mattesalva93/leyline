@@ -9,5 +9,3 @@ await i18next.use(initReactI18next).init({
   resources: { it: { translation: it } },
   interpolation: { escapeValue: false }, // React already escapes.
 });
-
-export default i18next;

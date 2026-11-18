@@ -30,7 +30,7 @@ export function pileFreeTileFrame(tabHeight: string): CSSProperties {
 }
 
 /** How many copies the pile of a tile holding `copies` copies draws. */
-export function copyPileCopyCount(copies: number): number {
+function copyPileCopyCount(copies: number): number {
   return Math.min(Math.max(copies - 1, 0), MAX_COPIES);
 }
 

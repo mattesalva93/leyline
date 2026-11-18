@@ -7,10 +7,10 @@ import { SEARCH_TYPING_WAIT_MS } from '../search-typing-wait.ts';
  * How many characters a name needs before it is searched: fewer match too many cards for the
  * trigram index to narrow them down (ADR 0003).
  */
-export const MIN_CARD_SEARCH_LENGTH = 2;
+const MIN_CARD_SEARCH_LENGTH = 2;
 
 /** Where a name search stands: too little typed, on its way, answered, or failed. */
-export type CardSearchState =
+type CardSearchState =
   | { readonly status: 'idle' }
   | { readonly status: 'searching' }
   | { readonly status: 'found'; readonly cards: readonly FoundCard[] }

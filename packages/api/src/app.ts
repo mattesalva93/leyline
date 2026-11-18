@@ -16,7 +16,7 @@ import { Hono } from 'hono';
 import type { Sql } from './db.ts';
 import { createPostgresCatalog } from './postgres-catalog.ts';
 
-export interface AppDeps {
+interface AppDeps {
   readonly sql: Sql;
 }
 

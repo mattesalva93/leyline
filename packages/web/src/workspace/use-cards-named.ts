@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { fetchCardsNamed } from '../api.ts';
 
 /** Where the listing of the cards sharing a name stands. */
-export type CardsNamedState =
+type CardsNamedState =
   | { readonly status: 'loading' }
   | { readonly status: 'found'; readonly cards: readonly Candidate[] }
   | { readonly status: 'failed' };

@@ -17,7 +17,7 @@ const STORAGE_KEY = 'mtg-suite.decklist';
 const SAVED_DECKLIST_VERSION = 1;
 
 /** The work on the decklist the generator keeps on the device. Resolutions are not kept. */
-export interface SavedDecklist {
+interface SavedDecklist {
   readonly decklistText: string;
   /** The choices of each written line, keyed as `choicesKeysOf` names them. */
   readonly choicesByLine: readonly (readonly [string, LineChoices])[];

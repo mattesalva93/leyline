@@ -6,7 +6,7 @@ import { isSelected, type GridTile, type TileSelection } from './grid-tiles.ts';
 import { RemoveLineButton } from './RemoveLineButton.tsx';
 
 /** A line that has a `LinePanel`: a resolved one, with where it is written. */
-export interface PanelLine {
+interface PanelLine {
   readonly writtenIndex: number;
   readonly line: ResolvedLine;
   /** The warning of the tile the panel was opened from: siblings can differ. */
