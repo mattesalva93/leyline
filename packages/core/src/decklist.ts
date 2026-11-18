@@ -226,9 +226,25 @@ export function setLineQuantity(line: DecklistLine, quantity: number): DecklistL
 
 /** The written line rewritten for `quantity` copies, as the user would write it. */
 export function writtenWithQuantity(writtenLine: string, quantity: number): string {
-  const [, beforeQuantity = '', , timesMark = '', rest = ''] =
-    WRITTEN_QUANTITY.exec(writtenLine) ?? [];
-  return `${beforeQuantity}${quantity}${timesMark} ${rest}`;
+  return writtenFromParts(writtenLine, quantity, writtenLineParts(writtenLine).card);
+}
+
+/** A written line split into its quantity, written or implicit, and the card it names after it. */
+export function writtenLineParts(writtenLine: string): {
+  readonly quantity: number;
+  readonly card: string;
+} {
+  const [, , quantity, , card = ''] = WRITTEN_QUANTITY.exec(writtenLine) ?? [];
+  return { quantity: quantity ? Number(quantity) : 1, card };
+}
+
+/**
+ * The written line with `quantity` copies of `card`, keeping what comes before the quantity
+ * (indentation, "SB:") and its "x", as the user would write it.
+ */
+export function writtenFromParts(writtenLine: string, quantity: number, card: string): string {
+  const [, beforeQuantity = '', , timesMark = ''] = WRITTEN_QUANTITY.exec(writtenLine) ?? [];
+  return `${beforeQuantity}${quantity}${timesMark} ${card}`;
 }
 
 /** How many copies `lines` ask for in all, printable or not. */

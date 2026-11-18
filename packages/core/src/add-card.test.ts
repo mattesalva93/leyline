@@ -142,4 +142,76 @@ describe('addCardToSection', () => {
     expect(addition).toMatchObject({ writtenIndex: 1, previousWrittenIndexes: [null, null] });
     expect(sectionOfEachWrittenLine(writtenLinesOf(addition.text))[1]).toBe('sideboard');
   });
+
+  describe('of a token', () => {
+    const soldierPrint = aPrint({
+      id: 'soldier-tfrc-3',
+      set: 'tfrc',
+      collectorNumber: '3',
+      layout: 'token',
+    });
+    const SOLDIER: Candidate = {
+      card: aCard({ oracleId: 'soldier-white', name: 'Soldier' }),
+      defaultPrint: soldierPrint,
+      printWarning: null,
+    };
+
+    it('writes the line by the set and number of its default print', () => {
+      const addition = addCardToSection(
+        'Tokens\n1 Soldier (TWAR) 5',
+        { section: 'tokens', candidate: SOLDIER, lang: 'en' },
+        [],
+      );
+
+      expect(addition.text).toBe('Tokens\n1 Soldier (TWAR) 5\n1 Soldier (TFRC) 3');
+      expect(addition).toMatchObject({ added: 'line', line: { text: '1 Soldier (TFRC) 3' } });
+    });
+
+    it('adds a copy to the line resolved to the token, whatever print it names', () => {
+      const line = {
+        ...SOLDIER,
+        text: '1 Soldier (TWAR) 5',
+        quantity: 1,
+        lang: 'en' as const,
+        status: 'resolved' as const,
+        allocations: [],
+      };
+
+      const addition = addCardToSection(
+        'Tokens\n1 Soldier (TWAR) 5',
+        { section: 'tokens', candidate: SOLDIER, lang: 'en' },
+        [{ writtenIndex: 1, line }],
+      );
+
+      expect(addition).toMatchObject({ added: 'copy', text: 'Tokens\n2 Soldier (TWAR) 5' });
+    });
+
+    it('adds a copy to a line not resolved yet that names its print by set and number', () => {
+      const addition = addCardToSection(
+        'Tokens\n1 Soldier (TFRC) 3',
+        { section: 'tokens', candidate: SOLDIER, lang: 'en' },
+        [],
+      );
+
+      expect(addition).toMatchObject({ added: 'copy', text: 'Tokens\n2 Soldier (TFRC) 3' });
+    });
+
+    it('never takes a line written with its name alone for its line: other tokens share it', () => {
+      const ambiguous = {
+        text: '1 Soldier',
+        quantity: 1,
+        lang: 'en' as const,
+        status: 'ambiguous' as const,
+        candidates: [SOLDIER, { ...SOLDIER, card: aCard({ oracleId: 'soldier-red' }) }],
+      };
+
+      const addition = addCardToSection(
+        'Tokens\n1 Soldier',
+        { section: 'tokens', candidate: SOLDIER, lang: 'en' },
+        [{ writtenIndex: 1, line: ambiguous }],
+      );
+
+      expect(addition.text).toBe('Tokens\n1 Soldier\n1 Soldier (TFRC) 3');
+    });
+  });
 });

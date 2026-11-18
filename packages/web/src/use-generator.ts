@@ -16,6 +16,7 @@ import {
   moveWrittenLine,
   sectionOfEachWrittenLine,
   setLineQuantity,
+  tokenLineNamingItsPrint,
   unprintedLines,
   type AllocationChoice,
   type Candidate,
@@ -47,6 +48,16 @@ type ResolutionsByLanguage = ReadonlyMap<string, DecklistLine | null>;
 
 function resolutionKey(lang: Lang, writtenLine: string): string {
   return `${lang}:${writtenLine}`;
+}
+
+/** `resolution` with the user's picks on its line (candidate, allocations) applied. */
+function withChoices(resolution: DecklistLine, choices: LineChoices | undefined): DecklistLine {
+  const { oracleId, allocations } = choices ?? {};
+  const withCandidate =
+    oracleId === undefined ? resolution : applyCandidateChoice(resolution, oracleId);
+  return allocations === undefined
+    ? withCandidate
+    : applyAllocationChoice(withCandidate, allocations);
 }
 
 /** One written line of the decklist that names a card, or may once the server resolves it. */
@@ -270,16 +281,8 @@ export function useGenerator(): Generator {
    * resolved yet.
    */
   function displayedLine(writtenIndex: number): DecklistLine | null | undefined {
-    const writtenLine = writtenLines[writtenIndex];
-    if (writtenLine === undefined) return undefined;
-    const resolution = resolutions.get(resolutionKey(defaultLang, writtenLine));
-    if (!resolution) return resolution;
-    const { oracleId, allocations } = choicesAt(writtenIndex) ?? {};
-    const withCandidate =
-      oracleId === undefined ? resolution : applyCandidateChoice(resolution, oracleId);
-    return allocations === undefined
-      ? withCandidate
-      : applyAllocationChoice(withCandidate, allocations);
+    const resolution = resolutionAt(writtenIndex);
+    return resolution ? withChoices(resolution, choicesAt(writtenIndex)) : resolution;
   }
 
   /** The resolution of the line written at `writtenIndex` in the default language, if any yet. */
@@ -292,14 +295,37 @@ export function useGenerator(): Generator {
 
   /**
    * Keeps `resolution` for its line's text rewritten for `quantity` copies, so the rewritten line
-   * needs no new request, and returns that text. The quantity goes on the resolution as the
+   * needs no new request, and returns that resolution. The quantity goes on the resolution as the
    * server sent it, never on the displayed line: the choices are applied again on top, so
    * nothing they derived goes stale.
    */
-  function keepResolutionOfRewrittenLine(resolution: DecklistLine, quantity: number): string {
+  function keepResolutionOfRewrittenLine(resolution: DecklistLine, quantity: number): DecklistLine {
     const rewritten = setLineQuantity(resolution, quantity);
     keepResolution(rewritten.text, rewritten);
-    return rewritten.text;
+    return rewritten;
+  }
+
+  /**
+   * Writes the line at `writtenIndex`, resolved to `resolution`, again with `choices`. A token
+   * line's text names its print, so two tokens sharing a name never share a resolution: once the
+   * text names it, the card is no longer a choice kept apart, and the new text needs no request.
+   */
+  function writeLineWithChoices(
+    writtenIndex: number,
+    resolution: DecklistLine,
+    choices: LineChoices | undefined,
+    nextWrittenLines: readonly string[] = writtenLines,
+  ) {
+    const line = withChoices(resolution, choices);
+    const namingItsPrint = line.status === 'resolved' ? tokenLineNamingItsPrint(line) : null;
+    if (namingItsPrint) keepResolution(namingItsPrint.resolution.text, namingItsPrint.resolution);
+    writeRewrittenLines(
+      nextWrittenLines.with(writtenIndex, namingItsPrint?.resolution.text ?? resolution.text),
+      choicesOfEveryLine().with(
+        writtenIndex,
+        namingItsPrint ? { allocations: namingItsPrint.allocations } : choices,
+      ),
+    );
   }
 
   /** Keeps `resolution` as what `writtenLine` resolves to, so it needs no request. */
@@ -317,15 +343,12 @@ export function useGenerator(): Generator {
   function changeLineQuantity(writtenIndex: number, quantity: number) {
     const resolution = resolutionAt(writtenIndex);
     if (!resolution) return;
-    const rewrittenLine = keepResolutionOfRewrittenLine(resolution, quantity);
+    const rewritten = keepResolutionOfRewrittenLine(resolution, quantity);
     const choices = choicesAt(writtenIndex);
     const fitted = choices?.allocations && {
       allocations: fitAllocations(choices.allocations, quantity),
     };
-    writeRewrittenLines(
-      writtenLines.with(writtenIndex, rewrittenLine),
-      choicesOfEveryLine().with(writtenIndex, choices && { ...choices, ...fitted }),
-    );
+    writeLineWithChoices(writtenIndex, rewritten, choices && { ...choices, ...fitted });
   }
 
   /** Rewrites the decklist text for the tile's new quantity, keeping its line's choices. */
@@ -338,15 +361,27 @@ export function useGenerator(): Generator {
       removeLine(writtenIndex);
       return;
     }
-    keepResolutionOfRewrittenLine(resolution, change.line.quantity);
+    const rewritten = keepResolutionOfRewrittenLine(resolution, change.line.quantity);
     const allocations = {
       oracleId: change.line.card.oracleId,
       allocations: change.line.allocations,
     };
-    writeRewrittenLines(
+    writeLineWithChoices(
+      writtenIndex,
+      rewritten,
+      { ...choicesAt(writtenIndex), allocations },
       writtenLinesOf(change.text),
-      choicesOfEveryLine().with(writtenIndex, { ...choicesAt(writtenIndex), allocations }),
     );
+  }
+
+  /** Applies `change` to the choices of the line written at `writtenIndex`, writing it again. */
+  function changeChoicesAt(writtenIndex: number, change: LineChoices) {
+    const resolution = resolutionAt(writtenIndex);
+    if (!resolution) {
+      updateChoicesAt(writtenIndex, change);
+      return;
+    }
+    writeLineWithChoices(writtenIndex, resolution, { ...choicesAt(writtenIndex), ...change });
   }
 
   function removeLine(writtenIndex: number) {
@@ -512,12 +547,12 @@ export function useGenerator(): Generator {
     defaultLang,
     changeDefaultLanguage: (lang) => void changeDefaultLanguage(lang),
     cardLines,
-    pickCandidate: (writtenIndex, oracleId) => updateChoicesAt(writtenIndex, { oracleId }),
+    pickCandidate: (writtenIndex, oracleId) => changeChoicesAt(writtenIndex, { oracleId }),
     changeLineQuantity,
     changeTileQuantity,
     removeLine,
     chooseAllocations: (writtenIndex, allocations) =>
-      updateChoicesAt(writtenIndex, { allocations }),
+      changeChoicesAt(writtenIndex, { allocations }),
     moveLine,
     addCard,
     suggestedTokens,

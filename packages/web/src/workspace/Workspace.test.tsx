@@ -2906,27 +2906,27 @@ describe('the landing page', () => {
   });
 });
 
-describe('the add tile', () => {
-  /**
-   * Opens the search of the add tile ending `section`, or the only add tile when `null`, picks
-   * `sectionToPick` if any, and types `name` into the search.
-   */
-  async function searchToAdd(
-    user: ReturnType<typeof userEvent.setup>,
-    section: string | null,
-    name: string,
-    sectionToPick?: string,
-  ) {
-    await user.click(
-      await screen.findByRole('button', {
-        name: section ? `Aggiungi una carta a ${section}` : 'Aggiungi carta',
-      }),
-    );
-    if (sectionToPick) await user.click(screen.getByRole('radio', { name: sectionToPick }));
-    await user.type(screen.getByRole('combobox', { name: 'Nome della carta' }), name);
-    return screen.findByRole('listbox', { name: 'Carte trovate' });
-  }
+/**
+ * Opens the search of the add tile ending `section`, or the only add tile when `null`, picks
+ * `sectionToPick` if any, and types `name` into the search.
+ */
+async function searchToAdd(
+  user: ReturnType<typeof userEvent.setup>,
+  section: string | null,
+  name: string,
+  sectionToPick?: string,
+) {
+  await user.click(
+    await screen.findByRole('button', {
+      name: section ? `Aggiungi una carta a ${section}` : 'Aggiungi carta',
+    }),
+  );
+  if (sectionToPick) await user.click(screen.getByRole('radio', { name: sectionToPick }));
+  await user.type(screen.getByRole('combobox', { name: 'Nome della carta' }), name);
+  return screen.findByRole('listbox', { name: 'Carte trovate' });
+}
 
+describe('the add tile', () => {
   it('ends each section of the grid', async () => {
     await mountPageAndWrite('4 Sol Ring{Enter}{Enter}Sideboard{Enter}1 Pyroblast{Enter}');
     await screen.findByRole('button', { name: 'Modifica Pyroblast' });
@@ -3650,5 +3650,137 @@ describe('the suggested tokens', () => {
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' })).toBeNull(),
     );
+  });
+});
+
+describe('the token lines', () => {
+  const tokenPrint = (oracleId: string, set: string, number: string, releasedAt: string) => ({
+    ...printOf('Soldier', `${oracleId}-${set}`, set, releasedAt),
+    collectorNumber: number,
+    layout: 'token',
+  });
+  /** A white Soldier printed in two token sets, and a red one: three tokens sharing a name. */
+  const WHITE_SOLDIER: CatalogEntry = {
+    card: aCard({ oracleId: 'white-soldier', name: 'Soldier' }),
+    prints: [
+      tokenPrint('white-soldier', 'tfrc', '3', '2021-01-01'),
+      tokenPrint('white-soldier', 'twar', '5', '2019-01-01'),
+    ],
+  };
+  const RED_SOLDIER: CatalogEntry = {
+    card: aCard({ oracleId: 'red-soldier', name: 'Soldier' }),
+    prints: [tokenPrint('red-soldier', 'tm20', '2', '2020-01-01')],
+  };
+
+  beforeEach(() => {
+    Object.entries(inMemoryServer([...CATALOG, WHITE_SOLDIER, RED_SOLDIER])).forEach(
+      ([call, answer]) => {
+        vi.mocked(api[call as keyof typeof api]).mockImplementation(answer as never);
+      },
+    );
+  });
+
+  /** The Scryfall print id each Soldier tile shows, in the order of the grid. */
+  function soldierImages() {
+    return within(cardGrid())
+      .getAllByRole('img', { name: 'Immagine di Soldier' })
+      .map((image) => /\w+-soldier-\w+/.exec(image.getAttribute('src') ?? '')?.[0]);
+  }
+
+  /** Adds the Soldier the search lists at `index` to the Tokens section. */
+  async function addSoldier(user: ReturnType<typeof userEvent.setup>, index: number) {
+    const found = await searchToAdd(user, 'Mazzo', 'soldier', 'Token');
+    const soldier = (await within(found).findAllByRole('option', { name: /Soldier/ }))[index];
+    if (!soldier) throw new Error(`no Soldier at ${index}`);
+    await user.click(soldier);
+  }
+
+  it('adds two tokens sharing a name as two lines named by set and number, each tile showing its own', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await addSoldier(user, 0);
+    await addSoldier(user, 1);
+
+    expect(decklistValue()).toBe('4 Sol Ring\n\nTokens\n1 Soldier (TFRC) 3\n1 Soldier (TM20) 2');
+    expect(soldierImages()).toEqual(['white-soldier-tfrc', 'red-soldier-tm20']);
+  });
+
+  it('adds the same token again as one more copy on its line', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await addSoldier(user, 0);
+    await addSoldier(user, 0);
+
+    expect(decklistValue()).toBe('4 Sol Ring\n\nTokens\n2 Soldier (TFRC) 3');
+  });
+
+  it('rewrites a line written by the name alone with the set and number of the token picked', async () => {
+    const user = await mountPageAndWrite('Tokens{Enter}2 Soldier{Enter}');
+    expect(await screen.findByText('Quale carta intendevi?')).toBeTruthy();
+    const [, redSoldier] = within(cardGrid()).getAllByRole('button', { name: 'Soldier' });
+    if (!redSoldier) throw new Error('no second Soldier candidate');
+    await user.click(redSoldier);
+
+    expect(decklistValue()).toBe('Tokens\n2 Soldier (TM20) 2\n');
+    expect(soldierImages()).toEqual(['red-soldier-tm20']);
+    const requested = vi.mocked(api.resolveDecklistText).mock.calls.map(([text]) => text);
+    expect(requested.filter((text) => text.includes('TM20'))).toEqual([]);
+  });
+
+  it('names the print every copy of a token line moves to', async () => {
+    const user = await mountPageAndWrite('Tokens{Enter}2 Soldier (TFRC) 3{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Soldier' }));
+
+    await user.click(await waitFor(() => printButtonOf('TWAR #5')));
+
+    expect(decklistValue()).toBe('Tokens\n2 Soldier (TWAR) 5\n');
+    expect(gridTiles().map(tileSummary)).toEqual([['Immagine di Soldier', '2×', undefined]]);
+    expect(soldierImages()).toEqual(['white-soldier-twar']);
+  });
+
+  it('names the print with the most copies of a token line, and on a tie the one of its first tile', async () => {
+    const user = await mountPageAndWrite('Tokens{Enter}3 Soldier (TFRC) 3{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Soldier' }));
+
+    await moveOneCopy(user, 'Soldier', 'TFRC #3', 'TWAR #5');
+    expect(decklistValue()).toBe('Tokens\n3 Soldier (TFRC) 3\n');
+    await user.click(await screen.findByRole('button', { name: 'Una copia in più con TWAR #5' }));
+    expect(decklistValue()).toBe('Tokens\n4 Soldier (TFRC) 3\n');
+    await user.click(
+      screen.getByRole('button', { name: 'Una copia in meno di Soldier (TFRC #3)' }),
+    );
+
+    expect(decklistValue()).toBe('Tokens\n3 Soldier (TWAR) 5\n');
+    expect(gridTiles().map(tileSummary)).toEqual([
+      ['Immagine di Soldier', '2×', '1/2'],
+      ['Immagine di Soldier', '1×', '2/2'],
+    ]);
+    expect(soldierImages()).toEqual(['white-soldier-twar', 'white-soldier-tfrc']);
+  });
+
+  it('keeps the copies of a rewritten token line on their prints after a reload', async () => {
+    const user = await mountPageAndWrite('Tokens{Enter}3 Soldier (TFRC) 3{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Soldier' }));
+    await moveOneCopy(user, 'Soldier', 'TFRC #3', 'TWAR #5');
+    await moveOneCopy(user, 'Soldier', 'TFRC #3', 'TWAR #5');
+    expect(decklistValue()).toBe('Tokens\n3 Soldier (TWAR) 5\n');
+
+    reload();
+
+    await waitFor(() =>
+      expect(gridTiles().map(tileSummary)).toEqual([
+        ['Immagine di Soldier', '2×', '1/2'],
+        ['Immagine di Soldier', '1×', '2/2'],
+      ]),
+    );
+    expect(decklistValue()).toBe('Tokens\n3 Soldier (TWAR) 5\n');
+    expect(soldierImages()).toEqual(['white-soldier-twar', 'white-soldier-tfrc']);
+  });
+
+  it('leaves the line of a card that is no token as written when its copies move', async () => {
+    const user = await mountPageAndWrite('2 Sol Ring (C21) 1{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+
+    await user.click(await waitFor(() => printButtonOf('LEA #1')));
+
+    expect(decklistValue()).toBe('2 Sol Ring (C21) 1\n');
   });
 });

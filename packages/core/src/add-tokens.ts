@@ -2,6 +2,7 @@ import { writeLineAtSectionEnd, type LineInText } from './add-card.ts';
 import { writtenLinesOf } from './decklist-text.ts';
 import { resolvedLine } from './decklist.ts';
 import type { LineMove } from './move-written-line.ts';
+import { writtenNamingPrint } from './token-line.ts';
 import type { ResolvedLine, SuggestedToken } from './types.ts';
 
 /** What adding suggested tokens makes of the decklist text. */
@@ -12,7 +13,7 @@ export interface TokensAddition extends LineMove {
 
 /** The line a token is written as: one copy, named by its set and number, so it means that print. */
 function tokenLine({ candidate: { card, defaultPrint } }: SuggestedToken): string {
-  return `1 ${card.name} (${defaultPrint.set.toUpperCase()}) ${defaultPrint.collectorNumber}`;
+  return writtenNamingPrint(`1 ${card.name}`, card.name, defaultPrint);
 }
 
 /**
