@@ -112,23 +112,27 @@ export function createApp(deps: AppDeps): Hono {
       : c.json({ error: 'The catalog schema does not exist yet: the importer creates it.' }, 503),
   );
 
-  app.post('/api/decklists/resolve', rateLimit(RESOLVE_RATE_LIMIT, deps.clock), async (c) => {
-    const request = resolveRequest(await c.req.json().catch(() => null));
-    if (!request) {
-      return c.json(
-        {
-          error:
-            'Expected a JSON body { "text": string up to 50,000 characters, "lang"?: "en" | "it" }.',
-        },
-        400,
-      );
-    }
-    const lines = await resolveDecklist(request.text, catalog, {
-      today: today(),
-      lang: request.lang,
-    });
-    return c.json({ lines });
-  });
+  app.post(
+    '/api/decklists/resolve',
+    rateLimit(RESOLVE_RATE_LIMIT, deps.clock, deps.securityLog),
+    async (c) => {
+      const request = resolveRequest(await c.req.json().catch(() => null));
+      if (!request) {
+        return c.json(
+          {
+            error:
+              'Expected a JSON body { "text": string up to 50,000 characters, "lang"?: "en" | "it" }.',
+          },
+          400,
+        );
+      }
+      const lines = await resolveDecklist(request.text, catalog, {
+        today: today(),
+        lang: request.lang,
+      });
+      return c.json({ lines });
+    },
+  );
 
   app.post('/api/decklists/suggested-tokens', async (c) => {
     const request = tokenSuggestionRequest(await c.req.json().catch(() => null));
@@ -147,17 +151,21 @@ export function createApp(deps: AppDeps): Hono {
     return c.json({ tokens });
   });
 
-  app.get('/api/cards/search', rateLimit(SEARCH_RATE_LIMIT, deps.clock), async (c) => {
-    const { q, lang = 'en' } = c.req.query();
-    if (!isValidNameQuery(q) || !isLang(lang)) return c.json(nameQueryError('q'), 400);
-    const cards = await searchCards(catalog, {
-      query: q,
-      lang,
-      today: today(),
-      limit: CARD_SEARCH_LIMIT,
-    });
-    return c.json({ cards });
-  });
+  app.get(
+    '/api/cards/search',
+    rateLimit(SEARCH_RATE_LIMIT, deps.clock, deps.securityLog),
+    async (c) => {
+      const { q, lang = 'en' } = c.req.query();
+      if (!isValidNameQuery(q) || !isLang(lang)) return c.json(nameQueryError('q'), 400);
+      const cards = await searchCards(catalog, {
+        query: q,
+        lang,
+        today: today(),
+        limit: CARD_SEARCH_LIMIT,
+      });
+      return c.json({ cards });
+    },
+  );
 
   app.get('/api/cards/named', async (c) => {
     const { name, lang = 'en' } = c.req.query();

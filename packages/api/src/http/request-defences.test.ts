@@ -269,6 +269,21 @@ describe('the rate limit', () => {
     expect(spoofed.status).toBe(429);
   });
 
+  it('logs the first refusal of a window, with the client network behind the trusted proxy', async () => {
+    const { origin, securityLog } = await serveApp({ trustedProxyHost: 'localhost' });
+
+    await searches(origin, 122, '203.0.113.7');
+
+    expect(securityLog.events).toEqual([
+      {
+        kind: 'rate-limited',
+        method: 'GET',
+        path: '/api/cards/search',
+        clientNetwork: '203.0.113.0',
+      },
+    ]);
+  });
+
   it('answers 429 to the decklist resolution after the 30th within a minute', async () => {
     const { origin } = await serveApp();
 
