@@ -2,7 +2,7 @@
 import { randomUUID } from 'node:crypto';
 import { execInService } from './compose-stack.js';
 import { PUBLIC_PATHS } from './public-paths.js';
-import { unmaskedIpAddresses } from './unmasked-ip-addresses.js';
+import { unmaskedClientAddresses } from './access-log-entry.js';
 
 export const ACCESS_LOG = '/var/log/caddy/access.log';
 
@@ -60,7 +60,7 @@ export async function accessLogFailures(staging) {
   if (marked < count)
     failures.push(`${ACCESS_LOG} logged ${marked} of the ${count} requests just sent`);
   lines.forEach((line, index) => {
-    const addresses = unmaskedIpAddresses(line);
+    const addresses = unmaskedClientAddresses(line);
     if (addresses.length > 0)
       failures.push(`${ACCESS_LOG} line ${index + 1} holds ${addresses.join(', ')}`);
   });
