@@ -53,6 +53,8 @@ services:
       # Inside the container, listen on every interface so `web` can reach it.
       HOST: 0.0.0.0
       PORT: 3000
+      # The only proxy whose X-Forwarded-For the api believes: Caddy, in the `web` service.
+      TRUSTED_PROXY_HOST: web
     restart: unless-stopped
     # The image has no curl or wget: Node's own fetch asks the api. Healthy once it serves
     # requests and the importer has created the schema, so `up --wait` fails on an api stuck

@@ -11,10 +11,16 @@ const sql = connect(readerDatabaseUrl());
 // Loopback by default; Docker Compose sets HOST=0.0.0.0 inside the container.
 const hostname = process.env.HOST ?? '127.0.0.1';
 const port = Number(process.env.PORT ?? 3000);
+// Docker Compose names Caddy's service here; `pnpm dev` has no proxy in front, so it trusts none.
+const trustedProxyHost = process.env.TRUSTED_PROXY_HOST ?? null;
 const server = serve(
   {
-    fetch: createApp({ sql, clock: systemClock, securityLog: stdoutSecurityLog(systemClock) })
-      .fetch,
+    fetch: createApp({
+      sql,
+      clock: systemClock,
+      securityLog: stdoutSecurityLog(systemClock),
+      trustedProxyHost,
+    }).fetch,
     hostname,
     port,
   },
