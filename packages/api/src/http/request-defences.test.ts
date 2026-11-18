@@ -35,7 +35,7 @@ async function serveApp(sql = db.sql) {
 }
 
 describe('the request body limit', () => {
-  it('refuses a body announced over 1 MiB with 413, before reading it', async () => {
+  it('refuses a body whose Content-Length is over 1 MiB with 413', async () => {
     const { origin, securityLog } = await serveApp();
 
     const response = await fetch(`${origin}/api/decklists/resolve`, {

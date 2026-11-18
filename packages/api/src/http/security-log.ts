@@ -1,9 +1,9 @@
 import type { Clock } from './clock.ts';
 
-interface RequestFacts {
+export interface RequestFacts {
   readonly method: string;
   readonly path: string;
-  /** The client's network, never its full address (see `masked-client-address.ts`). */
+  /** The client's network, never its full address (see `request-facts.ts`). */
   readonly clientNetwork: string | null;
 }
 

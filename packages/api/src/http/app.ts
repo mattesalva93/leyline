@@ -19,9 +19,9 @@ import type { Clock } from './clock.ts';
 import { requestBodyLimit } from './request-body-limit.ts';
 import { requestTimeout } from './request-timeout.ts';
 import type { SecurityLog } from './security-log.ts';
-import { serverError } from './server-error.ts';
+import { serverErrorHandler } from './server-error-handler.ts';
 
-export interface AppDeps {
+interface AppDeps {
   readonly sql: Sql;
   readonly clock: Clock;
   readonly securityLog: SecurityLog;
@@ -90,7 +90,7 @@ export function createApp(deps: AppDeps): Hono {
   /** The UTC date, like Scryfall's release dates. */
   const today = () => deps.clock.now().toISOString().slice(0, 10);
 
-  app.onError(serverError(deps.securityLog));
+  app.onError(serverErrorHandler(deps.securityLog));
   app.use('/api/*', requestTimeout(deps.clock, deps.securityLog));
   app.use('/api/*', requestBodyLimit(deps.securityLog));
 
