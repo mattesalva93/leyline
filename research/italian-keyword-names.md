@@ -1,6 +1,6 @@
 # Ricerca: nomi italiani ufficiali delle abilità chiave delle pedine
 
-**Data di consultazione: 2026-11-18.** Fonte della tabella `keywords` di `packages/web/src/locales/it.json` (#121).
+**Data di consultazione: 2026-11-18.** Fonte della tabella `packages/web/src/locales/keyword-names.it.json` (#121).
 
 ## Metodo
 

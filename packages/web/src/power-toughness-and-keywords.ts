@@ -1,10 +1,13 @@
 import type { Card, Lang } from '@mtg-suite/core';
-import italian from './locales/it.json';
+import italianKeywordNames from './locales/keyword-names.it.json';
 
-const italianKeywords: Readonly<Record<string, string>> = italian.keywords;
+const italianNames: Readonly<Record<string, string>> = italianKeywordNames;
 
-/** The power and toughness, then the keywords, of `card`, as a token choice tells cards apart. */
-export function characteristicsLineOf(card: Card, lang: Lang): string {
+/**
+ * The power and toughness, then the keywords, of `card`, in the card language `lang`: what tells
+ * apart tokens that share a name.
+ */
+export function powerToughnessAndKeywordsOf(card: Card, lang: Lang): string {
   const powerToughness = card.powerToughnessByFace
     .filter((face) => face !== null)
     .map((face) => `${face.power}/${face.toughness}`)
@@ -14,5 +17,5 @@ export function characteristicsLineOf(card: Card, lang: Lang): string {
 }
 
 function keywordName(keyword: string, lang: Lang): string {
-  return lang === 'it' ? (italianKeywords[keyword] ?? keyword) : keyword;
+  return lang === 'it' ? (italianNames[keyword] ?? keyword) : keyword;
 }

@@ -1,6 +1,6 @@
 import { aCard } from '@mtg-suite/core/test-fixtures';
 import { describe, expect, it } from 'vitest';
-import { characteristicsLineOf } from './card-characteristics.ts';
+import { powerToughnessAndKeywordsOf } from './power-toughness-and-keywords.ts';
 
 const soldierWithHaste = aCard({
   name: 'Soldier',
@@ -8,18 +8,18 @@ const soldierWithHaste = aCard({
   keywords: ['Haste'],
 });
 
-describe('the characteristics line of a card', () => {
+describe('the power, toughness and keywords of a card', () => {
   it('names a keyword as Scryfall does in English', () => {
-    expect(characteristicsLineOf(soldierWithHaste, 'en')).toBe('1/1 Haste');
+    expect(powerToughnessAndKeywordsOf(soldierWithHaste, 'en')).toBe('1/1 Haste');
   });
 
   it('names a keyword in Italian as the Italian cards print it', () => {
-    expect(characteristicsLineOf(soldierWithHaste, 'it')).toBe('1/1 Rapidità');
+    expect(powerToughnessAndKeywordsOf(soldierWithHaste, 'it')).toBe('1/1 Rapidità');
   });
 
-  it('keeps in English a keyword without an Italian name, in Italian too', () => {
+  it('names a keyword without an Italian name in English, even in Italian', () => {
     const card = aCard({ keywords: ['Flying', 'Brand-new keyword'] });
-    expect(characteristicsLineOf(card, 'it')).toBe('Volare, Brand-new keyword');
+    expect(powerToughnessAndKeywordsOf(card, 'it')).toBe('Volare, Brand-new keyword');
   });
 
   it("separates the powers and toughnesses of a double-faced card's faces with //", () => {
@@ -30,17 +30,22 @@ describe('the characteristics line of a card', () => {
         { power: '2', toughness: '1' },
       ],
     });
-    expect(characteristicsLineOf(soldierGoblin, 'en')).toBe('1/1 // 2/1');
+    expect(powerToughnessAndKeywordsOf(soldierGoblin, 'en')).toBe('1/1 // 2/1');
+  });
+
+  it('leaves out a face without power and toughness, like the spell of an adventure', () => {
+    const adventurer = aCard({ powerToughnessByFace: [{ power: '4', toughness: '3' }, null] });
+    expect(powerToughnessAndKeywordsOf(adventurer, 'en')).toBe('4/3');
   });
 
   it('shows only the keywords of a card without power and toughness', () => {
     const card = aCard({ powerToughnessByFace: [null], keywords: ['Equip'] });
-    expect(characteristicsLineOf(card, 'it')).toBe('Equipaggiare');
+    expect(powerToughnessAndKeywordsOf(card, 'it')).toBe('Equipaggiare');
   });
 
-  it('gives an empty line for a card with no power, toughness or keyword, like a Treasure', () => {
+  it('is empty for a card with no power, toughness or keyword, like a Treasure', () => {
     const treasure = aCard({ name: 'Treasure', powerToughnessByFace: [null], keywords: [] });
-    expect(characteristicsLineOf(treasure, 'en')).toBe('');
+    expect(powerToughnessAndKeywordsOf(treasure, 'en')).toBe('');
   });
 });
 
@@ -59,7 +64,7 @@ const CATALOG_TOKEN_KEYWORDS = [
 const KEYWORDS_WITHOUT_ITALIAN_NAME = ["Hero's Reward", 'Paradox'];
 
 function italianNameOf(keyword: string): string {
-  return characteristicsLineOf(aCard({ keywords: [keyword] }), 'it');
+  return powerToughnessAndKeywordsOf(aCard({ keywords: [keyword] }), 'it');
 }
 
 describe('the Italian names of keywords', () => {
