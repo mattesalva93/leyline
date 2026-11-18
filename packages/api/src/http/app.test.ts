@@ -769,6 +769,13 @@ describe('GET /api/cards/:oracleId/prints', () => {
     expect((await printsPage(id, { lang: 'fr' })).status).toBe(400);
   });
 
+  it('rejects an oracle id longer than any Scryfall id', async () => {
+    const { status, body } = await printsPage('a'.repeat(65), { lang: 'it' });
+
+    expect(status).toBe(400);
+    expect(body).toEqual({ error: 'Expected an oracle id of up to 64 characters.' });
+  });
+
   it('answers 404 for a card the catalog does not hold', async () => {
     const { status } = await printsPage('aaaaaaaa-0000-0000-0000-00000000dead', { lang: 'it' });
 
@@ -1324,6 +1331,13 @@ describe('GET /api/cards/:oracleId/print-counts', () => {
     const { status } = await printCounts('aaaaaaaa-0000-0000-0000-00000000dead');
 
     expect(status).toBe(404);
+  });
+
+  it('rejects an oracle id longer than any Scryfall id', async () => {
+    const { status, body } = await printCounts('a'.repeat(65));
+
+    expect(status).toBe(400);
+    expect(body).toEqual({ error: 'Expected an oracle id of up to 64 characters.' });
   });
 });
 
