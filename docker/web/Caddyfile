@@ -8,6 +8,17 @@
 	# Not for search engines yet (also <meta name="robots"> in index.html).
 	header X-Robots-Tag "noindex, nofollow"
 
+	# The security baseline (ADR 0016), on the page and on /api alike; `pnpm check:staging` pins it.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		# Every browser feature the app does not use is off; the PDF goes to the share sheet.
+		Permissions-Policy "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), hid=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=(), web-share=(self)"
+		Cross-Origin-Opener-Policy same-origin
+		Content-Security-Policy "frame-ancestors 'none'"
+	}
+
 	handle /api/* {
 		reverse_proxy api:3000
 	}
