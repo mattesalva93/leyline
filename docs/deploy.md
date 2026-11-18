@@ -37,3 +37,21 @@
 6. **Deploy once by hand** to check it: `gh workflow run deploy.yml --ref main`, then `gh run watch` to follow it.
 
 From then on, every push to `main` that passes CI is deployed. `gh variable set DEPLOY_ENABLED --body false` turns it off again.
+
+## GitHub security settings once the repository is public
+
+A public repository gets GitHub's secret scanning and push protection for free. They run beside CI's `gitleaks`: push protection rejects a push carrying a known secret before it reaches GitHub, where `gitleaks` can only fail the run afterwards.
+
+```sh
+# {owner}/{repo}: gh fills them in from the current checkout.
+gh api --method PATCH repos/{owner}/{repo} --input - <<'JSON'
+{"security_and_analysis": {
+  "secret_scanning": {"status": "enabled"},
+  "secret_scanning_push_protection": {"status": "enabled"}
+}}
+JSON
+gh api --method PUT repos/{owner}/{repo}/vulnerability-alerts   # Dependabot alerts
+gh api repos/{owner}/{repo} --jq .security_and_analysis         # check: both "enabled"
+```
+
+ADR 0006 lists the branch ruleset that also becomes available then.
