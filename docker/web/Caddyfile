@@ -20,6 +20,12 @@
 		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://cards.scryfall.io; connect-src 'self' https://cards.scryfall.io; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
 	}
 
+	# Only the testers of the closed alpha, on the page and on /api alike (ADR 0016). Their
+	# credentials stay out of the repository: see tester-credentials.example.caddy.
+	basic_auth argon2id {
+		import /etc/caddy/tester-credentials.caddy
+	}
+
 	handle /api/* {
 		reverse_proxy api:3000
 	}
@@ -32,7 +38,8 @@
 }
 
 # For the compose healthcheck only, never published: plain HTTP, because the public site's
-# certificate names its domain, which a request from inside the container cannot match.
+# certificate names its domain, which a request from inside the container cannot match. Outside
+# the testers' guard, so the healthcheck needs no credential and the deploy stays automatic.
 http://127.0.0.1:8081 {
 	bind 127.0.0.1
 	root * /srv

@@ -67,7 +67,25 @@ jobs:
           # shellcheck disable=SC2029
           git archive --format=tar HEAD | ssh deploy "mkdir -p '$DEPLOY_PATH' && tar -x -C '$DEPLOY_PATH'"
 
+      # The secret reaches the host through stdin only, never on a command line or in the log.
+      # `cat >` rewrites the file in place: Docker mounts it by inode, so a new file put in its
+      # place would stay unseen by the running container. `umask 077`: readable by its owner only.
+      - name: Write the testers' credentials
+        env:
+          TESTER_CREDENTIALS: ${{ secrets.TESTER_CREDENTIALS }}
+        run: |
+          if [ -z "$TESTER_CREDENTIALS" ]; then
+            echo '::error::The TESTER_CREDENTIALS secret is empty: Caddy would let no tester in.'
+            exit 1
+          fi
+          # shellcheck disable=SC2029
+          printf '%s\n' "$TESTER_CREDENTIALS" |
+            ssh deploy "umask 077 && cat > '$DEPLOY_PATH/docker/web/tester-credentials.caddy'"
+
+      # `up` keeps a container whose image did not change, so Caddy reloads its configuration
+      # too: a revoked tester loses access with this deploy, not with the next new image.
       - name: Rebuild and restart
         run: |
           # shellcheck disable=SC2029
-          ssh deploy "cd '$DEPLOY_PATH' && docker compose up -d --wait --remove-orphans"
+          ssh deploy "cd '$DEPLOY_PATH' && docker compose up -d --wait --remove-orphans &&
+            docker compose exec -T web caddy reload --config /etc/caddy/Caddyfile"
