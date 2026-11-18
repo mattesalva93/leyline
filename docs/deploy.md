@@ -52,6 +52,15 @@ gh workflow run deploy.yml --ref main
 
 After a deploy, `pnpm check:staging --app https://<domain>` checks the host once `CHECK_STAGING_USERNAME` and `CHECK_STAGING_PASSWORD` in the shell hold production's check credential: they take precedence over `.env`'s. Set them with `read -s`, which hides what you type, rather than on a command line, which the shell history keeps.
 
+The access log and the containers' log settings are read through `docker`, not over HTTPS, so point it at the host's engine for that run:
+
+```sh
+DOCKER_HOST=ssh://<user>@<host> COMPOSE_PROJECT_NAME=<last folder of DEPLOY_PATH> \
+  pnpm check:staging --app https://<domain>
+```
+
+`DOCKER_HOST=ssh://...` makes the local `docker` CLI drive the host's Docker over SSH. `COMPOSE_PROJECT_NAME` names the stack as the host knows it: Compose names a project after the folder it runs in.
+
 ## GitHub security settings once the repository is public
 
 A public repository gets GitHub's secret scanning and push protection for free. They run beside CI's `gitleaks`: push protection rejects a push carrying a known secret before it reaches GitHub, where `gitleaks` can only fail the run afterwards.

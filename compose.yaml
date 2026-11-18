@@ -1,5 +1,13 @@
+# Every service's own log rotates, instead of growing without limit (ADR 0016). `local`, unlike
+# Docker's default `json-file`, rotates by itself; `pnpm check:staging` pins that every log does.
+x-rotated-logs: &rotated-logs
+  logging:
+    driver: local
+    options: { max-size: 10m, max-file: '3' }
+
 services:
   web:
+    <<: *rotated-logs
     build: { context: ., target: web }
     # Rebuild on every `up`, so a manual test never runs a stale image (layer cache keeps it fast).
     pull_policy: build
@@ -14,6 +22,8 @@ services:
       # Certificates and the local CA: losing them means new certificates on every start.
       - caddy-data:/data
       - caddy-config:/config
+      # The access log, rotated by Caddy itself (Caddyfile).
+      - caddy-logs:/var/log/caddy
       # The testers' credentials, never in the image or the repository (docs/staging.md).
       # `create_host_path: false`: a missing file stops `up`, instead of Docker mounting an
       # empty directory in its place.
@@ -35,6 +45,7 @@ services:
         condition: service_healthy
 
   api:
+    <<: *rotated-logs
     build: { context: ., target: api }
     pull_policy: build
     environment:
@@ -61,6 +72,7 @@ services:
 
   # Imports Scryfall's catalog once a day (ADR 0002), apart from the process serving requests.
   importer:
+    <<: *rotated-logs
     build: { context: ., target: api }
     pull_policy: build
     command: ['node', 'dist/import-daily.js']
@@ -72,6 +84,7 @@ services:
         condition: service_healthy
 
   postgres:
+    <<: *rotated-logs
     image: postgres:18-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-mtg}
@@ -95,3 +108,4 @@ volumes:
   postgres-data:
   caddy-data:
   caddy-config:
+  caddy-logs:

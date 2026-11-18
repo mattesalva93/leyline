@@ -39,6 +39,8 @@ The `.env` file is optional here. `docker compose` reads it from the repository 
 
 `--wait` returns once every service is running or healthy. Images are rebuilt on every `up` (`pull_policy: build`), so the stack always runs the code checked out. On the first start the `importer` fills the catalog (a few minutes), and decklists find no cards until it is done: `docker compose logs -f importer` follows it.
 
+Caddy's access log is a file of its own, apart from `docker compose logs`: `docker compose exec web tail -f /var/log/caddy/access.log` follows it.
+
 ## Update
 
 Staging runs what `main` holds on GitHub:
