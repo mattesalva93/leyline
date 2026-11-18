@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "packageManager": "pnpm@12.18.0",
+  "packageManager": "pnpm@12.21.0",
   "engines": {
-    "node": ">=26.13.0"
+    "node": ">=26.13.1"
   },
   "scripts": {
     "typecheck": "tsc -b",
@@ -50,11 +50,11 @@
     "globals": "^17.14.0",
     "husky": "^9.1.7",
     "knip": "6.45.1",
-    "lint-staged": "^17.6.0",
-    "playwright": "^1.65.0",
-    "prettier": "^3.10.0",
+    "lint-staged": "^17.6.1",
+    "playwright": "^1.65.1",
+    "prettier": "^3.10.1",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.72.2",
+    "typescript-eslint": "^8.73.0",
     "vitest": "^5.1.0"
   }
 }
