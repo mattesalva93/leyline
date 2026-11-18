@@ -12,7 +12,8 @@ export {
   type ListPrintsOptions,
   type PrintCountsByLang,
 } from './print-list.ts';
-export { cardKeys, frontFaceKey, frontFaceName } from './name-match.ts';
+export { cardKeys } from './name-match.ts';
+export { nameSharedByEvery, searchRowsOf, type SearchRow } from './search-rows.ts';
 export { isTokenLayout } from './print-order.ts';
 export { isBlankPrintQuery, MAX_PRINT_QUERY_LENGTH } from './print-query.ts';
 export { printedBackFace, printedFaces } from './printed-faces.ts';

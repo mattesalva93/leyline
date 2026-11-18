@@ -1,7 +1,6 @@
-import type { FoundCard } from '@mtg-suite/core';
-import { aCard, aPrint } from '@mtg-suite/core/test-fixtures';
 import { describe, expect, it } from 'vitest';
-import { searchRowsOf } from './search-rows.ts';
+import { nameSharedByEvery, searchRowsOf, type FoundCard } from './index.ts';
+import { aCard, aPrint } from './test-fixtures.ts';
 
 function found(oracleId: string, name: string, sameNamedCardCount = 1): FoundCard {
   return {
@@ -51,5 +50,23 @@ describe('the rows of a card search', () => {
     expect(searchRowsOf([soldier])).toEqual([
       { kind: 'sharedName', name: 'Soldier', cardCount: 15, first: soldier },
     ]);
+  });
+});
+
+describe('the name every candidate shares', () => {
+  it('is the name of tokens that share it', () => {
+    expect(nameSharedByEvery([found('white', 'Soldier'), found('red', 'Soldier')])).toBe('Soldier');
+  });
+
+  it('is the front face name, when a double-faced card shares it', () => {
+    expect(nameSharedByEvery([found('goblin', 'Soldier // Goblin'), found('red', 'Soldier')])).toBe(
+      'Soldier',
+    );
+  });
+
+  it('is none for candidates named differently', () => {
+    expect(
+      nameSharedByEvery([found('bolt', 'Lightning Bolt'), found('helix', 'Lightning Helix')]),
+    ).toBeNull();
   });
 });

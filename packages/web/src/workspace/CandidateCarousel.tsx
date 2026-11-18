@@ -1,4 +1,4 @@
-import { frontFaceKey, frontFaceName, type Candidate, type Lang } from '@mtg-suite/core';
+import { nameSharedByEvery, type Candidate, type Lang } from '@mtg-suite/core';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CARD_SHAPE } from '../card-shape.ts';
@@ -37,7 +37,7 @@ export function CandidateCarousel({
   const shownIndex = Math.min(index, candidates.length - 1);
   const shown = candidates[shownIndex];
   if (!shown) return null;
-  const sharedName = sharedFrontFaceName(candidates);
+  const sharedName = nameSharedByEvery(candidates);
   const question = sharedName ? t('line.whichNamed', { name: sharedName }) : t('line.ambiguous');
   const tabIndex = isInGridCell ? -1 : undefined;
   const step = (by: number) => setIndex((shownIndex + by + candidates.length) % candidates.length);
@@ -164,14 +164,4 @@ export function CandidateCarousel({
       )}
     </div>
   );
-}
-
-/** The front-face name every candidate shares, or `null` when they are named differently. */
-function sharedFrontFaceName(candidates: readonly Candidate[]): string | null {
-  const [first, ...others] = candidates;
-  if (!first) return null;
-  const key = frontFaceKey(first.card.name);
-  return others.every(({ card }) => frontFaceKey(card.name) === key)
-    ? frontFaceName(first.card.name)
-    : null;
 }

@@ -1,4 +1,5 @@
-import { frontFaceKey, frontFaceName, type Candidate, type FoundCard } from '@mtg-suite/core';
+import { frontFaceKey, frontFaceName } from './name-match.ts';
+import type { Candidate, FoundCard } from './types.ts';
 
 /** A row of the add-card search: a card it adds, or a name several cards share. */
 export type SearchRow =
@@ -36,4 +37,17 @@ export function searchRowsOf(found: readonly FoundCard[]): SearchRow[] {
     });
   }
   return rows;
+}
+
+/**
+ * The front-face name every one of `candidates` shares, such as the tokens an ambiguous line
+ * written `1 Soldier` could mean; `null` when they are named differently.
+ */
+export function nameSharedByEvery(candidates: readonly Candidate[]): string | null {
+  const [first, ...others] = candidates;
+  if (!first) return null;
+  const key = frontFaceKey(first.card.name);
+  return others.every(({ card }) => frontFaceKey(card.name) === key)
+    ? frontFaceName(first.card.name)
+    : null;
 }

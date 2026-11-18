@@ -1,4 +1,4 @@
-import type { Candidate, Lang } from '@mtg-suite/core';
+import { searchRowsOf, type Candidate, type Lang, type SearchRow } from '@mtg-suite/core';
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CARD_SHAPE } from '../card-shape.ts';
@@ -6,7 +6,6 @@ import { SMALL_IMAGE } from '../scryfall-image-sizes.ts';
 import { FIELD } from '../ui/board-styles.ts';
 import { Icon } from '../ui/Icon.tsx';
 import { SameNameVersionGrid } from './SameNameVersionGrid.tsx';
-import { searchRowsOf, type SearchRow } from './search-rows.ts';
 import { useCardSearch } from './use-card-search.ts';
 
 interface CardSearchPanelProps {
