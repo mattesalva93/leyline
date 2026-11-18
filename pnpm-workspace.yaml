@@ -1,2 +1,12 @@
 packages:
   - packages/*
+
+# Fail an install whose package lost trust (trusted publisher, provenance) since its earlier releases.
+trustPolicy: no-downgrade
+
+audit:
+  level: high
+  ignore:
+    # picomatch ReDoS, no fixed version yet. It reaches only dev tooling (vite, knip), never the
+    # production dependencies (`pnpm audit --prod`), and its globs come from our own config.
+    - GHSA-fc5q-39xc-vjpf
