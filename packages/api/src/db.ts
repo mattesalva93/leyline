@@ -86,7 +86,7 @@ export async function migrate(sql: Sql): Promise<void> {
   await createCatalogTables(sql, '');
   // Catalogs imported before set names were: the next import fills them in.
   await sql`alter table prints add column if not exists set_name text not null default ''`;
-  // Catalogs imported before card characteristics were: the next import fills them in.
+  // Catalogs imported before power, toughness and keywords were: the next import fills them in.
   await sql`
     alter table cards
       add column if not exists power_toughness_by_face jsonb not null default '[]',
