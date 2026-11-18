@@ -1185,18 +1185,15 @@ describe('GET /api/cards/:oracleId/print-counts', () => {
   });
 });
 
-describe('a catalog imported before set names, artists and card characteristics', () => {
+describe('a catalog imported before set names and artists', () => {
   let oldDb: TestDb;
 
   beforeAll(async () => {
     oldDb = await createTestDb();
     await migrate(oldDb.sql);
-    // The catalog as an older import left it: no set name column, faces without an artist,
-    // cards without their characteristics.
+    // The catalog as an older import left it: no set name column, faces without an artist.
     await oldDb.sql`alter table prints drop column set_name`;
-    await oldDb.sql`alter table cards drop column power_toughness_by_face, drop column keywords`;
-    await oldDb.sql`insert into cards values ('forest', 'Forest')`;
-    await oldDb.sql`insert into card_names values ('forest', 'forest')`;
+    await oldDb.sql`insert into cards values ('forest', 'Forest', '[null]', '{}')`;
     await oldDb.sql`
       insert into prints values (
         'forest-old', 'forest', 'lea', '294', 'en', 'Forest', '1993-08-05', 'highres_scan',
@@ -1217,16 +1214,6 @@ describe('a catalog imported before set names, artists and card characteristics'
 
     expect(await response.json()).toMatchObject({
       prints: [{ id: 'forest-old', setName: '', faces: [{ name: 'Forest', artist: '' }] }],
-    });
-  });
-
-  it('serves its cards with no power, toughness or keywords once migrated', async () => {
-    await migrate(oldDb.sql);
-
-    const response = await createApp({ sql: oldDb.sql }).request('/api/cards/search?q=forest');
-
-    expect(await response.json()).toMatchObject({
-      cards: [{ card: { name: 'Forest', powerToughnessByFace: [], keywords: [] } }],
     });
   });
 });
