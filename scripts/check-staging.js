@@ -21,11 +21,11 @@ const request = await playwrightRequest.newContext({ ignoreHTTPSErrors: true });
 const failures = [];
 try {
   for (const [name, check] of Object.entries(CHECKS)) {
-    const found = await check({ request, appAddress }).catch((error) => [
+    const checkFailures = await check({ request, appAddress }).catch((error) => [
       `could not run: ${error.message.split('\n')[0]}`,
     ]);
-    console.log(`${name}: ${found.length === 0 ? 'ok' : `${found.length} failed`}`);
-    failures.push(...found.map((failure) => `${name}: ${failure}`));
+    console.log(`${name}: ${checkFailures.length === 0 ? 'ok' : `${checkFailures.length} failed`}`);
+    failures.push(...checkFailures.map((failure) => `${name}: ${failure}`));
   }
 } finally {
   await request.dispose();

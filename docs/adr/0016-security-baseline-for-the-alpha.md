@@ -14,7 +14,7 @@ The closed alpha meets **OWASP ASVS 5.0 level L2** on the chapters that apply to
 - **Containers.** Every service runs as a non-root user, on a read-only filesystem with `tmpfs` only where it writes, with every Linux capability dropped except those it needs, `no-new-privileges`, memory and CPU limits, and base images pinned by digest. PostgreSQL sits on an internal network that is never published.
 - **Hosting.** The alpha runs on an OVHcloud VPS in an EU data centre, published over IPv4 only.
 
-The values live in `docker/web/Caddyfile`, `compose.yaml` and the API's code. `pnpm check:staging` pins what lives in the configuration, on the running stack, and the API's HTTP tests pin its defences.
+The values live in `docker/web/Caddyfile`, `compose.yaml` and the API's code. `pnpm check:staging` pins what lives in the configuration, on the running stack (the headers in `scripts/staging-checks/security-headers.js`), and the API's HTTP tests pin its defences.
 
 ## Why
 
