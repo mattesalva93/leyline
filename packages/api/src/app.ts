@@ -50,8 +50,16 @@ function resolveRequest(body: unknown): { text: string; lang: Lang } | null {
   return isLang(lang) ? { text, lang } : null;
 }
 
-function isName(value: string | undefined): value is string {
+/** Whether a card name asked in a query is neither blank nor longer than `MAX_NAME_LENGTH`. */
+function isValidNameQuery(value: string | undefined): value is string {
   return value !== undefined && value.trim() !== '' && value.length <= MAX_NAME_LENGTH;
+}
+
+/** The 400 body of a request whose `param` or `lang` query is missing or wrong. */
+function nameQueryError(param: string): { error: string } {
+  return {
+    error: `Expected the query ?${param}=<a name of up to ${MAX_NAME_LENGTH} characters>&lang=en|it.`,
+  };
 }
 
 function isId(value: unknown): value is string {
@@ -115,14 +123,7 @@ export function createApp(deps: AppDeps): Hono {
 
   app.get('/api/cards/search', async (c) => {
     const { q, lang = 'en' } = c.req.query();
-    if (!isName(q) || !isLang(lang)) {
-      return c.json(
-        {
-          error: `Expected the query ?q=<a name of up to ${MAX_NAME_LENGTH} characters>&lang=en|it.`,
-        },
-        400,
-      );
-    }
+    if (!isValidNameQuery(q) || !isLang(lang)) return c.json(nameQueryError('q'), 400);
     const cards = await searchCards(catalog, {
       query: q,
       lang,
@@ -134,14 +135,7 @@ export function createApp(deps: AppDeps): Hono {
 
   app.get('/api/cards/named', async (c) => {
     const { name, lang = 'en' } = c.req.query();
-    if (!isName(name) || !isLang(lang)) {
-      return c.json(
-        {
-          error: `Expected the query ?name=<a name of up to ${MAX_NAME_LENGTH} characters>&lang=en|it.`,
-        },
-        400,
-      );
-    }
+    if (!isValidNameQuery(name) || !isLang(lang)) return c.json(nameQueryError('name'), 400);
     const cards = await listCardsNamed(catalog, { name, lang, today: today() });
     return c.json({ cards });
   });
