@@ -186,6 +186,16 @@ describe('addCardToSection', () => {
       expect(addition).toMatchObject({ added: 'copy', text: 'Tokens\n2 Soldier (TWAR) 5' });
     });
 
+    it('adds a copy to a line not resolved yet that names its print by set and number', () => {
+      const addition = addCardToSection(
+        'Tokens\n1 Soldier (TFRC) 3',
+        { section: 'tokens', candidate: SOLDIER, lang: 'en' },
+        [],
+      );
+
+      expect(addition).toMatchObject({ added: 'copy', text: 'Tokens\n2 Soldier (TFRC) 3' });
+    });
+
     it('never takes a line written with its name alone for its line: other tokens share it', () => {
       const ambiguous = {
         text: '1 Soldier',

@@ -8,7 +8,14 @@ import { parseLine, resolvedLine, writtenWithQuantity, type ParsedLine } from '.
 import { cardKeys, nameKey } from './name-match.ts';
 import { moveWrittenLine, type LineMove } from './move-written-line.ts';
 import { isTokenPrint, writtenNamingPrint } from './token-line.ts';
-import type { Candidate, DecklistLine, DecklistSection, Lang, ResolvedLine } from './types.ts';
+import type {
+  Candidate,
+  DecklistLine,
+  DecklistSection,
+  Lang,
+  Print,
+  ResolvedLine,
+} from './types.ts';
 
 /** The card the user picked to add, and the section it goes into. */
 export interface CardToAdd {
@@ -61,8 +68,9 @@ export function addCardToSection(
   const cardNames = cardKeys(candidate.card.name, defaultPrint ? [defaultPrint.printedName] : []);
   /** Whether `parsed`, not resolved to a card yet or ambiguous, is a line of the card. */
   function namesTheCard(parsed: ParsedLine): boolean {
-    // Other tokens share a token's name: only a line resolved to the token is its line.
-    return !isTokenPrint(defaultPrint) && cardNames.includes(nameKey(parsed.name));
+    if (!cardNames.includes(nameKey(parsed.name))) return false;
+    // Other tokens share a token's name: only its set and number tell its line apart.
+    return !isTokenPrint(defaultPrint) || namesPrint(parsed, defaultPrint);
   }
   /** The quantity of the line written at `writtenIndex` when it is a line of the card. */
   function quantityOfCardAt(writtenIndex: number): number | null {
@@ -137,4 +145,11 @@ export function writeLineAtSectionEnd(
     ),
     writtenIndex: move.previousWrittenIndexes.indexOf(appendedIndex),
   };
+}
+
+/** Whether `parsed` names `print` by its set and collector number. */
+function namesPrint({ printRef }: ParsedLine, print: Print): boolean {
+  return (
+    printRef?.set === print.set && printRef.collectorNumber === print.collectorNumber.toLowerCase()
+  );
 }
