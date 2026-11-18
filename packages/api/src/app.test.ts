@@ -958,6 +958,37 @@ describe('the power, toughness and keywords of a card', () => {
     ],
   });
 
+  // Adventure, split and flip cards have one image and two faces in the rules.
+  const bonecrusherGiant = scryfallCard({
+    id: 'bonecrusher-eld',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-0000000b0ce5',
+    name: 'Bonecrusher Giant // Stomp',
+    set: 'eld',
+    collector_number: '115',
+    layout: 'adventure',
+    card_faces: [{ name: 'Bonecrusher Giant', power: '4', toughness: '3' }, { name: 'Stomp' }],
+  });
+  const fireIce = scryfallCard({
+    id: 'fire-ice-mh2',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-00000000f1ce',
+    name: 'Fire // Ice',
+    set: 'mh2',
+    collector_number: '290',
+    layout: 'split',
+    card_faces: [{ name: 'Fire' }, { name: 'Ice' }],
+  });
+  const bushiTenderfoot = scryfallCard({
+    id: 'bushi-chk',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-0000000b0510',
+    name: 'Bushi Tenderfoot // Kenzo the Hardhearted',
+    set: 'chk',
+    collector_number: '2',
+    layout: 'flip',
+    card_faces: [
+      { name: 'Bushi Tenderfoot', power: '1', toughness: '1' },
+      { name: 'Kenzo the Hardhearted', power: '3', toughness: '4' },
+    ],
+  });
   const zndrspltOracle = 'aaaaaaaa-0000-0000-0000-0000000025d5';
   const zndrsplt = scryfallCard({
     id: 'zndrsplt-cmr',
@@ -1003,6 +1034,9 @@ describe('the power, toughness and keywords of a card', () => {
         emblem,
         tarmogoyf,
         delver,
+        bonecrusherGiant,
+        fireIce,
+        bushiTenderfoot,
       ]),
     );
   });
@@ -1081,6 +1115,27 @@ describe('the power, toughness and keywords of a card', () => {
           powerToughnessByFace: [{ power: '1', toughness: '1' }],
           keywords: ['Partner with'],
         },
+      },
+    ]);
+  });
+
+  it('gives the faces of a card in the rules, not the images of its print: an adventure, a split and a flip card have two', async () => {
+    const { body } = await resolve('1 Bonecrusher Giant\n1 Fire // Ice\n1 Bushi Tenderfoot');
+
+    expect(body.lines).toMatchObject([
+      {
+        card: { powerToughnessByFace: [{ power: '4', toughness: '3' }, null] },
+        defaultPrint: { faces: [{ name: 'Bonecrusher Giant // Stomp' }] },
+      },
+      { card: { powerToughnessByFace: [null, null] }, defaultPrint: { faces: [{}] } },
+      {
+        card: {
+          powerToughnessByFace: [
+            { power: '1', toughness: '1' },
+            { power: '3', toughness: '4' },
+          ],
+        },
+        defaultPrint: { faces: [{}] },
       },
     ]);
   });
