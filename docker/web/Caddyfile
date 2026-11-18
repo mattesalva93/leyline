@@ -16,7 +16,8 @@
 		# Every browser feature the app does not use is off; the PDF goes to the share sheet.
 		Permissions-Policy "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), hid=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=(), web-share=(self)"
 		Cross-Origin-Opener-Policy same-origin
-		Content-Security-Policy "frame-ancestors 'none'"
+		# Scripts only from the site itself; styles alone may be inline, for Radix (ADR 0016).
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://cards.scryfall.io; connect-src 'self' https://cards.scryfall.io; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
 	}
 
 	handle /api/* {

@@ -31,7 +31,19 @@ const EXPECTED_HEADERS = {
     'web-share=(self)',
   ].join(', '),
   'cross-origin-opener-policy': 'same-origin',
-  'content-security-policy': "frame-ancestors 'none'",
+  'content-security-policy': [
+    "default-src 'self'",
+    "script-src 'self'",
+    // Radix inserts styles at run time, and a static site cannot issue a nonce (ADR 0016).
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https://cards.scryfall.io",
+    "connect-src 'self' https://cards.scryfall.io",
+    "worker-src 'self' blob:",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join('; '),
 };
 
 /** Scryfall's images send no Cross-Origin-Resource-Policy, so COEP would block them. */
