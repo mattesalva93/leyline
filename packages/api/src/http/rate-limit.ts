@@ -32,10 +32,15 @@ export function rateLimit(
   return async (c, next) => {
     const client = clientAddressOf(c);
     let window = windows.get(client);
-    if (!window) {
-      window = { endsAt: clock.now().getTime() + windowMilliseconds, requests: 0 };
-      windows.set(client, window);
-      clock.startTimer(windowMilliseconds, () => windows.delete(client));
+    // A window can end before its timer fires, when the event loop runs late.
+    if (!window || window.endsAt <= clock.now().getTime()) {
+      const opened = { endsAt: clock.now().getTime() + windowMilliseconds, requests: 0 };
+      windows.set(client, opened);
+      // A late timer must not delete the window that replaced its own.
+      clock.startTimer(windowMilliseconds, () => {
+        if (windows.get(client) === opened) windows.delete(client);
+      });
+      window = opened;
     }
     window.requests++;
     if (window.requests <= rule.requestsPerWindow) return next();
