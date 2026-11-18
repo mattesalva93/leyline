@@ -15,3 +15,6 @@ peerDependencyRules:
   allowedVersions:
     # It runs on ESLint 10 through @eslint/compat's fixupPluginRules (eslint.config.js).
     eslint-plugin-react>eslint: '10'
+    # `tsc` is TypeScript 7 under this alias; typescript-eslint reads the TS 6 API from the
+    # `typescript` alias, and loads this one only for its opt-in native backend, which needs 7.1.
+    '@typescript-eslint/typescript-estree>@typescript/native': '7.0'
