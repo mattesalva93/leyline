@@ -1,4 +1,6 @@
 // A throwaway PostgreSQL schema per test file, on the database from `pnpm db:up` (or CI's).
+// `TEST_DATABASE_URL` names a role that can create schemas: the superuser by default, since CI's
+// database has no other.
 import { randomUUID } from 'node:crypto';
 import postgres from 'postgres';
 import { connect, type Sql } from '../catalog/db.ts';
@@ -11,7 +13,7 @@ export interface TestDb {
 }
 
 function databaseUrl(): string {
-  return process.env.DATABASE_URL ?? DEFAULT_URL;
+  return process.env.TEST_DATABASE_URL ?? DEFAULT_URL;
 }
 
 /** A connection to a database the server does not have: every query fails, as on an outage. */

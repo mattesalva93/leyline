@@ -3,7 +3,7 @@
 // empty catalog; after a restart it waits for the rest of the day since the last one.
 import { setTimeout as sleep } from 'node:timers/promises';
 import { connect, migrate } from './catalog/db.ts';
-import { databaseUrl } from './env.ts';
+import { ownerDatabaseUrl } from './env.ts';
 import { importBulk, lastImportStartedAt } from './catalog-import/import-bulk.ts';
 import { allCardsBulkUrl, downloadBulk } from './catalog-import/scryfall.ts';
 
@@ -17,7 +17,7 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => stop.abort());
 }
 
-const sql = connect(databaseUrl());
+const sql = connect(ownerDatabaseUrl());
 try {
   await migrate(sql);
   while (!stop.signal.aborted) {

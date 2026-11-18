@@ -49,7 +49,7 @@ services:
     build: { context: ., target: api }
     pull_policy: build
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-mtg}:${POSTGRES_PASSWORD:-mtg}@postgres:5432/${POSTGRES_DB:-mtg_suite}
+      READER_DATABASE_URL: postgres://mtg_reader:${MTG_READER_PASSWORD:-mtg_reader}@postgres:5432/${POSTGRES_DB:-mtg_suite}
       # Inside the container, listen on every interface so `web` can reach it.
       HOST: 0.0.0.0
       PORT: 3000
@@ -77,8 +77,9 @@ services:
     build: { context: ., target: api }
     pull_policy: build
     command: ['node', 'dist/import-daily.js']
+    # It migrates the database before importing: the api only reads it (ADR 0016).
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-mtg}:${POSTGRES_PASSWORD:-mtg}@postgres:5432/${POSTGRES_DB:-mtg_suite}
+      OWNER_DATABASE_URL: postgres://mtg_owner:${MTG_OWNER_PASSWORD:-mtg_owner}@postgres:5432/${POSTGRES_DB:-mtg_suite}
     restart: unless-stopped
     depends_on:
       postgres:
@@ -87,10 +88,14 @@ services:
   postgres:
     <<: *rotated-logs
     image: postgres:18-alpine
+    # The superuser only initialises the database: docker/postgres/init creates the roles the
+    # api and the importer connect as.
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-mtg}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mtg}
       POSTGRES_DB: ${POSTGRES_DB:-mtg_suite}
+      MTG_OWNER_PASSWORD: ${MTG_OWNER_PASSWORD:-mtg_owner}
+      MTG_READER_PASSWORD: ${MTG_READER_PASSWORD:-mtg_reader}
     restart: unless-stopped
     # Loopback only, for `pnpm dev` and the tests: the database never faces the network,
     # since Docker's port rules bypass host firewalls such as ufw.
