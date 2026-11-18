@@ -1289,6 +1289,31 @@ describe('GET /api/health', () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ ok: true });
   });
+
+  describe('before the importer has created the catalog schema', () => {
+    let emptyDb: TestDb;
+
+    beforeAll(async () => {
+      emptyDb = await createTestDb();
+    });
+
+    afterAll(async () => {
+      await emptyDb.drop();
+    });
+
+    it('answers 503, and leaves the schema to the importer', async () => {
+      const app = testApp(emptyDb.sql);
+
+      const first = await app.request('/api/health');
+      const second = await app.request('/api/health');
+
+      expect(first.status).toBe(503);
+      expect(await first.json()).toEqual({
+        error: 'The catalog schema does not exist yet: the importer creates it.',
+      });
+      expect(second.status).toBe(503);
+    });
+  });
 });
 
 describe('GET /api/cards/:oracleId/print-counts', () => {

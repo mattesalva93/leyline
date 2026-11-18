@@ -35,11 +35,33 @@ From the repository root, on this machine (not inside a container):
 docker compose up -d --wait
 ```
 
-The `.env` file is optional here. `docker compose` reads it from the repository root on this machine, before starting anything, to fill the `${...}` values in `compose.yaml`; the containers never see the file itself. Without it, `compose.yaml`'s own defaults are the staging values. `pnpm dev` needs it (`cp .env.example .env`), and the same file serves both.
+It needs the `.env` file (`cp .env.example .env`). `docker compose` reads it from the repository root on this machine, before starting anything, to fill the `${...}` values in `compose.yaml`; the containers never see the file itself. The database roles' passwords have no default there, so `docker compose` stops without them; for everything else, `compose.yaml`'s own defaults are the staging values. `pnpm dev` reads the same file.
 
 `--wait` returns once every service is running or healthy. Images are rebuilt on every `up` (`pull_policy: build`), so the stack always runs the code checked out. On the first start the `importer` fills the catalog (a few minutes), and decklists find no cards until it is done: `docker compose logs -f importer` follows it.
 
+The `api` reports itself healthy only once the `importer` has created the database schema, a few seconds after PostgreSQL starts: it never creates it itself.
+
 Caddy's access log is a file of its own, apart from `docker compose logs`: `docker compose exec web tail -f /var/log/caddy/access.log` follows it.
+
+## Database roles
+
+PostgreSQL has three roles (ADR 0016):
+
+- the superuser, `POSTGRES_USER`, only initialises the database;
+- `mtg_owner` owns the schema and is the `importer`'s: it migrates the database before each import;
+- `mtg_reader` is the `api`'s: it can only read, and its queries stop after a statement timeout.
+
+`docker/postgres/init/02-database-roles.sh` creates the two roles, with the passwords in `MTG_OWNER_PASSWORD` and `MTG_READER_PASSWORD`, when PostgreSQL creates its volume. A volume created before the roles existed gets them, and hands its tables to `mtg_owner`, by running the same script once:
+
+```sh
+docker compose up -d --wait postgres
+docker compose exec -T postgres sh /docker-entrypoint-initdb.d/02-database-roles.sh
+docker compose up -d --wait
+```
+
+`exec -T` runs the script inside the running container with no terminal; it reads the passwords from the container's environment. The script is safe to run again, and running it is also how a changed password reaches an existing volume.
+
+`pnpm test` creates its throwaway schemas as the superuser, or as the role in `TEST_DATABASE_URL`.
 
 ## Update
 

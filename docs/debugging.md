@@ -18,7 +18,7 @@ VS Code runs on Windows and opens the repo through the WSL extension. When you o
 
 `.vscode/settings.json` is git-ignored: keep your personal editor settings there.
 
-`api` and the import read `DATABASE_URL` from the repo's `.env` (`cp .env.example .env`) and need PostgreSQL (`pnpm db:up`).
+`api` reads `READER_DATABASE_URL` and the import `OWNER_DATABASE_URL` from the repo's `.env` (`cp .env.example .env`); both need PostgreSQL (`pnpm db:up`). The import creates the schema, so on a new database run `pnpm import:catalog` before debugging `api`.
 
 ## VS Code configurations
 

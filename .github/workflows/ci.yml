@@ -28,7 +28,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
-      DATABASE_URL: postgres://mtg:mtg@localhost:5432/mtg_suite
+      TEST_DATABASE_URL: postgres://mtg:mtg@localhost:5432/mtg_suite
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -85,6 +85,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    # compose.yaml requires the database roles' passwords; no container starts here, so any value does.
+    env:
+      MTG_OWNER_PASSWORD: unused-by-the-build
+      MTG_READER_PASSWORD: unused-by-the-build
     steps:
       - uses: actions/checkout@v7.0.1
         with:

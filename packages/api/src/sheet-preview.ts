@@ -19,7 +19,7 @@ import {
   sheetImageUrls,
 } from '@mtg-suite/core';
 import { connect } from './catalog/db.ts';
-import { databaseUrl } from './env.ts';
+import { readerDatabaseUrl } from './env.ts';
 import { createPostgresCatalog } from './catalog/postgres-catalog.ts';
 import { downloadImages } from './catalog-import/scryfall.ts';
 
@@ -64,7 +64,7 @@ const text = values.file
   : DEFAULT_DECKLIST;
 const outDir = fileURLToPath(new URL('../../../.preview/', import.meta.url));
 
-const sql = connect(databaseUrl());
+const sql = connect(readerDatabaseUrl());
 try {
   const today = new Date().toISOString().slice(0, 10);
   const lines = await resolveDecklist(text, createPostgresCatalog(sql), { today, lang: 'en' });

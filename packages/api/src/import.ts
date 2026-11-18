@@ -7,12 +7,12 @@ import { parseArgs } from 'node:util';
 import { createGunzip } from 'node:zlib';
 import { connect, migrate } from './catalog/db.ts';
 import { importBulk } from './catalog-import/import-bulk.ts';
-import { databaseUrl } from './env.ts';
+import { ownerDatabaseUrl } from './env.ts';
 import { allCardsBulkUrl, downloadBulk } from './catalog-import/scryfall.ts';
 
 const { values } = parseArgs({ options: { file: { type: 'string' } } });
 
-const sql = connect(databaseUrl());
+const sql = connect(ownerDatabaseUrl());
 try {
   await migrate(sql);
   let bulk;

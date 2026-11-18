@@ -15,6 +15,7 @@ import { accessLogFailures } from './staging-checks/access-log.js';
 import { accessLogRotationFailures } from './staging-checks/access-log-rotation.js';
 import { containerLogRotationFailures } from './staging-checks/container-log-rotation.js';
 import { cspInBrowserFailures } from './staging-checks/csp-in-browser.js';
+import { databaseRoleFailures } from './staging-checks/database-roles.js';
 import { securityHeaderFailures } from './staging-checks/security-headers.js';
 import { testerAccessFailures } from './staging-checks/tester-access.js';
 
@@ -26,6 +27,7 @@ const CHECKS = {
   'access log': accessLogFailures,
   'access log rotation': accessLogRotationFailures,
   'container log rotation': containerLogRotationFailures,
+  'database roles': databaseRoleFailures,
 };
 
 const { values: flags } = parseArgs({ options: { app: { type: 'string' } } });

@@ -5,7 +5,7 @@
 ## Turn it on
 
 1. **Prepare the host.** Install Docker Engine, create a deploy user in the `docker` group, open ports 80 and 443, and point the domain's DNS at the host.
-2. **Write the host's `.env`** in the deploy path, from `.env.example`, before the first deploy: PostgreSQL reads `POSTGRES_PASSWORD` only when it creates its volume, so a password changed later needs `ALTER USER` by hand. If the domain has an IPv6 (AAAA) record, `PUBLISH_ADDRESS=0.0.0.0` publishes on IPv4 only: drop the record, or Let's Encrypt may fail to reach the host.
+2. **Write the host's `.env`** in the deploy path, from `.env.example`, before the first deploy, with a strong password of its own in each of `POSTGRES_PASSWORD`, `MTG_OWNER_PASSWORD` and `MTG_READER_PASSWORD`, the database's roles that `docs/staging.md` explains. `openssl rand -hex 32` prints one (32 random bytes as hex, safe in a URL). PostgreSQL reads them only when it creates its volume: a changed `POSTGRES_PASSWORD` needs `ALTER USER` by hand, a changed role password needs the roles script run again as `docs/staging.md` shows. The `*_DATABASE_URL` lines are for `pnpm` on a development machine and can be left out. If the domain has an IPv6 (AAAA) record, `PUBLISH_ADDRESS=0.0.0.0` publishes on IPv4 only: drop the record, or Let's Encrypt may fail to reach the host.
 3. **Make a key pair** for the workflow, and add its public half to the deploy user's `~/.ssh/authorized_keys`:
 
    ```sh
