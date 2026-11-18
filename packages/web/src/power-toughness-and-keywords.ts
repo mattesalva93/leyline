@@ -12,8 +12,25 @@ export function powerToughnessAndKeywordsOf(card: Card, lang: Lang): string {
     .filter((face) => face !== null)
     .map((face) => `${face.power}/${face.toughness}`)
     .join(' // ');
-  const keywords = card.keywords.map((keyword) => keywordName(keyword, lang)).join(', ');
+  const keywords = printedKeywordsOf(card)
+    .map((keyword) => keywordName(keyword, lang))
+    .join(', ');
   return [powerToughness, keywords].filter((part) => part !== '').join(' ');
+}
+
+const GENERIC_LANDWALK = 'Landwalk';
+
+/**
+ * Scryfall lists `Landwalk` beside each specific landwalk (`Forestwalk`, `Islandwalk`), while
+ * the card prints only the specific one.
+ */
+function printedKeywordsOf(card: Card): readonly string[] {
+  const hasSpecificLandwalk = card.keywords.some(
+    (keyword) => keyword !== GENERIC_LANDWALK && keyword.endsWith('walk'),
+  );
+  return hasSpecificLandwalk
+    ? card.keywords.filter((keyword) => keyword !== GENERIC_LANDWALK)
+    : card.keywords;
 }
 
 function keywordName(keyword: string, lang: Lang): string {

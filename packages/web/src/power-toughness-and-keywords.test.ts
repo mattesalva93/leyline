@@ -22,6 +22,17 @@ describe('the power, toughness and keywords of a card', () => {
     expect(powerToughnessAndKeywordsOf(card, 'it')).toBe('Volare, Brand-new keyword');
   });
 
+  it('shows a specific landwalk, never the generic one Scryfall lists beside it', () => {
+    const catWarrior = aCard({ keywords: ['Landwalk', 'Forestwalk'] });
+    expect(powerToughnessAndKeywordsOf(catWarrior, 'en')).toBe('Forestwalk');
+    expect(powerToughnessAndKeywordsOf(catWarrior, 'it')).toBe('Passa-Foreste');
+  });
+
+  it('shows the generic landwalk when Scryfall lists no specific one', () => {
+    const card = aCard({ keywords: ['Landwalk'] });
+    expect(powerToughnessAndKeywordsOf(card, 'it')).toBe('Passa-terre');
+  });
+
   it("separates the powers and toughnesses of a double-faced card's faces with //", () => {
     const soldierGoblin = aCard({
       name: 'Soldier // Goblin',
