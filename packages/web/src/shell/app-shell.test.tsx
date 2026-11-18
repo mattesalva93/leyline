@@ -5,7 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
 import { inMemoryServer } from '../test-support/in-memory-server.ts';
 import { mountApp } from '../test-support/mount-app.tsx';
-import { AppShell, type ShellArea } from './AppShell.tsx';
+import { AppShell } from './AppShell.tsx';
+import type { ShellArea } from './shell-area.ts';
 
 vi.mock('../api.ts');
 

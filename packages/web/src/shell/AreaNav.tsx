@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
-import type { ShellArea } from './AppShell.tsx';
+import type { ShellArea } from './shell-area.ts';
 
 const LINK_LOOK = {
   topBar:

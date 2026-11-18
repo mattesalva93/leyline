@@ -7,16 +7,11 @@ import { InfoDialog } from './InfoDialog.tsx';
 import { PhoneMenu } from './PhoneMenu.tsx';
 import { ScryfallCredit } from './ScryfallCredit.tsx';
 import { ThemeSwitch } from './ThemeSwitch.tsx';
+import type { ShellArea } from './shell-area.ts';
 import type { ShellOutletContext } from './shell-outlet-context.ts';
 import { useTheme } from './use-theme.ts';
 
 const MENU_ITEM = 'flex items-center gap-2 rounded-md px-3 py-2.5 text-left';
-
-/** One area of the app, as the shell's navigation links to it. */
-export interface ShellArea {
-  readonly path: string;
-  readonly label: string;
-}
 
 /**
  * The frame every area lives in: the top bar above, the current area below. On a wide screen
