@@ -6,10 +6,12 @@
 // Needs the stack running (docker compose up -d --wait, see docs/staging.md) with the catalog
 // imported, a test credential in CHECK_STAGING_USERNAME and CHECK_STAGING_PASSWORD (read from
 // `.env` too), and Playwright's browser (pnpm exec playwright install chromium). It talks to the
-// stack from outside, as a browser would, so it stays out of `pnpm check`: run it whenever the
-// configuration changes and after every deploy.
+// stack from outside, as a browser would, and reads its logs and settings through `docker`
+// (DOCKER_HOST for the VPS, see docs/deploy.md), so it stays out of `pnpm check`: run it
+// whenever the configuration changes and after every deploy.
 import { parseArgs } from 'node:util';
 import { chromium, request as playwrightRequest } from 'playwright';
+import { accessLogFailures } from './staging-checks/access-log.js';
 import { cspInBrowserFailures } from './staging-checks/csp-in-browser.js';
 import { securityHeaderFailures } from './staging-checks/security-headers.js';
 import { testerAccessFailures } from './staging-checks/tester-access.js';
@@ -19,6 +21,7 @@ const CHECKS = {
   'tester access': testerAccessFailures,
   'security headers': securityHeaderFailures,
   'CSP in the browser': cspInBrowserFailures,
+  'access log': accessLogFailures,
 };
 
 const { values: flags } = parseArgs({ options: { app: { type: 'string' } } });

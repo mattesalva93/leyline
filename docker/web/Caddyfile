@@ -20,6 +20,21 @@
 		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://cards.scryfall.io; connect-src 'self' https://cards.scryfall.io; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
 	}
 
+	# The access log keeps the least personal data (ADR 0016): the client's network, never its
+	# address, and no request headers, where a client or a proxy can write an address of its own.
+	# A new file every day, each deleted after 14 days; `pnpm check:staging` pins both.
+	log {
+		output file /var/log/caddy/access.log {
+			roll_interval 24h
+			roll_keep_for 14d
+		}
+		format filter {
+			request>remote_ip ip_mask 24 64
+			request>client_ip ip_mask 24 64
+			request>headers delete
+		}
+	}
+
 	# Only the testers of the closed alpha, on the page and on /api alike (ADR 0016). Their
 	# credentials stay out of the repository: see tester-credentials.example.caddy.
 	basic_auth argon2id {

@@ -14,6 +14,8 @@ services:
       # Certificates and the local CA: losing them means new certificates on every start.
       - caddy-data:/data
       - caddy-config:/config
+      # The access log, rotated by Caddy itself (Caddyfile).
+      - caddy-logs:/var/log/caddy
       # The testers' credentials, never in the image or the repository (docs/staging.md).
       # `create_host_path: false`: a missing file stops `up`, instead of Docker mounting an
       # empty directory in its place.
@@ -95,3 +97,4 @@ volumes:
   postgres-data:
   caddy-data:
   caddy-config:
+  caddy-logs:

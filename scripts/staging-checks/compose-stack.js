@@ -1,0 +1,23 @@
+// Reads the stack from Docker itself, for what a request from outside cannot see. `docker`
+// talks to the local engine, or to the VPS's when DOCKER_HOST points there (docs/deploy.md).
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const run = promisify(execFile);
+
+async function docker(...args) {
+  const { stdout } = await run('docker', args, { maxBuffer: 64 * 1024 * 1024 });
+  return stdout;
+}
+
+/** The output of a command run inside the service's container. */
+export function execInService(service, ...command) {
+  return docker('compose', 'exec', '-T', service, ...command);
+}
+
+/** Every container of the stack, stopped ones too, as `docker inspect` describes them. */
+export async function inspectContainers() {
+  const ids = (await docker('compose', 'ps', '--all', '--quiet')).split('\n').filter(Boolean);
+  if (ids.length === 0) throw new Error('docker compose finds no container of the stack');
+  return JSON.parse(await docker('inspect', ...ids));
+}
