@@ -43,22 +43,18 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    # zizmor's online audits (impostor commits, known vulnerable actions) and gh query the GitHub API.
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: jdx/mise-action@v5
-      # zizmor's online audits (impostor commits, known vulnerable actions) query the GitHub API.
       - run: zizmor --format=github .github/workflows
-        env:
-          GH_TOKEN: ${{ github.token }}
       - run: gh extension install github/gh-actions-lock --pin v0.4.1
-        env:
-          GH_TOKEN: ${{ github.token }}
       # Fails when actions.lock is out of sync with the workflows or a pin no longer verifies.
       - run: gh actions-lock --verify
-        env:
-          GH_TOKEN: ${{ github.token }}
 
   secrets:
     runs-on: ubuntu-latest
@@ -98,7 +94,9 @@ jobs:
       # Every image compose.yaml builds, under the `<project>-<service>` name compose tags it with.
       # `--ignore-unfixed`: a vulnerability with no fixed version yet gives nothing to update.
       # `.trivyignore.yaml`: the ones fixed upstream that our base images do not ship yet.
-      - run: |
+      # bash rather than the default shell: it adds `-o pipefail`, so a broken compose or jq fails the step.
+      - shell: bash
+        run: |
           docker compose config --format json \
             | jq -r '.name as $project | .services | to_entries[] | select(.value.build) | "\($project)-\(.key)"' \
             | sort -u \

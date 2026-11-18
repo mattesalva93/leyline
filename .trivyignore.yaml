@@ -3,11 +3,11 @@
 vulnerabilities:
   - id: CVE-2026-85091
     statement: >-
-      zlib1g of the node:26.13.0-slim base image, fixed in Debian but not yet in the image.
+      zlib1g of the api's node base image, fixed in Debian but not yet in the image.
       Node links its own copy of zlib, not the system library (ldd /usr/local/bin/node).
     expired_at: 2026-12-18
   - id: CVE-2026-78661
     statement: >-
-      golang.org/x/net/html inside the Caddy binary of caddy:2.11-alpine, unfixed in the latest
-      Caddy release (v2.11.9). Our Caddyfile uses no handler that parses HTML (templates, markdown).
+      golang.org/x/net/html inside the Caddy binary of the web's base image, unfixed in the latest
+      Caddy release. Our Caddyfile uses no handler that parses HTML (templates, markdown).
     expired_at: 2026-12-18
