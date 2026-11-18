@@ -1,4 +1,9 @@
-import { defaultSheetOptions, MAX_PRINT_QUERY_LENGTH, type CatalogEntry } from '@mtg-suite/core';
+import {
+  CARD_SEARCH_LIMIT,
+  defaultSheetOptions,
+  MAX_PRINT_QUERY_LENGTH,
+  type CatalogEntry,
+} from '@mtg-suite/core';
 import { aCard, aPrint, jpegOfSize } from '@mtg-suite/core/test-fixtures';
 import {
   act,
@@ -3106,7 +3111,8 @@ describe('the add tile', () => {
     expect(await screen.findByText('Quale carta intendevi?')).toBeTruthy();
     const found = await searchToAdd(user, 'Mazzo', 'island');
 
-    const [firstIsland] = await within(found).findAllByRole('option', { name: /Island/ });
+    await user.click(await within(found).findByRole('option', { name: 'Island: 2 versioni' }));
+    const [firstIsland] = await screen.findAllByRole('button', { name: /^Island, / });
     if (!firstIsland) throw new Error('no Island found');
     await user.click(firstIsland);
 
@@ -3661,14 +3667,24 @@ describe('the token lines', () => {
   });
   /** A white Soldier printed in two token sets, and a red one: three tokens sharing a name. */
   const WHITE_SOLDIER: CatalogEntry = {
-    card: aCard({ oracleId: 'white-soldier', name: 'Soldier' }),
+    card: aCard({
+      oracleId: 'white-soldier',
+      name: 'Soldier',
+      powerToughnessByFace: [{ power: '1', toughness: '1' }],
+      keywords: ['Lifelink'],
+    }),
     prints: [
       tokenPrint('white-soldier', 'tfrc', '3', '2021-01-01'),
       tokenPrint('white-soldier', 'twar', '5', '2019-01-01'),
     ],
   };
   const RED_SOLDIER: CatalogEntry = {
-    card: aCard({ oracleId: 'red-soldier', name: 'Soldier' }),
+    card: aCard({
+      oracleId: 'red-soldier',
+      name: 'Soldier',
+      powerToughnessByFace: [{ power: '2', toughness: '2' }],
+      keywords: ['Haste'],
+    }),
     prints: [tokenPrint('red-soldier', 'tm20', '2', '2020-01-01')],
   };
 
@@ -3687,13 +3703,74 @@ describe('the token lines', () => {
       .map((image) => /\w+-soldier-\w+/.exec(image.getAttribute('src') ?? '')?.[0]);
   }
 
-  /** Adds the Soldier the search lists at `index` to the Tokens section. */
+  /** Adds the Soldier the grid of its versions shows at `index` to the Tokens section. */
   async function addSoldier(user: ReturnType<typeof userEvent.setup>, index: number) {
     const found = await searchToAdd(user, 'Mazzo', 'soldier', 'Token');
-    const soldier = (await within(found).findAllByRole('option', { name: /Soldier/ }))[index];
+    await user.click(await within(found).findByRole('option', { name: /^Soldier: / }));
+    const soldier = (await versionGrid()).getAllByRole('button')[index];
     if (!soldier) throw new Error(`no Soldier at ${index}`);
     await user.click(soldier);
   }
+
+  async function versionGrid() {
+    return within(await screen.findByRole('list', { name: 'Versioni di Soldier' }));
+  }
+
+  it('shows the tokens sharing a name as one search row, which opens all of them', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const found = await searchToAdd(user, 'Mazzo', 'soldier', 'Token');
+
+    const rows = await within(found).findAllByRole('option');
+    expect(rows.map((row) => row.ariaLabel)).toEqual(['Soldier: 2 versioni']);
+    await user.click(within(found).getByRole('option', { name: 'Soldier: 2 versioni' }));
+
+    expect((await versionGrid()).getAllByRole('button').map((button) => button.ariaLabel)).toEqual([
+      'Soldier, TFRC #3, 1/1 Legame vitale',
+      'Soldier, TM20 #2, 2/2 Rapidità',
+    ]);
+    expect(screen.getByText('Soldier: 2 versioni')).toBeTruthy();
+  });
+
+  it('lists every version of a shared name, even past the last card the search shows', async () => {
+    const soldiers = Array.from({ length: CARD_SEARCH_LIMIT + 2 }, (_, index) => ({
+      card: aCard({ oracleId: `soldier-${index}`, name: 'Soldier' }),
+      prints: [tokenPrint(`soldier-${index}`, 'tsld', String(index + 1), '2022-01-01')],
+    }));
+    Object.entries(inMemoryServer([...CATALOG, ...soldiers])).forEach(([call, answer]) => {
+      vi.mocked(api[call as keyof typeof api]).mockImplementation(answer as never);
+    });
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const found = await searchToAdd(user, 'Mazzo', 'soldier', 'Token');
+
+    await user.click(await within(found).findByRole('option', { name: /^Soldier: / }));
+
+    expect((await versionGrid()).getAllByRole('button')).toHaveLength(CARD_SEARCH_LIMIT + 2);
+  });
+
+  it('picks a version from the keyboard: Enter opens the grid, whose first version takes the focus', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const found = await searchToAdd(user, 'Mazzo', 'soldier', 'Token');
+    await within(found).findByRole('option', { name: /^Soldier: / });
+
+    await user.keyboard('{Enter}');
+    await versionGrid();
+    expect(document.activeElement?.ariaLabel).toBe('Soldier, TFRC #3, 1/1 Legame vitale');
+    await user.tab();
+    await user.keyboard('{Enter}');
+
+    expect(decklistValue()).toBe('4 Sol Ring\n\nTokens\n1 Soldier (TM20) 2');
+  });
+
+  it('goes back from the grid of versions to the cards found', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const found = await searchToAdd(user, 'Mazzo', 'soldier', 'Token');
+    await user.click(await within(found).findByRole('option', { name: /^Soldier: / }));
+    await versionGrid();
+
+    await user.click(screen.getByRole('button', { name: 'Tutti i risultati' }));
+
+    expect(screen.getByRole('option', { name: 'Soldier: 2 versioni' })).toBeTruthy();
+  });
 
   it('adds two tokens sharing a name as two lines named by set and number, each tile showing its own', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');

@@ -10,6 +10,7 @@ const ICON_PATHS = {
   download: 'M12 4v11m0 0-4-4m4 4 4-4M5 20h14',
   cards: 'M4 5h7v14H4zM13 5h7v14h-7z',
   sheet: 'M6 3h9l4 4v14H6zM9 11h7M9 15h7',
+  chevronRight: 'm9 18 6-6-6-6',
 } as const;
 
 export type IconName = keyof typeof ICON_PATHS;

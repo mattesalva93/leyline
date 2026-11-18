@@ -97,6 +97,15 @@
       "searching": "Ricerca in corso…",
       "noResults": "Nessuna carta trovata",
       "failed": "Ricerca non riuscita: riprova.",
+      "sharedName": "{{name}}: {{count}} versioni",
+      "sharedNameHint": "{{count}} versioni: scegli dall'immagine",
+      "backToResults": "Tutti i risultati",
+      "loadingVersions": "Carico le versioni di {{name}}…",
+      "versionsFailed": "Versioni di {{name}} non caricate: riprova.",
+      "versions_one": "{{name}}: {{count}} versione",
+      "versions_other": "{{name}}: {{count}} versioni",
+      "versionsOf": "Versioni di {{name}}",
+      "version": "{{name}}, {{version}}",
       "close": "Chiudi"
     }
   },

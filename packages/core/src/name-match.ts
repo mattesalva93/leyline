@@ -18,7 +18,7 @@ export function nameKey(name: string): string {
 const FACE_SEPARATOR = ' // ';
 
 /** The name of a multi-face name's front face ("Front" of "Front // Back"); others as they are. */
-function frontFaceName(name: string): string {
+export function frontFaceName(name: string): string {
   return name.split(FACE_SEPARATOR)[0] ?? name;
 }
 

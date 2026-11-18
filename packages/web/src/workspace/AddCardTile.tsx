@@ -71,7 +71,11 @@ export function AddCardTile({ section, lang, cell, onAdd }: AddCardTileProps) {
           {tileText}
         </DialogTrigger>
       </PileFreeTileFrame>
-      <CenteredDialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-3 overflow-y-auto">
+      <CenteredDialogContent
+        // Wide enough for the grid of the cards sharing a name.
+        width="wide"
+        className="flex max-h-[calc(100dvh-2rem)] flex-col gap-3 overflow-y-auto"
+      >
         <DialogTitle className="font-semibold">
           {t('workspace.addCard.title', {
             section: t(`workspace.sections.${pickedSection}`),

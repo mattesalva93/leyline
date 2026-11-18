@@ -2,6 +2,7 @@ import {
   isBlankPrintQuery,
   type Candidate,
   type DecklistLine,
+  type FoundCard,
   type Lang,
   type TokenQueryLine,
   type PrintCountsByLang,
@@ -95,10 +96,19 @@ export async function fetchPrintCounts(oracleId: string): Promise<PrintCountsByL
 }
 
 /** The cards whose name, English or in a language the catalog holds, comes close to `query`. */
-export async function searchCardsByName(query: string, lang: Lang): Promise<Candidate[]> {
+export async function searchCardsByName(query: string, lang: Lang): Promise<FoundCard[]> {
   const response = await fetch(`/api/cards/search?${new URLSearchParams({ q: query, lang })}`, {
     headers: { accept: 'application/json' },
   });
   if (!response.ok) throw new Error(`Search failed with ${response.status}`);
+  return ((await response.json()) as { cards: FoundCard[] }).cards;
+}
+
+/** Every card a line naming `name` could mean, each with its default print in `lang`. */
+export async function fetchCardsNamed(name: string, lang: Lang): Promise<Candidate[]> {
+  const response = await fetch(`/api/cards/named?${new URLSearchParams({ name, lang })}`, {
+    headers: { accept: 'application/json' },
+  });
+  if (!response.ok) throw new Error(`Cards named failed with ${response.status}`);
   return ((await response.json()) as { cards: Candidate[] }).cards;
 }
