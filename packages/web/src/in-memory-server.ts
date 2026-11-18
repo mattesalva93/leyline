@@ -2,6 +2,7 @@ import {
   CARD_SEARCH_LIMIT,
   countPrintsByLang,
   createInMemoryCatalog,
+  listCardsNamed,
   listPrints,
   resolveDecklist,
   searchCards,
@@ -31,6 +32,7 @@ export function inMemoryServer(
     },
     searchCardsByName: (query, lang) =>
       searchCards(catalog, { query, lang, today: TODAY, limit: CARD_SEARCH_LIMIT }),
+    fetchCardsNamed: (name, lang) => listCardsNamed(catalog, { name, lang, today: TODAY }),
     fetchPrintPage: async (oracleId, lang, limit, cursor, printQuery) => {
       const page = await listPrints(catalog, {
         oracleId,

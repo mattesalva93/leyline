@@ -1,4 +1,4 @@
-import type { Candidate, Lang } from '@mtg-suite/core';
+import type { FoundCard, Lang } from '@mtg-suite/core';
 import { useEffect, useState } from 'react';
 import { searchCardsByName } from '../api.ts';
 import { SEARCH_TYPING_WAIT_MS } from '../search-typing-wait.ts';
@@ -13,7 +13,7 @@ export const MIN_CARD_SEARCH_LENGTH = 2;
 export type CardSearchState =
   | { readonly status: 'idle' }
   | { readonly status: 'searching' }
-  | { readonly status: 'found'; readonly cards: readonly Candidate[] }
+  | { readonly status: 'found'; readonly cards: readonly FoundCard[] }
   | { readonly status: 'failed' };
 
 /** The answer to one search, named by what it searched for. */

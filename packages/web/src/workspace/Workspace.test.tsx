@@ -1,4 +1,9 @@
-import { defaultSheetOptions, MAX_PRINT_QUERY_LENGTH, type CatalogEntry } from '@mtg-suite/core';
+import {
+  CARD_SEARCH_LIMIT,
+  defaultSheetOptions,
+  MAX_PRINT_QUERY_LENGTH,
+  type CatalogEntry,
+} from '@mtg-suite/core';
 import { aCard, aPrint, jpegOfSize } from '@mtg-suite/core/test-fixtures';
 import {
   act,
@@ -150,6 +155,27 @@ async function mountPageAndWrite(decklistText: string) {
 }
 
 /**
+ * Steps the carousel of an ambiguous line, in `scope`, to the candidate `name` whose version
+ * starts with `version`, and picks it.
+ */
+async function pickCandidate(
+  user: ReturnType<typeof userEvent.setup>,
+  name: string,
+  {
+    scope = within(document.body),
+    version = '',
+  }: { scope?: ReturnType<typeof within>; version?: string } = {},
+) {
+  const carousel = within(await scope.findByRole('group', { name: /^Quale / }));
+  const pickButton = (label: string) => label.startsWith(`Scegli ${name} (${version}`);
+  for (let step = 0; !carousel.queryByRole('button', { name: pickButton }); step++) {
+    if (step > 20) throw new Error(`no candidate ${name}`);
+    await user.click(carousel.getByRole('button', { name: 'Candidato successivo' }));
+  }
+  await user.click(carousel.getByRole('button', { name: pickButton }));
+}
+
+/**
  * Moves one copy of `card` off its tile of the print `from` onto the print `to`, with the plus
  * of the open print picker and the minus of that tile: the line keeps its quantity.
  */
@@ -260,9 +286,8 @@ describe('the generator page', () => {
   it('resolves an ambiguous line to the candidate the user picks', async () => {
     const user = await mountPageAndWrite('1 Lightning{Enter}');
     expect(await screen.findByText('Quale carta intendevi?')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Lightning Helix' })).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: 'Lightning Bolt' }));
+    await pickCandidate(user, 'Lightning Bolt');
 
     expect(screen.getByRole('button', { name: 'Modifica Lightning Bolt' })).toBeTruthy();
     expect(screen.queryByText('Quale carta intendevi?')).toBeNull();
@@ -804,7 +829,7 @@ describe('the quantity on a tile', () => {
 
   it("keeps the line's picked card and its other tiles through a change of quantity, asking the server nothing", async () => {
     const user = await mountPageAndWrite('2 Lightning{Enter}2 Sol Ring{Enter}');
-    await user.click(await screen.findByRole('button', { name: 'Lightning Bolt' }));
+    await pickCandidate(user, 'Lightning Bolt');
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
     await moveOneCopy(user, 'Sol Ring', 'C21 #1', 'LEA #1');
     const requestsBefore = vi.mocked(api.resolveDecklistText).mock.calls.length;
@@ -891,7 +916,7 @@ describe('removing a line to fix', () => {
 
   it('keeps the choices of the lines after the removed one', async () => {
     const user = await mountPageAndWrite('2 Nonexistent Card{Enter}2 Lightning{Enter}');
-    await user.click(await screen.findByRole('button', { name: 'Lightning Bolt' }));
+    await pickCandidate(user, 'Lightning Bolt');
 
     await user.click(
       screen.getByRole('button', { name: 'Rimuovi 2 Nonexistent Card dalla lista' }),
@@ -1988,7 +2013,7 @@ describe('the decklist summary', () => {
 
     const lineToFix = within(screen.getByRole('complementary', { name: 'Riga da sistemare' }));
     expect(lineToFix.getByText('1 Lightning')).toBeTruthy();
-    await user.click(lineToFix.getByRole('button', { name: 'Lightning Bolt' }));
+    await pickCandidate(user, 'Lightning Bolt', { scope: lineToFix });
 
     const inspector = within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
     expect(inspector.getByRole('heading', { name: 'Lightning Bolt' })).toBeTruthy();
@@ -2010,7 +2035,7 @@ describe('the decklist summary', () => {
     await screen.findByText('Quale carta intendevi?');
     expect(summary().getByRole('button', { name: '1 riga da sistemare' })).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: 'Lightning Bolt' }));
+    await pickCandidate(user, 'Lightning Bolt');
 
     expect(summary().queryByRole('button', { name: /da sistemare$/ })).toBeNull();
   });
@@ -2061,7 +2086,7 @@ describe('the workspace on a phone', () => {
     await user.keyboard('{Enter}');
     expect(await topBar.findByText('12 carte · 1 pagina')).toBeTruthy();
     await user.click(stepBar().getByRole('button', { name: 'Carte' }));
-    await user.click(screen.getByRole('button', { name: 'Lightning Bolt' }));
+    await pickCandidate(user, 'Lightning Bolt');
 
     expect(topBar.getByText('12 carte · 2 pagine')).toBeTruthy();
   });
@@ -2684,7 +2709,7 @@ describe('reordering the decklist by dragging tiles', () => {
     const user = await mountPageAndWrite(
       '2 Lightning{Enter}2 Sol Ring{Enter}SB: 1 Counterspell{Enter}',
     );
-    await user.click(await screen.findByRole('button', { name: 'Lightning Bolt' }));
+    await pickCandidate(user, 'Lightning Bolt');
     await user.click(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
     await moveOneCopy(user, 'Sol Ring', 'C21 #1', 'LEA #1');
     const requestsBefore = vi.mocked(api.resolveDecklistText).mock.calls.length;
@@ -3103,16 +3128,17 @@ describe('the add tile', () => {
       vi.mocked(api[call as keyof typeof api]).mockImplementation(answer as never);
     });
     const user = await mountPageAndWrite('1 Island{Enter}');
-    expect(await screen.findByText('Quale carta intendevi?')).toBeTruthy();
+    expect(await screen.findByText('Quale Island?')).toBeTruthy();
     const found = await searchToAdd(user, 'Mazzo', 'island');
 
-    const [firstIsland] = await within(found).findAllByRole('option', { name: /Island/ });
+    await user.click(await within(found).findByRole('option', { name: 'Island: 2 versioni' }));
+    const [firstIsland] = await screen.findAllByRole('button', { name: /^Island, / });
     if (!firstIsland) throw new Error('no Island found');
     await user.click(firstIsland);
 
     expect(decklistValue()).toBe('2 Island\n');
     expect(screen.getByRole('button', { name: 'Modifica Island' })).toBeTruthy();
-    expect(screen.queryByText('Quale carta intendevi?')).toBeNull();
+    expect(screen.queryByText('Quale Island?')).toBeNull();
   });
 
   it('is used from the keyboard: the arrows go through the cards found, Enter adds one', async () => {
@@ -3179,7 +3205,7 @@ describe('the decklist saved on the device', () => {
 
   it("brings back each line's choices: the candidate picked and the copies on prints of either language", async () => {
     const user = await mountPageAndWrite('1 Lightning{Enter}4 Brainstorm{Enter}');
-    await user.click(await screen.findByRole('button', { name: 'Lightning Bolt' }));
+    await pickCandidate(user, 'Lightning Bolt');
     await user.click(screen.getByRole('button', { name: 'Modifica Brainstorm' }));
     await moveOneCopy(user, 'Brainstorm', 'ICE #1', 'MMQ #1');
     await user.click(await screen.findByRole('radio', { name: 'Inglese (1)' }));
@@ -3661,14 +3687,24 @@ describe('the token lines', () => {
   });
   /** A white Soldier printed in two token sets, and a red one: three tokens sharing a name. */
   const WHITE_SOLDIER: CatalogEntry = {
-    card: aCard({ oracleId: 'white-soldier', name: 'Soldier' }),
+    card: aCard({
+      oracleId: 'white-soldier',
+      name: 'Soldier',
+      powerToughnessByFace: [{ power: '1', toughness: '1' }],
+      keywords: ['Lifelink'],
+    }),
     prints: [
       tokenPrint('white-soldier', 'tfrc', '3', '2021-01-01'),
       tokenPrint('white-soldier', 'twar', '5', '2019-01-01'),
     ],
   };
   const RED_SOLDIER: CatalogEntry = {
-    card: aCard({ oracleId: 'red-soldier', name: 'Soldier' }),
+    card: aCard({
+      oracleId: 'red-soldier',
+      name: 'Soldier',
+      powerToughnessByFace: [{ power: '2', toughness: '2' }],
+      keywords: ['Haste'],
+    }),
     prints: [tokenPrint('red-soldier', 'tm20', '2', '2020-01-01')],
   };
 
@@ -3687,13 +3723,107 @@ describe('the token lines', () => {
       .map((image) => /\w+-soldier-\w+/.exec(image.getAttribute('src') ?? '')?.[0]);
   }
 
-  /** Adds the Soldier the search lists at `index` to the Tokens section. */
+  /** Adds the Soldier the grid of its versions shows at `index` to the Tokens section. */
   async function addSoldier(user: ReturnType<typeof userEvent.setup>, index: number) {
     const found = await searchToAdd(user, 'Mazzo', 'soldier', 'Token');
-    const soldier = (await within(found).findAllByRole('option', { name: /Soldier/ }))[index];
+    await user.click(await within(found).findByRole('option', { name: /^Soldier: / }));
+    const soldier = (await versionGrid()).getAllByRole('button')[index];
     if (!soldier) throw new Error(`no Soldier at ${index}`);
     await user.click(soldier);
   }
+
+  async function versionGrid() {
+    return within(await screen.findByRole('list', { name: 'Versioni di Soldier' }));
+  }
+
+  it('shows the tokens sharing a name as one search row, which opens all of them', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const found = await searchToAdd(user, 'Mazzo', 'soldier', 'Token');
+
+    const rows = await within(found).findAllByRole('option');
+    expect(rows.map((row) => row.ariaLabel)).toEqual(['Soldier: 2 versioni']);
+    await user.click(within(found).getByRole('option', { name: 'Soldier: 2 versioni' }));
+
+    expect((await versionGrid()).getAllByRole('button').map((button) => button.ariaLabel)).toEqual([
+      'Soldier, TFRC #3, 1/1 Legame vitale',
+      'Soldier, TM20 #2, 2/2 Rapidità',
+    ]);
+    expect(screen.getByText('Soldier: 2 versioni')).toBeTruthy();
+  });
+
+  it('lists every version of a shared name, even past the last card the search shows', async () => {
+    const soldiers = Array.from({ length: CARD_SEARCH_LIMIT + 2 }, (_, index) => ({
+      card: aCard({ oracleId: `soldier-${index}`, name: 'Soldier' }),
+      prints: [tokenPrint(`soldier-${index}`, 'tsld', String(index + 1), '2022-01-01')],
+    }));
+    Object.entries(inMemoryServer([...CATALOG, ...soldiers])).forEach(([call, answer]) => {
+      vi.mocked(api[call as keyof typeof api]).mockImplementation(answer as never);
+    });
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const found = await searchToAdd(user, 'Mazzo', 'soldier', 'Token');
+
+    await user.click(await within(found).findByRole('option', { name: /^Soldier: / }));
+
+    expect((await versionGrid()).getAllByRole('button')).toHaveLength(CARD_SEARCH_LIMIT + 2);
+  });
+
+  it('picks a version from the keyboard: Enter opens the grid, whose first version takes the focus', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const found = await searchToAdd(user, 'Mazzo', 'soldier', 'Token');
+    await within(found).findByRole('option', { name: /^Soldier: / });
+
+    await user.keyboard('{Enter}');
+    await versionGrid();
+    expect(document.activeElement?.ariaLabel).toBe('Soldier, TFRC #3, 1/1 Legame vitale');
+    await user.tab();
+    await user.keyboard('{Enter}');
+
+    expect(decklistValue()).toBe('4 Sol Ring\n\nTokens\n1 Soldier (TM20) 2');
+  });
+
+  it('goes back from the grid of versions to the cards found', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const found = await searchToAdd(user, 'Mazzo', 'soldier', 'Token');
+    await user.click(await within(found).findByRole('option', { name: /^Soldier: / }));
+    await versionGrid();
+
+    await user.click(screen.getByRole('button', { name: 'Tutti i risultati' }));
+
+    expect(screen.getByRole('option', { name: 'Soldier: 2 versioni' })).toBeTruthy();
+  });
+
+  it('steps through the candidates of a line on its tile, every image loaded at once so none flickers', async () => {
+    const user = await mountPageAndWrite('Tokens{Enter}2 Soldier{Enter}');
+    const carousel = within(
+      await within(cardGrid()).findByRole('group', { name: 'Quale Soldier?' }),
+    );
+    const images = () =>
+      carousel.getAllByRole('presentation').map((image) => image.getAttribute('src'));
+    const imagesBefore = images();
+    expect(imagesBefore).toHaveLength(2);
+    expect(carousel.getByText('1/2')).toBeTruthy();
+
+    await user.click(carousel.getByRole('button', { name: 'Candidato successivo' }));
+
+    expect(carousel.getByText('2/2')).toBeTruthy();
+    expect(images()).toEqual(imagesBefore);
+    expect(carousel.getByRole('button', { name: /^Scegli Soldier \(/ }).ariaLabel).toBe(
+      'Scegli Soldier (TM20 #2, 2/2 Rapidità)',
+    );
+  });
+
+  it('steps through the candidates of the line to fix with the arrow keys', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}Tokens{Enter}2 Soldier{Enter}');
+    await user.click(await summary().findByRole('button', { name: '1 riga da sistemare' }));
+    const lineToFix = within(screen.getByRole('complementary', { name: 'Riga da sistemare' }));
+    const carousel = lineToFix.getByRole('group', { name: 'Quale Soldier?' });
+
+    await user.click(within(carousel).getByRole('button', { name: 'Candidato successivo' }));
+    await user.keyboard('{ArrowLeft}');
+
+    expect(within(carousel).getByText('1/2')).toBeTruthy();
+    expect(within(carousel).getByText('1/2: Soldier, TFRC #3, 1/1 Legame vitale')).toBeTruthy();
+  });
 
   it('adds two tokens sharing a name as two lines named by set and number, each tile showing its own', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
@@ -3714,10 +3844,7 @@ describe('the token lines', () => {
 
   it('rewrites a line written by the name alone with the set and number of the token picked', async () => {
     const user = await mountPageAndWrite('Tokens{Enter}2 Soldier{Enter}');
-    expect(await screen.findByText('Quale carta intendevi?')).toBeTruthy();
-    const [, redSoldier] = within(cardGrid()).getAllByRole('button', { name: 'Soldier' });
-    if (!redSoldier) throw new Error('no second Soldier candidate');
-    await user.click(redSoldier);
+    await pickCandidate(user, 'Soldier', { version: 'TM20 #2' });
 
     expect(decklistValue()).toBe('Tokens\n2 Soldier (TM20) 2\n');
     expect(soldierImages()).toEqual(['red-soldier-tm20']);

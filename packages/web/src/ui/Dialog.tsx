@@ -29,15 +29,23 @@ interface DialogContentProps {
   readonly children: ReactNode;
 }
 
+/** How wide a centred window may grow: narrow for a short form, wide for a grid of cards. */
+const CENTERED_DIALOG_MAX_WIDTH = { narrow: 'max-w-sm', wide: 'max-w-2xl' } as const;
+
 /** A window in the middle of the screen, above a dimmed page. */
-export function CenteredDialogContent({ ariaLabel, className = '', children }: DialogContentProps) {
+export function CenteredDialogContent({
+  ariaLabel,
+  className = '',
+  width = 'narrow',
+  children,
+}: DialogContentProps & { readonly width?: keyof typeof CENTERED_DIALOG_MAX_WIDTH }) {
   return (
     <RadixDialog.Portal>
       <RadixDialog.Overlay className={OVERLAY} />
       <RadixDialog.Content
         aria-label={ariaLabel}
         aria-describedby={undefined}
-        className={`fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-lg border-2 border-border bg-panel p-5 text-sm text-foreground shadow-[4px_4px_0_var(--color-border)] ${className}`}
+        className={`fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] ${CENTERED_DIALOG_MAX_WIDTH[width]} -translate-x-1/2 -translate-y-1/2 rounded-lg border-2 border-border bg-panel p-5 text-sm text-foreground shadow-[4px_4px_0_var(--color-border)] ${className}`}
       >
         {children}
       </RadixDialog.Content>
