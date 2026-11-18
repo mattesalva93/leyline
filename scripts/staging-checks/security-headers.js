@@ -31,7 +31,21 @@ const EXPECTED_HEADERS = {
     'web-share=(self)',
   ].join(', '),
   'cross-origin-opener-policy': 'same-origin',
-  'content-security-policy': "frame-ancestors 'none'",
+  'content-security-policy': [
+    "default-src 'self'",
+    "script-src 'self'",
+    // Inline styles: ADR 0016.
+    "style-src 'self' 'unsafe-inline'",
+    // Vite inlines a font file under its size limit into the stylesheet as a data: URL.
+    "font-src 'self' data:",
+    "img-src 'self' data: blob: https://cards.scryfall.io",
+    "connect-src 'self' https://cards.scryfall.io",
+    "worker-src 'self' blob:",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join('; '),
 };
 
 /** Scryfall's images send no Cross-Origin-Resource-Policy, so COEP would block them. */
