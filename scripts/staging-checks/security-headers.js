@@ -36,6 +36,8 @@ const EXPECTED_HEADERS = {
     "script-src 'self'",
     // Radix inserts styles at run time, and a static site cannot issue a nonce (ADR 0016).
     "style-src 'self' 'unsafe-inline'",
+    // Vite inlines a font file under its size limit into the stylesheet as a data: URL.
+    "font-src 'self' data:",
     "img-src 'self' data: blob: https://cards.scryfall.io",
     "connect-src 'self' https://cards.scryfall.io",
     "worker-src 'self' blob:",
