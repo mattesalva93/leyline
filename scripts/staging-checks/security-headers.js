@@ -34,7 +34,7 @@ const EXPECTED_HEADERS = {
   'content-security-policy': [
     "default-src 'self'",
     "script-src 'self'",
-    // Radix inserts styles at run time, and a static site cannot issue a nonce (ADR 0016).
+    // Inline styles: ADR 0016.
     "style-src 'self' 'unsafe-inline'",
     // Vite inlines a font file under its size limit into the stylesheet as a data: URL.
     "font-src 'self' data:",
