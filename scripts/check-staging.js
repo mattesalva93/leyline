@@ -34,7 +34,7 @@ const testerCredential = { username, password };
 // `ignoreHTTPSErrors`: local staging signs its own certificate. `send: 'always'`: every request
 // carries the credential, instead of waiting for a 401 to ask for it.
 const anonymousRequest = await playwrightRequest.newContext({ ignoreHTTPSErrors: true });
-const request = await playwrightRequest.newContext({
+const testerRequest = await playwrightRequest.newContext({
   ignoreHTTPSErrors: true,
   httpCredentials: { ...testerCredential, send: 'always' },
 });
@@ -44,7 +44,7 @@ try {
   for (const [name, check] of Object.entries(CHECKS)) {
     const checkFailures = await check({
       anonymousRequest,
-      request,
+      testerRequest,
       browser,
       appAddress,
       testerCredential,
@@ -54,7 +54,7 @@ try {
   }
 } finally {
   await anonymousRequest.dispose();
-  await request.dispose();
+  await testerRequest.dispose();
   await browser.close();
 }
 
