@@ -1,6 +1,6 @@
-import { defaultPrintPreference } from './default-print.ts';
+import { defaultPrintFor, defaultPrintPreference } from './default-print.ts';
 import { cardKeys } from './name-match.ts';
-import type { Candidate, CatalogEntry } from './types.ts';
+import type { Candidate, CatalogEntry, Lang } from './types.ts';
 
 /** A candidate with the name keys of its card (see `cardKeys`). */
 interface NamedCandidate {
@@ -8,13 +8,19 @@ interface NamedCandidate {
   readonly keys: readonly string[];
 }
 
-/** `entry`'s card with its default print, ready to compare with the cards sharing a name. */
-export function namedCandidate(entry: CatalogEntry, candidate: Candidate): NamedCandidate {
+/**
+ * `entry`'s card with its default print for a line in `lang` on `today`, ready to compare with
+ * the cards sharing a name.
+ */
+export function namedCandidate(
+  entry: CatalogEntry,
+  { lang, today }: { readonly lang: Lang; readonly today: string },
+): NamedCandidate {
   const keys = cardKeys(
     entry.card.name,
     entry.prints.map((print) => print.printedName),
   );
-  return { candidate, keys };
+  return { candidate: { card: entry.card, ...defaultPrintFor(entry.prints, lang, today) }, keys };
 }
 
 function shareAName(a: NamedCandidate, b: NamedCandidate): boolean {

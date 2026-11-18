@@ -3,7 +3,7 @@ export type * from './types.ts';
 export { DECKLIST_SECTIONS, IMAGE_STATUSES, LANGS, isLang } from './types.ts';
 export { createInMemoryCatalog } from './in-memory-catalog.ts';
 export { CARD_SEARCH_LIMIT, searchCards, type CardSearch } from './card-search.ts';
-export { listCardsNamed, type CardsNamed } from './same-named-cards.ts';
+export { listCardsNamed, type CardsNamedQuery } from './same-named-cards.ts';
 export {
   countPrintsByLang,
   isPrintCursor,

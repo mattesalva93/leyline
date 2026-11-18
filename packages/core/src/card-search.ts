@@ -1,8 +1,7 @@
-import { defaultPrintFor } from './default-print.ts';
-import { frontFaceName, MIN_SIMILARITY, nameKey } from './name-match.ts';
-import { cardsNamedAmong } from './same-named-cards.ts';
+import { MIN_SIMILARITY, nameKey } from './name-match.ts';
+import { withSameNamedCardCounts } from './same-named-cards.ts';
 import { afterPreferredSameNamed, namedCandidate } from './same-name-preference.ts';
-import type { Candidate, Catalog, FoundCard, Lang } from './types.ts';
+import type { Catalog, FoundCard, Lang } from './types.ts';
 
 /** How many cards a name search returns: few enough to show each with its image. */
 export const CARD_SEARCH_LIMIT = 8;
@@ -33,22 +32,7 @@ export async function searchCards(
   if (key === '') return [];
   const entries = await catalog.searchByName(key, { minSimilarity: MIN_SIMILARITY, limit });
   const found = afterPreferredSameNamed(
-    entries.map((entry) =>
-      namedCandidate(entry, { card: entry.card, ...defaultPrintFor(entry.prints, lang, today) }),
-    ),
+    entries.map((entry) => namedCandidate(entry, { lang, today })),
   );
-  const sharedNameKey = (candidate: Candidate) => nameKey(frontFaceName(candidate.card.name));
-  const sharedNameKeys = [...new Set(found.map(sharedNameKey))];
-  // One catalog call for every name: a search finds up to `limit` cards.
-  const sameNamed = await catalog.findByNames(sharedNameKeys, { minSimilarity: MIN_SIMILARITY });
-  const counts = new Map(
-    sharedNameKeys.map((shared) => [
-      shared,
-      cardsNamedAmong(sameNamed, shared, { lang, today }).length,
-    ]),
-  );
-  return found.map((candidate) => ({
-    ...candidate,
-    sameNamedCardCount: counts.get(sharedNameKey(candidate)) ?? 0,
-  }));
+  return withSameNamedCardCounts(catalog, found, { lang, today });
 }
