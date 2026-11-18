@@ -1,5 +1,5 @@
 /** Stops a timer before it elapses; harmless once it has. */
-export type CancelTimer = () => void;
+type CancelTimer = () => void;
 
 /** Time as the API sees it: injected, so tests can stop and move it. */
 export interface Clock {

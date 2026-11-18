@@ -1,13 +1,14 @@
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
       "entry": ["scripts/*.js"],
-      "ignoreDependencies": ["jsdom"],
       "ignoreUnresolved": ["src/test-support/test-setup.ts"]
     },
+    "packages/api": {
+      "ignoreBinaries": ["pdftoppm"]
+    },
     "packages/web": {
-      "entry": ["src/test-support/test-setup.ts"],
       "ignoreDependencies": ["jsdom"]
     }
   }
