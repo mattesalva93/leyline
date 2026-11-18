@@ -1,10 +1,15 @@
 import { useState } from 'react';
-import { touchIsMainInput } from '../pdf-delivery.ts';
-import { useIsWideScreen } from '../screen-size.ts';
-import type { Generator } from '../use-generator.ts';
+import { touchIsMainInput } from '../generator/pdf-delivery.ts';
+import { useIsWideScreen } from './screen-size.ts';
+import type { Generator } from '../generator/use-generator.ts';
 import { DesktopWorkspace } from './DesktopWorkspace.tsx';
-import { gridSectionsOf } from './grid-sections.ts';
-import { gridTilesOf, linesToFixOf, type GridTile, type TileSelection } from './grid-tiles.ts';
+import { gridSectionsOf } from './card-grid/grid-sections.ts';
+import {
+  gridTilesOf,
+  linesToFixOf,
+  type GridTile,
+  type TileSelection,
+} from './card-grid/grid-tiles.ts';
 import { PhoneWorkspace } from './PhoneWorkspace.tsx';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 

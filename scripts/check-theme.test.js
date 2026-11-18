@@ -9,7 +9,7 @@ const repoRoot = join(import.meta.dirname, '..');
 const appTheme = readFileSync(join(repoRoot, 'packages/web/src/theme.css'), 'utf8');
 const appPage = readFileSync(join(repoRoot, 'packages/web/index.html'), 'utf8');
 const appPalette = readFileSync(
-  join(repoRoot, 'packages/web/src/workspace/sibling-group-colours.ts'),
+  join(repoRoot, 'packages/web/src/workspace/card-grid/sibling-group-colours.ts'),
   'utf8',
 );
 

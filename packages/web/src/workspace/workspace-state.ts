@@ -1,7 +1,7 @@
 import type { LineDestination } from '@mtg-suite/core';
-import type { Generator } from '../use-generator.ts';
-import type { GridSection } from './grid-sections.ts';
-import type { GridTile, ImagelessGridTile, TileSelection } from './grid-tiles.ts';
+import type { Generator } from '../generator/use-generator.ts';
+import type { GridSection } from './card-grid/grid-sections.ts';
+import type { GridTile, ImagelessGridTile, TileSelection } from './card-grid/grid-tiles.ts';
 
 /** What the centre of the workspace shows: the card grid, or the sheet as it will print. */
 export const CENTRE_VIEWS = ['cards', 'sheet'] as const;

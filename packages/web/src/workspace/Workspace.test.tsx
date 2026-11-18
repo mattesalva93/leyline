@@ -17,11 +17,11 @@ import {
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
-import { inMemoryServer } from '../in-memory-server.ts';
-import { mountApp } from '../mount-app.tsx';
-import { DESKTOP, PHONE, stubScreen } from '../test-screen.ts';
-import { PRINT_PICKER_ZOOM_WAIT_MS, TILE_ZOOM_WAIT_MS } from '../use-zoomed-card.tsx';
-import { SEARCH_TYPING_WAIT_MS } from '../search-typing-wait.ts';
+import { inMemoryServer } from '../test-support/in-memory-server.ts';
+import { mountApp } from '../test-support/mount-app.tsx';
+import { DESKTOP, PHONE, stubScreen } from '../test-support/test-screen.ts';
+import { PRINT_PICKER_ZOOM_WAIT_MS, TILE_ZOOM_WAIT_MS } from './zoomed-card/use-zoomed-card.tsx';
+import { SEARCH_TYPING_WAIT_MS } from './search-typing-wait.ts';
 
 vi.mock('../api.ts');
 

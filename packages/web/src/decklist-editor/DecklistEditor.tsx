@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import type { Generator } from '../use-generator.ts';
+import type { Generator } from '../generator/use-generator.ts';
 import { NewDecklistButton } from './NewDecklistButton.tsx';
 import { textAfterPasteAtEnd } from './paste-at-end.ts';
 import { useFocusKeptAcrossLayouts } from './use-focus-kept-across-layouts.ts';

@@ -156,7 +156,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const [
     themePath = 'packages/web/src/theme.css',
     pagePath = 'packages/web/index.html',
-    palettePath = 'packages/web/src/workspace/sibling-group-colours.ts',
+    palettePath = 'packages/web/src/workspace/card-grid/sibling-group-colours.ts',
   ] = process.argv.slice(2);
   const problems = themeProblems(themePath, pagePath, palettePath);
   if (problems.length > 0) {
