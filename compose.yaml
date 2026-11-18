@@ -1,5 +1,5 @@
-# Every service's own log rotates, instead of growing without limit (ADR 0016). `local` is
-# Docker's compact log format; `pnpm check:staging` pins that every container uses it.
+# Every service's own log rotates, instead of growing without limit (ADR 0016). `local`, unlike
+# Docker's default `json-file`, rotates by itself; `pnpm check:staging` pins that every log does.
 x-rotated-logs: &rotated-logs
   logging:
     driver: local

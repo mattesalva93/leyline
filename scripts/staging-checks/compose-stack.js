@@ -3,10 +3,10 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
-const run = promisify(execFile);
+const execFileAsync = promisify(execFile);
 
 async function docker(...args) {
-  const { stdout } = await run('docker', args, { maxBuffer: 64 * 1024 * 1024 });
+  const { stdout } = await execFileAsync('docker', args, { maxBuffer: 64 * 1024 * 1024 });
   return stdout;
 }
 

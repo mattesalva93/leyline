@@ -1,3 +1,4 @@
+// Recognises a full client address, as opposed to one Caddy masked to its network.
 import { isIPv4, isIPv6 } from 'node:net';
 
 const IPV4_CANDIDATE = /\b\d{1,3}(?:\.\d{1,3}){3}\b/g;

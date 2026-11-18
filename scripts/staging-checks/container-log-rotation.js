@@ -8,9 +8,10 @@ function rotates({ Type: driver, Config: options }) {
 
 export async function containerLogRotationFailures() {
   return (await inspectContainers())
-    .filter((container) => !rotates(container.HostConfig.LogConfig))
+    .map(({ Name: name, HostConfig: { LogConfig: logConfig } }) => ({ name, logConfig }))
+    .filter(({ logConfig }) => !rotates(logConfig))
     .map(
-      (container) =>
-        `${container.Name.replace(/^\//, '')}: the ${container.HostConfig.LogConfig.Type} log never rotates`,
+      ({ name, logConfig }) =>
+        `${name.replace(/^\//, '')}: the ${logConfig.Type} log never rotates`,
     );
 }

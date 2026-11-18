@@ -1,16 +1,10 @@
-// Caddy's access log holds no full client address, whatever a client writes in its headers, and
-// Caddy rotates it every day and deletes it after 14 days.
+// Caddy's access log holds no full client address, whatever a client writes in its headers.
 import { randomUUID } from 'node:crypto';
 import { execInService } from './compose-stack.js';
 import { PUBLIC_PATHS } from './public-paths.js';
 import { unmaskedIpAddresses } from './unmasked-ip-addresses.js';
 
-const ACCESS_LOG = '/var/log/caddy/access.log';
-/** Caddy's admin API, which listens inside the container only. */
-const LOGGING_CONFIG_URL = 'http://127.0.0.1:2019/config/logging/logs';
-const KEPT_FOR_DAYS = 14;
-const CADDY_DEFAULT_KEPT_FILES = 10;
-const ONE_DAY_NS = 24 * 60 * 60 * 1e9;
+export const ACCESS_LOG = '/var/log/caddy/access.log';
 
 /** Addresses from the documentation ranges, in the headers a proxy uses to name the client. */
 const SPOOFED_CLIENT_HEADERS = {
@@ -52,31 +46,6 @@ async function waitForMarkedLines(marker, count) {
   }
 }
 
-async function rotationFailures() {
-  const loggers = JSON.parse(await execInService('web', 'wget', '-qO-', LOGGING_CONFIG_URL));
-  const writer = Object.values(loggers).find(
-    (logger) => logger.writer?.filename === ACCESS_LOG,
-  )?.writer;
-  if (!writer) return [`no logger writes ${ACCESS_LOG}`];
-  const failures = [];
-  if (writer.roll === false) failures.push('the access log never rotates');
-  if (writer.roll_interval !== ONE_DAY_NS)
-    failures.push(
-      `the access log rotates every ${writer.roll_interval ?? 'size limit only'}, expected every day (${ONE_DAY_NS} ns)`,
-    );
-  if (writer.roll_keep_days !== KEPT_FOR_DAYS)
-    failures.push(
-      `the access log is kept ${writer.roll_keep_days} days, expected ${KEPT_FOR_DAYS}`,
-    );
-  // Past its cap on files (Caddy's default when unset), Caddy deletes the oldest before its age.
-  const keptFiles = writer.roll_keep ?? CADDY_DEFAULT_KEPT_FILES;
-  if (keptFiles < KEPT_FOR_DAYS)
-    failures.push(
-      `the access log keeps ${keptFiles} files, fewer than its ${KEPT_FOR_DAYS} daily ones`,
-    );
-  return failures;
-}
-
 /**
  * @param {{
  *   anonymousRequest: import('playwright').APIRequestContext,
@@ -95,5 +64,5 @@ export async function accessLogFailures(staging) {
     if (addresses.length > 0)
       failures.push(`${ACCESS_LOG} line ${index + 1} holds ${addresses.join(', ')}`);
   });
-  return [...failures, ...(await rotationFailures())];
+  return failures;
 }
