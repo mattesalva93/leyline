@@ -30,7 +30,8 @@
     "check:phone-width": "node scripts/check-phone-width.js",
     "web:preview": "node scripts/web-preview.js",
     "check:unused": "knip --no-progress",
-    "check:staging": "node scripts/check-staging.js"
+    "check:staging": "node scripts/check-staging.js",
+    "deps:outdated": "node scripts/deps-outdated.js"
   },
   "lint-staged": {
     "*.{ts,tsx,js,mjs,cjs}": [
