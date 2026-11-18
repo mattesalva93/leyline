@@ -13,8 +13,8 @@ import {
   type TokenQueryLine,
 } from '@mtg-suite/core';
 import { Hono } from 'hono';
-import type { Sql } from './db.ts';
-import { createPostgresCatalog } from './postgres-catalog.ts';
+import type { Sql } from '../catalog/db.ts';
+import { createPostgresCatalog } from '../catalog/postgres-catalog.ts';
 
 interface AppDeps {
   readonly sql: Sql;

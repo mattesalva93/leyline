@@ -1,7 +1,7 @@
 // A throwaway PostgreSQL schema per test file, on the database from `pnpm db:up` (or CI's).
 import { randomUUID } from 'node:crypto';
 import postgres from 'postgres';
-import { connect, type Sql } from './db.ts';
+import { connect, type Sql } from '../catalog/db.ts';
 
 const DEFAULT_URL = 'postgres://mtg:mtg@localhost:5432/mtg_suite';
 

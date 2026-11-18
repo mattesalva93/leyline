@@ -2,10 +2,10 @@
 // Runs as the `importer` service in compose.yaml. The first import starts right away on an
 // empty catalog; after a restart it waits for the rest of the day since the last one.
 import { setTimeout as sleep } from 'node:timers/promises';
-import { connect, migrate } from './db.ts';
+import { connect, migrate } from './catalog/db.ts';
 import { databaseUrl } from './env.ts';
-import { importBulk, lastImportStartedAt } from './import-bulk.ts';
-import { allCardsBulkUrl, downloadBulk } from './scryfall.ts';
+import { importBulk, lastImportStartedAt } from './catalog-import/import-bulk.ts';
+import { allCardsBulkUrl, downloadBulk } from './catalog-import/scryfall.ts';
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;

@@ -8,7 +8,7 @@ import {
 } from '@mtg-suite/core';
 import type { Readable } from 'node:stream';
 import { createInterface } from 'node:readline';
-import { createCatalogTables, type Sql } from './db.ts';
+import { createCatalogTables, type Sql } from '../catalog/db.ts';
 
 /** ADR 0002: the catalog holds English and Italian prints only. */
 const LANGS = new Set(['en', 'it']);

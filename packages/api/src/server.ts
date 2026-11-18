@@ -1,6 +1,6 @@
 import { serve } from '@hono/node-server';
-import { createApp } from './app.ts';
-import { connect, migrate } from './db.ts';
+import { createApp } from './http/app.ts';
+import { connect, migrate } from './catalog/db.ts';
 import { databaseUrl } from './env.ts';
 
 const sql = connect(databaseUrl());

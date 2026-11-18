@@ -1,16 +1,16 @@
 import { MAX_PRINT_QUERY_LENGTH } from '@mtg-suite/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from './app.ts';
-import { importBulk } from './import-bulk.ts';
-import { migrate } from './db.ts';
+import { importBulk } from '../catalog-import/import-bulk.ts';
+import { migrate } from '../catalog/db.ts';
 import {
   bulkStream,
   doubleFacedCard,
   imageUris,
   scryfallCard,
   textStream,
-} from './scryfall-fixtures.ts';
-import { createTestDb, type TestDb } from './test-db.ts';
+} from '../test-support/scryfall-fixtures.ts';
+import { createTestDb, type TestDb } from '../test-support/test-db.ts';
 
 /** A Commander deck's worth of real card names, for the 100-line batch. */
 const COMMANDER_NAMES = [
