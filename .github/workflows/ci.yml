@@ -4,12 +4,14 @@ on:
   push:
   pull_request:
 
-permissions:
-  contents: read
+# No token permission by default: each job asks for what it needs.
+permissions: {}
 
 jobs:
   check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     # Real PostgreSQL for the `api` integration tests (ADR 0003). Same image as compose.yaml.
     services:
       postgres:
@@ -28,9 +30,74 @@ jobs:
     env:
       DATABASE_URL: postgres://mtg:mtg@localhost:5432/mtg_suite
     steps:
-      - uses: actions/checkout@v7
-      # Installs node and pnpm at the versions pinned in mise.toml.
-      - uses: jdx/mise-action@v5
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      # Installs node, pnpm and the scanners at the versions pinned in mise.toml.
+      - uses: jdx/mise-action@v5.2.9
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm build
+
+  workflows:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    # zizmor's online audits (impostor commits, known vulnerable actions) and gh query the GitHub API.
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@v5.2.9
+      - run: zizmor --format=github .github/workflows
+      - run: gh extension install github/gh-actions-lock --pin v0.4.1
+      # Fails when actions.lock is out of sync with the workflows or a pin no longer verifies.
+      - run: gh actions-lock --verify
+
+  secrets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          # The whole history: a secret removed by a later commit is still leaked.
+          fetch-depth: 0
+      - uses: jdx/mise-action@v5.2.9
+      - run: gitleaks git --redact --verbose
+
+  dependencies:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@v5.2.9
+      # Severity threshold and accepted advisories: `audit` in pnpm-workspace.yaml.
+      - run: pnpm audit
+
+  images:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@v5.2.9
+      - run: docker compose build
+      # Every image compose.yaml builds, under the `<project>-<service>` name compose tags it with.
+      # `--ignore-unfixed`: a vulnerability with no fixed version yet gives nothing to update.
+      # `.trivyignore.yaml`: the ones fixed upstream that our base images do not ship yet.
+      # bash rather than the default shell: it adds `-o pipefail`, so a broken compose or jq fails the step.
+      - shell: bash
+        run: |
+          docker compose config --format json \
+            | jq -r '.name as $project | .services | to_entries[] | select(.value.build) | "\($project)-\(.key)"' \
+            | sort -u \
+            | xargs -n 1 trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --ignorefile .trivyignore.yaml --no-progress

@@ -20,6 +20,9 @@ RUN pnpm build
 RUN pnpm --filter @mtg-suite/api deploy --prod --legacy /deploy/api
 
 FROM node:26.13.0-slim AS api
+# The api runs `node` only: the bundled npm would ship its own dependencies, and their
+# vulnerabilities, for nothing.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build --chown=node:node /deploy/api ./
