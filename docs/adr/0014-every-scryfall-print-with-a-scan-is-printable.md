@@ -12,7 +12,7 @@
 
 The rule replaces story 21 of the MVP spec (#1), which kept these prints out of the default print, and the code that kept them out of the print picker as well. No ADR recorded it.
 
-The order is pinned by the default-print tests in `packages/core`, starting with "prefers a paper print over playtest, oversized, art series, token and digital ones" in `packages/core/src/decklist.test.ts`. "prints a plane as Scryfall serves it, upright like any card" in `packages/core/src/sheet-pdf.test.ts` pins that planes are never turned.
+The order is pinned by the default-print tests in `packages/core`, starting with "prefers a paper print over playtest, oversized, art series, token and digital ones" in `packages/core/src/decklist/decklist.test.ts`. "prints a plane as Scryfall serves it, upright like any card" in `packages/core/src/sheet/sheet-pdf.test.ts` pins that planes are never turned.
 
 ## Why
 
