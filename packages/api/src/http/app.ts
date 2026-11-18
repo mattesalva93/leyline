@@ -15,9 +15,14 @@ import {
 import { Hono } from 'hono';
 import type { Sql } from '../catalog/db.ts';
 import { createPostgresCatalog } from '../catalog/postgres-catalog.ts';
+import type { Clock } from './clock.ts';
+import { requestBodyLimit } from './request-body-limit.ts';
+import type { SecurityLog } from './security-log.ts';
 
-interface AppDeps {
+export interface AppDeps {
   readonly sql: Sql;
+  readonly clock: Clock;
+  readonly securityLog: SecurityLog;
 }
 
 /** Longest decklist text accepted, in characters: far above a 100-card deck. */
@@ -36,11 +41,6 @@ const MAX_TOKEN_QUERY_LINES = 5_000;
 const MAX_ID_LENGTH = 64;
 
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
-
-/** The UTC date, like Scryfall's release dates. */
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 /** `{ text, lang? }` from a resolve request body, or `null` when it is not one. */
 function resolveRequest(body: unknown): { text: string; lang: Lang } | null {
@@ -83,6 +83,10 @@ function tokenSuggestionRequest(body: unknown): { lines: TokenQueryLine[]; lang:
 export function createApp(deps: AppDeps): Hono {
   const catalog = createPostgresCatalog(deps.sql);
   const app = new Hono();
+  /** The UTC date, like Scryfall's release dates. */
+  const today = () => deps.clock.now().toISOString().slice(0, 10);
+
+  app.use('/api/*', requestBodyLimit(deps.securityLog));
 
   app.get('/api/health', (c) => c.json({ ok: true }));
 

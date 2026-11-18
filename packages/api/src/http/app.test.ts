@@ -1,6 +1,6 @@
 import { MAX_PRINT_QUERY_LENGTH } from '@mtg-suite/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createApp } from './app.ts';
+import { testApp } from '../test-support/test-app.ts';
 import { importBulk } from '../catalog-import/import-bulk.ts';
 import { migrate } from '../catalog/db.ts';
 import {
@@ -128,7 +128,7 @@ afterAll(async () => {
 });
 
 async function resolve(text: unknown, lang?: unknown) {
-  const response = await createApp({ sql: db.sql }).request('/api/decklists/resolve', {
+  const response = await testApp(db.sql).request('/api/decklists/resolve', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ text, lang }),
@@ -523,7 +523,7 @@ describe('POST /api/decklists/resolve', () => {
 });
 
 async function suggestTokens(lines: unknown, lang?: unknown) {
-  const response = await createApp({ sql: db.sql }).request('/api/decklists/suggested-tokens', {
+  const response = await testApp(db.sql).request('/api/decklists/suggested-tokens', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ lines, lang }),
@@ -684,9 +684,7 @@ describe('GET /api/cards/:oracleId/prints', () => {
 
   async function printsPage(oracleId: string, query: Record<string, string>) {
     const params = new URLSearchParams(query);
-    const response = await createApp({ sql: db.sql }).request(
-      `/api/cards/${oracleId}/prints?${params}`,
-    );
+    const response = await testApp(db.sql).request(`/api/cards/${oracleId}/prints?${params}`);
     return {
       status: response.status,
       body: (await response.json()) as {
@@ -810,7 +808,7 @@ describe('GET /api/cards/search', () => {
   });
 
   async function search(query: Record<string, string>) {
-    const response = await createApp({ sql: db.sql }).request(
+    const response = await testApp(db.sql).request(
       `/api/cards/search?${new URLSearchParams(query)}`,
     );
     return {
@@ -912,9 +910,7 @@ describe('the cards sharing a name', () => {
   });
 
   async function get(path: string, query: Record<string, string>) {
-    const response = await createApp({ sql: db.sql }).request(
-      `${path}?${new URLSearchParams(query)}`,
-    );
+    const response = await testApp(db.sql).request(`${path}?${new URLSearchParams(query)}`);
     return {
       status: response.status,
       body: (await response.json()) as {
@@ -1252,7 +1248,7 @@ describe('the power, toughness and keywords of a card', () => {
   });
 
   it('returns them on the cards a search finds', async () => {
-    const response = await createApp({ sql: db.sql }).request('/api/cards/search?q=tarmogoyf');
+    const response = await testApp(db.sql).request('/api/cards/search?q=tarmogoyf');
 
     expect(await response.json()).toMatchObject({
       cards: [
@@ -1281,7 +1277,7 @@ describe('the power, toughness and keywords of a card', () => {
 
 describe('GET /api/health', () => {
   it('answers ok, so the compose healthcheck can tell a serving api', async () => {
-    const response = await createApp({ sql: db.sql }).request('/api/health');
+    const response = await testApp(db.sql).request('/api/health');
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ ok: true });
@@ -1313,9 +1309,7 @@ describe('GET /api/cards/:oracleId/print-counts', () => {
   });
 
   async function printCounts(oracleId: string) {
-    const response = await createApp({ sql: db.sql }).request(
-      `/api/cards/${oracleId}/print-counts`,
-    );
+    const response = await testApp(db.sql).request(`/api/cards/${oracleId}/print-counts`);
     return { status: response.status, body: (await response.json()) as unknown };
   }
 
@@ -1358,7 +1352,7 @@ describe('a catalog imported before set names and artists', () => {
   it('serves its prints with an empty set name and artist once migrated', async () => {
     await migrate(oldDb.sql);
 
-    const response = await createApp({ sql: oldDb.sql }).request('/api/cards/forest/prints');
+    const response = await testApp(oldDb.sql).request('/api/cards/forest/prints');
 
     expect(await response.json()).toMatchObject({
       prints: [{ id: 'forest-old', setName: '', faces: [{ name: 'Forest', artist: '' }] }],
