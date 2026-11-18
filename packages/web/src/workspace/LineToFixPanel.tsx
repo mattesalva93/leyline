@@ -1,6 +1,5 @@
-import { useTranslation } from 'react-i18next';
 import type { Generator } from '../use-generator.ts';
-import { CandidateButtons } from './CandidateButtons.tsx';
+import { CandidateCarousel } from './CandidateCarousel.tsx';
 import {
   isSelected,
   lineNameOf,
@@ -31,16 +30,15 @@ export function LineToFixPanel({
   readonly generator: Generator;
   readonly lineToFix: ImagelessGridTile;
 }) {
-  const { t } = useTranslation();
   const { reason, writtenIndex, writtenLine, line } = lineToFix;
   return (
     <div className="flex flex-col gap-3 text-sm">
       <p className="font-mono break-words">{writtenLine.trim()}</p>
-      {reason === 'ambiguous' && <p className="font-semibold">{t('line.ambiguous')}</p>}
       <LineToFixHint reason={reason} isResolving={generator.isResolving} />
       {line?.status === 'ambiguous' && (
-        <CandidateButtons
+        <CandidateCarousel
           candidates={line.candidates}
+          lang={generator.defaultLang}
           onPick={(oracleId) => generator.pickCandidate(writtenIndex, oracleId)}
         />
       )}

@@ -40,7 +40,7 @@ export interface CardGridSectionProps {
   readonly onPickCandidate: (writtenIndex: number, oracleId: string) => void;
   readonly onTileQuantityChange: (writtenIndex: number, print: Print, quantity: number) => void;
   readonly onRemoveLine: (writtenIndex: number) => void;
-  /** The language the add tile shows and adds cards in. */
+  /** The language the add tile shows and adds cards in, and the candidates name keywords in. */
   readonly defaultLang: Lang;
   readonly onAddCard: (section: DecklistSection, candidate: Candidate) => void;
 }
@@ -142,6 +142,7 @@ export function CardGridSection({
                 gridTile={gridTile}
                 isResolving={isResolving}
                 isSelected={selected}
+                lang={defaultLang}
                 onSelect={() => toggleSelection(null)}
                 onPickCandidate={(oracleId) => onPickCandidate(gridTile.writtenIndex, oracleId)}
                 onRemove={() => onRemoveLine(gridTile.writtenIndex)}
