@@ -15,9 +15,16 @@ import {
 import { Hono } from 'hono';
 import type { Sql } from '../catalog/db.ts';
 import { createPostgresCatalog } from '../catalog/postgres-catalog.ts';
+import type { Clock } from './clock.ts';
+import { requestBodyLimit } from './request-body-limit.ts';
+import { requestTimeout } from './request-timeout.ts';
+import type { SecurityLog } from './security-log.ts';
+import { serverErrorHandler } from './server-error-handler.ts';
 
 interface AppDeps {
   readonly sql: Sql;
+  readonly clock: Clock;
+  readonly securityLog: SecurityLog;
 }
 
 /** Longest decklist text accepted, in characters: far above a 100-card deck. */
@@ -36,11 +43,6 @@ const MAX_TOKEN_QUERY_LINES = 5_000;
 const MAX_ID_LENGTH = 64;
 
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
-
-/** The UTC date, like Scryfall's release dates. */
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 /** `{ text, lang? }` from a resolve request body, or `null` when it is not one. */
 function resolveRequest(body: unknown): { text: string; lang: Lang } | null {
@@ -66,6 +68,8 @@ function isId(value: unknown): value is string {
   return typeof value === 'string' && value.length <= MAX_ID_LENGTH;
 }
 
+const ORACLE_ID_ERROR = { error: `Expected an oracle id of up to ${MAX_ID_LENGTH} characters.` };
+
 function isTokenQueryLine(value: unknown): value is TokenQueryLine {
   if (typeof value !== 'object' || value === null) return false;
   const { oracleId, previewPrintId } = value as Partial<Record<keyof TokenQueryLine, unknown>>;
@@ -83,6 +87,12 @@ function tokenSuggestionRequest(body: unknown): { lines: TokenQueryLine[]; lang:
 export function createApp(deps: AppDeps): Hono {
   const catalog = createPostgresCatalog(deps.sql);
   const app = new Hono();
+  /** The UTC date, like Scryfall's release dates. */
+  const today = () => deps.clock.now().toISOString().slice(0, 10);
+
+  app.onError(serverErrorHandler(deps.securityLog));
+  app.use('/api/*', requestTimeout(deps.clock, deps.securityLog));
+  app.use('/api/*', requestBodyLimit(deps.securityLog));
 
   app.get('/api/health', (c) => c.json({ ok: true }));
 
@@ -141,6 +151,8 @@ export function createApp(deps: AppDeps): Hono {
   });
 
   app.get('/api/cards/:oracleId/prints', async (c) => {
+    const oracleId = c.req.param('oracleId');
+    if (!isId(oracleId)) return c.json(ORACLE_ID_ERROR, 400);
     const { lang = 'en', limit, cursor, q } = c.req.query();
     const limitIsValid = limit === undefined || POSITIVE_INTEGER.test(limit);
     const cursorIsValid = cursor === undefined || isPrintCursor(cursor);
@@ -154,7 +166,7 @@ export function createApp(deps: AppDeps): Hono {
       );
     }
     const page = await listPrints(catalog, {
-      oracleId: c.req.param('oracleId'),
+      oracleId,
       lang,
       today: today(),
       limit: Math.min(Number(limit ?? MAX_PRINTS_PER_PAGE), MAX_PRINTS_PER_PAGE),
@@ -166,8 +178,10 @@ export function createApp(deps: AppDeps): Hono {
   });
 
   app.get('/api/cards/:oracleId/print-counts', async (c) => {
+    const oracleId = c.req.param('oracleId');
+    if (!isId(oracleId)) return c.json(ORACLE_ID_ERROR, 400);
     const counts = await countPrintsByLang(catalog, {
-      oracleId: c.req.param('oracleId'),
+      oracleId,
       today: today(),
     });
     if (!counts) return c.json({ error: 'No card has this oracle id.' }, 404);
