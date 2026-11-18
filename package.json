@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "packageManager": "pnpm@12.18.0",
+  "packageManager": "pnpm@12.21.0",
   "engines": {
-    "node": ">=26.13.0"
+    "node": ">=26.13.1"
   },
   "scripts": {
     "typecheck": "tsc -b",
@@ -30,7 +30,8 @@
     "check:phone-width": "node scripts/check-phone-width.js",
     "web:preview": "node scripts/web-preview.js",
     "check:unused": "knip --no-progress",
-    "check:staging": "node scripts/check-staging.js"
+    "check:staging": "node scripts/check-staging.js",
+    "deps:outdated": "node scripts/deps-outdated.js"
   },
   "lint-staged": {
     "*.{ts,tsx,js,mjs,cjs}": [
@@ -40,20 +41,22 @@
     "*.{json,md,yaml,yml,css,html}": "prettier --check"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.5",
+    "@eslint/compat": "^2.1.1",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.6",
-    "eslint": "^9.39.5",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
     "husky": "^9.1.7",
     "knip": "6.45.1",
-    "lint-staged": "^17.6.0",
-    "playwright": "^1.65.0",
-    "prettier": "^3.10.0",
-    "typescript": "~6.0.3",
-    "typescript-eslint": "^8.72.2",
+    "lint-staged": "^17.6.1",
+    "playwright": "^1.65.1",
+    "prettier": "^3.10.1",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript-eslint": "^8.73.0",
     "vitest": "^5.1.0"
   }
 }
