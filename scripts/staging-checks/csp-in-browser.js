@@ -56,13 +56,20 @@ async function walkTheWholeJourney(page, appAddress) {
   await page.waitForLoadState('networkidle');
 }
 
-/** @param {{ browser: import('playwright').Browser, appAddress: string }} staging */
-export async function cspInBrowserFailures({ browser, appAddress }) {
+/**
+ * @param {{
+ *   browser: import('playwright').Browser,
+ *   appAddress: string,
+ *   testerCredential: { username: string, password: string },
+ * }} staging
+ */
+export async function cspInBrowserFailures({ browser, appAddress, testerCredential }) {
   // `ignoreHTTPSErrors`: local staging signs its own certificate.
   const context = await browser.newContext({
     viewport: DESKTOP_VIEWPORT,
     ignoreHTTPSErrors: true,
     acceptDownloads: true,
+    httpCredentials: testerCredential,
   });
   const failures = [];
   try {

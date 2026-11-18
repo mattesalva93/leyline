@@ -6,3 +6,4 @@
 .env.*
 research
 coverage
+docker/web/tester-credentials.caddy

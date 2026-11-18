@@ -8,3 +8,4 @@ coverage/
 .vite/
 .vscode/settings.json
 .preview/
+docker/web/tester-credentials.caddy
