@@ -10,7 +10,7 @@ interface RateLimitRule {
   readonly windowSeconds: number;
 }
 
-interface Window {
+interface RateLimitWindow {
   readonly endsAt: number;
   requests: number;
 }
@@ -28,7 +28,7 @@ export function rateLimit(
 ): MiddlewareHandler {
   const windowMilliseconds = rule.windowSeconds * 1000;
   // Keyed by the client's address; `null` holds every request made off a socket.
-  const windows = new Map<string | null, Window>();
+  const windows = new Map<string | null, RateLimitWindow>();
   return async (c, next) => {
     const client = clientAddressOf(c);
     let window = windows.get(client);

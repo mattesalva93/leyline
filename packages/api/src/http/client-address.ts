@@ -17,7 +17,7 @@ const IPV4_MAPPED_PREFIX = '::ffff:';
 const PROXY_ADDRESS_RECHECK_SECONDS = 10;
 
 /** An IPv4 address as itself, also when a dual-stack socket reports it IPv6-mapped. */
-function unmapped(address: string): string {
+function withoutIpv4Mapping(address: string): string {
   return address.startsWith(IPV4_MAPPED_PREFIX)
     ? address.slice(IPV4_MAPPED_PREFIX.length)
     : address;
@@ -38,7 +38,7 @@ function trustedProxyCheck(
   const lookUp = () => {
     lookedUpAt = clock.now().getTime();
     addresses = lookup(trustedProxyHost, { all: true }).then(
-      (found) => new Set(found.map(({ address }) => unmapped(address))),
+      (found) => new Set(found.map(({ address }) => withoutIpv4Mapping(address))),
       // Not resolvable yet, as when Caddy starts after the API: nobody is trusted until it is.
       () => new Set(),
     );
@@ -54,7 +54,7 @@ function trustedProxyCheck(
 /** The client address the trusted proxy forwards: the last one, which it appended itself. */
 function forwardedClient(forwardedFor: string | undefined): string | null {
   const last = forwardedFor?.split(',').at(-1)?.trim();
-  return last !== undefined && isIP(last) !== 0 ? unmapped(last) : null;
+  return last !== undefined && isIP(last) !== 0 ? withoutIpv4Mapping(last) : null;
 }
 
 /**
@@ -69,12 +69,12 @@ export function clientAddress(
   const isTrustedProxy = trustedProxyCheck(trustedProxyHost, clock);
   return async (c, next) => {
     const socketAddress = c.env?.incoming?.socket.remoteAddress;
-    const peer = socketAddress === undefined ? null : unmapped(socketAddress);
-    const forwarded =
+    const peer = socketAddress === undefined ? null : withoutIpv4Mapping(socketAddress);
+    const forwardedAddress =
       peer !== null && (await isTrustedProxy(peer))
         ? forwardedClient(c.req.header('x-forwarded-for'))
         : null;
-    c.set('clientAddress', forwarded ?? peer);
+    c.set('clientAddress', forwardedAddress ?? peer);
     await next();
   };
 }
