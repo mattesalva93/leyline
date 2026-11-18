@@ -17,6 +17,19 @@ export interface Card {
   readonly oracleId: string;
   /** Canonical English name; double-faced cards use "Front // Back". */
   readonly name: string;
+  /**
+   * The power and toughness of each face, in face order; `null` on a face without them (an
+   * artifact, an emblem). Empty in a catalog imported before they were kept.
+   */
+  readonly powerToughnessByFace: readonly (PowerToughness | null)[];
+  /** Scryfall `keywords`: the card's keyword abilities, in English, in Scryfall's order. */
+  readonly keywords: readonly string[];
+}
+
+/** A face's power and toughness as Scryfall writes them: text, since some read `*` or `1+*`. */
+export interface PowerToughness {
+  readonly power: string;
+  readonly toughness: string;
 }
 
 export interface ImageUris {

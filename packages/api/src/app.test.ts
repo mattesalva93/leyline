@@ -612,7 +612,7 @@ describe('POST /api/decklists/suggested-tokens', () => {
     expect(body.tokens).toMatchObject([
       {
         candidate: {
-          card: { name: 'Treasure' },
+          card: { name: 'Treasure', powerToughnessByFace: [null], keywords: [] },
           defaultPrint: { set: 'tsnc', collectorNumber: '16' },
         },
         lang: 'en',
@@ -873,6 +873,180 @@ describe('GET /api/cards/search', () => {
   });
 });
 
+describe('the characteristics of a card', () => {
+  const token = { layout: 'token', set_type: 'token' };
+  const firebendingSoldier = scryfallCard({
+    id: 'soldier-ttla-11',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-00000050d122',
+    name: 'Soldier',
+    set: 'ttla',
+    collector_number: '11',
+    ...token,
+    power: '2',
+    toughness: '2',
+    keywords: ['Firebending'],
+  });
+  const lifelinkSoldier = scryfallCard({
+    id: 'soldier-plst-tgrn-2',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-00000050d111',
+    name: 'Soldier',
+    set: 'plst',
+    collector_number: 'TGRN-2',
+    ...token,
+    power: '1',
+    toughness: '1',
+    keywords: ['Lifelink'],
+  });
+
+  const soldierGoblin = doubleFacedCard({
+    id: 'soldier-goblin-sld',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-00000050d6b1',
+    name: 'Soldier // Goblin',
+    set: 'sld',
+    collector_number: '1',
+    layout: 'double_faced_token',
+    set_type: 'box',
+    card_faces: [
+      { name: 'Soldier', power: '1', toughness: '1', image_uris: imageUris('soldier') },
+      { name: 'Goblin', power: '1', toughness: '1', image_uris: imageUris('goblin') },
+    ],
+  });
+  const treasure = scryfallCard({
+    id: 'treasure-tsnc-16',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-0000007ea500',
+    name: 'Treasure',
+    set: 'tsnc',
+    collector_number: '16',
+    ...token,
+    keywords: [],
+  });
+  const emblem = scryfallCard({
+    id: 'emblem-elspeth',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-0000000e1b00',
+    name: "Elspeth, Sun's Champion Emblem",
+    set: 'tths',
+    collector_number: '5',
+    layout: 'emblem',
+    set_type: 'token',
+    keywords: [],
+  });
+  const tarmogoyf = scryfallCard({
+    id: 'tarmogoyf-mh2',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-0000000060f0',
+    name: 'Tarmogoyf',
+    set: 'mh2',
+    collector_number: '177',
+    power: '*',
+    toughness: '1+*',
+  });
+
+  const delver = doubleFacedCard({
+    keywords: ['Flying', 'Transform'],
+    card_faces: [
+      {
+        name: 'Delver of Secrets',
+        power: '1',
+        toughness: '1',
+        image_uris: imageUris('delver-front'),
+      },
+      {
+        name: 'Insectile Aberration',
+        power: '3',
+        toughness: '2',
+        image_uris: imageUris('delver-back'),
+      },
+    ],
+  });
+
+  beforeAll(async () => {
+    await importBulk(
+      db.sql,
+      bulkStream([
+        firebendingSoldier,
+        lifelinkSoldier,
+        soldierGoblin,
+        treasure,
+        emblem,
+        tarmogoyf,
+        delver,
+      ]),
+    );
+  });
+
+  it('keeps the power, toughness and keywords of each card', async () => {
+    const { body } = await resolve('1 Soldier (TTLA) 11\n1 Soldier (PLST) TGRN-2');
+
+    expect(body.lines).toMatchObject([
+      {
+        status: 'resolved',
+        card: {
+          powerToughnessByFace: [{ power: '2', toughness: '2' }],
+          keywords: ['Firebending'],
+        },
+      },
+      {
+        status: 'resolved',
+        card: { powerToughnessByFace: [{ power: '1', toughness: '1' }], keywords: ['Lifelink'] },
+      },
+    ]);
+  });
+
+  it('keeps power and toughness as Scryfall writes them, as text', async () => {
+    const { body } = await resolve('1 Tarmogoyf');
+
+    expect(body.lines).toMatchObject([
+      { card: { powerToughnessByFace: [{ power: '*', toughness: '1+*' }] } },
+    ]);
+  });
+
+  it('gives no power or toughness to a card without them, such as a Treasure or an emblem', async () => {
+    const { status, body } = await resolve("1 Treasure\n1 Elspeth, Sun's Champion Emblem");
+
+    expect(status).toBe(200);
+    expect(body.lines).toMatchObject([
+      { status: 'resolved', card: { powerToughnessByFace: [null], keywords: [] } },
+      { status: 'resolved', card: { powerToughnessByFace: [null], keywords: [] } },
+    ]);
+  });
+
+  it('keeps the power and toughness of each face of a double-faced card, token or not, in face order', async () => {
+    const { body } = await resolve('1 Soldier // Goblin\n1 Delver of Secrets');
+
+    expect(body.lines).toMatchObject([
+      {
+        status: 'resolved',
+        card: {
+          name: 'Soldier // Goblin',
+          powerToughnessByFace: [
+            { power: '1', toughness: '1' },
+            { power: '1', toughness: '1' },
+          ],
+        },
+      },
+      {
+        status: 'resolved',
+        card: {
+          powerToughnessByFace: [
+            { power: '1', toughness: '1' },
+            { power: '3', toughness: '2' },
+          ],
+          keywords: ['Flying', 'Transform'],
+        },
+      },
+    ]);
+  });
+
+  it('returns the characteristics on the cards a search finds', async () => {
+    const response = await createApp({ sql: db.sql }).request('/api/cards/search?q=tarmogoyf');
+
+    expect(await response.json()).toMatchObject({
+      cards: [
+        { card: { name: 'Tarmogoyf', powerToughnessByFace: [{ power: '*', toughness: '1+*' }] } },
+      ],
+    });
+  });
+});
+
 describe('GET /api/health', () => {
   it('answers ok, so the compose healthcheck can tell a serving api', async () => {
     const response = await createApp({ sql: db.sql }).request('/api/health');
@@ -927,15 +1101,18 @@ describe('GET /api/cards/:oracleId/print-counts', () => {
   });
 });
 
-describe('a catalog imported before set names and artists', () => {
+describe('a catalog imported before set names, artists and card characteristics', () => {
   let oldDb: TestDb;
 
   beforeAll(async () => {
     oldDb = await createTestDb();
     await migrate(oldDb.sql);
-    // The catalog as an older import left it: no set name column, faces without an artist.
+    // The catalog as an older import left it: no set name column, faces without an artist,
+    // cards without their characteristics.
     await oldDb.sql`alter table prints drop column set_name`;
+    await oldDb.sql`alter table cards drop column power_toughness_by_face, drop column keywords`;
     await oldDb.sql`insert into cards values ('forest', 'Forest')`;
+    await oldDb.sql`insert into card_names values ('forest', 'forest')`;
     await oldDb.sql`
       insert into prints values (
         'forest-old', 'forest', 'lea', '294', 'en', 'Forest', '1993-08-05', 'highres_scan',
@@ -956,6 +1133,16 @@ describe('a catalog imported before set names and artists', () => {
 
     expect(await response.json()).toMatchObject({
       prints: [{ id: 'forest-old', setName: '', faces: [{ name: 'Forest', artist: '' }] }],
+    });
+  });
+
+  it('serves its cards with no power, toughness or keywords once migrated', async () => {
+    await migrate(oldDb.sql);
+
+    const response = await createApp({ sql: oldDb.sql }).request('/api/cards/search?q=forest');
+
+    expect(await response.json()).toMatchObject({
+      cards: [{ card: { name: 'Forest', powerToughnessByFace: [], keywords: [] } }],
     });
   });
 });

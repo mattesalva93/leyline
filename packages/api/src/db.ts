@@ -27,6 +27,8 @@ export async function createCatalogTables(sql: Sql, suffix: '' | '_staging'): Pr
     create table if not exists ${cards} (
       oracle_id text not null,
       name text not null,
+      power_toughness_by_face jsonb not null,
+      keywords text[] not null,
       constraint ${sql(`cards${suffix}_pkey`)} primary key (oracle_id)
     )
   `;
@@ -84,5 +86,11 @@ export async function migrate(sql: Sql): Promise<void> {
   await createCatalogTables(sql, '');
   // Catalogs imported before set names were: the next import fills them in.
   await sql`alter table prints add column if not exists set_name text not null default ''`;
+  // Catalogs imported before card characteristics were: the next import fills them in.
+  await sql`
+    alter table cards
+      add column if not exists power_toughness_by_face jsonb not null default '[]',
+      add column if not exists keywords text[] not null default '{}'
+  `;
   await sql`create table if not exists catalog_imports (started_at timestamptz not null)`;
 }

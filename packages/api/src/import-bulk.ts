@@ -1,5 +1,11 @@
 // Streams a Scryfall bulk file into the catalog and swaps it in atomically (ADR 0002).
-import { cardKeys, isTokenLayout, type ImageUris, type PrintFace } from '@mtg-suite/core';
+import {
+  cardKeys,
+  isTokenLayout,
+  type ImageUris,
+  type PowerToughness,
+  type PrintFace,
+} from '@mtg-suite/core';
 import type { Readable } from 'node:stream';
 import { createInterface } from 'node:readline';
 import { createCatalogTables, type Sql } from './db.ts';
@@ -25,6 +31,8 @@ interface ScryfallFace {
   readonly artist?: string;
   readonly printed_name?: string;
   readonly oracle_id?: string;
+  readonly power?: string;
+  readonly toughness?: string;
   readonly image_uris?: ScryfallImageUris;
 }
 
@@ -51,6 +59,9 @@ interface ScryfallCard {
   readonly digital: boolean;
   readonly oversized: boolean;
   readonly layout: string;
+  readonly power?: string;
+  readonly toughness?: string;
+  readonly keywords?: readonly string[];
   readonly image_status: string;
   readonly image_uris?: ScryfallImageUris;
   readonly card_faces?: readonly ScryfallFace[];
@@ -60,6 +71,8 @@ interface ScryfallCard {
 interface CardRow {
   readonly oracle_id: string;
   readonly name: string;
+  readonly power_toughness_by_face: readonly (PowerToughness | null)[];
+  readonly keywords: readonly string[];
 }
 
 interface NameRow {
@@ -112,6 +125,14 @@ function facesOf(card: ScryfallCard): PrintFace[] {
   );
 }
 
+/** Scryfall writes power and toughness on each face of a multi-face card, else on the card. */
+function powerToughnessByFaceOf(card: ScryfallCard): (PowerToughness | null)[] {
+  const faces = card.card_faces ?? [card];
+  return faces.map(({ power, toughness }) =>
+    power !== undefined && toughness !== undefined ? { power, toughness } : null,
+  );
+}
+
 /**
  * Scryfall sets `printed_name` only where it differs from `name`, and on the faces of multi-face
  * prints. Italian names can change between reprints, so each print keeps its own.
@@ -146,7 +167,12 @@ function toRows(
   const oracleId = card.oracle_id ?? card.card_faces?.[0]?.oracle_id;
   if (!oracleId || !LANGS.has(card.lang)) return null;
   return {
-    card: { oracle_id: oracleId, name: card.name },
+    card: {
+      oracle_id: oracleId,
+      name: card.name,
+      power_toughness_by_face: powerToughnessByFaceOf(card),
+      keywords: card.keywords ?? [],
+    },
     print: {
       id: card.id,
       oracle_id: oracleId,
