@@ -873,6 +873,99 @@ describe('GET /api/cards/search', () => {
   });
 });
 
+describe('the cards sharing a name', () => {
+  const tokenLayout = { layout: 'token', set_type: 'token' };
+  const soldierToken = (id: string, oracleIdEnd: string, overrides: Record<string, unknown> = {}) =>
+    scryfallCard({
+      id,
+      oracle_id: `aaaaaaaa-0000-0000-0000-000000${oracleIdEnd}`,
+      name: 'Soldier',
+      ...tokenLayout,
+      ...overrides,
+    });
+  const doubleFacedSoldier = (id: string, oracleIdEnd: string, back: string) =>
+    doubleFacedCard({
+      id,
+      oracle_id: `aaaaaaaa-0000-0000-0000-000000${oracleIdEnd}`,
+      name: `Soldier // ${back}`,
+      layout: 'double_faced_token',
+      set_type: 'token',
+      card_faces: [
+        { name: 'Soldier', artist: 'A', image_uris: imageUris(`${id}-front`) },
+        { name: back, artist: 'B', image_uris: imageUris(`${id}-back`) },
+      ],
+    });
+
+  beforeAll(async () => {
+    await importBulk(
+      db.sql,
+      bulkStream([
+        soldierToken('soldier-a-en', '50da01'),
+        soldierToken('soldier-a-it', '50da01', { lang: 'it', printed_name: 'Soldato' }),
+        soldierToken('soldier-b-en', '50da02'),
+        soldierToken('soldier-unscanned', '50da03', { image_status: 'missing' }),
+        doubleFacedSoldier('soldier-soldier', '50da04', 'Soldier'),
+        doubleFacedSoldier('soldier-goblin', '50da05', 'Goblin'),
+        scryfallCard({ id: 'sol-ring' }),
+      ]),
+    );
+  });
+
+  async function get(path: string, query: Record<string, string>) {
+    const response = await createApp({ sql: db.sql }).request(
+      `${path}?${new URLSearchParams(query)}`,
+    );
+    return {
+      status: response.status,
+      body: (await response.json()) as {
+        cards: {
+          card: { name: string; oracleId: string };
+          defaultPrint: { id: string } | null;
+          sameNamedCardCount?: number;
+        }[];
+      },
+    };
+  }
+
+  it('tells on each card a search finds how many printable cards share its name', async () => {
+    const { body } = await get('/api/cards/search', { q: 'sol', lang: 'en' });
+
+    expect(
+      Object.fromEntries(body.cards.map((found) => [found.card.name, found.sameNamedCardCount])),
+    ).toEqual({ Soldier: 4, 'Soldier // Goblin': 4, 'Soldier // Soldier': 4, 'Sol Ring': 1 });
+  });
+
+  it('lists every printable card named so, double-faced ones included, each with its default print', async () => {
+    const { status, body } = await get('/api/cards/named', { name: 'Soldier', lang: 'en' });
+
+    expect(status).toBe(200);
+    expect(body.cards.map((found) => [found.card.name, found.defaultPrint?.id])).toEqual([
+      ['Soldier', 'soldier-a-en'],
+      ['Soldier', 'soldier-b-en'],
+      ['Soldier // Goblin', 'soldier-goblin'],
+      ['Soldier // Soldier', 'soldier-soldier'],
+    ]);
+  });
+
+  it('gives a card with no print in the asked language its English print', async () => {
+    const { body } = await get('/api/cards/named', { name: 'Soldier', lang: 'it' });
+
+    expect(body.cards.map((found) => found.defaultPrint?.id)).toEqual([
+      'soldier-a-it',
+      'soldier-b-en',
+      'soldier-goblin',
+      'soldier-soldier',
+    ]);
+  });
+
+  it('rejects an empty or too long name, or a language the catalog does not hold', async () => {
+    expect((await get('/api/cards/named', { lang: 'en' })).status).toBe(400);
+    expect((await get('/api/cards/named', { name: '  ', lang: 'en' })).status).toBe(400);
+    expect((await get('/api/cards/named', { name: 'x'.repeat(201), lang: 'en' })).status).toBe(400);
+    expect((await get('/api/cards/named', { name: 'Soldier', lang: 'fr' })).status).toBe(400);
+  });
+});
+
 describe('the power, toughness and keywords of a card', () => {
   const tokenLayout = { layout: 'token', set_type: 'token' };
   const firebendingSoldier = scryfallCard({

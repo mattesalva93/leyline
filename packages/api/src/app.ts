@@ -3,6 +3,7 @@ import {
   countPrintsByLang,
   isLang,
   isPrintCursor,
+  listCardsNamed,
   listPrints,
   MAX_PRINT_QUERY_LENGTH,
   resolveDecklist,
@@ -25,8 +26,8 @@ const MAX_DECKLIST_LENGTH = 50_000;
 /** Most prints one call returns, whatever the client asks for: keeps every response small. */
 const MAX_PRINTS_PER_PAGE = 50;
 
-/** Longest name a search accepts, in characters: far above any card name. */
-const MAX_SEARCH_LENGTH = 200;
+/** Longest name a search or a same-name listing accepts, in characters: far above any card name. */
+const MAX_NAME_LENGTH = 200;
 
 /** Most lines a token suggestion takes: far above a 100-card deck. */
 const MAX_TOKEN_QUERY_LINES = 5_000;
@@ -47,6 +48,10 @@ function resolveRequest(body: unknown): { text: string; lang: Lang } | null {
   const { text, lang = 'en' } = body as { text?: unknown; lang?: unknown };
   if (typeof text !== 'string' || text.length > MAX_DECKLIST_LENGTH) return null;
   return isLang(lang) ? { text, lang } : null;
+}
+
+function isName(value: string | undefined): value is string {
+  return value !== undefined && value.trim() !== '' && value.length <= MAX_NAME_LENGTH;
 }
 
 function isId(value: unknown): value is string {
@@ -110,10 +115,10 @@ export function createApp(deps: AppDeps): Hono {
 
   app.get('/api/cards/search', async (c) => {
     const { q, lang = 'en' } = c.req.query();
-    if (q === undefined || q.trim() === '' || q.length > MAX_SEARCH_LENGTH || !isLang(lang)) {
+    if (!isName(q) || !isLang(lang)) {
       return c.json(
         {
-          error: `Expected the query ?q=<a name of up to ${MAX_SEARCH_LENGTH} characters>&lang=en|it.`,
+          error: `Expected the query ?q=<a name of up to ${MAX_NAME_LENGTH} characters>&lang=en|it.`,
         },
         400,
       );
@@ -124,6 +129,20 @@ export function createApp(deps: AppDeps): Hono {
       today: today(),
       limit: CARD_SEARCH_LIMIT,
     });
+    return c.json({ cards });
+  });
+
+  app.get('/api/cards/named', async (c) => {
+    const { name, lang = 'en' } = c.req.query();
+    if (!isName(name) || !isLang(lang)) {
+      return c.json(
+        {
+          error: `Expected the query ?name=<a name of up to ${MAX_NAME_LENGTH} characters>&lang=en|it.`,
+        },
+        400,
+      );
+    }
+    const cards = await listCardsNamed(catalog, { name, lang, today: today() });
     return c.json({ cards });
   });
 
