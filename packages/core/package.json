@@ -11,9 +11,9 @@
       "default": "./dist/index.js"
     },
     "./test-fixtures": {
-      "source": "./src/test-fixtures.ts",
-      "types": "./dist/test-fixtures.d.ts",
-      "default": "./dist/test-fixtures.js"
+      "source": "./src/test-support/test-fixtures.ts",
+      "types": "./dist/test-support/test-fixtures.d.ts",
+      "default": "./dist/test-support/test-fixtures.js"
     }
   },
   "dependencies": {

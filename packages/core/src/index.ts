@@ -1,9 +1,9 @@
 // Pure domain logic: no I/O (see CODING_STANDARDS.md and eslint.config.js).
 export type * from './types.ts';
 export { DECKLIST_SECTIONS, IMAGE_STATUSES, LANGS, isLang } from './types.ts';
-export { createInMemoryCatalog } from './in-memory-catalog.ts';
-export { CARD_SEARCH_LIMIT, searchCards, type CardSearch } from './card-search.ts';
-export { listCardsNamed, type CardsNamedQuery } from './same-named-cards.ts';
+export { createInMemoryCatalog } from './test-support/in-memory-catalog.ts';
+export { CARD_SEARCH_LIMIT, searchCards, type CardSearch } from './card-search/card-search.ts';
+export { listCardsNamed, type CardsNamedQuery } from './card-search/same-named-cards.ts';
 export {
   countPrintsByLang,
   isPrintCursor,
@@ -11,13 +11,13 @@ export {
   listPrints,
   type ListPrintsOptions,
   type PrintCountsByLang,
-} from './print-list.ts';
+} from './print/print-list.ts';
 export { cardKeys } from './name-match.ts';
-export { nameSharedByEvery, searchRowsOf, type SearchRow } from './search-rows.ts';
-export { isTokenLayout } from './print-order.ts';
-export { isBlankPrintQuery, MAX_PRINT_QUERY_LENGTH } from './print-query.ts';
-export { printedBackFace, printedFaces } from './printed-faces.ts';
-export { releaseYearOf } from './release-year.ts';
+export { nameSharedByEvery, searchRowsOf, type SearchRow } from './card-search/search-rows.ts';
+export { isTokenLayout } from './print/print-order.ts';
+export { isBlankPrintQuery, MAX_PRINT_QUERY_LENGTH } from './print/print-query.ts';
+export { printedBackFace, printedFaces } from './print/printed-faces.ts';
+export { releaseYearOf } from './print/release-year.ts';
 export {
   allocatePrintCopies,
   applyAllocationChoice,
@@ -27,39 +27,47 @@ export {
   moveEveryCopy,
   moveTileCopies,
   unallocatedCopies,
-} from './allocation.ts';
-export { SECTION_BEFORE_ANY_HEADER, sectionOfEachWrittenLine } from './decklist-section.ts';
+} from './print/allocation.ts';
+export {
+  SECTION_BEFORE_ANY_HEADER,
+  sectionOfEachWrittenLine,
+} from './decklist/decklist-section.ts';
 export {
   lineRewrittenByMove,
   moveWrittenLine,
   type LineDestination,
   type LineMove,
   type LineSide,
-} from './move-written-line.ts';
+} from './decklist/move-written-line.ts';
 export {
   addCardToSection,
   type CardAddition,
   type CardToAdd,
   type LineInText,
-} from './add-card.ts';
-export { addTokensToSection, type TokensAddition } from './add-tokens.ts';
-export { tokenLineNamingItsPrint, type RewrittenTokenLine } from './token-line.ts';
-export { printTiles, type PrintTile } from './print-tile.ts';
+} from './decklist/add-card.ts';
+export { addTokensToSection, type TokensAddition } from './tokens/add-tokens.ts';
+export { tokenLineNamingItsPrint, type RewrittenTokenLine } from './tokens/token-line.ts';
+export { printTiles, type PrintTile } from './print/print-tile.ts';
 export {
   tokenQueryLineOf,
   tokenCreatorNamesOf,
   suggestTokens,
   type TokenSuggestionOptions,
-} from './suggested-tokens.ts';
-export { cellAfterArrow, type Arrow, type CellGroup, type CellPlace } from './grid-moves.ts';
+} from './tokens/suggested-tokens.ts';
+export {
+  cellAfterArrow,
+  type Arrow,
+  type CellGroup,
+  type CellPlace,
+} from './decklist/grid-moves.ts';
 export {
   changeTileQuantity,
   withoutWrittenLine,
   writtenLinesOf,
   type TileInText,
   type TileQuantityChange,
-} from './decklist-text.ts';
-export { changeWritesALineBreak, withLineFeedBreaks } from './line-breaks.ts';
+} from './decklist/decklist-text.ts';
+export { changeWritesALineBreak, withLineFeedBreaks } from './decklist/line-breaks.ts';
 export {
   applyCandidateChoice,
   chooseCandidate,
@@ -68,7 +76,7 @@ export {
   resolveDecklist,
   setLineQuantity,
   type ResolveOptions,
-} from './decklist.ts';
+} from './decklist/decklist.ts';
 export {
   CARD_CORNER_RADIUS_MM,
   CARD_MM,
@@ -80,5 +88,5 @@ export {
   sheetImageUrls,
   sheetOptionLimits,
   unprintedLines,
-} from './sheet-layout.ts';
-export { generateSheetPdf } from './sheet-pdf.ts';
+} from './sheet/sheet-layout.ts';
+export { generateSheetPdf } from './sheet/sheet-pdf.ts';
