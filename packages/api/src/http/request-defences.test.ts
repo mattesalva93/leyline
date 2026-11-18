@@ -26,11 +26,17 @@ afterAll(async () => {
   await db.drop();
 });
 
-/** The app over a real socket, with a clock and a security log the test holds. */
-async function serveApp(sql = db.sql) {
+/**
+ * The app over a real socket, with a clock and a security log the test holds. The test's own
+ * requests come from `localhost`: naming it the trusted proxy makes them arrive as Caddy's do.
+ */
+async function serveApp({
+  sql = db.sql,
+  trustedProxyHost = null,
+}: { sql?: TestDb['sql']; trustedProxyHost?: string | null } = {}) {
   const clock = manualClock();
   const securityLog = recordedSecurityLog();
-  server = await listen(createApp({ sql, clock, securityLog }));
+  server = await listen(createApp({ sql, clock, securityLog, trustedProxyHost }));
   return { origin: server.origin, clock, securityLog };
 }
 
@@ -165,7 +171,7 @@ describe('an internal error', () => {
   });
 
   it('answers 500 with a generic body, naming nothing of the database', async () => {
-    const { origin, securityLog } = await serveApp(missingDb);
+    const { origin, securityLog } = await serveApp({ sql: missingDb });
 
     const response = await fetch(`${origin}/api/cards/search?q=counterspell`);
 
@@ -180,6 +186,89 @@ describe('an internal error', () => {
         error: expect.stringContaining('does not exist'),
       },
     ]);
+  });
+});
+
+describe('the rate limit', () => {
+  /** One search; with `forwardedFor`, carrying the client address a proxy forwards. */
+  function searchOnce(origin: string, forwardedFor?: string): Promise<Response> {
+    const headers = forwardedFor === undefined ? {} : { 'x-forwarded-for': forwardedFor };
+    return fetch(`${origin}/api/cards/search?q=counterspell`, { headers });
+  }
+
+  /** The statuses of `count` searches sent one after the other, as a client typing sends them. */
+  async function searches(origin: string, count: number, forwardedFor?: string) {
+    const statuses: number[] = [];
+    for (let i = 0; i < count; i++) statuses.push((await searchOnce(origin, forwardedFor)).status);
+    return statuses;
+  }
+
+  it('answers 429 with Retry-After to the search after the 120th within a minute', async () => {
+    const { origin } = await serveApp();
+
+    const allowed = await searches(origin, 120);
+    const refused = await searchOnce(origin);
+
+    expect(allowed).toEqual(Array(120).fill(200));
+    expect(refused.status).toBe(429);
+    expect(refused.headers.get('retry-after')).toBe('60');
+    expect(await refused.json()).toEqual({ error: 'Too many requests: retry in 60 seconds.' });
+  });
+
+  it('counts Retry-After down to the end of the window', async () => {
+    const { origin, clock } = await serveApp();
+
+    await searches(origin, 120);
+    clock.advance(45_500);
+    const refused = await searchOnce(origin);
+
+    expect(refused.status).toBe(429);
+    expect(refused.headers.get('retry-after')).toBe('15');
+  });
+
+  it('serves the same client again once the window has passed', async () => {
+    const { origin, clock } = await serveApp();
+
+    await searches(origin, 121);
+    clock.advance(60_000);
+    const served = await searchOnce(origin);
+
+    expect(served.status).toBe(200);
+  });
+
+  it('limits two clients behind the trusted proxy apart', async () => {
+    const { origin } = await serveApp({ trustedProxyHost: 'localhost' });
+
+    const firstClient = await searches(origin, 121, '203.0.113.7');
+    const otherClient = await searchOnce(origin, '198.51.100.4');
+
+    expect(firstClient.at(-1)).toBe(429);
+    expect(otherClient.status).toBe(200);
+  });
+
+  it('counts a connection that is not the trusted proxy by its own address, whatever it forwards', async () => {
+    const { origin } = await serveApp({ trustedProxyHost: null });
+
+    await searches(origin, 120, '203.0.113.7');
+    const spoofed = await searchOnce(origin, '198.51.100.4');
+
+    expect(spoofed.status).toBe(429);
+  });
+
+  it('answers 429 to the decklist resolution after the 30th within a minute', async () => {
+    const { origin } = await serveApp();
+
+    const allowed: number[] = [];
+    for (let i = 0; i < 30; i++) {
+      allowed.push(
+        (await post(origin, '/api/decklists/resolve', { text: '4 Counterspell' })).status,
+      );
+    }
+    const refused = await post(origin, '/api/decklists/resolve', { text: '4 Counterspell' });
+
+    expect(allowed).toEqual(Array(30).fill(200));
+    expect(refused.status).toBe(429);
+    expect(refused.headers.get('retry-after')).toBe('60');
   });
 });
 

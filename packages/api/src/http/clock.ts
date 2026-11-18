@@ -10,7 +10,8 @@ export interface Clock {
 export const systemClock: Clock = {
   now: () => new Date(),
   startTimer(milliseconds, onElapsed) {
-    const timer = setTimeout(onElapsed, milliseconds);
+    // Unref'd: a timer alone, such as a rate limit window's, never keeps a stopping API alive.
+    const timer = setTimeout(onElapsed, milliseconds).unref();
     return () => clearTimeout(timer);
   },
 };
