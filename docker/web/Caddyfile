@@ -22,11 +22,14 @@
 
 	# The access log keeps the least personal data (ADR 0016): the client's network, never its
 	# address, and no request headers, where a client or a proxy can write an address of its own.
-	# A new file every day, each deleted after 14 days; `pnpm check:staging` pins both.
+	# Rotated and deleted by age; `pnpm check:staging` pins the retention.
 	log {
 		output file /var/log/caddy/access.log {
 			roll_interval 24h
 			roll_keep_for 14d
+			# Caddy also caps how many files it keeps, 10 by default, which would delete them
+			# before 14 days: room for every day, and for the files a size roll adds.
+			roll_keep 30
 		}
 		format filter {
 			request>remote_ip ip_mask 24 64
