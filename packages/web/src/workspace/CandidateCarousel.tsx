@@ -90,7 +90,7 @@ export function CandidateCarousel({
   const caption = (
     <span className="min-w-0 flex-1">
       {!sharedName && (
-        <span className="block truncate text-[11px] font-semibold">{shown.card.name}</span>
+        <span className="block text-[11px] font-semibold break-words">{shown.card.name}</span>
       )}
       <CardVersionCaption candidate={shown} lang={lang} isOverImage={isInGridCell} />
     </span>
@@ -137,7 +137,7 @@ export function CandidateCarousel({
         <>
           {images}
           <p className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-1 bg-linear-to-b from-black/80 to-transparent px-2 pt-1 pb-3 text-[11px] font-semibold">
-            <span className="truncate">{question}</span>
+            <span className="min-w-0 break-words">{question}</span>
             <span className="font-mono font-normal">{position}</span>
           </p>
           {arrows}

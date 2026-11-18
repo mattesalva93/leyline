@@ -19,8 +19,9 @@ export function cardVersionText(candidate: Candidate, lang: Lang, t: TFunction):
 
 /**
  * `cardVersionText` as it shows: the set and number in bold, the power, toughness and keywords
- * beside them in a light weight, wrapping under them. It always takes two lines, so stepping
- * through versions never moves what lies around it.
+ * beside them in a light weight, wrapping under them. None of it is ever cut, so it grows past
+ * two lines when it must; up to two it keeps the height of two, so stepping through versions
+ * moves nothing around it.
  */
 export function CardVersionCaption({
   candidate,
@@ -35,7 +36,7 @@ export function CardVersionCaption({
   const { t } = useTranslation();
   const print = candidate.defaultPrint;
   return (
-    <span aria-hidden className="line-clamp-2 h-[2lh] text-[11px] leading-tight">
+    <span aria-hidden className="block min-h-[2lh] text-[11px] leading-tight">
       {print && <span className="font-semibold">{setAndNumberOf(print, t)} </span>}
       <span className={`font-light ${isOverImage ? 'text-white/80' : 'text-muted-foreground'}`}>
         {powerToughnessAndKeywordsOf(candidate.card, lang)}
