@@ -3,14 +3,16 @@ name: Deploy
 # Off until a VPS is chosen: the job runs only once the repository variable DEPLOY_ENABLED is
 # 'true' (ADR 0012). Any host with SSH and Docker Compose works; see docs/deploy.md.
 on:
-  workflow_run:
+  # zizmor flags every workflow_run. This one checks out only a push to this repository's own
+  # main that CI passed: see the job's `if`.
+  workflow_run: # zizmor: ignore[dangerous-triggers]
     workflows: [CI]
     types: [completed]
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
+# No token permission by default: each job asks for what it needs.
+permissions: {}
 
 # One deploy at a time; a newer one waits instead of cancelling a half-done `up`.
 concurrency:
@@ -30,12 +32,15 @@ jobs:
         (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
       )
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     environment: production
     env:
       DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
     steps:
       - uses: actions/checkout@v7
         with:
+          persist-credentials: false
           # The commit CI passed on, not whatever main holds by now.
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
