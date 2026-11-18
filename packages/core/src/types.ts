@@ -174,6 +174,15 @@ export interface Candidate {
   readonly printWarning: PrintWarning | null;
 }
 
+/** A card a name search found. */
+export interface FoundCard extends Candidate {
+  /**
+   * How many printable cards share the name of its front face, itself included: those
+   * `listCardsNamed` lists for it.
+   */
+  readonly sameNamedCardCount: number;
+}
+
 export interface ResolvedLine extends DecklistLineBase, Candidate {
   readonly status: 'resolved';
   readonly allocations: readonly Allocation[];

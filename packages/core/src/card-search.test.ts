@@ -104,6 +104,30 @@ describe('searchCards', () => {
     ]);
   });
 
+  it('tells, on each card found, how many cards share the name of its front face', async () => {
+    const soldier = (oracleId: string, name = 'Soldier') => ({
+      card: aCard({ oracleId, name }),
+      prints: [aPrint({ id: oracleId, printedName: name, layout: 'token', setType: 'token' })],
+    });
+    const catalogWithSoldiers = createInMemoryCatalog([
+      soldier('soldier-a'),
+      soldier('soldier-b'),
+      soldier('soldier-goblin', 'Soldier // Goblin'),
+      entry('sol-ring', 'Sol Ring', 'Anello Solare'),
+    ]);
+
+    const found = await searchCards(catalogWithSoldiers, {
+      query: 'sol',
+      lang: 'en',
+      today: '2026-11-13',
+      limit: 8,
+    });
+
+    expect(
+      Object.fromEntries(found.map((one) => [one.card.oracleId, one.sameNamedCardCount])),
+    ).toEqual({ 'soldier-a': 3, 'soldier-b': 3, 'soldier-goblin': 3, 'sol-ring': 1 });
+  });
+
   it('returns no more cards than the limit', async () => {
     expect(await search('lightning', 2)).toHaveLength(2);
   });

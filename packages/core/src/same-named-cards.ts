@@ -1,7 +1,7 @@
 import { defaultPrintFor } from './default-print.ts';
 import { MIN_SIMILARITY, nameKey } from './name-match.ts';
 import { namedCandidate, withoutOutranked } from './same-name-preference.ts';
-import type { Candidate, Catalog, Lang } from './types.ts';
+import type { Candidate, Catalog, CatalogEntry, Lang } from './types.ts';
 
 export interface CardsNamed {
   /** The exact name, in English or in a language the catalog holds. */
@@ -24,6 +24,15 @@ export async function listCardsNamed(
 ): Promise<Candidate[]> {
   const key = nameKey(name);
   const entries = await catalog.findByNames([key], { minSimilarity: MIN_SIMILARITY });
+  return cardsNamedAmong(entries, key, { lang, today });
+}
+
+/** `listCardsNamed` for the name key `key`, among `entries` already found. */
+export function cardsNamedAmong(
+  entries: readonly CatalogEntry[],
+  key: string,
+  { lang, today }: Pick<CardsNamed, 'lang' | 'today'>,
+): Candidate[] {
   const named = entries
     .map((entry) =>
       namedCandidate(entry, { card: entry.card, ...defaultPrintFor(entry.prints, lang, today) }),
