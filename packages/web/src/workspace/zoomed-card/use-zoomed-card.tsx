@@ -14,7 +14,7 @@ export const TILE_ZOOM_WAIT_MS = 1000;
 export const PRINT_PICKER_ZOOM_WAIT_MS = 500;
 
 /** Spread on the element whose card the pointer can zoom. */
-export interface ZoomHandlers {
+interface ZoomHandlers {
   readonly onPointerEnter: (event: PointerEvent<Element>) => void;
   readonly onPointerLeave: () => void;
   readonly onPointerDown: () => void;
