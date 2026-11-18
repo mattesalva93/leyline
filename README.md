@@ -55,6 +55,7 @@ pnpm build                # production build of web and api
 pnpm sheet:preview        # render a sample sheet to .preview/sheet-*.png (needs pdftoppm: brew install poppler)
 pnpm web:preview          # screenshot the running app at phone and desktop widths into .preview/web-*.png
 pnpm check:phone-width    # check in the running app that the phone workspace never outgrows the screen
+pnpm check:staging        # check on the running staging stack what lives in its configuration, such as the security headers
 pnpm landing:screenshots  # retake the landing page's tutorial screenshots from the running app
 ```
 

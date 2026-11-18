@@ -29,7 +29,8 @@
     "landing:screenshots": "node scripts/landing-screenshots.js",
     "check:phone-width": "node scripts/check-phone-width.js",
     "web:preview": "node scripts/web-preview.js",
-    "check:unused": "knip --no-progress"
+    "check:unused": "knip --no-progress",
+    "check:staging": "node scripts/check-staging.js"
   },
   "lint-staged": {
     "*.{ts,tsx,js,mjs,cjs}": [
