@@ -79,7 +79,25 @@ export async function createCatalogTables(sql: Sql, suffix: '' | '_staging'): Pr
   `;
 }
 
-/** Brings the database to the current schema. Safe to run on every start. */
+/** Every table `migrate` creates. */
+const CATALOG_SCHEMA_TABLES = ['cards', 'card_names', 'prints', 'token_links', 'catalog_imports'];
+
+/**
+ * Whether `migrate` has created the catalog tables in the schema `sql` works in. Only there: a
+ * test's schema must not find the live tables in `public`, later on its search path.
+ */
+export async function hasCatalogSchema(sql: Sql): Promise<boolean> {
+  const [row] = await sql<{ found: number }[]>`
+    select count(*)::int as found from information_schema.tables
+    where table_schema = current_schema() and table_name = any(${CATALOG_SCHEMA_TABLES}::text[])
+  `;
+  return row?.found === CATALOG_SCHEMA_TABLES.length;
+}
+
+/**
+ * Brings the database to the current schema. Safe to run on every start. Needs the schema's
+ * owner: the importer runs it, the API only reads (ADR 0016).
+ */
 export async function migrate(sql: Sql): Promise<void> {
   // Fuzzy name search (ADR 0003). Also created by docker/postgres/init for local databases.
   await sql`create extension if not exists pg_trgm`;

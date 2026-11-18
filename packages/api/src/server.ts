@@ -2,11 +2,11 @@ import { serve } from '@hono/node-server';
 import { createApp } from './http/app.ts';
 import { systemClock } from './http/clock.ts';
 import { stdoutSecurityLog } from './http/security-log.ts';
-import { connect, migrate } from './catalog/db.ts';
+import { connect } from './catalog/db.ts';
 import { databaseUrl } from './env.ts';
 
+// The importer migrates the database; the API only reads it (ADR 0016).
 const sql = connect(databaseUrl());
-await migrate(sql);
 
 // Loopback by default; Docker Compose sets HOST=0.0.0.0 inside the container.
 const hostname = process.env.HOST ?? '127.0.0.1';

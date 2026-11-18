@@ -13,7 +13,7 @@ import {
   type TokenQueryLine,
 } from '@mtg-suite/core';
 import { Hono } from 'hono';
-import type { Sql } from '../catalog/db.ts';
+import { hasCatalogSchema, type Sql } from '../catalog/db.ts';
 import { createPostgresCatalog } from '../catalog/postgres-catalog.ts';
 import type { Clock } from './clock.ts';
 import { requestBodyLimit } from './request-body-limit.ts';
@@ -94,7 +94,12 @@ export function createApp(deps: AppDeps): Hono {
   app.use('/api/*', requestTimeout(deps.clock, deps.securityLog));
   app.use('/api/*', requestBodyLimit(deps.securityLog));
 
-  app.get('/api/health', (c) => c.json({ ok: true }));
+  // The importer creates the schema (ADR 0016): until then the API has nothing to serve.
+  app.get('/api/health', async (c) =>
+    (await hasCatalogSchema(deps.sql))
+      ? c.json({ ok: true })
+      : c.json({ error: 'The catalog schema does not exist yet: the importer creates it.' }, 503),
+  );
 
   app.post('/api/decklists/resolve', async (c) => {
     const request = resolveRequest(await c.req.json().catch(() => null));
