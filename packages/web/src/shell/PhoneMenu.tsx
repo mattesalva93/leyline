@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogTrigger, SideDrawerContent } from '../ui/Dialog.tsx';
 import { Icon } from '../ui/Icon.tsx';
-import type { ShellArea } from './AppShell.tsx';
+import type { ShellArea } from './shell-area.ts';
 import { AreaNav } from './AreaNav.tsx';
 
 /**

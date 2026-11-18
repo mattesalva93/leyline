@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AdSlot } from './AdSlot.tsx';
-import { CardsView } from './CardsView.tsx';
+import { CardsView } from './card-grid/CardsView.tsx';
 import { DecklistEditor } from '../decklist-editor/DecklistEditor.tsx';
-import { GoToSheetButton } from './GoToSheetButton.tsx';
-import type { TileSelection } from './grid-tiles.ts';
-import { Inspector } from './Inspector.tsx';
-import { PdfControl } from './PdfControl.tsx';
-import { SheetView } from './SheetView.tsx';
-import { SidePanel } from './SidePanel.tsx';
+import { GoToSheetButton } from './sheet/GoToSheetButton.tsx';
+import type { TileSelection } from './card-grid/grid-tiles.ts';
+import { Inspector } from './side-panel/Inspector.tsx';
+import { PdfControl } from './sheet/PdfControl.tsx';
+import { SheetView } from './sheet/SheetView.tsx';
+import { SidePanel } from './side-panel/SidePanel.tsx';
 import { Tab, TabList, TabPanel, Tabs } from '../ui/Tabs.tsx';
-import { TileWidthSlider } from './TileWidthSlider.tsx';
-import { useTileWidth } from './tile-width.ts';
-import { useFittedSidePanels } from './use-fitted-side-panels.ts';
+import { TileWidthSlider } from './card-grid/TileWidthSlider.tsx';
+import { useTileWidth } from './card-grid/tile-width.ts';
+import { useFittedSidePanels } from './side-panel/use-fitted-side-panels.ts';
 import {
   CENTRE_VIEWS,
   centreViewAt,

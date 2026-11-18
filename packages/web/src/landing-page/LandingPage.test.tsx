@@ -2,8 +2,8 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
-import { inMemoryServer } from '../in-memory-server.ts';
-import { mountApp } from '../mount-app.tsx';
+import { inMemoryServer } from '../test-support/in-memory-server.ts';
+import { mountApp } from '../test-support/mount-app.tsx';
 
 vi.mock('../api.ts');
 

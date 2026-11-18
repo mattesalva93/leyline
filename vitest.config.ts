@@ -5,7 +5,7 @@ import { configDefaults, defineConfig } from 'vitest/config';
 const browserPackages: Record<string, object> = {
   web: {
     resolve: { conditions: ['source', 'module', 'browser', 'development|production'] },
-    test: { environment: 'jsdom', setupFiles: ['src/test-setup.ts'] },
+    test: { environment: 'jsdom', setupFiles: ['src/test-support/test-setup.ts'] },
   },
 };
 

@@ -1,5 +1,5 @@
 import { writtenLinesOf } from '@mtg-suite/core';
-import type { LineSplitOverPrints } from '../line-split.ts';
+import type { LineSplitOverPrints } from '../generator/line-split.ts';
 
 /**
  * The decklist "Prova con un esempio" loads. It shows the generator at work: a line split over

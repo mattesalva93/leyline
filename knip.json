@@ -1,0 +1,14 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/*.js"],
+      "ignoreDependencies": ["jsdom"],
+      "ignoreUnresolved": ["src/test-support/test-setup.ts"]
+    },
+    "packages/web": {
+      "entry": ["src/test-support/test-setup.ts"],
+      "ignoreDependencies": ["jsdom"]
+    }
+  }
+}

@@ -8,7 +8,7 @@ A `Card` holds its power and toughness once per face of the card in the rules, a
 
 The two lists are therefore not paired by index: an adventure, split or flip card has two faces and one image, a reversible card one face and two images. Code that shows power and toughness next to an image must match them by name or by layout, never by position.
 
-The tests under "the power, toughness and keywords of a card" in `packages/api/src/app.test.ts` pin the rule, starting with "gives the faces of a card in the rules, not the images of its print: an adventure, a split and a flip card have two".
+The tests under "the power, toughness and keywords of a card" in `packages/api/src/http/app.test.ts` pin the rule, starting with "gives the faces of a card in the rules, not the images of its print: an adventure, a split and a flip card have two".
 
 ## Why
 

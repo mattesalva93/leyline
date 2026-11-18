@@ -14,7 +14,7 @@ const ICON_PATHS = {
   chevronRight: 'm9 18 6-6-6-6',
 } as const;
 
-export type IconName = keyof typeof ICON_PATHS;
+type IconName = keyof typeof ICON_PATHS;
 
 /** A line icon in the current text colour, hidden from screen readers: its control is named. */
 export function Icon({

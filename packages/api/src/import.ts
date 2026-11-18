@@ -5,10 +5,10 @@ import { createReadStream } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { createGunzip } from 'node:zlib';
-import { connect, migrate } from './db.ts';
-import { importBulk } from './import-bulk.ts';
+import { connect, migrate } from './catalog/db.ts';
+import { importBulk } from './catalog-import/import-bulk.ts';
 import { databaseUrl } from './env.ts';
-import { allCardsBulkUrl, downloadBulk } from './scryfall.ts';
+import { allCardsBulkUrl, downloadBulk } from './catalog-import/scryfall.ts';
 
 const { values } = parseArgs({ options: { file: { type: 'string' } } });
 

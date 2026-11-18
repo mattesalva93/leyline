@@ -1,0 +1,571 @@
+import {
+  addCardToSection,
+  addTokensToSection,
+  applyAllocationChoice,
+  applyCandidateChoice,
+  changeTileQuantity as changeTileQuantityInText,
+  changeWritesALineBreak,
+  writtenLinesOf,
+  withoutWrittenLine,
+  copyCount,
+  defaultSheetOptions,
+  fitAllocations,
+  hasPrintableCopies,
+  layoutSheet,
+  lineRewrittenByMove,
+  moveWrittenLine,
+  sectionOfEachWrittenLine,
+  setLineQuantity,
+  tokenLineNamingItsPrint,
+  unprintedLines,
+  type AllocationChoice,
+  type Candidate,
+  type DecklistLine,
+  type DecklistSection,
+  type Lang,
+  type LineDestination,
+  type LineMove,
+  type Print,
+  type SheetLayout,
+  type SheetOptions,
+  type SuggestedToken,
+} from '@mtg-suite/core';
+import { useEffect, useRef, useState } from 'react';
+import { fetchPrintPage, resolveDecklistText } from '../api.ts';
+import { loadDefaultLang, saveDefaultLang } from '../language/default-lang.ts';
+import { choicesKeysOf, type LineChoices } from './line-choices.ts';
+import { allocationsSplitOverPrints, type LineSplitOverPrints } from './line-split.ts';
+import { loadSavedDecklist } from './saved-decklist.ts';
+import { useDecklistUnderWay } from './use-decklist-under-way.ts';
+import { useSheetPdf, type SheetPdf } from './use-sheet-pdf.ts';
+import { useSuggestedTokens } from './use-suggested-tokens.ts';
+
+/**
+ * What the server resolved each written line to, in each language asked for, keyed by
+ * `resolutionKey`. `null` marks a written line that names no card (blank, header, comment).
+ */
+type ResolutionsByLanguage = ReadonlyMap<string, DecklistLine | null>;
+
+function resolutionKey(lang: Lang, writtenLine: string): string {
+  return `${lang}:${writtenLine}`;
+}
+
+/** `resolution` with the user's picks on its line (candidate, allocations) applied. */
+function withChoices(resolution: DecklistLine, choices: LineChoices | undefined): DecklistLine {
+  const { oracleId, allocations } = choices ?? {};
+  const withCandidate =
+    oracleId === undefined ? resolution : applyCandidateChoice(resolution, oracleId);
+  return allocations === undefined
+    ? withCandidate
+    : applyAllocationChoice(withCandidate, allocations);
+}
+
+/** One written line of the decklist that names a card, or may once the server resolves it. */
+export interface WrittenCardLine {
+  /** Where the line sits in the decklist text, counting blank lines too. */
+  readonly writtenIndex: number;
+  readonly writtenLine: string;
+  readonly section: DecklistSection;
+  /**
+   * `undefined` while the server has not resolved the line yet: it is shown as typed, and it
+   * holds the PDF back.
+   */
+  readonly line: DecklistLine | undefined;
+}
+
+/**
+ * The state of the generator and what the user can do to it, whatever the page that shows it
+ * looks like. Lines are named by their `writtenIndex`.
+ */
+export interface Generator {
+  readonly decklistText: string;
+  /** How many lines the decklist text has, blank ones included. */
+  readonly writtenLineCount: number;
+  /**
+   * Takes the text as the user left it, the caret at `caretAfterChange`; a line break the change
+   * wrote, typed or pasted, resolves every line before the last.
+   */
+  readonly writeDecklistText: (nextText: string, caretAfterChange: number) => void;
+  /** Resolves every written line not resolved yet, the last one included. */
+  readonly resolveEveryLine: () => void;
+  /**
+   * Puts a whole decklist in place of the text, every line resolved as if written by hand; with
+   * `split`, that line's copies then spread over its newest prints, as if the user picked them.
+   */
+  readonly loadDecklistText: (text: string, split?: LineSplitOverPrints) => void;
+  readonly isResolving: boolean;
+  readonly lastResolveFailed: boolean;
+
+  readonly defaultLang: Lang;
+  readonly changeDefaultLanguage: (lang: Lang) => void;
+
+  readonly cardLines: readonly WrittenCardLine[];
+  readonly pickCandidate: (writtenIndex: number, oracleId: string) => void;
+  readonly changeLineQuantity: (writtenIndex: number, quantity: number) => void;
+  /** Gives the tile of `print` on the line at `writtenIndex` `quantity` copies; at zero it goes. */
+  readonly changeTileQuantity: (writtenIndex: number, print: Print, quantity: number) => void;
+  /** Takes the line at `writtenIndex` out of the decklist text, the other lines keeping their choices. */
+  readonly removeLine: (writtenIndex: number) => void;
+  readonly chooseAllocations: (writtenIndex: number, allocations: AllocationChoice) => void;
+  /** Moves the line at `writtenIndex` to `destination` in the decklist text, with its choices. */
+  readonly moveLine: (writtenIndex: number, destination: LineDestination) => LineMove;
+  /**
+   * Adds one copy of `candidate`'s card to `section`: one more on the section's line of it, or a
+   * line of its own at the end of the section, already resolved.
+   */
+  readonly addCard: (section: DecklistSection, candidate: Candidate) => void;
+  /** The tokens the cards of the decklist create that it does not hold yet. */
+  readonly suggestedTokens: readonly SuggestedToken[];
+  /** The names of the cards creating one of `suggestedTokens`, in the language of their lines. */
+  readonly creatorNamesOfSuggestedToken: (token: SuggestedToken) => readonly string[];
+  /** Writes a line of each of `tokens` into the Tokens section, already resolved. */
+  readonly addSuggestedTokens: (tokens: readonly SuggestedToken[]) => void;
+  /**
+   * Whether a decklist is under way: one the device kept on entering, or one with a line
+   * recognised since. Until then the device keeps no decklist.
+   */
+  readonly isDecklistUnderWay: boolean;
+  /**
+   * Empties the decklist text, its line choices and the sheet options, on the device too: the
+   * decklist is no longer under way.
+   */
+  readonly startNewDecklist: () => void;
+
+  readonly sheetOptions: SheetOptions;
+  readonly changeSheetOptions: (options: SheetOptions) => void;
+  /** `null` while no copy can be printed. */
+  readonly sheetLayout: SheetLayout | null;
+  /** How many resolved lines will not be printed. */
+  readonly unprintedCount: number;
+  /** How many copies the lines the server recognised ask for, printable or not. */
+  readonly cardCount: number;
+  /** How many pages the sheet prints on. */
+  readonly pageCount: number;
+
+  readonly pdf: SheetPdf;
+}
+
+export function useGenerator(): Generator {
+  const [savedDecklist] = useState(loadSavedDecklist);
+  const [decklistText, setDecklistText] = useState(savedDecklist?.decklistText ?? '');
+  const [defaultLang, setDefaultLang] = useState(loadDefaultLang);
+  const [resolutions, setResolutions] = useState<ResolutionsByLanguage>(new Map());
+  // Keyed by `choicesKeysOf`.
+  const [choicesByLine, setChoicesByLine] = useState<ReadonlyMap<string, LineChoices>>(
+    () => new Map(savedDecklist?.choicesByLine),
+  );
+  const [requestsInFlight, setRequestsInFlight] = useState(0);
+  const [lastResolveFailed, setLastResolveFailed] = useState(false);
+  const [sheetOptions, setSheetOptions] = useState<SheetOptions>(
+    savedDecklist?.sheetOptions ?? defaultSheetOptions,
+  );
+  // Every `resolutionKey` already asked for, so a line is sent once per language however often
+  // the decklist text changes.
+  const requestedKeys = useRef(new Set<string>());
+  // The line `loadDecklistText` splits once it is resolved, named by its `choicesKeysOf` key so
+  // that a later edit of the text cannot hand the split to another line.
+  const [pendingSplit, setPendingSplit] = useState<{
+    readonly choicesKey: string;
+    readonly printCount: number;
+  } | null>(null);
+
+  // Whether the decklist left on the device still waits to be resolved again, every line of it.
+  // An empty one has nothing to ask the server.
+  const [isSavedDecklistUnresolved, setIsSavedDecklistUnresolved] = useState(
+    () => (savedDecklist?.decklistText.trim() ?? '') !== '',
+  );
+
+  const writtenLines = writtenLinesOf(decklistText);
+  const choicesKeys = choicesKeysOf(writtenLines);
+
+  /** Resolves the lines not asked for yet in `lang`; `false` when the request failed. */
+  async function resolveInLanguage(
+    linesToResolve: readonly string[],
+    lang: Lang,
+  ): Promise<boolean> {
+    const notRequested = [...new Set(linesToResolve)].filter(
+      (writtenLine) => !requestedKeys.current.has(resolutionKey(lang, writtenLine)),
+    );
+    if (notRequested.length === 0) return true;
+    for (const writtenLine of notRequested) {
+      requestedKeys.current.add(resolutionKey(lang, writtenLine));
+    }
+    setRequestsInFlight((count) => count + 1);
+    try {
+      const resolvedLines = await resolveDecklistText(notRequested.join('\n'), lang);
+      setResolutions((previous) => {
+        const next = new Map(previous);
+        for (const writtenLine of notRequested) next.set(resolutionKey(lang, writtenLine), null);
+        for (const line of resolvedLines) next.set(resolutionKey(lang, line.text), line);
+        return next;
+      });
+      setLastResolveFailed(false);
+      return true;
+    } catch {
+      for (const writtenLine of notRequested) {
+        requestedKeys.current.delete(resolutionKey(lang, writtenLine));
+      }
+      setLastResolveFailed(true);
+      return false;
+    } finally {
+      setRequestsInFlight((count) => count - 1);
+    }
+  }
+
+  function writeDecklistText(nextText: string, caretAfterChange: number) {
+    if (changeWritesALineBreak(decklistText, nextText, caretAfterChange)) {
+      void resolveInLanguage(writtenLinesOf(nextText).slice(0, -1), defaultLang);
+    }
+    setDecklistText(nextText);
+  }
+
+  function loadDecklistText(text: string, split?: LineSplitOverPrints) {
+    const loadedLines = writtenLinesOf(text);
+    const choicesKey = split && choicesKeysOf(loadedLines)[split.writtenIndex];
+    setPendingSplit(choicesKey ? { choicesKey, printCount: split.printCount } : null);
+    setDecklistText(text);
+    void resolveInLanguage(loadedLines, defaultLang);
+  }
+
+  // Switched only once every line is resolved in the new language, so no line (and nothing
+  // that shows it) goes back to unresolved; a failed request keeps the lines as they were.
+  // Allocated copies stay on their prints either way.
+  async function changeDefaultLanguage(lang: Lang) {
+    if (!(await resolveInLanguage(writtenLines, lang))) return;
+    setDefaultLang(lang);
+    saveDefaultLang(lang);
+  }
+
+  /** The choices of the line written at `writtenIndex`, if the user made any. */
+  function choicesAt(writtenIndex: number): LineChoices | undefined {
+    const key = choicesKeys[writtenIndex];
+    return key === undefined ? undefined : choicesByLine.get(key);
+  }
+
+  /** Applies `change` to the choices of the line written at `writtenIndex`, if there is one. */
+  function updateChoicesAt(writtenIndex: number, change: LineChoices) {
+    const key = choicesKeys[writtenIndex];
+    if (key === undefined) return;
+    setChoicesByLine((previous) => new Map(previous).set(key, { ...previous.get(key), ...change }));
+  }
+
+  /**
+   * Writes `nextWrittenLines`, the decklist text as a change made in the workspace rewrote it,
+   * each line with its choices in `choicesOfEachLine`. Moving them by position, not by text,
+   * keeps a rewritten line from trading choices with a line now written like it.
+   */
+  function writeRewrittenLines(
+    nextWrittenLines: readonly string[],
+    choicesOfEachLine: readonly (LineChoices | undefined)[],
+  ) {
+    const nextKeys = choicesKeysOf(nextWrittenLines);
+    setChoicesByLine(
+      new Map(
+        nextKeys.flatMap((key, writtenIndex): [string, LineChoices][] => {
+          const choices = choicesOfEachLine[writtenIndex];
+          return choices ? [[key, choices]] : [];
+        }),
+      ),
+    );
+    setDecklistText(nextWrittenLines.join('\n'));
+  }
+
+  /** The choices of every written line, in the order of the text. */
+  function choicesOfEveryLine(): (LineChoices | undefined)[] {
+    return writtenLines.map((_writtenLine, writtenIndex) => choicesAt(writtenIndex));
+  }
+
+  /**
+   * The line to show at `writtenIndex`: its resolution in the default language with the user's
+   * picks (candidate, allocations) applied; `null` when it names no card, `undefined` while not
+   * resolved yet.
+   */
+  function displayedLine(writtenIndex: number): DecklistLine | null | undefined {
+    const resolution = resolutionAt(writtenIndex);
+    return resolution ? withChoices(resolution, choicesAt(writtenIndex)) : resolution;
+  }
+
+  /** The resolution of the line written at `writtenIndex` in the default language, if any yet. */
+  function resolutionAt(writtenIndex: number): DecklistLine | null | undefined {
+    const writtenLine = writtenLines[writtenIndex];
+    return writtenLine === undefined
+      ? undefined
+      : resolutions.get(resolutionKey(defaultLang, writtenLine));
+  }
+
+  /**
+   * Keeps `resolution` for its line's text rewritten for `quantity` copies, so the rewritten line
+   * needs no new request, and returns that resolution. The quantity goes on the resolution as the
+   * server sent it, never on the displayed line: the choices are applied again on top, so
+   * nothing they derived goes stale.
+   */
+  function keepResolutionOfRewrittenLine(resolution: DecklistLine, quantity: number): DecklistLine {
+    const rewritten = setLineQuantity(resolution, quantity);
+    keepResolution(rewritten.text, rewritten);
+    return rewritten;
+  }
+
+  /**
+   * Writes the line at `writtenIndex`, resolved to `resolution`, again with `choices`. A token
+   * line's text names its print, so two tokens sharing a name never share a resolution: once the
+   * text names it, the card is no longer a choice kept apart, and the new text needs no request.
+   */
+  function writeLineWithChoices(
+    writtenIndex: number,
+    resolution: DecklistLine,
+    choices: LineChoices | undefined,
+    nextWrittenLines: readonly string[] = writtenLines,
+  ) {
+    const line = withChoices(resolution, choices);
+    const namingItsPrint = line.status === 'resolved' ? tokenLineNamingItsPrint(line) : null;
+    if (namingItsPrint) keepResolution(namingItsPrint.resolution.text, namingItsPrint.resolution);
+    writeRewrittenLines(
+      nextWrittenLines.with(writtenIndex, namingItsPrint?.resolution.text ?? resolution.text),
+      choicesOfEveryLine().with(
+        writtenIndex,
+        namingItsPrint ? { allocations: namingItsPrint.allocations } : choices,
+      ),
+    );
+  }
+
+  /** Keeps `resolution` as what `writtenLine` resolves to, so it needs no request. */
+  function keepResolution(writtenLine: string, resolution: DecklistLine | null) {
+    const key = resolutionKey(defaultLang, writtenLine);
+    requestedKeys.current.add(key);
+    setResolutions((previous) => new Map(previous).set(key, resolution));
+  }
+
+  /**
+   * Writes the new quantity into the decklist text itself, so the text always says what gets
+   * printed. The allocations are fitted to the new quantity for good, so raising it again leaves
+   * the copies taken off on the default print.
+   */
+  function changeLineQuantity(writtenIndex: number, quantity: number) {
+    const resolution = resolutionAt(writtenIndex);
+    if (!resolution) return;
+    const rewritten = keepResolutionOfRewrittenLine(resolution, quantity);
+    const choices = choicesAt(writtenIndex);
+    const fitted = choices?.allocations && {
+      allocations: fitAllocations(choices.allocations, quantity),
+    };
+    writeLineWithChoices(writtenIndex, rewritten, choices && { ...choices, ...fitted });
+  }
+
+  /** Rewrites the decklist text for the tile's new quantity, keeping its line's choices. */
+  function changeTileQuantity(writtenIndex: number, print: Print, quantity: number) {
+    const resolution = resolutionAt(writtenIndex);
+    const line = displayedLine(writtenIndex);
+    if (!resolution || line?.status !== 'resolved') return;
+    const change = changeTileQuantityInText(decklistText, { writtenIndex, line, print }, quantity);
+    if (!change.line) {
+      removeLine(writtenIndex);
+      return;
+    }
+    const rewritten = keepResolutionOfRewrittenLine(resolution, change.line.quantity);
+    const allocations = {
+      oracleId: change.line.card.oracleId,
+      allocations: change.line.allocations,
+    };
+    writeLineWithChoices(
+      writtenIndex,
+      rewritten,
+      { ...choicesAt(writtenIndex), allocations },
+      writtenLinesOf(change.text),
+    );
+  }
+
+  /** Applies `change` to the choices of the line written at `writtenIndex`, writing it again. */
+  function changeChoicesAt(writtenIndex: number, change: LineChoices) {
+    const resolution = resolutionAt(writtenIndex);
+    if (!resolution) {
+      updateChoicesAt(writtenIndex, change);
+      return;
+    }
+    writeLineWithChoices(writtenIndex, resolution, { ...choicesAt(writtenIndex), ...change });
+  }
+
+  function removeLine(writtenIndex: number) {
+    writeRewrittenLines(
+      writtenLinesOf(withoutWrittenLine(decklistText, writtenIndex)),
+      choicesOfEveryLine().toSpliced(writtenIndex, 1),
+    );
+  }
+
+  /**
+   * Moves the line in the decklist text, its choices with it. A move that rewrites the line (to
+   * join or leave the sideboard) keeps its resolution, and the lines the move writes (a section
+   * header) name no card: the move asks the server nothing, but for a moved line it has not
+   * resolved yet.
+   */
+  function moveLine(writtenIndex: number, destination: LineDestination): LineMove {
+    const move = moveWrittenLine(decklistText, writtenIndex, destination);
+    const nextWrittenLines = writtenLinesOf(move.text);
+    const resolution = resolutionAt(writtenIndex);
+    const choices = choicesOfEveryLine();
+    move.previousWrittenIndexes.forEach((previousIndex, nextIndex) => {
+      const writtenLine = nextWrittenLines[nextIndex] ?? '';
+      if (previousIndex === null) keepResolution(writtenLine, null);
+      if (previousIndex !== writtenIndex) return;
+      // A line not resolved yet is one the user is done with once they move it.
+      if (resolution) keepResolution(writtenLine, lineRewrittenByMove(resolution, writtenLine));
+      else void resolveInLanguage([writtenLine], defaultLang);
+    });
+    writeRewrittenLines(
+      nextWrittenLines,
+      move.previousWrittenIndexes.map((index) => (index === null ? undefined : choices[index])),
+    );
+    return move;
+  }
+
+  /**
+   * Writes the added card into the decklist text, every other line with its choices. The line
+   * it lands on keeps a resolution the server need not be asked for, and so do the lines the
+   * addition writes besides it (a section header), which name no card. A copy added to an
+   * ambiguous line picks the card for it; one added to a line not resolved yet asks the server.
+   */
+  function addCard(section: DecklistSection, candidate: Candidate) {
+    const linesInText = cardLines.flatMap(({ writtenIndex, line }) =>
+      line ? [{ writtenIndex, line }] : [],
+    );
+    const addition = addCardToSection(
+      decklistText,
+      { section, candidate, lang: defaultLang },
+      linesInText,
+    );
+    const nextWrittenLines = writtenLinesOf(addition.text);
+    let choices = choicesOfEveryLine();
+    addition.previousWrittenIndexes.forEach((previousIndex, nextIndex) => {
+      if (previousIndex === null && nextIndex !== addition.writtenIndex) {
+        keepResolution(nextWrittenLines[nextIndex] ?? '', null);
+      }
+    });
+    if (addition.added === 'line') {
+      keepResolution(addition.line.text, addition.line);
+    } else {
+      const { writtenIndex, quantity } = addition;
+      const resolution = resolutionAt(writtenIndex);
+      if (resolution) keepResolutionOfRewrittenLine(resolution, quantity);
+      else void resolveInLanguage([nextWrittenLines[writtenIndex] ?? ''], defaultLang);
+      if (resolution?.status === 'ambiguous') {
+        const oracleId = candidate.card.oracleId;
+        choices = choices.with(writtenIndex, { ...choices[writtenIndex], oracleId });
+      }
+    }
+    writeRewrittenLines(
+      nextWrittenLines,
+      addition.previousWrittenIndexes.map((index) => (index === null ? undefined : choices[index])),
+    );
+  }
+
+  /**
+   * Writes the tokens' lines into the decklist text, every other line with its choices. The
+   * lines added keep the resolutions they came with, and a header the addition writes names no
+   * card: nothing is asked of the server.
+   */
+  function addSuggestedTokens(tokens: readonly SuggestedToken[]) {
+    const addition = addTokensToSection(decklistText, tokens);
+    const nextWrittenLines = writtenLinesOf(addition.text);
+    addition.previousWrittenIndexes.forEach((previousIndex, nextIndex) => {
+      if (previousIndex !== null) return;
+      const added = addition.lines.find(({ writtenIndex }) => writtenIndex === nextIndex);
+      keepResolution(nextWrittenLines[nextIndex] ?? '', added?.line ?? null);
+    });
+    const choices = choicesOfEveryLine();
+    writeRewrittenLines(
+      nextWrittenLines,
+      addition.previousWrittenIndexes.map((index) => (index === null ? undefined : choices[index])),
+    );
+  }
+
+  function startNewDecklist() {
+    setPendingSplit(null);
+    setLastResolveFailed(false);
+    setChoicesByLine(new Map());
+    setSheetOptions(defaultSheetOptions);
+    setDecklistText('');
+    decklistUnderWay.startOver();
+  }
+
+  useEffect(() => {
+    if (!isSavedDecklistUnresolved) return;
+    setIsSavedDecklistUnresolved(false);
+    void resolveInLanguage(writtenLines, defaultLang);
+  });
+
+  useEffect(() => {
+    if (!pendingSplit) return;
+    const { choicesKey, printCount } = pendingSplit;
+    const writtenIndex = choicesKeys.indexOf(choicesKey);
+    const line = writtenIndex === -1 ? null : displayedLine(writtenIndex);
+    if (line === undefined) return; // Not resolved yet.
+    setPendingSplit(null);
+    if (line?.status !== 'resolved') return;
+    // A failed request leaves every copy on the default print, as a line written by hand.
+    fetchPrintPage(line.card.oracleId, line.lang, printCount, null).then(
+      ({ prints }) => {
+        const allocations = allocationsSplitOverPrints(line, prints, printCount);
+        setChoicesByLine((previous) =>
+          new Map(previous).set(choicesKey, { ...previous.get(choicesKey), allocations }),
+        );
+      },
+      () => {},
+    );
+  });
+
+  const sectionOfEachLine = sectionOfEachWrittenLine(writtenLines);
+  const cardLines = writtenLines.flatMap((writtenLine, writtenIndex): WrittenCardLine[] => {
+    const line = displayedLine(writtenIndex);
+    // Never missing: there is a section for every written line.
+    const section = sectionOfEachLine[writtenIndex];
+    if (!section) return [];
+    if (line === null || (line === undefined && writtenLine.trim() === '')) return [];
+    return [{ writtenIndex, writtenLine, section, line }];
+  });
+  const recognisedLines = cardLines.flatMap((cardLine) => cardLine.line ?? []);
+  const decklistUnderWay = useDecklistUnderWay({
+    wasKeptOnEntering: savedDecklist !== null,
+    hasRecognisedLine: recognisedLines.length > 0,
+    decklist: { decklistText, choicesByLine, sheetOptions },
+  });
+  const { suggestedTokens, creatorNamesOfSuggestedToken } = useSuggestedTokens(
+    recognisedLines,
+    defaultLang,
+  );
+  const unresolvedCount = cardLines.length - recognisedLines.length;
+  const sheet = { options: sheetOptions, lines: recognisedLines };
+  const sheetLayout = hasPrintableCopies(sheet) ? layoutSheet(sheet) : null;
+  const pdf = useSheetPdf(sheet, sheetLayout, unresolvedCount === 0);
+
+  return {
+    decklistText,
+    writtenLineCount: writtenLines.length,
+    writeDecklistText,
+    resolveEveryLine: () => void resolveInLanguage(writtenLines, defaultLang),
+    loadDecklistText,
+    isResolving: requestsInFlight > 0,
+    lastResolveFailed,
+    defaultLang,
+    changeDefaultLanguage: (lang) => void changeDefaultLanguage(lang),
+    cardLines,
+    pickCandidate: (writtenIndex, oracleId) => changeChoicesAt(writtenIndex, { oracleId }),
+    changeLineQuantity,
+    changeTileQuantity,
+    removeLine,
+    chooseAllocations: (writtenIndex, allocations) =>
+      changeChoicesAt(writtenIndex, { allocations }),
+    moveLine,
+    addCard,
+    suggestedTokens,
+    creatorNamesOfSuggestedToken,
+    addSuggestedTokens,
+    isDecklistUnderWay: decklistUnderWay.isDecklistUnderWay,
+    startNewDecklist,
+    sheetOptions,
+    changeSheetOptions: setSheetOptions,
+    sheetLayout,
+    unprintedCount: unprintedLines(sheet).length,
+    cardCount: copyCount(recognisedLines),
+    pageCount: sheetLayout?.pages.length ?? 0,
+    pdf,
+  };
+}

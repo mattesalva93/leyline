@@ -15,7 +15,7 @@
     "test": "vitest run --passWithNoTests",
     "test:debug": "vitest --inspect-brk=127.0.0.1:9229 --no-file-parallelism --test-timeout=0 --hook-timeout=0",
     "check:theme": "node scripts/check-theme.js",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm check:theme && pnpm test",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm check:theme && pnpm check:unused && pnpm test",
     "build": "pnpm -r --if-present build",
     "db:up": "docker compose up -d --wait postgres",
     "db:down": "docker compose down",
@@ -28,7 +28,8 @@
     "sheet:preview": "pnpm --filter @mtg-suite/api run sheet:preview",
     "landing:screenshots": "node scripts/landing-screenshots.js",
     "check:phone-width": "node scripts/check-phone-width.js",
-    "web:preview": "node scripts/web-preview.js"
+    "web:preview": "node scripts/web-preview.js",
+    "check:unused": "knip --no-progress"
   },
   "lint-staged": {
     "*.{ts,tsx,js,mjs,cjs}": [
@@ -46,6 +47,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
     "husky": "^9.1.7",
+    "knip": "^5.88.1",
     "lint-staged": "^17.6.0",
     "playwright": "^1.65.0",
     "prettier": "^3.9.10",
