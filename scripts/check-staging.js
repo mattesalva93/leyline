@@ -12,6 +12,7 @@
 import { parseArgs } from 'node:util';
 import { chromium, request as playwrightRequest } from 'playwright';
 import { accessLogFailures } from './staging-checks/access-log.js';
+import { containerLogRotationFailures } from './staging-checks/container-log-rotation.js';
 import { cspInBrowserFailures } from './staging-checks/csp-in-browser.js';
 import { securityHeaderFailures } from './staging-checks/security-headers.js';
 import { testerAccessFailures } from './staging-checks/tester-access.js';
@@ -22,6 +23,7 @@ const CHECKS = {
   'security headers': securityHeaderFailures,
   'CSP in the browser': cspInBrowserFailures,
   'access log': accessLogFailures,
+  'container log rotation': containerLogRotationFailures,
 };
 
 const { values: flags } = parseArgs({ options: { app: { type: 'string' } } });

@@ -1,5 +1,13 @@
+# Every service's own log rotates, instead of growing without limit (ADR 0016). `local` is
+# Docker's compact log format; `pnpm check:staging` pins that every container uses it.
+x-rotated-logs: &rotated-logs
+  logging:
+    driver: local
+    options: { max-size: 10m, max-file: '3' }
+
 services:
   web:
+    <<: *rotated-logs
     build: { context: ., target: web }
     # Rebuild on every `up`, so a manual test never runs a stale image (layer cache keeps it fast).
     pull_policy: build
@@ -37,6 +45,7 @@ services:
         condition: service_healthy
 
   api:
+    <<: *rotated-logs
     build: { context: ., target: api }
     pull_policy: build
     environment:
@@ -63,6 +72,7 @@ services:
 
   # Imports Scryfall's catalog once a day (ADR 0002), apart from the process serving requests.
   importer:
+    <<: *rotated-logs
     build: { context: ., target: api }
     pull_policy: build
     command: ['node', 'dist/import-daily.js']
@@ -74,6 +84,7 @@ services:
         condition: service_healthy
 
   postgres:
+    <<: *rotated-logs
     image: postgres:18-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-mtg}
