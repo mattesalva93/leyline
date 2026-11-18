@@ -33,7 +33,7 @@
    gh secret set TESTER_CREDENTIALS --env production < tester-credentials.caddy
    ```
 
-   `gh secret set --env production` creates the secret in the `production` environment, so only jobs of that environment can read it. `tester-credentials.caddy` is the testers' list for production, made as `docs/staging.md` says, with its own credential for `pnpm check:staging`; see [Testers](#testers). Then delete the local `deploy_key` and `tester-credentials.caddy`.
+   `gh secret set --env production` creates the secret in the `production` environment, so only jobs of that environment can read it. `tester-credentials.caddy` is a file outside the repository holding production's testers, made as `docs/staging.md` says, with a line of its own for `pnpm check:staging`; see [Testers](#testers). Then delete the local `deploy_key`.
 
 6. **Deploy once by hand** to check it: `gh workflow run deploy.yml --ref main`, then `gh run watch` to follow it.
 
@@ -41,9 +41,9 @@ From then on, every push to `main` that passes CI is deployed. `gh variable set 
 
 ## Testers
 
-Every deploy writes the `TESTER_CREDENTIALS` secret to `docker/web/tester-credentials.caddy` on the host and reloads Caddy, so the host lets in exactly the testers the secret lists. Its format is the file's: one `<username> <hash>` line per tester (`docker/web/tester-credentials.example.caddy`), and `docs/staging.md` says how to make a credential. The deploy fails if the secret is empty.
+Every deploy writes the `TESTER_CREDENTIALS` secret to `docker/web/tester-credentials.caddy` on the host and reloads Caddy, so the host lets in exactly the testers the secret lists. The secret holds that file whole, in the format `docker/web/tester-credentials.example.caddy` explains. The deploy fails if the secret is empty.
 
-GitHub never shows a secret again, so keep the whole list, usernames and hashes, where you keep the passwords. To add or revoke a tester, change the list, set the secret again with all of it, and deploy:
+GitHub never shows a secret again, so keep production's `tester-credentials.caddy` outside the repository, where you keep the passwords. To add or revoke a tester, change that file, set the secret again from it, and deploy:
 
 ```sh
 gh secret set TESTER_CREDENTIALS --env production < tester-credentials.caddy

@@ -14,10 +14,10 @@ Make one credential per tester, with a long random password and its `argon2id` h
 
 ```sh
 password=$(openssl rand -base64 33)   # 33 random bytes, printed as 44 base64 characters
-printf '%s\n' "$password" | docker run --rm -i caddy:2-alpine caddy hash-password --algorithm argon2id
+printf '%s\n' "$password" | docker compose run --rm --no-deps -T web caddy hash-password --algorithm argon2id
 ```
 
-`-i` keeps stdin open, so `caddy hash-password` reads the password from the pipe and it never appears on a command line. Add `<username> <hash>` as one line of the file, and give the tester their password over a private channel. Removing a line revokes that tester. A running stack picks a change up with:
+The hash comes from the stack's own Caddy image. `--no-deps` starts no other service, and `-T` gives the command no terminal, so `caddy hash-password` reads the password from the pipe and it never appears on a command line. Add `<username> <hash>` as one line of the file, and give the tester their password over a private channel. Removing a line revokes that tester. A running stack picks a change up with:
 
 ```sh
 docker compose restart web
