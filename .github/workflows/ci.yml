@@ -30,11 +30,11 @@ jobs:
     env:
       DATABASE_URL: postgres://mtg:mtg@localhost:5432/mtg_suite
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       # Installs node, pnpm and the scanners at the versions pinned in mise.toml.
-      - uses: jdx/mise-action@v5
+      - uses: jdx/mise-action@v5.2.9
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm build
@@ -47,10 +47,10 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@v5
+      - uses: jdx/mise-action@v5.2.9
       - run: zizmor --format=github .github/workflows
       - run: gh extension install github/gh-actions-lock --pin v0.4.1
       # Fails when actions.lock is out of sync with the workflows or a pin no longer verifies.
@@ -61,12 +61,12 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
           # The whole history: a secret removed by a later commit is still leaked.
           fetch-depth: 0
-      - uses: jdx/mise-action@v5
+      - uses: jdx/mise-action@v5.2.9
       - run: gitleaks git --redact --verbose
 
   dependencies:
@@ -74,10 +74,10 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@v5
+      - uses: jdx/mise-action@v5.2.9
       # Severity threshold and accepted advisories: `audit` in pnpm-workspace.yaml.
       - run: pnpm audit
 
@@ -86,10 +86,10 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@v5
+      - uses: jdx/mise-action@v5.2.9
       - run: docker compose build
       # Every image compose.yaml builds, under the `<project>-<service>` name compose tags it with.
       # `--ignore-unfixed`: a vulnerability with no fixed version yet gives nothing to update.
