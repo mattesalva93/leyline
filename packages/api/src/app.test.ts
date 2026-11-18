@@ -873,15 +873,15 @@ describe('GET /api/cards/search', () => {
   });
 });
 
-describe('the characteristics of a card', () => {
-  const token = { layout: 'token', set_type: 'token' };
+describe('the power, toughness and keywords of a card', () => {
+  const tokenLayout = { layout: 'token', set_type: 'token' };
   const firebendingSoldier = scryfallCard({
     id: 'soldier-ttla-11',
     oracle_id: 'aaaaaaaa-0000-0000-0000-00000050d122',
     name: 'Soldier',
     set: 'ttla',
     collector_number: '11',
-    ...token,
+    ...tokenLayout,
     power: '2',
     toughness: '2',
     keywords: ['Firebending'],
@@ -892,7 +892,7 @@ describe('the characteristics of a card', () => {
     name: 'Soldier',
     set: 'plst',
     collector_number: 'TGRN-2',
-    ...token,
+    ...tokenLayout,
     power: '1',
     toughness: '1',
     keywords: ['Lifelink'],
@@ -917,7 +917,7 @@ describe('the characteristics of a card', () => {
     name: 'Treasure',
     set: 'tsnc',
     collector_number: '16',
-    ...token,
+    ...tokenLayout,
     keywords: [],
   });
   const emblem = scryfallCard({
@@ -958,10 +958,44 @@ describe('the characteristics of a card', () => {
     ],
   });
 
+  const zndrspltOracle = 'aaaaaaaa-0000-0000-0000-0000000025d5';
+  const zndrsplt = scryfallCard({
+    id: 'zndrsplt-cmr',
+    oracle_id: zndrspltOracle,
+    name: 'Zndrsplt, Eye of Wisdom',
+    set: 'cmr',
+    collector_number: '106',
+    power: '1',
+    toughness: '1',
+    keywords: ['Partner with'],
+  });
+  // Scryfall puts the oracle fields of a reversible card on its two faces, the same card twice.
+  const zndrspltFace = {
+    oracle_id: zndrspltOracle,
+    name: 'Zndrsplt, Eye of Wisdom',
+    power: '1',
+    toughness: '1',
+  };
+  const reversibleZndrsplt = scryfallCard({
+    id: 'zndrsplt-sld',
+    oracle_id: undefined,
+    name: 'Zndrsplt, Eye of Wisdom // Zndrsplt, Eye of Wisdom',
+    set: 'sld',
+    collector_number: '1420',
+    layout: 'reversible_card',
+    image_uris: undefined,
+    card_faces: [
+      { ...zndrspltFace, image_uris: imageUris('zndrsplt-front') },
+      { ...zndrspltFace, image_uris: imageUris('zndrsplt-back') },
+    ],
+  });
+
   beforeAll(async () => {
     await importBulk(
       db.sql,
       bulkStream([
+        zndrsplt,
+        reversibleZndrsplt,
         firebendingSoldier,
         lifelinkSoldier,
         soldierGoblin,
@@ -973,7 +1007,7 @@ describe('the characteristics of a card', () => {
     );
   });
 
-  it('keeps the power, toughness and keywords of each card', async () => {
+  it('tells apart two Soldier tokens by their power, toughness and keywords', async () => {
     const { body } = await resolve('1 Soldier (TTLA) 11\n1 Soldier (PLST) TGRN-2');
 
     expect(body.lines).toMatchObject([
@@ -1036,7 +1070,40 @@ describe('the characteristics of a card', () => {
     ]);
   });
 
-  it('returns the characteristics on the cards a search finds', async () => {
+  it('gives a card printed as a reversible card the power, toughness and keywords of its single face', async () => {
+    const { body } = await resolve('1 Zndrsplt, Eye of Wisdom');
+
+    expect(body.lines).toMatchObject([
+      {
+        status: 'resolved',
+        card: {
+          name: 'Zndrsplt, Eye of Wisdom',
+          powerToughnessByFace: [{ power: '1', toughness: '1' }],
+          keywords: ['Partner with'],
+        },
+      },
+    ]);
+  });
+
+  it('returns them on the candidates of an ambiguous line', async () => {
+    const { body } = await resolve('1 Soldier');
+
+    expect(body.lines).toMatchObject([
+      {
+        status: 'ambiguous',
+        candidates: expect.arrayContaining([
+          expect.objectContaining({
+            card: expect.objectContaining({ keywords: ['Firebending'] }),
+          }),
+          expect.objectContaining({
+            card: expect.objectContaining({ keywords: ['Lifelink'] }),
+          }),
+        ]),
+      },
+    ]);
+  });
+
+  it('returns them on the cards a search finds', async () => {
     const response = await createApp({ sql: db.sql }).request('/api/cards/search?q=tarmogoyf');
 
     expect(await response.json()).toMatchObject({
@@ -1044,6 +1111,23 @@ describe('the characteristics of a card', () => {
         { card: { name: 'Tarmogoyf', powerToughnessByFace: [{ power: '*', toughness: '1+*' }] } },
       ],
     });
+  });
+
+  it('takes a card printed only as a reversible card from its first face', async () => {
+    await importBulk(db.sql, bulkStream([reversibleZndrsplt]));
+
+    const { body } = await resolve('1 Zndrsplt, Eye of Wisdom');
+
+    expect(body.lines).toMatchObject([
+      {
+        status: 'resolved',
+        card: {
+          name: 'Zndrsplt, Eye of Wisdom',
+          powerToughnessByFace: [{ power: '1', toughness: '1' }],
+        },
+        defaultPrint: { id: 'zndrsplt-sld' },
+      },
+    ]);
   });
 });
 
