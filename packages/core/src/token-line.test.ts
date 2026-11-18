@@ -24,28 +24,28 @@ function soldierLine(text: string, overrides: Partial<ResolvedLine> = {}): Resol
 
 describe('tokenLineNamingItsPrint', () => {
   it('names the print the line resolved to on a line written by the name alone', () => {
-    const renamed = tokenLineNamingItsPrint(soldierLine('2 Soldier'));
+    const rewritten = tokenLineNamingItsPrint(soldierLine('2 Soldier'));
 
-    expect(renamed?.resolution).toMatchObject({
+    expect(rewritten?.resolution).toMatchObject({
       text: '2 Soldier (TFRC) 3',
       defaultPrint: { id: 'soldier-tfrc' },
       allocations: [],
     });
-    expect(renamed?.allocations).toEqual({ oracleId: 'soldier', allocations: [] });
+    expect(rewritten?.allocations).toEqual({ oracleId: 'soldier', allocations: [] });
   });
 
   it('names the print every copy moved to, the copies staying on it', () => {
     const line = soldierLine('2 Soldier (TFRC) 3', { allocations: [{ print: TWAR, quantity: 2 }] });
 
-    const renamed = tokenLineNamingItsPrint(line);
+    const rewritten = tokenLineNamingItsPrint(line);
 
-    expect(renamed?.resolution).toMatchObject({
+    expect(rewritten?.resolution).toMatchObject({
       text: '2 Soldier (TWAR) 5',
       quantity: 2,
       defaultPrint: { id: 'soldier-twar' },
       allocations: [],
     });
-    expect(renamed?.allocations.allocations).toEqual([{ print: TWAR, quantity: 2 }]);
+    expect(rewritten?.allocations.allocations).toEqual([{ print: TWAR, quantity: 2 }]);
   });
 
   it('names the print with the most copies, the copies left on the old one allocated to it', () => {
@@ -54,10 +54,10 @@ describe('tokenLineNamingItsPrint', () => {
       allocations: [{ print: TWAR, quantity: 2 }],
     });
 
-    const renamed = tokenLineNamingItsPrint(line);
+    const rewritten = tokenLineNamingItsPrint(line);
 
-    expect(renamed?.resolution.text).toBe('3 Soldier (TWAR) 5');
-    expect(renamed?.allocations.allocations).toEqual([
+    expect(rewritten?.resolution.text).toBe('3 Soldier (TWAR) 5');
+    expect(rewritten?.allocations.allocations).toEqual([
       { print: TWAR, quantity: 2 },
       { print: TFRC, quantity: 1 },
     ]);

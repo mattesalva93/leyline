@@ -306,26 +306,24 @@ export function useGenerator(): Generator {
   }
 
   /**
-   * The line written at `writtenIndex`, resolved to `resolution`, written again with `choices`:
-   * a token line comes to name the print it uses most, its rewritten text keeping a resolution
-   * that needs no request, and its choices then only its allocations, the card being named.
-   * The decklist text says which token prints, so two tokens sharing a name never share a line.
+   * Writes the line at `writtenIndex`, resolved to `resolution`, again with `choices`. A token
+   * line's text names its print, so two tokens sharing a name never share a resolution: once the
+   * text names it, the card is no longer a choice kept apart, and the new text needs no request.
    */
   function writeLineWithChoices(
     writtenIndex: number,
     resolution: DecklistLine,
     choices: LineChoices | undefined,
     nextWrittenLines: readonly string[] = writtenLines,
-    choicesOfEachLine: readonly (LineChoices | undefined)[] = choicesOfEveryLine(),
   ) {
     const line = withChoices(resolution, choices);
-    const renamed = line.status === 'resolved' ? tokenLineNamingItsPrint(line) : null;
-    if (renamed) keepResolution(renamed.resolution.text, renamed.resolution);
+    const namingItsPrint = line.status === 'resolved' ? tokenLineNamingItsPrint(line) : null;
+    if (namingItsPrint) keepResolution(namingItsPrint.resolution.text, namingItsPrint.resolution);
     writeRewrittenLines(
-      nextWrittenLines.with(writtenIndex, renamed?.resolution.text ?? resolution.text),
-      choicesOfEachLine.with(
+      nextWrittenLines.with(writtenIndex, namingItsPrint?.resolution.text ?? resolution.text),
+      choicesOfEveryLine().with(
         writtenIndex,
-        renamed ? { allocations: renamed.allocations } : choices,
+        namingItsPrint ? { allocations: namingItsPrint.allocations } : choices,
       ),
     );
   }

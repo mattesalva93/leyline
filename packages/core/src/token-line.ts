@@ -25,7 +25,7 @@ export function writtenNamingPrint(writtenLine: string, cardName: string, print:
 }
 
 /** A token line rewritten to name the print it uses most. */
-export interface RenamedTokenLine {
+export interface RewrittenTokenLine {
   /** What the rewritten text resolves to: the named print is its default print. */
   readonly resolution: ResolvedLine;
   /**
@@ -40,7 +40,7 @@ export interface RenamedTokenLine {
  * on a tie, the print of its first tile. `null` when the line names that print already, or is
  * not a token's.
  */
-export function tokenLineNamingItsPrint(line: ResolvedLine): RenamedTokenLine | null {
+export function tokenLineNamingItsPrint(line: ResolvedLine): RewrittenTokenLine | null {
   const [firstTile, ...otherTiles] = printTiles(line);
   if (!firstTile) return null;
   const { print } = otherTiles.reduce(

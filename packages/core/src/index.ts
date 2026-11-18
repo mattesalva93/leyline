@@ -42,7 +42,7 @@ export {
   type LineInText,
 } from './add-card.ts';
 export { addTokensToSection, type TokensAddition } from './add-tokens.ts';
-export { isTokenPrint, tokenLineNamingItsPrint, type RenamedTokenLine } from './token-line.ts';
+export { tokenLineNamingItsPrint, type RewrittenTokenLine } from './token-line.ts';
 export { printTiles, type PrintTile } from './print-tile.ts';
 export {
   tokenQueryLineOf,
