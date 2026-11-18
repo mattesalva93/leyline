@@ -5,7 +5,7 @@ import { migrate } from '../catalog/db.ts';
 import { listen, type ListeningApp } from '../test-support/listening-app.ts';
 import { manualClock } from '../test-support/manual-clock.ts';
 import { recordedSecurityLog } from '../test-support/recorded-security-log.ts';
-import { createTestDb, type TestDb } from '../test-support/test-db.ts';
+import { connectToMissingDatabase, createTestDb, type TestDb } from '../test-support/test-db.ts';
 
 const MIB = 1024 * 1024;
 
@@ -154,6 +154,32 @@ describe('the request timeout', () => {
 
     expect(response.status).toBe(200);
     expect(securityLog.events).toEqual([]);
+  });
+});
+
+describe('an internal error', () => {
+  const missingDb = connectToMissingDatabase();
+
+  afterAll(async () => {
+    await missingDb.end();
+  });
+
+  it('answers 500 with a generic body, naming nothing of the database', async () => {
+    const { origin, securityLog } = await serveApp(missingDb);
+
+    const response = await fetch(`${origin}/api/cards/search?q=counterspell`);
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: 'Internal server error.' });
+    expect(securityLog.events).toEqual([
+      {
+        kind: 'server-error',
+        method: 'GET',
+        path: '/api/cards/search',
+        clientNetwork: '127.0.0.0',
+        error: expect.stringContaining('does not exist'),
+      },
+    ]);
   });
 });
 
