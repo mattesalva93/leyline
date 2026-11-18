@@ -1,5 +1,11 @@
 // Streams a Scryfall bulk file into the catalog and swaps it in atomically (ADR 0002).
-import { cardKeys, isTokenLayout, type ImageUris, type PrintFace } from '@mtg-suite/core';
+import {
+  cardKeys,
+  isTokenLayout,
+  type ImageUris,
+  type PowerToughness,
+  type PrintFace,
+} from '@mtg-suite/core';
 import type { Readable } from 'node:stream';
 import { createInterface } from 'node:readline';
 import { createCatalogTables, type Sql } from './db.ts';
@@ -25,6 +31,8 @@ interface ScryfallFace {
   readonly artist?: string;
   readonly printed_name?: string;
   readonly oracle_id?: string;
+  readonly power?: string;
+  readonly toughness?: string;
   readonly image_uris?: ScryfallImageUris;
 }
 
@@ -51,6 +59,9 @@ interface ScryfallCard {
   readonly digital: boolean;
   readonly oversized: boolean;
   readonly layout: string;
+  readonly power?: string;
+  readonly toughness?: string;
+  readonly keywords?: readonly string[];
   readonly image_status: string;
   readonly image_uris?: ScryfallImageUris;
   readonly card_faces?: readonly ScryfallFace[];
@@ -60,6 +71,8 @@ interface ScryfallCard {
 interface CardRow {
   readonly oracle_id: string;
   readonly name: string;
+  readonly power_toughness_by_face: readonly (PowerToughness | null)[];
+  readonly keywords: readonly string[];
 }
 
 interface NameRow {
@@ -112,6 +125,12 @@ function facesOf(card: ScryfallCard): PrintFace[] {
   );
 }
 
+/** A face's power and toughness, when it has them. */
+function powerToughnessOf(face: ScryfallFace | ScryfallCard): PowerToughness | null {
+  const { power, toughness } = face;
+  return power !== undefined && toughness !== undefined ? { power, toughness } : null;
+}
+
 /**
  * Scryfall sets `printed_name` only where it differs from `name`, and on the faces of multi-face
  * prints. Italian names can change between reprints, so each print keeps its own.
@@ -139,6 +158,33 @@ function tokenLinksOf(card: ScryfallCard): TokenLinkRow[] {
     }));
 }
 
+/**
+ * A reversible card prints the same card on both faces, and Scryfall puts its oracle fields on
+ * those faces only: the card is its first face.
+ */
+function isReversibleLayout(layout: string): boolean {
+  return layout === 'reversible_card';
+}
+
+/** Scryfall writes power and toughness on each face of a multi-face card, else on the card. */
+function cardRowOf(card: ScryfallCard, oracleId: string): CardRow {
+  const firstFace = card.card_faces?.[0];
+  if (isReversibleLayout(card.layout) && firstFace) {
+    return {
+      oracle_id: oracleId,
+      name: firstFace.name,
+      power_toughness_by_face: [powerToughnessOf(firstFace)],
+      keywords: card.keywords ?? [],
+    };
+  }
+  return {
+    oracle_id: oracleId,
+    name: card.name,
+    power_toughness_by_face: (card.card_faces ?? [card]).map(powerToughnessOf),
+    keywords: card.keywords ?? [],
+  };
+}
+
 function toRows(
   card: ScryfallCard,
 ): { card: CardRow; print: PrintRow; tokenLinks: TokenLinkRow[] } | null {
@@ -146,7 +192,7 @@ function toRows(
   const oracleId = card.oracle_id ?? card.card_faces?.[0]?.oracle_id;
   if (!oracleId || !LANGS.has(card.lang)) return null;
   return {
-    card: { oracle_id: oracleId, name: card.name },
+    card: cardRowOf(card, oracleId),
     print: {
       id: card.id,
       oracle_id: oracleId,
@@ -195,15 +241,20 @@ async function importLocked(sql: Sql, bulk: Readable): Promise<{ prints: number 
 
   let imported = 0;
   let cards = new Map<string, CardRow>();
+  // A reversible print knows its card less well than any other print of it (keywords may be
+  // missing), so its card goes in only for the cards no other print gives, after the whole file.
+  const cardsOfReversiblePrints = new Map<string, CardRow>();
   let names = new Map<string, NameRow>();
   let prints: PrintRow[] = [];
   let tokenLinks: TokenLinkRow[] = [];
   const flush = async () => {
     if (prints.length === 0) return;
-    await sql`
-      insert into cards_staging ${sql([...cards.values()])}
-      on conflict (oracle_id) do nothing
-    `;
+    if (cards.size > 0) {
+      await sql`
+        insert into cards_staging ${sql([...cards.values()])}
+        on conflict (oracle_id) do nothing
+      `;
+    }
     await sql`
       insert into card_names_staging ${sql([...names.values()])}
       on conflict (key, oracle_id) do nothing
@@ -222,7 +273,8 @@ async function importLocked(sql: Sql, bulk: Readable): Promise<{ prints: number 
     if (line.trim() === '') continue;
     const rows = toRows(JSON.parse(line) as ScryfallCard);
     if (!rows) continue;
-    cards.set(rows.card.oracle_id, rows.card);
+    const cardsOfBatch = isReversibleLayout(rows.print.layout) ? cardsOfReversiblePrints : cards;
+    cardsOfBatch.set(rows.card.oracle_id, rows.card);
     prints.push(rows.print);
     tokenLinks.push(...rows.tokenLinks);
     for (const key of cardKeys(rows.card.name, [rows.print.printed_name])) {
@@ -231,6 +283,13 @@ async function importLocked(sql: Sql, bulk: Readable): Promise<{ prints: number 
     if (prints.length >= BATCH_SIZE) await flush();
   }
   await flush();
+  const reversibleCards = [...cardsOfReversiblePrints.values()];
+  for (let start = 0; start < reversibleCards.length; start += BATCH_SIZE) {
+    await sql`
+      insert into cards_staging ${sql(reversibleCards.slice(start, start + BATCH_SIZE))}
+      on conflict (oracle_id) do nothing
+    `;
+  }
 
   await sql.begin(async (tx) => {
     await tx`drop table if exists prints, cards, card_names, token_links`;

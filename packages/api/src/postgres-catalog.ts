@@ -1,4 +1,4 @@
-import type { Catalog, CatalogEntry, Print, PrintFace } from '@mtg-suite/core';
+import type { Card, Catalog, CatalogEntry, Print, PrintFace } from '@mtg-suite/core';
 import type { Sql } from './db.ts';
 
 /** A face as the catalog stores it: imports before artists were kept have none. */
@@ -117,8 +117,11 @@ export function createPostgresCatalog(sql: Sql): Catalog {
 /** The cards with the given oracle ids, each with all its prints, newest first. */
 async function entriesOf(sql: Sql, oracleIds: readonly string[]): Promise<CatalogEntry[]> {
   if (oracleIds.length === 0) return [];
-  const cards = await sql<{ oracleId: string; name: string }[]>`
-    select oracle_id as "oracleId", name from cards
+  const cards = await sql<Card[]>`
+    select
+      oracle_id as "oracleId", name,
+      power_toughness_by_face as "powerToughnessByFace", keywords
+    from cards
     where oracle_id = any(${[...oracleIds]}::text[])
   `;
   const prints = await sql<PrintRow[]>`
@@ -139,7 +142,7 @@ async function entriesOf(sql: Sql, oracleIds: readonly string[]): Promise<Catalo
     else printsByCard.set(print.oracleId, [print]);
   }
   return cards.map((card): CatalogEntry => ({
-    card: { oracleId: card.oracleId, name: card.name },
+    card,
     prints: (printsByCard.get(card.oracleId) ?? []).map(toPrint),
   }));
 }

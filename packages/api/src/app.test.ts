@@ -612,7 +612,7 @@ describe('POST /api/decklists/suggested-tokens', () => {
     expect(body.tokens).toMatchObject([
       {
         candidate: {
-          card: { name: 'Treasure' },
+          card: { name: 'Treasure', powerToughnessByFace: [null], keywords: [] },
           defaultPrint: { set: 'tsnc', collectorNumber: '16' },
         },
         lang: 'en',
@@ -873,6 +873,319 @@ describe('GET /api/cards/search', () => {
   });
 });
 
+describe('the power, toughness and keywords of a card', () => {
+  const tokenLayout = { layout: 'token', set_type: 'token' };
+  const firebendingSoldier = scryfallCard({
+    id: 'soldier-ttla-11',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-00000050d122',
+    name: 'Soldier',
+    set: 'ttla',
+    collector_number: '11',
+    ...tokenLayout,
+    power: '2',
+    toughness: '2',
+    keywords: ['Firebending'],
+  });
+  const lifelinkSoldier = scryfallCard({
+    id: 'soldier-plst-tgrn-2',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-00000050d111',
+    name: 'Soldier',
+    set: 'plst',
+    collector_number: 'TGRN-2',
+    ...tokenLayout,
+    power: '1',
+    toughness: '1',
+    keywords: ['Lifelink'],
+  });
+
+  const soldierGoblin = doubleFacedCard({
+    id: 'soldier-goblin-sld',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-00000050d6b1',
+    name: 'Soldier // Goblin',
+    set: 'sld',
+    collector_number: '1',
+    layout: 'double_faced_token',
+    set_type: 'box',
+    card_faces: [
+      { name: 'Soldier', power: '1', toughness: '1', image_uris: imageUris('soldier') },
+      { name: 'Goblin', power: '1', toughness: '1', image_uris: imageUris('goblin') },
+    ],
+  });
+  const treasure = scryfallCard({
+    id: 'treasure-tsnc-16',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-0000007ea500',
+    name: 'Treasure',
+    set: 'tsnc',
+    collector_number: '16',
+    ...tokenLayout,
+    keywords: [],
+  });
+  const emblem = scryfallCard({
+    id: 'emblem-elspeth',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-0000000e1b00',
+    name: "Elspeth, Sun's Champion Emblem",
+    set: 'tths',
+    collector_number: '5',
+    layout: 'emblem',
+    set_type: 'token',
+    keywords: [],
+  });
+  const tarmogoyf = scryfallCard({
+    id: 'tarmogoyf-mh2',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-0000000060f0',
+    name: 'Tarmogoyf',
+    set: 'mh2',
+    collector_number: '177',
+    power: '*',
+    toughness: '1+*',
+  });
+
+  const delver = doubleFacedCard({
+    keywords: ['Flying', 'Transform'],
+    card_faces: [
+      {
+        name: 'Delver of Secrets',
+        power: '1',
+        toughness: '1',
+        image_uris: imageUris('delver-front'),
+      },
+      {
+        name: 'Insectile Aberration',
+        power: '3',
+        toughness: '2',
+        image_uris: imageUris('delver-back'),
+      },
+    ],
+  });
+
+  // Adventure, split and flip cards have one image and two faces in the rules.
+  const bonecrusherGiant = scryfallCard({
+    id: 'bonecrusher-eld',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-0000000b0ce5',
+    name: 'Bonecrusher Giant // Stomp',
+    set: 'eld',
+    collector_number: '115',
+    layout: 'adventure',
+    card_faces: [{ name: 'Bonecrusher Giant', power: '4', toughness: '3' }, { name: 'Stomp' }],
+  });
+  const fireIce = scryfallCard({
+    id: 'fire-ice-mh2',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-00000000f1ce',
+    name: 'Fire // Ice',
+    set: 'mh2',
+    collector_number: '290',
+    layout: 'split',
+    card_faces: [{ name: 'Fire' }, { name: 'Ice' }],
+  });
+  const bushiTenderfoot = scryfallCard({
+    id: 'bushi-chk',
+    oracle_id: 'aaaaaaaa-0000-0000-0000-0000000b0510',
+    name: 'Bushi Tenderfoot // Kenzo the Hardhearted',
+    set: 'chk',
+    collector_number: '2',
+    layout: 'flip',
+    card_faces: [
+      { name: 'Bushi Tenderfoot', power: '1', toughness: '1' },
+      { name: 'Kenzo the Hardhearted', power: '3', toughness: '4' },
+    ],
+  });
+  const zndrspltOracle = 'aaaaaaaa-0000-0000-0000-0000000025d5';
+  const zndrsplt = scryfallCard({
+    id: 'zndrsplt-cmr',
+    oracle_id: zndrspltOracle,
+    name: 'Zndrsplt, Eye of Wisdom',
+    set: 'cmr',
+    collector_number: '106',
+    power: '1',
+    toughness: '1',
+    keywords: ['Partner with'],
+  });
+  // Scryfall puts the oracle fields of a reversible card on its two faces, the same card twice.
+  const zndrspltFace = {
+    oracle_id: zndrspltOracle,
+    name: 'Zndrsplt, Eye of Wisdom',
+    power: '1',
+    toughness: '1',
+  };
+  const reversibleZndrsplt = scryfallCard({
+    id: 'zndrsplt-sld',
+    oracle_id: undefined,
+    name: 'Zndrsplt, Eye of Wisdom // Zndrsplt, Eye of Wisdom',
+    set: 'sld',
+    collector_number: '1420',
+    layout: 'reversible_card',
+    image_uris: undefined,
+    card_faces: [
+      { ...zndrspltFace, image_uris: imageUris('zndrsplt-front') },
+      { ...zndrspltFace, image_uris: imageUris('zndrsplt-back') },
+    ],
+  });
+
+  beforeAll(async () => {
+    await importBulk(
+      db.sql,
+      bulkStream([
+        zndrsplt,
+        reversibleZndrsplt,
+        firebendingSoldier,
+        lifelinkSoldier,
+        soldierGoblin,
+        treasure,
+        emblem,
+        tarmogoyf,
+        delver,
+        bonecrusherGiant,
+        fireIce,
+        bushiTenderfoot,
+      ]),
+    );
+  });
+
+  it('tells apart two Soldier tokens by their power, toughness and keywords', async () => {
+    const { body } = await resolve('1 Soldier (TTLA) 11\n1 Soldier (PLST) TGRN-2');
+
+    expect(body.lines).toMatchObject([
+      {
+        status: 'resolved',
+        card: {
+          powerToughnessByFace: [{ power: '2', toughness: '2' }],
+          keywords: ['Firebending'],
+        },
+      },
+      {
+        status: 'resolved',
+        card: { powerToughnessByFace: [{ power: '1', toughness: '1' }], keywords: ['Lifelink'] },
+      },
+    ]);
+  });
+
+  it('keeps power and toughness as Scryfall writes them, as text', async () => {
+    const { body } = await resolve('1 Tarmogoyf');
+
+    expect(body.lines).toMatchObject([
+      { card: { powerToughnessByFace: [{ power: '*', toughness: '1+*' }] } },
+    ]);
+  });
+
+  it('gives no power or toughness to a card without them, such as a Treasure or an emblem', async () => {
+    const { status, body } = await resolve("1 Treasure\n1 Elspeth, Sun's Champion Emblem");
+
+    expect(status).toBe(200);
+    expect(body.lines).toMatchObject([
+      { status: 'resolved', card: { powerToughnessByFace: [null], keywords: [] } },
+      { status: 'resolved', card: { powerToughnessByFace: [null], keywords: [] } },
+    ]);
+  });
+
+  it('keeps the power and toughness of each face of a double-faced card, token or not, in face order', async () => {
+    const { body } = await resolve('1 Soldier // Goblin\n1 Delver of Secrets');
+
+    expect(body.lines).toMatchObject([
+      {
+        status: 'resolved',
+        card: {
+          name: 'Soldier // Goblin',
+          powerToughnessByFace: [
+            { power: '1', toughness: '1' },
+            { power: '1', toughness: '1' },
+          ],
+        },
+      },
+      {
+        status: 'resolved',
+        card: {
+          powerToughnessByFace: [
+            { power: '1', toughness: '1' },
+            { power: '3', toughness: '2' },
+          ],
+          keywords: ['Flying', 'Transform'],
+        },
+      },
+    ]);
+  });
+
+  it('gives a card printed as a reversible card the power, toughness and keywords of its single face', async () => {
+    const { body } = await resolve('1 Zndrsplt, Eye of Wisdom');
+
+    expect(body.lines).toMatchObject([
+      {
+        status: 'resolved',
+        card: {
+          name: 'Zndrsplt, Eye of Wisdom',
+          powerToughnessByFace: [{ power: '1', toughness: '1' }],
+          keywords: ['Partner with'],
+        },
+      },
+    ]);
+  });
+
+  it('gives the faces of a card in the rules, not the images of its print: an adventure, a split and a flip card have two', async () => {
+    const { body } = await resolve('1 Bonecrusher Giant\n1 Fire // Ice\n1 Bushi Tenderfoot');
+
+    expect(body.lines).toMatchObject([
+      {
+        card: { powerToughnessByFace: [{ power: '4', toughness: '3' }, null] },
+        defaultPrint: { faces: [{ name: 'Bonecrusher Giant // Stomp' }] },
+      },
+      { card: { powerToughnessByFace: [null, null] }, defaultPrint: { faces: [{}] } },
+      {
+        card: {
+          powerToughnessByFace: [
+            { power: '1', toughness: '1' },
+            { power: '3', toughness: '4' },
+          ],
+        },
+        defaultPrint: { faces: [{}] },
+      },
+    ]);
+  });
+
+  it('returns them on the candidates of an ambiguous line', async () => {
+    const { body } = await resolve('1 Soldier');
+
+    expect(body.lines).toMatchObject([
+      {
+        status: 'ambiguous',
+        candidates: expect.arrayContaining([
+          expect.objectContaining({
+            card: expect.objectContaining({ keywords: ['Firebending'] }),
+          }),
+          expect.objectContaining({
+            card: expect.objectContaining({ keywords: ['Lifelink'] }),
+          }),
+        ]),
+      },
+    ]);
+  });
+
+  it('returns them on the cards a search finds', async () => {
+    const response = await createApp({ sql: db.sql }).request('/api/cards/search?q=tarmogoyf');
+
+    expect(await response.json()).toMatchObject({
+      cards: [
+        { card: { name: 'Tarmogoyf', powerToughnessByFace: [{ power: '*', toughness: '1+*' }] } },
+      ],
+    });
+  });
+
+  it('takes a card printed only as a reversible card from its first face', async () => {
+    await importBulk(db.sql, bulkStream([reversibleZndrsplt]));
+
+    const { body } = await resolve('1 Zndrsplt, Eye of Wisdom');
+
+    expect(body.lines).toMatchObject([
+      {
+        status: 'resolved',
+        card: {
+          name: 'Zndrsplt, Eye of Wisdom',
+          powerToughnessByFace: [{ power: '1', toughness: '1' }],
+        },
+        defaultPrint: { id: 'zndrsplt-sld' },
+      },
+    ]);
+  });
+});
+
 describe('GET /api/health', () => {
   it('answers ok, so the compose healthcheck can tell a serving api', async () => {
     const response = await createApp({ sql: db.sql }).request('/api/health');
@@ -935,7 +1248,7 @@ describe('a catalog imported before set names and artists', () => {
     await migrate(oldDb.sql);
     // The catalog as an older import left it: no set name column, faces without an artist.
     await oldDb.sql`alter table prints drop column set_name`;
-    await oldDb.sql`insert into cards values ('forest', 'Forest')`;
+    await oldDb.sql`insert into cards values ('forest', 'Forest', '[null]', '{}')`;
     await oldDb.sql`
       insert into prints values (
         'forest-old', 'forest', 'lea', '294', 'en', 'Forest', '1993-08-05', 'highres_scan',

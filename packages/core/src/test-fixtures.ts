@@ -2,7 +2,13 @@
 import type { Card, Print } from './index.ts';
 
 export function aCard(overrides: Partial<Card> = {}): Card {
-  return { oracleId: 'oracle-id', name: 'Card Name', ...overrides };
+  return {
+    oracleId: 'oracle-id',
+    name: 'Card Name',
+    powerToughnessByFace: [null],
+    keywords: [],
+    ...overrides,
+  };
 }
 
 export function aPrint(overrides: Partial<Print> = {}): Print {

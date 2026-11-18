@@ -27,6 +27,8 @@ export async function createCatalogTables(sql: Sql, suffix: '' | '_staging'): Pr
     create table if not exists ${cards} (
       oracle_id text not null,
       name text not null,
+      power_toughness_by_face jsonb not null,
+      keywords text[] not null,
       constraint ${sql(`cards${suffix}_pkey`)} primary key (oracle_id)
     )
   `;
