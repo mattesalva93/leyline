@@ -30,13 +30,27 @@
    gh variable set DEPLOY_PATH --body <absolute path on the host>
    gh variable set DEPLOY_PORT --body <port>             # optional
    gh variable set DEPLOY_ENABLED --body true
+   gh secret set TESTER_CREDENTIALS --env production < tester-credentials.caddy
    ```
 
-   `gh secret set --env production` creates the secret in the `production` environment, so only jobs of that environment can read it. Then delete the local `deploy_key`.
+   `gh secret set --env production` creates the secret in the `production` environment, so only jobs of that environment can read it. `tester-credentials.caddy` is the testers' list for production, made as `docs/staging.md` says, with its own credential for `pnpm check:staging`; see [Testers](#testers). Then delete the local `deploy_key` and `tester-credentials.caddy`.
 
 6. **Deploy once by hand** to check it: `gh workflow run deploy.yml --ref main`, then `gh run watch` to follow it.
 
 From then on, every push to `main` that passes CI is deployed. `gh variable set DEPLOY_ENABLED --body false` turns it off again.
+
+## Testers
+
+Every deploy writes the `TESTER_CREDENTIALS` secret to `docker/web/tester-credentials.caddy` on the host and reloads Caddy, so the host lets in exactly the testers the secret lists. Its format is the file's: one `<username> <hash>` line per tester (`docker/web/tester-credentials.example.caddy`), and `docs/staging.md` says how to make a credential. The deploy fails if the secret is empty.
+
+GitHub never shows a secret again, so keep the whole list, usernames and hashes, where you keep the passwords. To add or revoke a tester, change the list, set the secret again with all of it, and deploy:
+
+```sh
+gh secret set TESTER_CREDENTIALS --env production < tester-credentials.caddy
+gh workflow run deploy.yml --ref main
+```
+
+After a deploy, `pnpm check:staging --app https://<domain>` checks the host once `CHECK_STAGING_USERNAME` and `CHECK_STAGING_PASSWORD` in the shell hold production's check credential: they take precedence over `.env`'s. Set them with `read -s`, which hides what you type, rather than on a command line, which the shell history keeps.
 
 ## GitHub security settings once the repository is public
 
