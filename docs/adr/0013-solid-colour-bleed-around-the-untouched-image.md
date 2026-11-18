@@ -9,7 +9,7 @@
 - With bleed on, an advanced option for the enthusiast, each card sits on a rectangle of solid colour that reaches the chosen width beyond the slot on every side and fills the slot's corners behind the clipped image. The band takes the print's border colour as Scryfall records it. A borderless print has no border colour, so each side of its band takes the colour read from that side's outer edge of the image, still one solid colour per side.
 - The bleed widens every card's place on the sheet; the margin stays the least paper around everything printed, bleed included, so the grid follows from it as before (ADR 0009). Crop marks mark the card's edge, not the band's, and never print over the band.
 
-The geometry will be pinned by the "bleed" tests in `packages/core/src/sheet-pdf.test.ts`, next to the ADR 0007 tests it keeps: "fills the slot with a Scryfall "large" image, scaled uniformly, trimming only the side edges" and "cuts every card to the shape of a real card".
+The geometry will be pinned by the "bleed" tests in `packages/core/src/sheet/sheet-pdf.test.ts`, next to the ADR 0007 tests it keeps: "fills the slot with a Scryfall "large" image, scaled uniformly, trimming only the side edges" and "cuts every card to the shape of a real card".
 
 ## Why
 
