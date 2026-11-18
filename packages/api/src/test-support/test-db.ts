@@ -27,7 +27,12 @@ export async function createTestDb(): Promise<TestDb> {
   const admin = postgres(url, { onnotice: () => {} });
   // In `public`, as docker/postgres/init does: created by a test's `migrate`, it would land in
   // that test's schema, out of sight of the others.
-  await admin`create extension if not exists pg_trgm`;
+  // `if not exists` does not hold against a concurrent create: test files running in parallel on
+  // a fresh database take turns behind a lock released at commit.
+  await admin.begin(async (tx) => {
+    await tx`select pg_advisory_xact_lock(hashtext('create extension pg_trgm'))`;
+    await tx`create extension if not exists pg_trgm`;
+  });
   await admin`create schema ${admin(schema)}`;
   const sql = connect(url, { schema });
   return {
