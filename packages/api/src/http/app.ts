@@ -17,6 +17,7 @@ import type { Sql } from '../catalog/db.ts';
 import { createPostgresCatalog } from '../catalog/postgres-catalog.ts';
 import type { Clock } from './clock.ts';
 import { requestBodyLimit } from './request-body-limit.ts';
+import { requestTimeout } from './request-timeout.ts';
 import type { SecurityLog } from './security-log.ts';
 
 export interface AppDeps {
@@ -86,6 +87,7 @@ export function createApp(deps: AppDeps): Hono {
   /** The UTC date, like Scryfall's release dates. */
   const today = () => deps.clock.now().toISOString().slice(0, 10);
 
+  app.use('/api/*', requestTimeout(deps.clock, deps.securityLog));
   app.use('/api/*', requestBodyLimit(deps.securityLog));
 
   app.get('/api/health', (c) => c.json({ ok: true }));

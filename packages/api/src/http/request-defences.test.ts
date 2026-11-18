@@ -101,6 +101,62 @@ describe('the request body limit', () => {
   });
 });
 
+describe('the request timeout', () => {
+  /** Holds every catalog table locked until `release`, so a request reading the catalog waits. */
+  async function lockCatalog() {
+    let release!: () => void;
+    const released = new Promise<void>((settle) => (release = settle));
+    let locked!: () => void;
+    const lockTaken = new Promise<void>((settle) => (locked = settle));
+    const transaction = db.sql.begin(async (tx) => {
+      await tx`lock table cards, card_names, prints, token_links in access exclusive mode`;
+      locked();
+      await released;
+    });
+    await lockTaken;
+    return async () => {
+      release();
+      await transaction;
+    };
+  }
+
+  it('answers 503 to a request still running after 10 seconds', async () => {
+    const { origin, clock, securityLog } = await serveApp();
+    const unlockCatalog = await lockCatalog();
+
+    const answer = fetch(`${origin}/api/cards/search?q=counterspell`);
+    await clock.timerRunning();
+    clock.advance(10_000);
+    const response = await answer;
+    await unlockCatalog();
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: 'The request took longer than 10 seconds.' });
+    expect(securityLog.events).toEqual([
+      {
+        kind: 'request-timeout',
+        method: 'GET',
+        path: '/api/cards/search',
+        clientNetwork: '127.0.0.0',
+      },
+    ]);
+  });
+
+  it('lets a request finish that runs for just under 10 seconds', async () => {
+    const { origin, clock, securityLog } = await serveApp();
+    const unlockCatalog = await lockCatalog();
+
+    const answer = fetch(`${origin}/api/cards/search?q=counterspell`);
+    await clock.timerRunning();
+    clock.advance(9_999);
+    await unlockCatalog();
+    const response = await answer;
+
+    expect(response.status).toBe(200);
+    expect(securityLog.events).toEqual([]);
+  });
+});
+
 function post(origin: string, path: string, body: unknown): Promise<Response> {
   return fetch(`${origin}${path}`, {
     method: 'POST',
