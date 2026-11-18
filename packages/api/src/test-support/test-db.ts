@@ -12,19 +12,19 @@ export interface TestDb {
   drop(): Promise<void>;
 }
 
-function databaseUrl(): string {
+function testDatabaseUrl(): string {
   return process.env.TEST_DATABASE_URL ?? DEFAULT_URL;
 }
 
 /** A connection to a database the server does not have: every query fails, as on an outage. */
 export function connectToMissingDatabase(): Sql {
-  const url = new URL(databaseUrl());
+  const url = new URL(testDatabaseUrl());
   url.pathname = `/missing_${randomUUID().replaceAll('-', '')}`;
   return connect(url.href);
 }
 
 export async function createTestDb(): Promise<TestDb> {
-  const url = databaseUrl();
+  const url = testDatabaseUrl();
   const schema = `test_${randomUUID().replaceAll('-', '')}`;
   const admin = postgres(url, { onnotice: () => {} });
   // In `public`, as docker/postgres/init does: created by a test's `migrate`, it would land in
