@@ -13,10 +13,12 @@ const execFileAsync = promisify(execFile);
  * The VPS a `ssh://user@host:port` DOCKER_HOST names, or undefined for a local engine.
  * @param {string | undefined} dockerHost
  */
-export function vpsOf(dockerHost) {
+export function vpsFromDockerHost(dockerHost) {
   if (!dockerHost?.startsWith('ssh://')) return undefined;
   const { username, hostname, port } = new URL(dockerHost);
-  return { user: username, hostname, port: port || '22' };
+  // No user in the address: ssh logs in as the local one, like docker itself.
+  const destination = username ? `${username}@${hostname}` : hostname;
+  return { destination, hostname, port: port || '22' };
 }
 
 /** Runs ssh to its end, without waiting for a background master that keeps its output open. */
@@ -32,13 +34,13 @@ function runSsh(args) {
 
 /**
  * Opens the shared connection: a master that forwards the VPS's Docker socket to a local one.
- * @param {{ user: string, hostname: string, port: string }} vps
+ * @param {{ destination: string, hostname: string, port: string }} vps
  */
 export async function openVpsConnection(vps) {
   const folder = await mkdtemp(join(tmpdir(), 'check-vps-'));
   const control = join(folder, 'control');
   const dockerSocket = join(folder, 'docker.sock');
-  const destination = vps.user ? `${vps.user}@${vps.hostname}` : vps.hostname;
+  const { destination } = vps;
   // `-S`: the control socket later commands share the connection through.
   const shared = ['-p', vps.port, '-S', control];
   // `-M -f -N`: a master that goes to the background once connected and runs no command.

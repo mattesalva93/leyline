@@ -26,7 +26,7 @@ import { publicReachFailures } from './staging-checks/public-reach.js';
 import { securityHeaderFailures } from './staging-checks/security-headers.js';
 import { sshLoginFailures } from './staging-checks/ssh-login.js';
 import { testerAccessFailures } from './staging-checks/tester-access.js';
-import { openVpsConnection, vpsOf } from './staging-checks/vps-connection.js';
+import { openVpsConnection, vpsFromDockerHost } from './staging-checks/vps-connection.js';
 
 /** Each check resolves to the list of what it found wrong, empty when the stack passes it. */
 const CHECKS = {
@@ -60,24 +60,25 @@ if (!username || !password) {
 }
 const testerCredential = { username, password };
 
-const vpsAddress = vpsOf(process.env.DOCKER_HOST);
+const vpsAddress = vpsFromDockerHost(process.env.DOCKER_HOST);
 const vps = vpsAddress && (await openVpsConnection(vpsAddress));
 // Every `docker` the checks run inherits this, and goes through the shared connection.
 if (vps) process.env.DOCKER_HOST = vps.dockerHost;
 else console.log('VPS checks: skipped, DOCKER_HOST is not ssh://');
-const checks = { ...CHECKS, ...(vps ? VPS_CHECKS : {}) };
+const checksToRun = { ...CHECKS, ...(vps ? VPS_CHECKS : {}) };
 
-// `ignoreHTTPSErrors`: local staging signs its own certificate. `send: 'always'`: every request
-// carries the credential, instead of waiting for a 401 to ask for it.
-const anonymousRequest = await playwrightRequest.newContext({ ignoreHTTPSErrors: true });
-const testerRequest = await playwrightRequest.newContext({
-  ignoreHTTPSErrors: true,
-  httpCredentials: { ...testerCredential, send: 'always' },
-});
-const browser = await chromium.launch();
 const failures = [];
+let anonymousRequest, testerRequest, browser;
 try {
-  for (const [name, check] of Object.entries(checks)) {
+  // `ignoreHTTPSErrors`: local staging signs its own certificate. `send: 'always'`: every
+  // request carries the credential, instead of waiting for a 401 to ask for it.
+  anonymousRequest = await playwrightRequest.newContext({ ignoreHTTPSErrors: true });
+  testerRequest = await playwrightRequest.newContext({
+    ignoreHTTPSErrors: true,
+    httpCredentials: { ...testerCredential, send: 'always' },
+  });
+  browser = await chromium.launch();
+  for (const [name, check] of Object.entries(checksToRun)) {
     const checkFailures = await check({
       anonymousRequest,
       testerRequest,
@@ -90,9 +91,9 @@ try {
     failures.push(...checkFailures.map((failure) => `${name}: ${failure}`));
   }
 } finally {
-  await anonymousRequest.dispose();
-  await testerRequest.dispose();
-  await browser.close();
+  await anonymousRequest?.dispose();
+  await testerRequest?.dispose();
+  await browser?.close();
   await vps?.close();
 }
 

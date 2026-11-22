@@ -54,11 +54,12 @@ async function ipv6AddressFailures(appAddress) {
  * @param {{ vps: { run: (command: string) => Promise<string> }, appAddress: string }} staging
  */
 export async function publicReachFailures({ vps, appAddress }) {
-  // `ss -Hltnu`: listening TCP and UDP sockets, numeric, without the header line. Neither it nor
-  // `systemctl is-active` needs root, which the deploy user does not have.
-  const firewall = (await vps.run('systemctl is-active ufw || true')).trim();
+  // The deploy user has no root, so neither `ufw status` nor `ss -p`. `ufw enable` writes
+  // ENABLED=yes in ufw.conf, which anyone may read; ufw.service alone reports active either way.
+  // `ss -Hltnu`: listening TCP and UDP sockets, numeric, without the header line.
+  const firewallOn = (await vps.run('grep -x ENABLED=yes /etc/ufw/ufw.conf || true')).trim();
   return [
-    ...(firewall === 'active' ? [] : [`ufw is ${firewall || 'unknown'}, expected active`]),
+    ...(firewallOn ? [] : ['ufw is not enabled']),
     ...listenerFailures(await vps.run('ss -Hltnu')),
     ...(await ipv6AddressFailures(appAddress)),
   ];
