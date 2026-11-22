@@ -242,8 +242,8 @@ describe('reordering the decklist by dragging tiles', () => {
     const tile = tileOf(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
 
     expect(tile.className.split(' ')).not.toContain('cursor-grab');
-    expect(tile.className).toContain('[&_[data-tile-card]:active]:cursor-grabbing');
-    expect(tile.querySelector('[data-tile-card]')).toBe(
+    expect(tile.className).toContain('[&_[data-tile-image-button]:active]:cursor-grabbing');
+    expect(tile.querySelector('[data-tile-image-button]')).toBe(
       screen.getByRole('button', { name: 'Modifica Sol Ring' }),
     );
   });

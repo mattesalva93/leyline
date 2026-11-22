@@ -117,7 +117,7 @@ export function PrintTileCard({
         <button
           type="button"
           tabIndex={-1}
-          data-tile-card
+          data-tile-image-button
           aria-label={t('tile.open', { name: line.card.name })}
           aria-pressed={isSelected}
           className="relative z-10 block w-full bg-raised"

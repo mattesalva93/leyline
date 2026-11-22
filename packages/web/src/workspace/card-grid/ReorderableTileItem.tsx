@@ -19,9 +19,10 @@ const DROP_MARK_OFFSET_PX = {
 
 /**
  * A pressed tile shows it is grabbed, over its card too: the card's button, marked
- * `data-tile-card`, would otherwise keep the theme's hand.
+ * `data-tile-image-button`, would otherwise keep the theme's hand.
  */
-const GRABBED_WHILE_PRESSED = 'active:cursor-grabbing [&_[data-tile-card]:active]:cursor-grabbing';
+const GRABBED_WHILE_PRESSED =
+  'active:cursor-grabbing [&_[data-tile-image-button]:active]:cursor-grabbing';
 
 interface ReorderableTileItemProps {
   readonly cell: TileCellProps;
