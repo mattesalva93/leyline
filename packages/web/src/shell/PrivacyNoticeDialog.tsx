@@ -8,7 +8,7 @@ import {
   DialogTrigger,
 } from '../ui/Dialog.tsx';
 
-/** `SECURITY.md` names it too. */
+/** `SECURITY.md` repeats it by hand: GitHub shows that file on its own, so it cannot import this. */
 const CONTACT_EMAIL = 'mtgsuite@proton.me';
 
 const LINK = 'text-link underline';
