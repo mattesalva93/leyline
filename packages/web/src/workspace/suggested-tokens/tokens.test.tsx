@@ -20,6 +20,7 @@ import {
 } from '../../test-support/workspace-page.ts';
 import {
   cardGrid,
+  centreTab,
   gridTiles,
   tileSummary,
   printButtonOf,
@@ -38,13 +39,16 @@ describe('the suggested tokens', () => {
   const SOLDIER = tokenEntry('soldier', 'Soldier', 'twar', '3');
   const GOLD_FORGER = catalogEntry('gold-forger', 'Gold Forger');
   const RAISE_THE_ALARM = catalogEntry('raise-the-alarm', 'Raise the Alarm');
+  /** Only its older print creates a token. */
+  const PIA_NALAAR = catalogEntry('pia-nalaar', 'Pia Nalaar', 'new', 'old');
 
   beforeEach(() => {
     const server = inMemoryServer(
-      [...CATALOG, TREASURE, SOLDIER, GOLD_FORGER, RAISE_THE_ALARM],
+      [...CATALOG, TREASURE, SOLDIER, GOLD_FORGER, RAISE_THE_ALARM, PIA_NALAAR],
       [
         { creatorPrintId: 'gold-forger-tst', tokenPrintId: 'treasure-tsnc' },
         { creatorPrintId: 'raise-the-alarm-tst', tokenPrintId: 'soldier-twar' },
+        { creatorPrintId: 'pia-nalaar-old', tokenPrintId: 'soldier-twar' },
       ],
     );
     Object.entries(server).forEach(([call, answer]) => {
@@ -100,6 +104,195 @@ describe('the suggested tokens', () => {
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' })).toBeNull(),
     );
+  });
+
+  describe('asked of the server', () => {
+    const tokenRequests = () => vi.mocked(api.fetchSuggestedTokens).mock.calls.length;
+    const decklist = () => screen.getByLabelText<HTMLTextAreaElement>('Decklist');
+
+    async function untilEveryLineIsResolved() {
+      await waitFor(() =>
+        expect(screen.queryAllByText('Riconoscimento in corso…')).toHaveLength(0),
+      );
+    }
+
+    it('asks nothing when a card already in the decklist is written again with the same print', async () => {
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' });
+      const requestsBefore = tokenRequests();
+
+      await user.type(decklist(), '1 Gold Forger{Enter}');
+      await untilEveryLineIsResolved();
+
+      expect(tokenRequests()).toBe(requestsBefore);
+    });
+
+    it('asks nothing when the quantity of a resolved line changes in the text', async () => {
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}1 Raise the Alarm{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' });
+      const requestsBefore = tokenRequests();
+
+      await user.type(decklist(), '3', { initialSelectionStart: 0, initialSelectionEnd: 1 });
+      await user.tab();
+      await untilEveryLineIsResolved();
+
+      expect(decklistValue()).toBe('3 Gold Forger\n1 Raise the Alarm\n');
+      expect(tokenRequests()).toBe(requestsBefore);
+    });
+
+    it('asks once, with the new card, when a line is rewritten with another card', async () => {
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}4 Sol Ring{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' });
+      const requestsBefore = tokenRequests();
+
+      const solRingLine = {
+        start: '1 Gold Forger\n'.length,
+        end: '1 Gold Forger\n4 Sol Ring'.length,
+      };
+      await user.type(decklist(), '1 Raise the Alarm', {
+        initialSelectionStart: solRingLine.start,
+        initialSelectionEnd: solRingLine.end,
+      });
+      await user.tab();
+
+      expect(await screen.findByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' })).toBeTruthy();
+      const newRequests = vi.mocked(api.fetchSuggestedTokens).mock.calls.slice(requestsBefore);
+      expect(newRequests.map(([lines]) => lines.map(({ oracleId }) => oracleId))).toEqual([
+        ['gold-forger', 'raise-the-alarm'],
+      ]);
+    });
+
+    it('still asks nothing when the quantity of a resolved line changes after another line failed to resolve', async () => {
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}1 Raise the Alarm{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' });
+      vi.mocked(api.resolveDecklistText).mockRejectedValueOnce(new Error('offline'));
+      await user.type(decklist(), '1 Xyzzy Plover{Enter}');
+      await screen.findByRole('alert');
+      const requestsBefore = tokenRequests();
+
+      await user.type(decklist(), '3', { initialSelectionStart: 0, initialSelectionEnd: 1 });
+      await user.tab();
+      await untilEveryLineIsResolved();
+
+      expect(decklistValue()).toBe('3 Gold Forger\n1 Raise the Alarm\n1 Xyzzy Plover\n');
+      expect(tokenRequests()).toBe(requestsBefore);
+    });
+
+    it('no longer holds the last answer once the resolution of a line has failed', async () => {
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' });
+      vi.mocked(api.resolveDecklistText).mockRejectedValue(new Error('offline'));
+
+      await user.type(decklist(), '1 Raise the Alarm', {
+        initialSelectionStart: 0,
+        initialSelectionEnd: '1 Gold Forger'.length,
+      });
+      await user.tab();
+
+      await waitFor(() =>
+        expect(screen.queryByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' })).toBeNull(),
+      );
+    });
+
+    it('asks nothing when the decklist is emptied and the same text pasted again', async () => {
+      const text = '1 Gold Forger\n1 Raise the Alarm\n';
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}1 Raise the Alarm{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' });
+      const requestsBefore = tokenRequests();
+
+      await user.type(decklist(), '{Backspace}', {
+        initialSelectionStart: 0,
+        initialSelectionEnd: text.length,
+      });
+      expect(screen.queryByRole('region', { name: 'Pedine proposte' })).toBeNull();
+      await user.paste(text);
+
+      expect(await screen.findByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' })).toBeTruthy();
+      expect(decklistValue()).toBe(text);
+      expect(tokenRequests()).toBe(requestsBefore);
+    });
+
+    it('suggests the token of a card added that creates one', async () => {
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' });
+
+      await user.type(decklist(), '1 Raise the Alarm{Enter}');
+
+      expect(await screen.findByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' })).toBeTruthy();
+    });
+
+    it('asks again and suggests the tokens of the print shown when a card moves to another print', async () => {
+      const user = await mountPageAndWrite('1 Pia Nalaar{Enter}');
+      await user.click(await screen.findByRole('button', { name: 'Modifica Pia Nalaar' }));
+      const requestsBefore = tokenRequests();
+
+      await user.click(await waitFor(() => printButtonOf('OLD #1')));
+
+      expect(await screen.findByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' })).toBeTruthy();
+      expect(tokenRequests()).toBe(requestsBefore + 1);
+    });
+
+    it('asks again when the lines are reordered', async () => {
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}1 Raise the Alarm{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' });
+      const requestsBefore = tokenRequests();
+
+      await user.type(decklist(), '{Backspace}', {
+        initialSelectionStart: 0,
+        initialSelectionEnd: decklistValue().length,
+      });
+      await user.paste('1 Raise the Alarm\n1 Gold Forger\n');
+      await untilEveryLineIsResolved();
+
+      expect(tokenRequests()).toBe(requestsBefore + 1);
+    });
+
+    it('asks nothing for the sheet options, blank lines or section headers', async () => {
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' });
+      const requestsBefore = tokenRequests();
+
+      await user.type(decklist(), '{Enter}Sideboard{Enter}');
+      await untilEveryLineIsResolved();
+      await user.click(centreTab('Foglio'));
+      await user.selectOptions(screen.getByLabelText('Formato della pagina'), 'Letter (USA)');
+
+      expect(tokenRequests()).toBe(requestsBefore);
+    });
+
+    it('shows no token of an emptied decklist while another decklist resolves', async () => {
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' });
+      await user.type(decklist(), '{Backspace}', {
+        initialSelectionStart: 0,
+        initialSelectionEnd: decklistValue().length,
+      });
+      vi.mocked(api.resolveDecklistText).mockReturnValue(new Promise(() => {}));
+
+      await user.paste('1 Raise the Alarm\n');
+
+      expect(screen.getAllByText('Riconoscimento in corso…')).not.toHaveLength(0);
+      expect(screen.queryByRole('region', { name: 'Pedine proposte' })).toBeNull();
+    });
+
+    it('keeps showing the suggested tokens of the last answer while a line resolves', async () => {
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' });
+      vi.mocked(api.resolveDecklistText).mockReturnValue(new Promise(() => {}));
+
+      await user.type(decklist(), '2', { initialSelectionStart: 0, initialSelectionEnd: 1 });
+      await user.tab();
+
+      expect(screen.getAllByText('Riconoscimento in corso…')).not.toHaveLength(0);
+      expect(screen.getByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' })).toBeTruthy();
+    });
+
+    it('names the cards creating a token as before when a card is written twice, each card once', async () => {
+      await mountPageAndWrite('1 Gold Forger{Enter}1 Raise the Alarm{Enter}1 Gold Forger{Enter}');
+
+      const treasure = await screen.findByRole('listitem', { name: 'Treasure' });
+      expect(within(treasure).getByText('da Gold Forger')).toBeTruthy();
+    });
   });
 });
 

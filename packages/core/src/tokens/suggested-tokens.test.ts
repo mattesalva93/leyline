@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createInMemoryCatalog,
   tokenQueryLineOf,
+  linesAskedForTokens,
   resolveDecklist,
   suggestTokens,
   tokenCreatorNamesOf,
@@ -242,6 +243,25 @@ describe('tokenQueryLineOf', () => {
       { oracleId: 'gold-forger', previewPrintId: 'gold-forger-tst' },
       null,
     ]);
+  });
+});
+
+describe('linesAskedForTokens', () => {
+  it('asks a card shown at the same print once, at its first line, and a card shown at two prints twice', async () => {
+    const lines = await resolveDecklist(
+      'Xyzzy Plover\nGold Forger\nTreasure (TSNC) 16\nGold Forger\nTreasure (TMKM) 12',
+      createInMemoryCatalog([goldForger, treasure]),
+      { lang: 'en', today },
+    );
+
+    const asked = linesAskedForTokens(lines);
+
+    expect(asked.map(tokenQueryLineOf)).toEqual([
+      { oracleId: 'gold-forger', previewPrintId: 'gold-forger-tst' },
+      { oracleId: 'treasure', previewPrintId: 'treasure-tsnc' },
+      { oracleId: 'treasure', previewPrintId: 'treasure-tmkm' },
+    ]);
+    expect(asked[0]).toBe(lines[1]);
   });
 });
 

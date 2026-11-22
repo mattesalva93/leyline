@@ -50,6 +50,7 @@ export { tokenLineNamingItsPrint, type RewrittenTokenLine } from './tokens/token
 export { printTiles, type PrintTile } from './print/print-tile.ts';
 export {
   tokenQueryLineOf,
+  linesAskedForTokens,
   tokenCreatorNamesOf,
   suggestTokens,
   type TokenSuggestionOptions,

@@ -20,15 +20,34 @@ export interface TokenSuggestionOptions {
 }
 
 /** What `line` tells which tokens its card creates, or `null` when it is not resolved. */
+export function tokenQueryLineOf(line: ResolvedLine): TokenQueryLine;
+export function tokenQueryLineOf(line: DecklistLine): TokenQueryLine | null;
 export function tokenQueryLineOf(line: DecklistLine): TokenQueryLine | null {
   if (line.status !== 'resolved') return null;
   return { oracleId: line.card.oracleId, previewPrintId: previewPrint(line)?.id ?? null };
 }
 
 /**
+ * The lines of `lines` to ask the tokens of, in their order: the resolved ones, a card shown
+ * at the same print once, at its first line. Another print may create other tokens, so a card
+ * shown at two prints is asked twice.
+ */
+export function linesAskedForTokens(lines: readonly DecklistLine[]): ResolvedLine[] {
+  const askedKeys = new Set<string>();
+  return lines.filter((line): line is ResolvedLine => {
+    const queryLine = tokenQueryLineOf(line);
+    if (queryLine === null) return false;
+    const key = JSON.stringify([queryLine.oracleId, queryLine.previewPrintId]);
+    if (askedKeys.has(key)) return false;
+    askedKeys.add(key);
+    return true;
+  });
+}
+
+/**
  * The names of the cards of `lines` creating `token`, first creator first, each card once, as
  * the print its line shows reads it: `lines` are the ones whose `TokenQueryLine`s were asked for
- * the suggestion.
+ * the suggestion, in the order asked.
  */
 export function tokenCreatorNamesOf(
   token: SuggestedToken,
