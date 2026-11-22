@@ -230,9 +230,11 @@ fi
 banner "mtg-suite alpha on an OVHcloud VPS"
 
 stage "OVHcloud: order the VPS"
-say "Order a VPS-1 (2 vCore, 4 GB) running Ubuntu LTS, x86, in an EU data centre."
+say "Order a VPS-1 (2 vCore, 4 GB) running Ubuntu LTS, x86, in an EU data centre, or a VPS-2"
+say "if no EU location has a VPS-1: never a location outside the EU (ADR 0016)."
 open_url "https://www.ovhcloud.com/it/vps/"
-step "Pick VPS-1, an EU location (France, Germany, Poland...) and the latest Ubuntu LTS image."
+step "Pick the plan, an EU location (France, Germany, Poland...) and the latest Ubuntu LTS image."
+step "Bill it monthly, and drop the automated backup: the catalog is rebuilt from Scryfall."
 step "In the configurator, check the monthly price has no minimum commitment and no setup fee:"
 note "  research/vps-alpha-hosting.md could not verify either. Stop if one shows up."
 ask OWNER_SSH_PUBLIC_KEY "Your SSH public key file (empty: ~/.ssh/id_ed25519.pub):"
