@@ -1,4 +1,5 @@
 import {
+  linesAskedForTokens,
   tokenCreatorNamesOf,
   tokenQueryLineOf,
   type DecklistLine,
@@ -28,11 +29,12 @@ const NOTHING_ANSWERED_YET: AnsweredSuggestion = { tokens: [], askedLines: [] };
  * now hold; a failed request keeps it too. No line, no token.
  */
 export function useSuggestedTokens(lines: readonly DecklistLine[], lang: Lang): TokenSuggestions {
-  const queryLines = lines.flatMap((line) => tokenQueryLineOf(line) ?? []);
+  const askedLines = linesAskedForTokens(lines);
+  const queryLines = askedLines.flatMap((line) => tokenQueryLineOf(line) ?? []);
   const requestKey = JSON.stringify([lang, queryLines]);
   // The lines of the request go with it, for the answer to name the cards it points to.
-  const [request, setRequest] = useState({ key: requestKey, lines });
-  if (request.key !== requestKey) setRequest({ key: requestKey, lines });
+  const [request, setRequest] = useState({ key: requestKey, lines: askedLines });
+  if (request.key !== requestKey) setRequest({ key: requestKey, lines: askedLines });
   const [answer, setAnswer] = useState<AnsweredSuggestion>(NOTHING_ANSWERED_YET);
   useEffect(() => {
     const [requestLang, requestLines] = JSON.parse(request.key) as [Lang, typeof queryLines];

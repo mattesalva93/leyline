@@ -101,6 +101,33 @@ describe('the suggested tokens', () => {
       expect(screen.queryByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' })).toBeNull(),
     );
   });
+
+  describe('asked of the server', () => {
+    const tokenRequests = () => vi.mocked(api.fetchSuggestedTokens).mock.calls.length;
+    const decklist = () => screen.getByLabelText<HTMLTextAreaElement>('Decklist');
+
+    async function untilEveryLineIsResolved() {
+      await waitFor(() => expect(screen.queryByText('Riconoscimento in corso…')).toBeNull());
+    }
+
+    it('asks nothing when a card already in the decklist is written again with the same print', async () => {
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' });
+      const requestsBefore = tokenRequests();
+
+      await user.type(decklist(), '1 Gold Forger{Enter}');
+      await untilEveryLineIsResolved();
+
+      expect(tokenRequests()).toBe(requestsBefore);
+    });
+
+    it('names the cards creating a token as before when a card is written twice, each card once', async () => {
+      await mountPageAndWrite('1 Gold Forger{Enter}1 Raise the Alarm{Enter}1 Gold Forger{Enter}');
+
+      const treasure = await screen.findByRole('listitem', { name: 'Treasure' });
+      expect(within(treasure).getByText('da Gold Forger')).toBeTruthy();
+    });
+  });
 });
 
 describe('the token lines', () => {
