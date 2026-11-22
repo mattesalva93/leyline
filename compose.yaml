@@ -12,10 +12,15 @@ x-least-privilege: &least-privilege
   cap_drop: [ALL]
   security_opt: [no-new-privileges]
 
+# Each service's `deploy.resources.limits` keep it from starving the others (ADR 0016), and leave
+# the alpha's VPS (research/vps-alpha-hosting.md) room for the host and for building the images
+# there (ADR 0012). Memory: above each service's peak during a full import on staging, read from
+# its cgroup (`/sys/fs/cgroup/memory.peak`), page cache included.
 services:
   web:
     <<: [*rotated-logs, *least-privilege]
     build: { context: ., target: web }
+    deploy: { resources: { limits: { memory: 256m, cpus: '1' } } }
     # Rebuild on every `up`, so a manual test never runs a stale image (layer cache keeps it fast).
     pull_policy: build
     # Loopback on staging; production sets PUBLISH_ADDRESS=0.0.0.0 to take public traffic.
@@ -55,6 +60,7 @@ services:
   api:
     <<: [*rotated-logs, *least-privilege]
     build: { context: ., target: api }
+    deploy: { resources: { limits: { memory: 256m, cpus: '1' } } }
     pull_policy: build
     environment:
       READER_DATABASE_URL: postgres://mtg_reader:${MTG_READER_PASSWORD:?set MTG_READER_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-mtg_suite}
@@ -89,6 +95,7 @@ services:
     build: { context: ., target: api }
     pull_policy: build
     command: ['node', 'dist/import-daily.js']
+    deploy: { resources: { limits: { memory: 512m, cpus: '1' } } }
     # It migrates the database before importing: the api only reads it (ADR 0016).
     environment:
       OWNER_DATABASE_URL: postgres://mtg_owner:${MTG_OWNER_PASSWORD:?set MTG_OWNER_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-mtg_suite}
@@ -104,6 +111,8 @@ services:
     image: postgres:18-alpine
     # The image's own `postgres` user from the start, instead of root switching to it.
     user: postgres
+    # Its shared buffers count towards the limit too.
+    deploy: { resources: { limits: { memory: 1g, cpus: '1.5' } } }
     # The superuser only initialises the database: docker/postgres/init creates the roles the
     # api and the importer connect as. Their passwords have no default (`:?` stops compose without
     # them), so a host never runs on a password everyone can read here.
