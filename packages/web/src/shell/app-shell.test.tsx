@@ -143,6 +143,72 @@ describe('the app shell', () => {
     });
   });
 
+  describe('"Informativa privacy"', () => {
+    async function openThePrivacyNotice() {
+      const { user } = mountShellWithFourAreas();
+      await user.click(screen.getByRole('button', { name: 'Informazioni' }));
+      await user.click(
+        within(screen.getByRole('dialog', { name: 'Informazioni' })).getByRole('button', {
+          name: 'Informativa privacy',
+        }),
+      );
+      return { user, notice: screen.getByRole('dialog', { name: 'Informativa privacy' }) };
+    }
+
+    it('opens from "Informazioni" and names who to write to', async () => {
+      const { notice } = await openThePrivacyNotice();
+
+      const contacts = within(notice).getAllByRole('link', {
+        name: 'salvalaggiomatteo93@gmail.com',
+      });
+      expect(contacts.map((link) => link.getAttribute('href'))).toEqual(
+        contacts.map(() => 'mailto:salvalaggiomatteo93@gmail.com'),
+      );
+    });
+
+    it('links to Scryfall’s own notice and to the Garante, by their words', async () => {
+      const { notice } = await openThePrivacyNotice();
+
+      expect(within(notice).getByRole('link', { name: 'informativa' }).getAttribute('href')).toBe(
+        'https://scryfall.com/docs/privacy',
+      );
+      expect(
+        within(notice).getByRole('link', { name: 'garanteprivacy.it' }).getAttribute('href'),
+      ).toBe('https://www.garanteprivacy.it');
+    });
+
+    it('covers every point a privacy notice owes the testers', async () => {
+      const { notice } = await openThePrivacyNotice();
+
+      expect(
+        within(notice)
+          .getAllByRole('heading', { level: 3 })
+          .map((heading) => heading.textContent),
+      ).toEqual([
+        'Titolare del trattamento',
+        'Finalità e base giuridica',
+        'Dati trattati',
+        'Destinatari',
+        'Dati sul tuo dispositivo',
+        'Cosa non c’è',
+        'I tuoi diritti',
+      ]);
+    });
+
+    it('closes back to "Informazioni", giving the focus back', async () => {
+      const { user } = await openThePrivacyNotice();
+
+      await user.keyboard('{Escape}');
+
+      expect(screen.queryByRole('dialog', { name: 'Informativa privacy' })).toBeNull();
+      expect(document.activeElement).toBe(
+        within(screen.getByRole('dialog', { name: 'Informazioni' })).getByRole('button', {
+          name: 'Informativa privacy',
+        }),
+      );
+    });
+  });
+
   describe('theme', () => {
     const isDark = () => document.documentElement.classList.contains('dark');
 
