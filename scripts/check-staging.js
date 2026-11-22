@@ -14,6 +14,7 @@ import { chromium, request as playwrightRequest } from 'playwright';
 import { accessLogFailures } from './staging-checks/access-log.js';
 import { accessLogRotationFailures } from './staging-checks/access-log-rotation.js';
 import { containerLogRotationFailures } from './staging-checks/container-log-rotation.js';
+import { containerPrivilegeFailures } from './staging-checks/container-privileges.js';
 import { cspInBrowserFailures } from './staging-checks/csp-in-browser.js';
 import { databaseRoleFailures } from './staging-checks/database-roles.js';
 import { securityHeaderFailures } from './staging-checks/security-headers.js';
@@ -27,6 +28,7 @@ const CHECKS = {
   'access log': accessLogFailures,
   'access log rotation': accessLogRotationFailures,
   'container log rotation': containerLogRotationFailures,
+  'container privileges': containerPrivilegeFailures,
   'database roles': databaseRoleFailures,
 };
 

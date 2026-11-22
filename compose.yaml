@@ -90,6 +90,8 @@ services:
   postgres:
     <<: *rotated-logs
     image: postgres:18-alpine
+    # The image's own `postgres` user from the start, instead of root switching to it.
+    user: postgres
     # The superuser only initialises the database: docker/postgres/init creates the roles the
     # api and the importer connect as. Their passwords have no default (`:?` stops compose without
     # them), so a host never runs on a password everyone can read here.

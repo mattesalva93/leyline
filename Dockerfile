@@ -31,6 +31,12 @@ EXPOSE 3000
 CMD ["node", "dist/server.js"]
 
 FROM caddy:2.11-alpine AS web
+# Caddy runs as a user of its own (ADR 0016). It still binds 80 and 443 without any capability:
+# Docker opens every port to unprivileged processes inside a container's network namespace.
+# The directories it writes belong to that user, so a new volume mounted there does too.
+RUN addgroup -S caddy && adduser -S -G caddy -H -h /data caddy \
+  && mkdir -p /var/log/caddy && chown caddy:caddy /data /config /var/log/caddy
 COPY docker/web/Caddyfile /etc/caddy/Caddyfile
 COPY --from=build /app/packages/web/dist /srv
+USER caddy
 EXPOSE 80 443 443/udp
