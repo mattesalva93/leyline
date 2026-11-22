@@ -3,11 +3,10 @@
 # Prepares a fresh Debian or Ubuntu VPS for the alpha: Docker Engine, a deploy user, SSH with
 # keys only (ADR 0019), a firewall open on 80 and 443, security updates and swap.
 # Run as root on the host, once; running it again changes nothing that is already in place.
-# scripts/vps/setup-vps.sh runs it over SSH:
+# scripts/vps/setup-vps.sh copies it to the host and runs it there:
 #
-#   ssh <admin>@<host> sudo bash -s -- \
-#     --admin-user <admin> --deploy-user <user> --deploy-path <path> \
-#     --deploy-key '<public key>' [--deploy-key '<public key>' ...] < scripts/vps/prepare-host.sh
+#   sudo bash prepare-host.sh --admin-user <admin> --deploy-user <user> --deploy-path <path> \
+#     --deploy-key '<public key>' [--deploy-key '<public key>' ...]
 
 set -euo pipefail
 
@@ -49,7 +48,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 say 'Packages'
 apt-get update -q
-apt-get install -y -q ca-certificates curl ufw unattended-upgrades
+apt-get install -y -q ca-certificates curl openssl ufw unattended-upgrades
 
 say "Docker Engine, from Docker's own repository"
 # shellcheck source=/dev/null

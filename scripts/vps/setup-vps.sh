@@ -235,14 +235,13 @@ open_url "https://www.ovhcloud.com/it/vps/"
 step "Pick VPS-1, an EU location (France, Germany, Poland...) and the latest Ubuntu LTS image."
 step "In the configurator, check the monthly price has no minimum commitment and no setup fee:"
 note "  research/vps-alpha-hosting.md could not verify either. Stop if one shows up."
-OWNER_SSH_PUBLIC_KEY=${OWNER_SSH_PUBLIC_KEY:-$(_existing OWNER_SSH_PUBLIC_KEY || echo ~/.ssh/id_ed25519.pub)}
+ask OWNER_SSH_PUBLIC_KEY "Your SSH public key file (empty: ~/.ssh/id_ed25519.pub):"
+OWNER_SSH_PUBLIC_KEY=${OWNER_SSH_PUBLIC_KEY:-$HOME/.ssh/id_ed25519.pub}
 if [[ ! -f "$OWNER_SSH_PUBLIC_KEY" ]]; then
   say "You have no key at $OWNER_SSH_PUBLIC_KEY yet."
-  if confirm "Create one there now (ssh-keygen asks for a passphrase)?"; then
-    ssh-keygen -t ed25519 -f "${OWNER_SSH_PUBLIC_KEY%.pub}"
-  fi
+  confirm "Create one there now (ssh-keygen asks for a passphrase)?" || exit 1
+  ssh-keygen -t ed25519 -f "${OWNER_SSH_PUBLIC_KEY%.pub}"
 fi
-ask OWNER_SSH_PUBLIC_KEY "Your SSH public key file:"
 write_env OWNER_SSH_PUBLIC_KEY "$OWNER_SSH_PUBLIC_KEY"
 step "If the order offers an SSH key, paste this one (else OVHcloud mails a password):"
 note "  $(cat "$OWNER_SSH_PUBLIC_KEY")"
@@ -276,7 +275,8 @@ if ! ssh -o BatchMode=yes "$ADMIN" true 2>/dev/null; then
   say "Your key is not on the VPS yet: ssh-copy-id adds it, asking once for the e-mailed password."
   ssh-copy-id -i "$OWNER_SSH_PUBLIC_KEY" "$ADMIN"
 fi
-ssh -o BatchMode=yes "$ADMIN" true && say "✓ $VPS_ADMIN_USER logs in with your key."
+ssh -o BatchMode=yes "$ADMIN" true || { warn "$VPS_ADMIN_USER still cannot log in with your key."; exit 1; }
+say "✓ $VPS_ADMIN_USER logs in with your key."
 
 stage "DNS: the site's name, IPv4 only"
 ask APP_DOMAIN "The site's domain (e.g. alpha.example.com):"
@@ -296,8 +296,12 @@ say "The provider's firewall drops traffic before it reaches the VPS. It covers 
 say "ufw, set up in the next stage, covers both."
 open_url "https://docs.ovhcloud.com/en/guides/bare-metal-cloud/dedicated-servers/firewall-network"
 step "Control panel → Network → Public IP addresses → $VPS_ADDRESS → Edge Network Firewall."
-step "Start from the guide's example rules, which keep replies to the VPS's own traffic open."
-step "Allow TCP 22, 80, 443 and UDP 443 from any address (ADR 0019), and deny all other IPv4."
+say "It is stateless: replies to the VPS's own traffic need rules of their own. In this order:"
+step "Permit TCP with the 'established' option (replies to the VPS's own connections)."
+step "Permit UDP from source port 53 (DNS replies) and from source port 123 (NTP replies)."
+step "Permit TCP to ports 22, 80 and 443, and UDP to port 443, from any address (ADR 0019)."
+step "Last, deny all other IPv4."
+note "  Without the replies' rules apt and the importer cannot reach the network."
 step "Enable the firewall."
 pause "Press Enter once it is on."
 
@@ -308,8 +312,7 @@ ask DEPLOY_PATH "Where the stack lives on the VPS (empty: /srv/mtg-suite):"
 write_env DEPLOY_PATH "${DEPLOY_PATH:-/srv/mtg-suite}"
 DEPLOYER="$DEPLOY_USER@$VPS_ADDRESS"
 # A fresh key pair for the workflow, in a folder only this run sees; the private half goes to
-# GitHub a few stages on, and is deleted when the wizard ends. A run stopped in between leaves
-# the deploy on a revoked key until the next run reaches GitHub's stage.
+# GitHub as soon as the VPS takes it, and is deleted when the wizard ends.
 DEPLOY_KEY_DIR=$(mktemp -d)
 trap 'rm -rf "$DEPLOY_KEY_DIR"' EXIT
 # -N '': no passphrase, the runner cannot type one.
@@ -326,8 +329,13 @@ ssh -t "$ADMIN" "sudo bash /tmp/prepare-host.sh $(printf '%q ' \
   --admin-user "$VPS_ADMIN_USER" --deploy-user "$DEPLOY_USER" --deploy-path "$DEPLOY_PATH" \
   --deploy-key "$(cat "$DEPLOY_KEY_DIR/deploy_key.pub")" \
   --deploy-key "$(cat "$OWNER_SSH_PUBLIC_KEY")") && rm /tmp/prepare-host.sh"
-ssh -o BatchMode=yes "$DEPLOYER" docker version --format 'Docker {{.Server.Version}}' &&
-  say "✓ $DEPLOY_USER logs in and drives Docker."
+ssh -o BatchMode=yes "$DEPLOYER" docker version --format 'Docker {{.Server.Version}}' ||
+  { warn "$DEPLOY_USER cannot log in or drive Docker."; exit 1; }
+say "✓ $DEPLOY_USER logs in and drives Docker."
+# The workflow's key goes to GitHub now: the VPS just stopped taking any earlier one.
+gh api --silent --method PUT 'repos/{owner}/{repo}/environments/production'
+set_environment_secret DEPLOY_SSH_KEY "$(cat "$DEPLOY_KEY_DIR/deploy_key")"
+set_environment_secret DEPLOY_KNOWN_HOSTS "$VPS_KNOWN_HOSTS"
 
 stage "The VPS's .env"
 say "The database passwords are made on the VPS itself and never leave it (ADR 0012)."
@@ -356,7 +364,7 @@ fi
 
 stage "The testers' credentials"
 say "Production's testers live in a file outside the repository, beside your passwords."
-ask TESTER_CREDENTIALS_FILE "Its path:"
+ask TESTER_CREDENTIALS_FILE "Its path (empty: ~/mtg-suite-production/tester-credentials.caddy):"
 write_env TESTER_CREDENTIALS_FILE "${TESTER_CREDENTIALS_FILE:-$HOME/mtg-suite-production/tester-credentials.caddy}"
 mkdir -p "$(dirname "$TESTER_CREDENTIALS_FILE")"
 [[ -f "$TESTER_CREDENTIALS_FILE" ]] || cp docker/web/tester-credentials.example.caddy "$TESTER_CREDENTIALS_FILE"
@@ -387,10 +395,6 @@ while confirm "Add a tester?"; do
 done
 
 stage "GitHub: the deploy's settings"
-gh api --silent --method PUT 'repos/{owner}/{repo}/environments/production'
-say "✓ the production environment exists."
-set_environment_secret DEPLOY_SSH_KEY "$(cat "$DEPLOY_KEY_DIR/deploy_key")"
-set_environment_secret DEPLOY_KNOWN_HOSTS "$VPS_KNOWN_HOSTS"
 set_environment_secret TESTER_CREDENTIALS "$(cat "$TESTER_CREDENTIALS_FILE")"
 set_var DEPLOY_HOST "$VPS_ADDRESS"
 set_var DEPLOY_USER "$DEPLOY_USER"

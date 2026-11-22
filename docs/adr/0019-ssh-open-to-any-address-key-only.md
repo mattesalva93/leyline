@@ -4,7 +4,7 @@
 
 ## Decision
 
-The alpha's VPS accepts SSH on port 22 from any IPv4 or IPv6 address, at the provider's firewall and in `ufw` alike. What guards it instead of an address list:
+The alpha's VPS accepts SSH on port 22 from any address: the provider's firewall, which filters IPv4 only, and `ufw`, which filters both IPv4 and IPv6, let it through. What guards it instead of an address list:
 
 - only public-key authentication: no password, no keyboard-interactive login;
 - no login as `root`, and only the admin user and the deploy user may log in at all;
