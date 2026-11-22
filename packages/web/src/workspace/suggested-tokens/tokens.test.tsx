@@ -174,6 +174,24 @@ describe('the suggested tokens', () => {
       );
     });
 
+    it('asks nothing when the decklist is emptied and the same text pasted again', async () => {
+      const text = '1 Gold Forger\n1 Raise the Alarm\n';
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}1 Raise the Alarm{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' });
+      const requestsBefore = tokenRequests();
+
+      await user.type(decklist(), '{Backspace}', {
+        initialSelectionStart: 0,
+        initialSelectionEnd: text.length,
+      });
+      expect(screen.queryByRole('region', { name: 'Pedine proposte' })).toBeNull();
+      await user.paste(text);
+
+      expect(await screen.findByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' })).toBeTruthy();
+      expect(decklistValue()).toBe(text);
+      expect(tokenRequests()).toBe(requestsBefore);
+    });
+
     it('keeps showing the suggested tokens of the last answer while a line resolves', async () => {
       const user = await mountPageAndWrite('1 Gold Forger{Enter}');
       await screen.findByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' });
