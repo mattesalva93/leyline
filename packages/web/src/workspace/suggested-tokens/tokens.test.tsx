@@ -20,6 +20,7 @@ import {
 } from '../../test-support/workspace-page.ts';
 import {
   cardGrid,
+  centreTab,
   gridTiles,
   tileSummary,
   printButtonOf,
@@ -38,13 +39,16 @@ describe('the suggested tokens', () => {
   const SOLDIER = tokenEntry('soldier', 'Soldier', 'twar', '3');
   const GOLD_FORGER = catalogEntry('gold-forger', 'Gold Forger');
   const RAISE_THE_ALARM = catalogEntry('raise-the-alarm', 'Raise the Alarm');
+  /** Only its older print creates a token. */
+  const PIA_NALAAR = catalogEntry('pia-nalaar', 'Pia Nalaar', 'new', 'old');
 
   beforeEach(() => {
     const server = inMemoryServer(
-      [...CATALOG, TREASURE, SOLDIER, GOLD_FORGER, RAISE_THE_ALARM],
+      [...CATALOG, TREASURE, SOLDIER, GOLD_FORGER, RAISE_THE_ALARM, PIA_NALAAR],
       [
         { creatorPrintId: 'gold-forger-tst', tokenPrintId: 'treasure-tsnc' },
         { creatorPrintId: 'raise-the-alarm-tst', tokenPrintId: 'soldier-twar' },
+        { creatorPrintId: 'pia-nalaar-old', tokenPrintId: 'soldier-twar' },
       ],
     );
     Object.entries(server).forEach(([call, answer]) => {
@@ -189,6 +193,54 @@ describe('the suggested tokens', () => {
 
       expect(await screen.findByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' })).toBeTruthy();
       expect(decklistValue()).toBe(text);
+      expect(tokenRequests()).toBe(requestsBefore);
+    });
+
+    it('suggests the token of a card added that creates one', async () => {
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' });
+
+      await user.type(decklist(), '1 Raise the Alarm{Enter}');
+
+      expect(await screen.findByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' })).toBeTruthy();
+    });
+
+    it('asks again and suggests the tokens of the print shown when a card moves to another print', async () => {
+      const user = await mountPageAndWrite('1 Pia Nalaar{Enter}');
+      await user.click(await screen.findByRole('button', { name: 'Modifica Pia Nalaar' }));
+      const requestsBefore = tokenRequests();
+
+      await user.click(await waitFor(() => printButtonOf('OLD #1')));
+
+      expect(await screen.findByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' })).toBeTruthy();
+      expect(tokenRequests()).toBe(requestsBefore + 1);
+    });
+
+    it('asks again when the lines are reordered', async () => {
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}1 Raise the Alarm{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' });
+      const requestsBefore = tokenRequests();
+
+      await user.type(decklist(), '{Backspace}', {
+        initialSelectionStart: 0,
+        initialSelectionEnd: decklistValue().length,
+      });
+      await user.paste('1 Raise the Alarm\n1 Gold Forger\n');
+      await untilEveryLineIsResolved();
+
+      expect(tokenRequests()).toBe(requestsBefore + 1);
+    });
+
+    it('asks nothing for the sheet options, blank lines or section headers', async () => {
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' });
+      const requestsBefore = tokenRequests();
+
+      await user.type(decklist(), '{Enter}Sideboard{Enter}');
+      await untilEveryLineIsResolved();
+      await user.click(centreTab('Foglio'));
+      await user.selectOptions(screen.getByLabelText('Formato della pagina'), 'Letter (USA)');
+
       expect(tokenRequests()).toBe(requestsBefore);
     });
 
