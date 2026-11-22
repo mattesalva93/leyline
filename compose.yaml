@@ -5,10 +5,22 @@ x-rotated-logs: &rotated-logs
     driver: local
     options: { max-size: 10m, max-file: '3' }
 
+# Every service runs with the least privilege (ADR 0016): no write outside its volumes and
+# `tmpfs`, no Linux capability, and no way to gain one. `pnpm check:staging` pins all of it.
+x-least-privilege: &least-privilege
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges]
+
+# Each service's `deploy.resources.limits` keep it from starving the others (ADR 0016), and leave
+# the alpha's VPS (research/vps-alpha-hosting.md) room for the host and for building the images
+# there (ADR 0012). Memory: above each service's peak during a full import on staging, read from
+# its cgroup (`/sys/fs/cgroup/memory.peak`), page cache included.
 services:
   web:
-    <<: *rotated-logs
+    <<: [*rotated-logs, *least-privilege]
     build: { context: ., target: web }
+    deploy: { resources: { limits: { memory: 256m, cpus: '1' } } }
     # Rebuild on every `up`, so a manual test never runs a stale image (layer cache keeps it fast).
     pull_policy: build
     # Loopback on staging; production sets PUBLISH_ADDRESS=0.0.0.0 to take public traffic.
@@ -18,6 +30,7 @@ services:
       - '${PUBLISH_ADDRESS:-127.0.0.1}:443:443/udp' # HTTP/3
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+    networks: [internet, proxy]
     volumes:
       # Certificates and the local CA: losing them means new certificates on every start.
       - caddy-data:/data
@@ -45,8 +58,9 @@ services:
         condition: service_healthy
 
   api:
-    <<: *rotated-logs
+    <<: [*rotated-logs, *least-privilege]
     build: { context: ., target: api }
+    deploy: { resources: { limits: { memory: 256m, cpus: '1' } } }
     pull_policy: build
     environment:
       READER_DATABASE_URL: postgres://mtg_reader:${MTG_READER_PASSWORD:?set MTG_READER_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-mtg_suite}
@@ -55,6 +69,8 @@ services:
       PORT: 3000
       # The only proxy whose X-Forwarded-For the api believes: Caddy, in the `web` service.
       TRUSTED_PROXY_HOST: web
+    # Caddy's requests in, the database out, and nothing else: the api calls no outside service.
+    networks: [proxy, database]
     restart: unless-stopped
     # The image has no curl or wget: Node's own fetch asks the api. Healthy once it serves
     # requests and the importer has created the schema, so `up --wait` fails on an api stuck
@@ -75,21 +91,29 @@ services:
 
   # Imports Scryfall's catalog once a day (ADR 0002), apart from the process serving requests.
   importer:
-    <<: *rotated-logs
+    <<: [*rotated-logs, *least-privilege]
     build: { context: ., target: api }
     pull_policy: build
     command: ['node', 'dist/import-daily.js']
+    deploy: { resources: { limits: { memory: 512m, cpus: '1' } } }
     # It migrates the database before importing: the api only reads it (ADR 0016).
     environment:
       OWNER_DATABASE_URL: postgres://mtg_owner:${MTG_OWNER_PASSWORD:?set MTG_OWNER_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-mtg_suite}
+    # Scryfall's bulk files in, the database out.
+    networks: [internet, database]
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
 
   postgres:
-    <<: *rotated-logs
-    image: postgres:18-alpine
+    <<: [*rotated-logs, *least-privilege]
+    # Pinned by digest, like the Dockerfile's base images.
+    image: postgres:18-alpine@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71
+    # The image's own `postgres` user from the start, instead of root switching to it.
+    user: postgres
+    # Its shared buffers count towards the limit too.
+    deploy: { resources: { limits: { memory: 1g, cpus: '1.5' } } }
     # The superuser only initialises the database: docker/postgres/init creates the roles the
     # api and the importer connect as. Their passwords have no default (`:?` stops compose without
     # them), so a host never runs on a password everyone can read here.
@@ -99,11 +123,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-mtg_suite}
       MTG_OWNER_PASSWORD: ${MTG_OWNER_PASSWORD:?set MTG_OWNER_PASSWORD in .env}
       MTG_READER_PASSWORD: ${MTG_READER_PASSWORD:?set MTG_READER_PASSWORD in .env}
+    # No port, not even on loopback: `pnpm db:up` runs a database of its own for `pnpm dev` and
+    # the tests (compose.dev.yaml).
+    networks: [database]
     restart: unless-stopped
-    # Loopback only, for `pnpm dev` and the tests: the database never faces the network,
-    # since Docker's port rules bypass host firewalls such as ufw.
-    ports:
-      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
+    # Its socket and lock files, apart from the data in the volume.
+    tmpfs: [/var/run/postgresql, /tmp]
     volumes:
       - postgres-data:/var/lib/postgresql
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
@@ -112,6 +137,17 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+# `internal` networks have no route out of Docker: only the services on them reach each other.
+networks:
+  # Published ports and outgoing traffic: the testers reach Caddy, the importer reaches Scryfall.
+  internet:
+  # Caddy forwarding /api to the api.
+  proxy:
+    internal: true
+  # PostgreSQL and its two clients, the api and the importer.
+  database:
+    internal: true
 
 volumes:
   postgres-data:

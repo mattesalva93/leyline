@@ -15,7 +15,7 @@ jobs:
     # Real PostgreSQL for the `api` integration tests (ADR 0003). Same image as compose.yaml.
     services:
       postgres:
-        image: postgres:18-alpine
+        image: postgres:18-alpine@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71
         env:
           POSTGRES_USER: mtg
           POSTGRES_PASSWORD: mtg
@@ -34,7 +34,7 @@ jobs:
         with:
           persist-credentials: false
       # Installs node, pnpm and the scanners at the versions pinned in mise.toml.
-      - uses: jdx/mise-action@v5.2.9
+      - uses: jdx/mise-action@v5.3.0
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm build
@@ -50,7 +50,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@v5.2.9
+      - uses: jdx/mise-action@v5.3.0
       - run: zizmor --format=github .github/workflows
       - run: gh extension install github/gh-actions-lock --pin v0.4.1
       # Fails when actions.lock is out of sync with the workflows or a pin no longer verifies.
@@ -66,7 +66,7 @@ jobs:
           persist-credentials: false
           # The whole history: a secret removed by a later commit is still leaked.
           fetch-depth: 0
-      - uses: jdx/mise-action@v5.2.9
+      - uses: jdx/mise-action@v5.3.0
       - run: gitleaks git --redact --verbose
 
   dependencies:
@@ -77,7 +77,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@v5.2.9
+      - uses: jdx/mise-action@v5.3.0
       # Severity threshold and accepted advisories: `audit` in pnpm-workspace.yaml.
       - run: pnpm audit
 
@@ -93,7 +93,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@v5.2.9
+      - uses: jdx/mise-action@v5.3.0
       - run: docker compose build
       # Every image compose.yaml builds, under the `<project>-<service>` name compose tags it with.
       # `--ignore-unfixed`: a vulnerability with no fixed version yet gives nothing to update.

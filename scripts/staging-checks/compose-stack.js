@@ -15,9 +15,24 @@ export function execInService(service, ...command) {
   return docker('compose', 'exec', '-T', service, ...command);
 }
 
+/** The Compose service a container belongs to. */
+export function serviceOf(container) {
+  return container.Config.Labels['com.docker.compose.service'];
+}
+
 /** Every container of the stack, stopped ones too, as `docker inspect` describes them. */
 export async function inspectContainers() {
   const ids = (await docker('compose', 'ps', '--all', '--quiet')).split('\n').filter(Boolean);
   if (ids.length === 0) throw new Error('docker compose finds no container of the stack');
   return JSON.parse(await docker('inspect', ...ids));
+}
+
+/** The networks named, as `docker network inspect` describes them. */
+export async function inspectNetworks(names) {
+  return JSON.parse(await docker('network', 'inspect', ...names));
+}
+
+/** The stack's configuration as Compose resolves it from compose.yaml and `.env`. */
+export async function composeModel() {
+  return JSON.parse(await docker('compose', 'config', '--format', 'json'));
 }

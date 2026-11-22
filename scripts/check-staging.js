@@ -13,8 +13,12 @@ import { parseArgs } from 'node:util';
 import { chromium, request as playwrightRequest } from 'playwright';
 import { accessLogFailures } from './staging-checks/access-log.js';
 import { accessLogRotationFailures } from './staging-checks/access-log-rotation.js';
+import { baseImageFailures } from './staging-checks/base-images.js';
+import { containerLimitFailures } from './staging-checks/container-limits.js';
 import { containerLogRotationFailures } from './staging-checks/container-log-rotation.js';
+import { containerPrivilegeFailures } from './staging-checks/container-privileges.js';
 import { cspInBrowserFailures } from './staging-checks/csp-in-browser.js';
+import { databaseNetworkFailures } from './staging-checks/database-network.js';
 import { databaseRoleFailures } from './staging-checks/database-roles.js';
 import { securityHeaderFailures } from './staging-checks/security-headers.js';
 import { testerAccessFailures } from './staging-checks/tester-access.js';
@@ -27,7 +31,11 @@ const CHECKS = {
   'access log': accessLogFailures,
   'access log rotation': accessLogRotationFailures,
   'container log rotation': containerLogRotationFailures,
+  'container privileges': containerPrivilegeFailures,
+  'container limits': containerLimitFailures,
+  'base images': baseImageFailures,
   'database roles': databaseRoleFailures,
+  'database network': databaseNetworkFailures,
 };
 
 const { values: flags } = parseArgs({ options: { app: { type: 'string' } } });

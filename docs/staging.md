@@ -43,6 +43,18 @@ The `api` reports itself healthy only once the `importer` has created the databa
 
 Caddy's access log is a file of its own, apart from `docker compose logs`: `docker compose exec web tail -f /var/log/caddy/access.log` follows it.
 
+## Caddy's volumes from before its own user
+
+Caddy runs as the `caddy` user of the `web` image (ADR 0016). Volumes it created earlier, as root, hold files that user cannot read, so Caddy fails to start on them. Hand them over once:
+
+```sh
+docker compose stop web
+docker compose run --rm --no-deps --build --user root --cap-add CHOWN --entrypoint chown web -R caddy:caddy /data /config /var/log/caddy
+docker compose up -d --wait
+```
+
+`--user root` and `--cap-add CHOWN` give this one throwaway container back the privileges the service drops; `--entrypoint chown` runs `chown` instead of Caddy. Certificates, the local CA and the access log stay as they were.
+
 ## Database roles
 
 PostgreSQL has three roles (ADR 0016):
