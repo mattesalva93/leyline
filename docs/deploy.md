@@ -2,6 +2,14 @@
 
 `.github/workflows/deploy.yml` deploys to any host with SSH and Docker Compose, and is off until the repository variable `DEPLOY_ENABLED` is `true` (ADR 0012).
 
+## The alpha's VPS
+
+The alpha runs on an OVHcloud VPS-1 (ADR 0016). `scripts/vps/setup-vps.sh` walks the owner through every step below for it, from the order to `pnpm check:staging` passing against it, and runs `scripts/vps/prepare-host.sh` to harden the host (ADR 0019). It keeps what it asks in `.env.vps`, so a second run picks up where the first stopped.
+
+### Building on the host
+
+The VPS builds the images itself on every deploy (ADR 0012). Measured on staging on 2026-11-22: a build without cache followed by `up --wait`, beside the running stack, peaked at **1346 MiB** of memory the kernel cannot drop (anonymous, kernel and shared memory, summed over Docker's whole `system.slice` cgroup and sampled every 100 ms), against 542 MiB before the build. That fits in the VPS-1's 4 GB with its 2 GB of swap untouched, so ADR 0012 holds. Counting the page cache, which the kernel drops when memory runs short, the peak was 6.1 GiB. Measure again when the build gains a heavy step.
+
 ## Turn it on
 
 1. **Prepare the host.** Install Docker Engine, create a deploy user in the `docker` group, open ports 80 and 443, and point the domain's DNS at the host.
@@ -59,7 +67,7 @@ DOCKER_HOST=ssh://<user>@<host> COMPOSE_PROJECT_NAME=<last folder of DEPLOY_PATH
   pnpm check:staging --app https://<domain>
 ```
 
-`DOCKER_HOST=ssh://...` makes the local `docker` CLI drive the host's Docker over SSH. `COMPOSE_PROJECT_NAME` names the stack as the host knows it: Compose names a project after the folder it runs in.
+`DOCKER_HOST=ssh://...` makes the local `docker` CLI drive the host's Docker over SSH. `COMPOSE_PROJECT_NAME` names the stack as the host knows it: Compose names a project after the folder it runs in. With an `ssh://` address the checks also cover the host itself, its SSH logins, what it lets in from outside, its updates and its swap, all through one SSH connection: the host rate-limits new ones (ADR 0019).
 
 ## GitHub security settings once the repository is public
 
