@@ -244,6 +244,21 @@ describe('the suggested tokens', () => {
       expect(tokenRequests()).toBe(requestsBefore);
     });
 
+    it('shows no token of an emptied decklist while another decklist resolves', async () => {
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' });
+      await user.type(decklist(), '{Backspace}', {
+        initialSelectionStart: 0,
+        initialSelectionEnd: decklistValue().length,
+      });
+      vi.mocked(api.resolveDecklistText).mockReturnValue(new Promise(() => {}));
+
+      await user.paste('1 Raise the Alarm\n');
+
+      expect(screen.getAllByText('Riconoscimento in corso…')).not.toHaveLength(0);
+      expect(screen.queryByRole('region', { name: 'Pedine proposte' })).toBeNull();
+    });
+
     it('keeps showing the suggested tokens of the last answer while a line resolves', async () => {
       const user = await mountPageAndWrite('1 Gold Forger{Enter}');
       await screen.findByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' });

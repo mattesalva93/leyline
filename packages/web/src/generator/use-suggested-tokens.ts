@@ -50,8 +50,10 @@ export function useSuggestedTokens(
   const [request, setRequest] = useState({ key: requestKey, lines: askedLines });
   if (!isAnyLineAwaitingResolution && request.key !== requestKey) {
     setRequest({ key: requestKey, lines: askedLines });
-    const keptAnswer = keptAnswers.answerTo(requestKey);
-    if (keptAnswer) setAnswer(keptAnswer);
+    // An emptied decklist leaves no answer standing for the next one to show while it resolves.
+    const knownAnswer =
+      askedLines.length === 0 ? NOTHING_ANSWERED_YET : keptAnswers.answerTo(requestKey);
+    if (knownAnswer) setAnswer(knownAnswer);
   }
   useEffect(() => {
     const [requestLang, requestLines] = JSON.parse(request.key) as [Lang, typeof queryLines];
