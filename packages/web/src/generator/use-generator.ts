@@ -50,6 +50,12 @@ function resolutionKey(lang: Lang, writtenLine: string): string {
   return `${lang}:${writtenLine}`;
 }
 
+function setWithout<T>(set: ReadonlySet<T>, values: readonly T[]): ReadonlySet<T> {
+  const without = new Set(set);
+  for (const value of values) without.delete(value);
+  return without;
+}
+
 /** `resolution` with the user's picks on its line (candidate, allocations) applied. */
 function withChoices(resolution: DecklistLine, choices: LineChoices | undefined): DecklistLine {
   const { oracleId, allocations } = choices ?? {};
@@ -156,6 +162,8 @@ export function useGenerator(): Generator {
   );
   const [requestsInFlight, setRequestsInFlight] = useState(0);
   const [lastResolveFailed, setLastResolveFailed] = useState(false);
+  // The `resolutionKey`s of the lines whose request failed, until one for them succeeds.
+  const [failedKeys, setFailedKeys] = useState<ReadonlySet<string>>(new Set());
   const [sheetOptions, setSheetOptions] = useState<SheetOptions>(
     savedDecklist?.sheetOptions ?? defaultSheetOptions,
   );
@@ -187,9 +195,8 @@ export function useGenerator(): Generator {
       (writtenLine) => !requestedKeys.current.has(resolutionKey(lang, writtenLine)),
     );
     if (notRequested.length === 0) return true;
-    for (const writtenLine of notRequested) {
-      requestedKeys.current.add(resolutionKey(lang, writtenLine));
-    }
+    const notRequestedKeys = notRequested.map((writtenLine) => resolutionKey(lang, writtenLine));
+    for (const key of notRequestedKeys) requestedKeys.current.add(key);
     setRequestsInFlight((count) => count + 1);
     try {
       const resolvedLines = await resolveDecklistText(notRequested.join('\n'), lang);
@@ -200,12 +207,12 @@ export function useGenerator(): Generator {
         return next;
       });
       setLastResolveFailed(false);
+      setFailedKeys((previous) => setWithout(previous, notRequestedKeys));
       return true;
     } catch {
-      for (const writtenLine of notRequested) {
-        requestedKeys.current.delete(resolutionKey(lang, writtenLine));
-      }
+      for (const key of notRequestedKeys) requestedKeys.current.delete(key);
       setLastResolveFailed(true);
+      setFailedKeys((previous) => new Set([...previous, ...notRequestedKeys]));
       return false;
     } finally {
       setRequestsInFlight((count) => count - 1);
@@ -531,7 +538,11 @@ export function useGenerator(): Generator {
   // A line written but not resolved yet waits too, unless its request failed: the user is
   // still writing it, or the server will answer for it soon.
   const isAnyLineAwaitingResolution =
-    requestsInFlight > 0 || (unresolvedCount > 0 && !lastResolveFailed);
+    requestsInFlight > 0 ||
+    cardLines.some(
+      ({ writtenLine, line }) =>
+        line === undefined && !failedKeys.has(resolutionKey(defaultLang, writtenLine)),
+    );
   const { suggestedTokens, creatorNamesOfSuggestedToken } = useSuggestedTokens(
     recognisedLines,
     defaultLang,

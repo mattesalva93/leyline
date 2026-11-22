@@ -162,6 +162,22 @@ describe('the suggested tokens', () => {
       ]);
     });
 
+    it('still asks nothing when the quantity of a resolved line changes after another line failed to resolve', async () => {
+      const user = await mountPageAndWrite('1 Gold Forger{Enter}1 Raise the Alarm{Enter}');
+      await screen.findByRole('button', { name: 'Aggiungi Soldier (TWAR 3)' });
+      vi.mocked(api.resolveDecklistText).mockRejectedValueOnce(new Error('offline'));
+      await user.type(decklist(), '1 Xyzzy Plover{Enter}');
+      await screen.findByRole('alert');
+      const requestsBefore = tokenRequests();
+
+      await user.type(decklist(), '3', { initialSelectionStart: 0, initialSelectionEnd: 1 });
+      await user.tab();
+      await untilEveryLineIsResolved();
+
+      expect(decklistValue()).toBe('3 Gold Forger\n1 Raise the Alarm\n1 Xyzzy Plover\n');
+      expect(tokenRequests()).toBe(requestsBefore);
+    });
+
     it('no longer holds the last answer once the resolution of a line has failed', async () => {
       const user = await mountPageAndWrite('1 Gold Forger{Enter}');
       await screen.findByRole('button', { name: 'Aggiungi Treasure (TSNC 16)' });
