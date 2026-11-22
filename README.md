@@ -40,7 +40,7 @@ Requires [mise](https://mise.jdx.dev) and Docker.
 mise install          # node and pnpm at the pinned versions
 pnpm install          # also installs the git hooks
 cp .env.example .env
-pnpm db:up            # PostgreSQL with pg_trgm
+pnpm db:up            # PostgreSQL with pg_trgm, a database of its own apart from staging's
 pnpm import:catalog   # download Scryfall's all_cards bulk (~400 MB) and fill the catalog
 pnpm dev              # api on 127.0.0.1:3000, web on http://127.0.0.1:5173
 ```

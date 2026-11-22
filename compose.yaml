@@ -25,6 +25,7 @@ services:
       - '${PUBLISH_ADDRESS:-127.0.0.1}:443:443/udp' # HTTP/3
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+    networks: [internet, proxy]
     volumes:
       # Certificates and the local CA: losing them means new certificates on every start.
       - caddy-data:/data
@@ -62,6 +63,8 @@ services:
       PORT: 3000
       # The only proxy whose X-Forwarded-For the api believes: Caddy, in the `web` service.
       TRUSTED_PROXY_HOST: web
+    # Caddy's requests in, the database out, and nothing else: the api calls no outside service.
+    networks: [proxy, database]
     restart: unless-stopped
     # The image has no curl or wget: Node's own fetch asks the api. Healthy once it serves
     # requests and the importer has created the schema, so `up --wait` fails on an api stuck
@@ -89,6 +92,8 @@ services:
     # It migrates the database before importing: the api only reads it (ADR 0016).
     environment:
       OWNER_DATABASE_URL: postgres://mtg_owner:${MTG_OWNER_PASSWORD:?set MTG_OWNER_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-mtg_suite}
+    # Scryfall's bulk files in, the database out.
+    networks: [internet, database]
     restart: unless-stopped
     depends_on:
       postgres:
@@ -108,11 +113,10 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-mtg_suite}
       MTG_OWNER_PASSWORD: ${MTG_OWNER_PASSWORD:?set MTG_OWNER_PASSWORD in .env}
       MTG_READER_PASSWORD: ${MTG_READER_PASSWORD:?set MTG_READER_PASSWORD in .env}
+    # No port, not even on loopback: `pnpm db:up` runs a database of its own for `pnpm dev` and
+    # the tests (compose.dev.yaml).
+    networks: [database]
     restart: unless-stopped
-    # Loopback only, for `pnpm dev` and the tests: the database never faces the network,
-    # since Docker's port rules bypass host firewalls such as ufw.
-    ports:
-      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
     # Its socket and lock files, apart from the data in the volume.
     tmpfs: [/var/run/postgresql, /tmp]
     volumes:
@@ -123,6 +127,17 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+# `internal` networks have no route out of Docker: only the services on them reach each other.
+networks:
+  # Published ports and outgoing traffic: the testers reach Caddy, the importer reaches Scryfall.
+  internet:
+  # Caddy forwarding /api to the api.
+  proxy:
+    internal: true
+  # PostgreSQL and its two clients, the api and the importer.
+  database:
+    internal: true
 
 volumes:
   postgres-data:

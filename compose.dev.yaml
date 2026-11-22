@@ -1,0 +1,15 @@
+# The database for `pnpm dev` and the tests (`pnpm db:up`): compose.yaml's PostgreSQL, as a
+# project of its own with its own volume, published on loopback. Staging's database stays
+# unpublished (ADR 0016), and `pnpm dev` runs next to staging without either recreating the other.
+name: mtg-suite-dev
+
+services:
+  postgres:
+    # Loopback only: Docker's port rules bypass host firewalls such as ufw.
+    ports:
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
+    # compose.yaml's `database` network is internal, so no port of it is published.
+    networks: [host-access]
+
+networks:
+  host-access:

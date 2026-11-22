@@ -21,3 +21,8 @@ export async function inspectContainers() {
   if (ids.length === 0) throw new Error('docker compose finds no container of the stack');
   return JSON.parse(await docker('inspect', ...ids));
 }
+
+/** The networks named, as `docker network inspect` describes them. */
+export async function inspectNetworks(names) {
+  return JSON.parse(await docker('network', 'inspect', ...names));
+}
