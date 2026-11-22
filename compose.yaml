@@ -5,9 +5,16 @@ x-rotated-logs: &rotated-logs
     driver: local
     options: { max-size: 10m, max-file: '3' }
 
+# Every service runs with the least privilege (ADR 0016): no write outside its volumes and
+# `tmpfs`, no Linux capability, and no way to gain one. `pnpm check:staging` pins all of it.
+x-least-privilege: &least-privilege
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges]
+
 services:
   web:
-    <<: *rotated-logs
+    <<: [*rotated-logs, *least-privilege]
     build: { context: ., target: web }
     # Rebuild on every `up`, so a manual test never runs a stale image (layer cache keeps it fast).
     pull_policy: build
@@ -45,7 +52,7 @@ services:
         condition: service_healthy
 
   api:
-    <<: *rotated-logs
+    <<: [*rotated-logs, *least-privilege]
     build: { context: ., target: api }
     pull_policy: build
     environment:
@@ -75,7 +82,7 @@ services:
 
   # Imports Scryfall's catalog once a day (ADR 0002), apart from the process serving requests.
   importer:
-    <<: *rotated-logs
+    <<: [*rotated-logs, *least-privilege]
     build: { context: ., target: api }
     pull_policy: build
     command: ['node', 'dist/import-daily.js']
@@ -88,7 +95,7 @@ services:
         condition: service_healthy
 
   postgres:
-    <<: *rotated-logs
+    <<: [*rotated-logs, *least-privilege]
     image: postgres:18-alpine
     # The image's own `postgres` user from the start, instead of root switching to it.
     user: postgres
@@ -106,6 +113,8 @@ services:
     # since Docker's port rules bypass host firewalls such as ufw.
     ports:
       - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
+    # Its socket and lock files, apart from the data in the volume.
+    tmpfs: [/var/run/postgresql, /tmp]
     volumes:
       - postgres-data:/var/lib/postgresql
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
