@@ -34,7 +34,7 @@ jobs:
         with:
           persist-credentials: false
       # Installs node, pnpm and the scanners at the versions pinned in mise.toml.
-      - uses: jdx/mise-action@v5.2.9
+      - uses: jdx/mise-action@v5.3.0
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm build
@@ -50,7 +50,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@v5.2.9
+      - uses: jdx/mise-action@v5.3.0
       - run: zizmor --format=github .github/workflows
       - run: gh extension install github/gh-actions-lock --pin v0.4.1
       # Fails when actions.lock is out of sync with the workflows or a pin no longer verifies.
@@ -66,7 +66,7 @@ jobs:
           persist-credentials: false
           # The whole history: a secret removed by a later commit is still leaked.
           fetch-depth: 0
-      - uses: jdx/mise-action@v5.2.9
+      - uses: jdx/mise-action@v5.3.0
       - run: gitleaks git --redact --verbose
 
   dependencies:
@@ -77,7 +77,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@v5.2.9
+      - uses: jdx/mise-action@v5.3.0
       # Severity threshold and accepted advisories: `audit` in pnpm-workspace.yaml.
       - run: pnpm audit
 
@@ -93,7 +93,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@v5.2.9
+      - uses: jdx/mise-action@v5.3.0
       - run: docker compose build
       # Every image compose.yaml builds, under the `<project>-<service>` name compose tags it with.
       # `--ignore-unfixed`: a vulnerability with no fixed version yet gives nothing to update.
