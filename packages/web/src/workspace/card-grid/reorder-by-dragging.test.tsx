@@ -237,6 +237,17 @@ describe('reordering the decklist by dragging tiles', () => {
     expect(selected.map((tile) => tileSummary(tile)[0])).toEqual(['Immagine di Sol Ring']);
   });
 
+  it('shows the hand on a tile at rest and the grabbing hand while its card is pressed', async () => {
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    const tile = tileOf(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+
+    expect(tile.className.split(' ')).not.toContain('cursor-grab');
+    expect(tile.className).toContain('[&_[data-tile-card]:active]:cursor-grabbing');
+    expect(tile.querySelector('[data-tile-card]')).toBe(
+      screen.getByRole('button', { name: 'Modifica Sol Ring' }),
+    );
+  });
+
   it('lets no tile be dragged where touch is the main input, and nothing suggests it', async () => {
     stubScreen({ ...DESKTOP, touchIsMain: true });
     await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');

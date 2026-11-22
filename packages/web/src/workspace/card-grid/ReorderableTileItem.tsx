@@ -17,6 +17,12 @@ const DROP_MARK_OFFSET_PX = {
   after: COPY_PILE_FOOTPRINT_PX - (SPACE_BETWEEN_CARDS_PX + DROP_MARK_WIDTH_PX) / 2,
 };
 
+/**
+ * A pressed tile shows it is grabbed, over its card too: the card's button, marked
+ * `data-tile-card`, would otherwise keep the theme's hand.
+ */
+const GRABBED_WHILE_PRESSED = 'active:cursor-grabbing [&_[data-tile-card]:active]:cursor-grabbing';
+
 interface ReorderableTileItemProps {
   readonly cell: TileCellProps;
   readonly isSelected: boolean;
@@ -45,7 +51,7 @@ export function ReorderableTileItem({
   return (
     <li
       {...cell}
-      className={`relative min-w-0 ${GRID_CELL_FOCUS_GROUP} ${dragHandlers ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragged ? 'opacity-40' : ''}`}
+      className={`relative min-w-0 ${GRID_CELL_FOCUS_GROUP} ${dragHandlers ? GRABBED_WHILE_PRESSED : ''} ${isDragged ? 'opacity-40' : ''}`}
       aria-current={isSelected || undefined}
       draggable={dragHandlers !== null || undefined}
       {...dragHandlers}
