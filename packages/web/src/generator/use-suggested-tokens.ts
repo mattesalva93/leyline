@@ -28,12 +28,8 @@ const NOTHING_ANSWERED_YET: AnsweredSuggestion = { tokens: [], askedLines: [] };
 const KEPT_ANSWER_COUNT = 16;
 
 /**
- * The tokens the cards of `lines` create, asked of the server again whenever the cards or the
- * prints they show change, once no line of the decklist awaits its resolution any more: a line
- * on its way would change the request twice. Until the server answers, the last answer stands,
- * less the tokens `lines` now hold; a failed request keeps it too, and is asked again next time.
- * An answer already received for the same request is used again, with no request. No line,
- * none awaited, no token.
+ * The tokens the cards of `lines` create, less the ones `lines` already hold. Asked of the server
+ * only once no line awaits its resolution: a line on its way would change the request twice.
  */
 export function useSuggestedTokens(
   lines: readonly DecklistLine[],
@@ -41,30 +37,30 @@ export function useSuggestedTokens(
   isAnyLineAwaitingResolution: boolean,
 ): TokenSuggestions {
   const askedLines = linesAskedForTokens(lines);
-  const queryLines = askedLines.flatMap((line) => tokenQueryLineOf(line) ?? []);
+  const queryLines = askedLines.map((line) => tokenQueryLineOf(line));
   const requestKey = JSON.stringify([lang, queryLines]);
   // Kept for the life of the page, so going back to a decklist already asked for asks nothing.
   const [keptAnswers] = useState(() => recentAnswers<AnsweredSuggestion>(KEPT_ANSWER_COUNT));
   const [answer, setAnswer] = useState<AnsweredSuggestion>(NOTHING_ANSWERED_YET);
   // The lines of the request go with it, for the answer to name the cards it points to.
-  const [request, setRequest] = useState({ key: requestKey, lines: askedLines });
+  const [request, setRequest] = useState({ key: requestKey, lang, queryLines, askedLines });
   if (!isAnyLineAwaitingResolution && request.key !== requestKey) {
-    setRequest({ key: requestKey, lines: askedLines });
+    setRequest({ key: requestKey, lang, queryLines, askedLines });
     // An emptied decklist leaves no answer standing for the next one to show while it resolves.
     const knownAnswer =
-      askedLines.length === 0 ? NOTHING_ANSWERED_YET : keptAnswers.answerTo(requestKey);
+      askedLines.length === 0 ? NOTHING_ANSWERED_YET : keptAnswers.recall(requestKey);
     if (knownAnswer) setAnswer(knownAnswer);
   }
   useEffect(() => {
-    const [requestLang, requestLines] = JSON.parse(request.key) as [Lang, typeof queryLines];
-    if (requestLines.length === 0 || keptAnswers.answerTo(request.key)) return;
+    if (request.queryLines.length === 0 || keptAnswers.holds(request.key)) return;
     let isCurrent = true;
-    fetchSuggestedTokens(requestLines, requestLang).then(
+    fetchSuggestedTokens(request.queryLines, request.lang).then(
       (tokens) => {
-        const answered = { tokens, askedLines: request.lines };
+        const answered = { tokens, askedLines: request.askedLines };
         keptAnswers.keep(request.key, answered);
         if (isCurrent) setAnswer(answered);
       },
+      // The last answer stands; the request goes again when it next changes.
       () => {},
     );
     return () => {

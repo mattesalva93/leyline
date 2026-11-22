@@ -6,20 +6,32 @@ describe('recentAnswers', () => {
     const answers = recentAnswers<string>(2);
     answers.keep('a', 'answer to a');
 
-    expect(answers.answerTo('a')).toBe('answer to a');
-    expect(answers.answerTo('b')).toBeUndefined();
+    expect(answers.recall('a')).toBe('answer to a');
+    expect(answers.recall('b')).toBeUndefined();
+  });
+
+  it('tells whether an answer is kept without making it the most recently used', () => {
+    const answers = recentAnswers<string>(2);
+    answers.keep('a', 'answer to a');
+    answers.keep('b', 'answer to b');
+
+    expect(answers.holds('a')).toBe(true);
+    answers.keep('c', 'answer to c');
+
+    expect(answers.holds('a')).toBe(false);
+    expect(answers.holds('b')).toBe(true);
   });
 
   it('lets the answer used longest ago go once more than the limit are kept', () => {
     const answers = recentAnswers<string>(2);
     answers.keep('a', 'answer to a');
     answers.keep('b', 'answer to b');
-    answers.answerTo('a');
+    answers.recall('a');
 
     answers.keep('c', 'answer to c');
 
-    expect(answers.answerTo('b')).toBeUndefined();
-    expect(answers.answerTo('a')).toBe('answer to a');
-    expect(answers.answerTo('c')).toBe('answer to c');
+    expect(answers.recall('b')).toBeUndefined();
+    expect(answers.recall('a')).toBe('answer to a');
+    expect(answers.recall('c')).toBe('answer to c');
   });
 });

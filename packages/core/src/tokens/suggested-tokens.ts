@@ -20,6 +20,8 @@ export interface TokenSuggestionOptions {
 }
 
 /** What `line` tells which tokens its card creates, or `null` when it is not resolved. */
+export function tokenQueryLineOf(line: ResolvedLine): TokenQueryLine;
+export function tokenQueryLineOf(line: DecklistLine): TokenQueryLine | null;
 export function tokenQueryLineOf(line: DecklistLine): TokenQueryLine | null {
   if (line.status !== 'resolved') return null;
   return { oracleId: line.card.oracleId, previewPrintId: previewPrint(line)?.id ?? null };
