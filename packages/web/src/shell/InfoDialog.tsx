@@ -6,12 +6,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../ui/Dialog.tsx';
+import { PrivacyNoticeDialog } from './PrivacyNoticeDialog.tsx';
 
 const ISSUES_URL = 'https://github.com/mattesalva93/mtg-suite/issues';
 
 /**
- * "Informazioni": the disclaimer, the data credit and the link to report a problem, out of the
- * way of the work. It opens from its button in the top bar, or from wherever `onOpenChange`
+ * "Informazioni": the disclaimer, the data credit, the link to report a problem and the privacy
+ * notice, out of the way of the work. It opens from its button in the top bar, or from wherever `onOpenChange`
  * is called (the phone menu).
  */
 export function InfoDialog({
@@ -35,6 +36,9 @@ export function InfoDialog({
           <a className="text-link underline" href={ISSUES_URL} target="_blank" rel="noreferrer">
             {t('info.report')}
           </a>
+        </p>
+        <p className="mt-2">
+          <PrivacyNoticeDialog triggerClassName="text-link underline" />
         </p>
         <DialogClose className="mt-4 rounded-md border-2 border-border bg-accent px-3 py-1.5 font-bold text-accent-foreground">
           {t('info.close')}

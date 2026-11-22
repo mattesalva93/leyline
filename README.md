@@ -4,7 +4,7 @@ Free, unofficial web app for Magic: The Gathering players. Not affiliated with W
 
 ## Status
 
-Closed alpha: a first module, the proxy sheet generator, shared with a few testers before a public release.
+Closed alpha: a first module, the proxy sheet generator, shared with a few testers before a public release. The app is reachable only with the credentials each tester is given. To report a vulnerability, see [`SECURITY.md`](SECURITY.md).
 
 ## What it does
 
