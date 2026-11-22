@@ -59,7 +59,7 @@ DOCKER_HOST=ssh://<user>@<host> COMPOSE_PROJECT_NAME=<last folder of DEPLOY_PATH
   pnpm check:staging --app https://<domain>
 ```
 
-`DOCKER_HOST=ssh://...` makes the local `docker` CLI drive the host's Docker over SSH. `COMPOSE_PROJECT_NAME` names the stack as the host knows it: Compose names a project after the folder it runs in.
+`DOCKER_HOST=ssh://...` makes the local `docker` CLI drive the host's Docker over SSH. `COMPOSE_PROJECT_NAME` names the stack as the host knows it: Compose names a project after the folder it runs in. With an `ssh://` address the checks also cover the host itself, its SSH logins, what it lets in from outside, its updates and its swap, all through one SSH connection: the host rate-limits new ones (ADR 0019).
 
 ## GitHub security settings once the repository is public
 
