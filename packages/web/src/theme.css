@@ -88,6 +88,18 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
   }
+  /* Tailwind's preflight leaves every control with the arrow: the hand says what a click acts on. */
+  button,
+  select,
+  summary,
+  [role='option'],
+  label:has(input) {
+    cursor: pointer;
+  }
+  :disabled,
+  label:has(input:disabled) {
+    cursor: not-allowed;
+  }
 }
 
 @utility dot-grid {

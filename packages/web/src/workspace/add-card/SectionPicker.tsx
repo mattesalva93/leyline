@@ -20,7 +20,7 @@ export function SectionPicker({ selectedSection, onChange }: SectionPickerProps)
       {DECKLIST_SECTIONS.map((section) => (
         <label
           key={section}
-          className="cursor-pointer rounded-md border-2 border-border bg-panel px-3 py-1 text-sm font-semibold hover:bg-accent/20 has-checked:bg-accent has-checked:text-accent-foreground has-focus-visible:outline-2 has-focus-visible:outline-focus"
+          className="rounded-md border-2 border-border bg-panel px-3 py-1 text-sm font-semibold hover:bg-accent/20 has-checked:bg-accent has-checked:text-accent-foreground has-focus-visible:outline-2 has-focus-visible:outline-focus"
         >
           <input
             type="radio"
