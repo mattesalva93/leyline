@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-/** The source of every component, by its path. */
-const componentSources = import.meta.glob<string>(['./**/*.tsx', '!./**/*.test.tsx'], {
+/** The source of every component and of the class constants they share, by its path. */
+const componentSources = import.meta.glob<string>(['./**/*.{ts,tsx}', '!./**/*.test.{ts,tsx}'], {
   query: '?raw',
   import: 'default',
   eager: true,
