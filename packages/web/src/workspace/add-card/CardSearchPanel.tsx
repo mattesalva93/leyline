@@ -138,7 +138,7 @@ function SearchRowOption({
           : t('workspace.addCard.sharedName', { name, count: row.cardCount })
       }
       aria-selected={isActive}
-      className={`flex cursor-pointer items-center gap-3 rounded-md border-2 p-1 ${isActive ? 'border-accent bg-accent/20' : 'border-transparent hover:border-border'}`}
+      className={`flex items-center gap-3 rounded-md border-2 p-1 ${isActive ? 'border-accent bg-accent/20' : 'border-transparent hover:border-border'}`}
       // Keeps the focus in the field, where the keyboard keeps working.
       onMouseDown={(event) => event.preventDefault()}
       onClick={onTake}

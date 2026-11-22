@@ -66,7 +66,7 @@ export function PanelResizeHandle({
       aria-valuenow={width}
       aria-valuemin={limits.min}
       aria-valuemax={limits.max}
-      className="-mx-[11px] w-1.5 shrink-0 cursor-col-resize touch-none rounded-full transition-colors outline-none hover:bg-accent/60 focus-visible:bg-accent"
+      className="-mx-[11px] w-1.5 shrink-0 cursor-col-resize touch-none rounded-full transition-colors hover:bg-accent/60"
       onKeyDown={onKeyDown}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}

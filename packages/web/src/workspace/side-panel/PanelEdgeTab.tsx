@@ -32,13 +32,14 @@ export function PanelEdgeTab({
   // panel's edge: each is a triangle with its upright side against the panel.
   const face = 'absolute inset-x-0 h-1.5';
   return (
+    // The block inside draws the focus ring: the theme's ring would wrap the slanted faces too.
     <button
       type="button"
       aria-label={label}
       title={label}
       aria-expanded={isOpen}
       aria-controls={panelId}
-      className={`group absolute top-1/2 z-20 h-14 w-4 -translate-y-1/2 font-mono text-xs font-bold text-foreground ${onRight ? '-right-[14px]' : '-left-[14px]'}`}
+      className={`group absolute outline-none top-1/2 z-20 h-14 w-4 -translate-y-1/2 font-mono text-xs font-bold text-foreground ${onRight ? '-right-[14px]' : '-left-[14px]'}`}
       onClick={onToggle}
     >
       <span
@@ -59,7 +60,7 @@ export function PanelEdgeTab({
       />
       <span
         aria-hidden="true"
-        className={`absolute inset-x-0 inset-y-1.5 grid place-items-center border-2 border-border bg-panel shadow-edge-tab transition-transform group-focus-visible:outline-2 group-focus-visible:outline-accent ${onRight ? 'rounded-r-md border-l-0 group-hover:translate-x-0.5' : 'rounded-l-md border-r-0 group-hover:-translate-x-0.5'}`}
+        className={`absolute inset-x-0 inset-y-1.5 grid place-items-center border-2 border-border bg-panel shadow-edge-tab transition-transform group-focus-visible:outline-2 group-focus-visible:outline-focus ${onRight ? 'rounded-r-md border-l-0 group-hover:translate-x-0.5' : 'rounded-l-md border-r-0 group-hover:-translate-x-0.5'}`}
       >
         {pointsLeft ? '‹' : '›'}
       </span>
