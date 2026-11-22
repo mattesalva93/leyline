@@ -8,8 +8,8 @@ import {
   DialogTrigger,
 } from '../ui/Dialog.tsx';
 
-/** The owner's own address until a dedicated one replaces it; `SECURITY.md` names it too. */
-const CONTACT_EMAIL = 'salvalaggiomatteo93@gmail.com';
+/** `SECURITY.md` repeats it by hand: GitHub shows that file on its own, so it cannot import this. */
+const CONTACT_EMAIL = 'mtgsuite@proton.me';
 
 const LINK = 'text-link underline';
 

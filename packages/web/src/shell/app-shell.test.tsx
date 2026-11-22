@@ -161,10 +161,10 @@ describe('the app shell', () => {
       const { notice } = await openThePrivacyNotice();
 
       const contacts = within(notice).getAllByRole('link', {
-        name: 'salvalaggiomatteo93@gmail.com',
+        name: 'mtgsuite@proton.me',
       });
       expect(contacts.map((link) => link.getAttribute('href'))).toEqual(
-        contacts.map(() => 'mailto:salvalaggiomatteo93@gmail.com'),
+        contacts.map(() => 'mailto:mtgsuite@proton.me'),
       );
     });
 

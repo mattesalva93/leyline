@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Write to **salvalaggiomatteo93@gmail.com**. Please do not open a public issue for a vulnerability.
+Write to **mtgsuite@proton.me**. Please do not open a public issue for a vulnerability.
 
 Say what you found, how to reproduce it and what it lets an attacker do. You get an answer as soon as the owner can read it; the project is run by one person in their spare time.
 
