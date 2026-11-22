@@ -2,6 +2,10 @@
 
 `.github/workflows/deploy.yml` deploys to any host with SSH and Docker Compose, and is off until the repository variable `DEPLOY_ENABLED` is `true` (ADR 0012).
 
+## The alpha's VPS
+
+The alpha runs on an OVHcloud VPS-1 (ADR 0016). `scripts/vps/setup-vps.sh` walks the owner through every step below for it, from the order to `pnpm check:staging` passing against it, and runs `scripts/vps/prepare-host.sh` to harden the host (ADR 0019). It keeps what it asks in `.env.vps`, so a second run picks up where the first stopped.
+
 ## Turn it on
 
 1. **Prepare the host.** Install Docker Engine, create a deploy user in the `docker` group, open ports 80 and 443, and point the domain's DNS at the host.
