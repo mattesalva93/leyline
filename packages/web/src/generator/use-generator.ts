@@ -527,11 +527,16 @@ export function useGenerator(): Generator {
     hasRecognisedLine: recognisedLines.length > 0,
     decklist: { decklistText, choicesByLine, sheetOptions },
   });
+  const unresolvedCount = cardLines.length - recognisedLines.length;
+  // A line written but not resolved yet waits too, unless its request failed: the user is
+  // still writing it, or the server will answer for it soon.
+  const isAnyLineAwaitingResolution =
+    requestsInFlight > 0 || (unresolvedCount > 0 && !lastResolveFailed);
   const { suggestedTokens, creatorNamesOfSuggestedToken } = useSuggestedTokens(
     recognisedLines,
     defaultLang,
+    isAnyLineAwaitingResolution,
   );
-  const unresolvedCount = cardLines.length - recognisedLines.length;
   const sheet = { options: sheetOptions, lines: recognisedLines };
   const sheetLayout = hasPrintableCopies(sheet) ? layoutSheet(sheet) : null;
   const pdf = useSheetPdf(sheet, sheetLayout, unresolvedCount === 0);
