@@ -14,8 +14,7 @@ import {
 
 const BUTTON_SIZE: CSSProperties = { width: TILE_TAB_BUTTON_PX, height: TILE_TAB_BUTTON_PX };
 
-const BUTTON_STATES =
-  'hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-accent';
+const BUTTON_STATES = 'hover:bg-accent hover:text-accent-foreground';
 
 /** The copies of the tile, which its minus and plus change. */
 interface TileTabQuantity {

@@ -50,7 +50,7 @@ export function SameNameVersionGrid({
                     name: candidate.card.name,
                     version: cardVersionText(candidate, lang, t),
                   })}
-                  className="flex w-full flex-col gap-1 rounded-md border-2 border-transparent p-1 text-left hover:border-accent focus-visible:border-accent"
+                  className="flex w-full flex-col gap-1 rounded-md border-2 border-transparent p-1 text-left hover:border-accent"
                   onClick={() => onPick(candidate)}
                 >
                   <span

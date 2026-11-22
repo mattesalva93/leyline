@@ -19,6 +19,10 @@ function componentsWithClass(pattern: RegExp): Record<string, string[]> {
 }
 
 describe('the classes of the components', () => {
+  it('never mark the keyboard focus with the selection accent', () => {
+    expect(componentsWithClass(/\b[\w-]*focus[\w-]*(?:\/[\w-]+)?:[\w-]*accent\b/g)).toEqual({});
+  });
+
   it('leave the hand cursor to the theme', () => {
     expect(componentsWithClass(/\bcursor-pointer\b/g)).toEqual({});
   });
