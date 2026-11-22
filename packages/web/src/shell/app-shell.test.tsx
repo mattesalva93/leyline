@@ -145,7 +145,9 @@ describe('the app shell', () => {
 
   describe('"Informativa privacy"', () => {
     async function openThePrivacyNotice() {
-      const { user } = mountShellWithFourAreas();
+      mountApp('/proxy');
+      await screen.findByRole('textbox', { name: 'Decklist' });
+      const user = userEvent.setup();
       await user.click(screen.getByRole('button', { name: 'Informazioni' }));
       await user.click(
         within(screen.getByRole('dialog', { name: 'Informazioni' })).getByRole('button', {

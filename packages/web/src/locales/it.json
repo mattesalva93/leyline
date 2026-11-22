@@ -152,8 +152,8 @@
       "heading": "Dati trattati",
       "credentials": "Accesso: il titolare assegna a ogni tester un nome utente e una password. Sul server resta solo un’impronta cifrata (hash) della password.",
       "accessLog": "Registro degli accessi: per ogni richiesta al sito, la data e l’ora, la rete da cui arriva (l’indirizzo IP mascherato, senza la sua ultima parte), il nome utente del tester, l’indirizzo richiesto e l’esito. Il registro non contiene le intestazioni della richiesta ed è conservato per 14 giorni.",
-      "rateLimit": "Limite di richieste: per contare le ricerche di ogni dispositivo, il server tiene l’indirizzo IP completo solo in memoria, per un minuto al massimo, e non lo scrive mai.",
-      "securityEvents": "Eventi di sicurezza: quando una richiesta viene rifiutata (troppe richieste, troppo grande o troppo lenta) o fallisce, il server annota la data e l’ora, l’indirizzo richiesto e la rete da cui arriva, mai l’indirizzo IP completo. Le annotazioni più vecchie vengono cancellate a rotazione quando il registro raggiunge la sua dimensione massima."
+      "rateLimit": "Limite di richieste: per contare le ricerche e i riconoscimenti di decklist che arrivano da ogni indirizzo IP, il server tiene l’indirizzo completo solo in memoria, per un minuto al massimo, e non lo scrive mai.",
+      "securityEvents": "Eventi di sicurezza: quando una richiesta viene rifiutata (troppe richieste, troppo grande o troppo lenta) o fallisce, il server annota la data e l’ora, il tipo di richiesta e l’indirizzo richiesto, la rete da cui arriva (mai l’indirizzo IP completo) e, per un errore, la sua descrizione tecnica. Le annotazioni più vecchie vengono cancellate a rotazione quando il registro raggiunge la sua dimensione massima."
     },
     "recipients": {
       "heading": "Destinatari",
@@ -163,7 +163,7 @@
     },
     "device": {
       "heading": "Dati sul tuo dispositivo",
-      "localStorage": "L’app salva nel browser (localStorage) solo ciò che serve alle sue funzioni: il tema, la lingua delle carte, la decklist in corso con le stampe scelte e le opzioni del foglio, e le dimensioni dei pannelli. Questi dati restano sul tuo dispositivo e non vengono mai inviati al server. Nessun cookie."
+      "localStorage": "L’app salva nel browser (localStorage) solo ciò che serve alle sue funzioni: il tema, la lingua delle carte, la decklist in corso con le stampe scelte e le opzioni del foglio, e le dimensioni dei pannelli e delle carte. Questa copia resta sul tuo dispositivo. Al server arrivano solo il testo della decklist, le ricerche e la lingua, per riconoscere e cercare le carte: il server risponde e non li conserva. Nessun cookie."
     },
     "absent": {
       "heading": "Cosa non c’è",
