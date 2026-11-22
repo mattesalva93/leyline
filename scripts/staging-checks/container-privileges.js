@@ -1,11 +1,5 @@
 // Every container runs with the least privilege (ADR 0016).
-import { inspectContainers } from './compose-stack.js';
-
-/**
- * The Linux capabilities each service gets back after dropping them all. None needs one: Docker
- * lets unprivileged processes bind any port inside a container, Caddy's 80 and 443 included.
- */
-const DECLARED_CAPABILITIES = { web: [], api: [], importer: [], postgres: [] };
+import { inspectContainers, serviceOf } from './compose-stack.js';
 
 /** Docker starts the process as root when the image and the service name no user, or name root. */
 function runsAsRoot({ Config: { User: user } }) {
@@ -27,21 +21,18 @@ function capabilityFailures(service, { HostConfig: { CapDrop: dropped, CapAdd: a
   const failures = [];
   if (!capabilityNames(dropped).includes('ALL'))
     failures.push(`${service} keeps Docker's default capabilities`);
-  const declared = DECLARED_CAPABILITIES[service] ?? [];
-  const undeclared = capabilityNames(added).filter((capability) => !declared.includes(capability));
-  if (undeclared.length > 0)
-    failures.push(`${service} has undeclared capabilities: ${undeclared.join(', ')}`);
+  // No service needs one back (Dockerfile, `web` stage): a capability added later fails here, so
+  // it comes with a change to this check.
+  const regained = capabilityNames(added);
+  if (regained.length > 0)
+    failures.push(`${service} gets capabilities back: ${regained.join(', ')}`);
   return failures;
-}
-
-function serviceName(container) {
-  return container.Config.Labels['com.docker.compose.service'];
 }
 
 export async function containerPrivilegeFailures() {
   const failures = [];
   for (const container of await inspectContainers()) {
-    const service = serviceName(container);
+    const service = serviceOf(container);
     if (runsAsRoot(container)) failures.push(`${service} runs as root`);
     if (!container.HostConfig.ReadonlyRootfs)
       failures.push(`${service} can write to its filesystem`);

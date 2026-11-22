@@ -1,15 +1,10 @@
 // PostgreSQL sits on an internal network, never published, that only the api and the importer
 // share with it (ADR 0016).
-import { execInService, inspectContainers, inspectNetworks } from './compose-stack.js';
+import { execInService, inspectContainers, inspectNetworks, serviceOf } from './compose-stack.js';
 
 const DATABASE_CLIENTS = ['api', 'importer'];
 
-/** A service of the stack that shares no network with PostgreSQL, so must not reach it. */
-const OUTSIDER = 'web';
-
-function serviceName(container) {
-  return container.Config.Labels['com.docker.compose.service'];
-}
+const SERVICE_OFF_THE_DATABASE_NETWORK = 'web';
 
 function publishedPorts({ NetworkSettings: { Ports: ports } }) {
   return Object.entries(ports ?? {})
@@ -24,14 +19,14 @@ async function networkFailures(postgres, containers) {
     if (!internal) failures.push(`postgres is on ${network}, which is not internal`);
     const others = Object.keys(attached ?? {})
       .map((id) => containers.find((container) => container.Id === id))
-      .map((container) => (container ? serviceName(container) : 'a container outside the stack'))
+      .map((container) => (container ? serviceOf(container) : 'a container outside the stack'))
       .filter((service) => service !== 'postgres' && !DATABASE_CLIENTS.includes(service));
     if (others.length > 0) failures.push(`postgres shares ${network} with ${others.join(', ')}`);
   }
   return failures;
 }
 
-/** Tries to open PostgreSQL's port from the outsider, by name and by each of its addresses. */
+/** Tries to open PostgreSQL's port from a service off its network, by name and by each address. */
 async function reachabilityFailures(postgres) {
   const addresses = Object.values(postgres.NetworkSettings.Networks)
     .map(({ IPAddress: address }) => address)
@@ -39,18 +34,27 @@ async function reachabilityFailures(postgres) {
   const failures = [];
   for (const host of ['postgres', ...addresses]) {
     // `nc -z` only opens the connection; `-w 3` gives up after 3 seconds.
-    const reached = await execInService(OUTSIDER, 'nc', '-z', '-w', '3', host, '5432').then(
+    const reached = await execInService(
+      SERVICE_OFF_THE_DATABASE_NETWORK,
+      'nc',
+      '-z',
+      '-w',
+      '3',
+      host,
+      '5432',
+    ).then(
       () => true,
       () => false,
     );
-    if (reached) failures.push(`${OUTSIDER} reaches postgres at ${host}:5432`);
+    if (reached)
+      failures.push(`${SERVICE_OFF_THE_DATABASE_NETWORK} reaches postgres at ${host}:5432`);
   }
   return failures;
 }
 
 export async function databaseNetworkFailures() {
   const containers = await inspectContainers();
-  const postgres = containers.find((container) => serviceName(container) === 'postgres');
+  const postgres = containers.find((container) => serviceOf(container) === 'postgres');
   if (!postgres) return ['the stack has no postgres container'];
   const ports = publishedPorts(postgres);
   return [

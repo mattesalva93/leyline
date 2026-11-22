@@ -15,6 +15,11 @@ export function execInService(service, ...command) {
   return docker('compose', 'exec', '-T', service, ...command);
 }
 
+/** The Compose service a container belongs to. */
+export function serviceOf(container) {
+  return container.Config.Labels['com.docker.compose.service'];
+}
+
 /** Every container of the stack, stopped ones too, as `docker inspect` describes them. */
 export async function inspectContainers() {
   const ids = (await docker('compose', 'ps', '--all', '--quiet')).split('\n').filter(Boolean);
