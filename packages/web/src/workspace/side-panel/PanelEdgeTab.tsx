@@ -32,6 +32,7 @@ export function PanelEdgeTab({
   // panel's edge: each is a triangle with its upright side against the panel.
   const face = 'absolute inset-x-0 h-1.5';
   return (
+    // The block inside draws the focus ring: the theme's ring would wrap the slanted faces too.
     <button
       type="button"
       aria-label={label}
