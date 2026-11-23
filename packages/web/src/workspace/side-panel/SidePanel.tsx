@@ -1,9 +1,8 @@
 import { useId, type ReactNode } from 'react';
 import { BoardPanel } from '../../ui/BoardPanel.tsx';
-import { useFoldMotion } from '../../ui/use-fold-motion.ts';
-import { PanelEdgeTab, type CentreSide } from './PanelEdgeTab.tsx';
+import { PanelEdgeTab } from './PanelEdgeTab.tsx';
 import { PanelResizeHandle } from './PanelResizeHandle.tsx';
-import { SIDE_PANEL_WIDTH_PX, type SidePanelName } from './side-panel-layout.ts';
+import { CENTRE_SIDE, SIDE_PANEL_WIDTH_PX, type SidePanelName } from './side-panel-layout.ts';
 import type { SidePanelOnScreen } from './use-fitted-side-panels.ts';
 
 /**
@@ -13,10 +12,9 @@ import type { SidePanelOnScreen } from './use-fitted-side-panels.ts';
  */
 export function SidePanel({
   name,
-  panel: { controls, fitted },
+  panel: { controls, fold, fitted },
   title,
   as = 'section',
-  centreSide,
   className = '',
   children,
 }: {
@@ -24,7 +22,6 @@ export function SidePanel({
   readonly panel: SidePanelOnScreen;
   readonly title: string;
   readonly as?: 'section' | 'aside';
-  readonly centreSide: CentreSide;
   readonly className?: string;
   readonly children: ReactNode;
 }) {
@@ -32,8 +29,7 @@ export function SidePanel({
   const limits = SIDE_PANEL_WIDTH_PX[name];
   const { isOpen, toggle, resize } = controls;
   const { width, maxWidth } = fitted;
-  const sideAwayFromCentre = centreSide === 'right' ? 'left' : 'right';
-  const fold = useFoldMotion(isOpen, sideAwayFromCentre);
+  const centreSide = CENTRE_SIDE[name];
   const panel = (
     <div className={`relative flex shrink-0 ${className}`}>
       <BoardPanel
@@ -55,7 +51,7 @@ export function SidePanel({
       />
     </div>
   );
-  const edge = isOpen && (
+  const edge = fold.isShownOpen && (
     <PanelResizeHandle
       title={title}
       centreSide={centreSide}

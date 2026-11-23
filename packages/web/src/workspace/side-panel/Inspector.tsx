@@ -46,7 +46,6 @@ export function Inspector({
       panel={panel}
       as="aside"
       title={t(`workspace.inspector.${content}`)}
-      centreSide="left"
       className={className}
     >
       <div

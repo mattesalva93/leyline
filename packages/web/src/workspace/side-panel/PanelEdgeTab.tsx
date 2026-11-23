@@ -1,11 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { SINKS_DOWN_WITH_PRESSED_GROUP } from '../../ui/board-styles.ts';
-
-/**
- * The side of a side panel that faces the centre of the workspace (the card grid or the sheet),
- * where its tab and its resize handle are.
- */
-export type CentreSide = 'left' | 'right';
+import type { CentreSide } from './side-panel-layout.ts';
 
 /** How far the tab stands out of its panel's edge, in CSS px. */
 const EDGE_TAB_REACH_PX = 14;

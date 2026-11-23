@@ -54,12 +54,7 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
   };
   return (
     <div className="flex h-full gap-4 overflow-hidden p-4">
-      <SidePanel
-        name="decklist"
-        panel={panels.decklist}
-        title={t('workspace.decklistPanel')}
-        centreSide="right"
-      >
+      <SidePanel name="decklist" panel={panels.decklist} title={t('workspace.decklistPanel')}>
         <DecklistEditor
           generator={generator}
           guide={state.guide}

@@ -3,6 +3,18 @@ import { useEffect, useState } from 'react';
 /** The side panels of the workspace on a wide screen. */
 export type SidePanelName = 'decklist' | 'inspector';
 
+/**
+ * The side of a side panel that faces the centre of the workspace (the card grid or the sheet),
+ * where its tab and its resize handle are.
+ */
+export type CentreSide = 'left' | 'right';
+
+/** Where each side panel faces the centre: the decklist lies left of it, the inspector right. */
+export const CENTRE_SIDE = {
+  decklist: 'right',
+  inspector: 'left',
+} as const satisfies Record<SidePanelName, CentreSide>;
+
 /** The narrowest, the widest and the usual width of a side panel, in CSS px. */
 export interface SidePanelWidthLimits {
   readonly min: number;
