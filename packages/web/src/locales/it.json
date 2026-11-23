@@ -6,8 +6,6 @@
     "appName": "mtg-suite",
     "areas": "Aree",
     "menu": "Menu",
-    "switchToDark": "Passa al tema scuro",
-    "switchToLight": "Passa al tema chiaro",
     "scryfallCredit": "Dati e immagini da <scryfall>Scryfall</scryfall>"
   },
   "areas": {

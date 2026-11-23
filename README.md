@@ -10,10 +10,7 @@ Closed alpha: a first module, the proxy sheet generator, shared with a few teste
 
 Paste a decklist, pick the prints, print the sheet.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="packages/web/src/landing-page/screenshots/pickPrint-dark.jpg">
-  <img alt="The line panel of Lightning Bolt: four copies split across three prints, with the other prints to choose from below." src="packages/web/src/landing-page/screenshots/pickPrint-light.jpg">
-</picture>
+<img alt="The line panel of Lightning Bolt: four copies split across three prints, with the other prints to choose from below." src="packages/web/src/landing-page/screenshots/pickPrint.jpg">
 
 - Recognises card names written in English or Italian, even misspelled, line by line, and flags the lines to fix.
 - Lets you pick the print and the language of every line, and split its copies across several prints.
