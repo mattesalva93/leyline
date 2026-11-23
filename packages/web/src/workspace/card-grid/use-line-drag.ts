@@ -58,6 +58,13 @@ export function useLineDrag(
     setDestination(null);
   }
 
+  /** Takes a drop that leaves the dragged line where it is: no bar shows. */
+  function leaveInPlace(event: React.DragEvent) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    setDestination(null);
+  }
+
   /** Lets the dragged line land where the pointer is, while there is somewhere to land. */
   function allowDrop(event: React.DragEvent, nextDestination: LineDestination) {
     event.preventDefault();
@@ -80,10 +87,10 @@ export function useLineDrag(
       },
       onDragOver: (event) => {
         if (draggedWrittenIndex === null) return;
-        // Over the dragged line itself the line stays put: no bar, and the grid takes no drop.
         event.stopPropagation();
         if (draggedWrittenIndex === gridTile.writtenIndex) {
-          setDestination(null);
+          // Over the dragged line itself the line stays put, which is no reason to show a ban.
+          leaveInPlace(event);
           return;
         }
         const side = landingSideOf(gridTile, sideUnderPointer(event));
@@ -97,9 +104,12 @@ export function useLineDrag(
       allowDrop(event, { section, nextTo: null });
     },
     gridDropHandlers: {
-      // Over the gap between tiles the bar stays where it was, and so does the drop.
+      // Over the gap between tiles the bar stays where it was, and so does the drop; with no bar,
+      // the drop leaves the line where it is, which is no reason to show a ban either.
       onDragOver: (event) => {
-        if (draggedWrittenIndex !== null && destination) event.preventDefault();
+        if (draggedWrittenIndex === null) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
       },
       onDragLeave: (event) => {
         const enteredElement = event.relatedTarget;
@@ -108,9 +118,9 @@ export function useLineDrag(
         if (leftTheGrid) setDestination(null);
       },
       onDrop: (event) => {
-        if (draggedWrittenIndex === null || !destination) return;
+        if (draggedWrittenIndex === null) return;
         event.preventDefault();
-        moveLine(draggedWrittenIndex, destination);
+        if (destination) moveLine(draggedWrittenIndex, destination);
         endDrag();
       },
     },

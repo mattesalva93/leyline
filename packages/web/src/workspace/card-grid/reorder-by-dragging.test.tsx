@@ -140,6 +140,35 @@ describe('reordering the decklist by dragging tiles', () => {
     expect(decklistValue()).toBe('4 Sol Ring\n1 Lightning Bolt\n');
   });
 
+  describe('shows no ban where a drop leaves the line where it is', () => {
+    /** The pointer the browser shows over `element` while a tile is held over it. */
+    function pointerShownOver(element: HTMLElement) {
+      const dataTransfer = aDataTransfer();
+      // A drop target says so by cancelling `dragover`; the browser shows the ban elsewhere.
+      const isTarget = !fireEvent.dragOver(element, { dataTransfer });
+      return isTarget ? dataTransfer.dropEffect : 'ban';
+    }
+
+    it('over the dragged line itself', async () => {
+      await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
+      const solRing = tileOf(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+      startDrag(solRing);
+
+      expect(pointerShownOver(solRing)).toBe('move');
+    });
+
+    it('between the tiles, after the line was held over itself', async () => {
+      await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
+      const solRing = tileOf(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+      dragOver(solRing, solRing, 'after');
+
+      expect(pointerShownOver(cardGrid())).toBe('move');
+      fireEvent.drop(cardGrid());
+      fireEvent.dragEnd(solRing);
+      expect(decklistValue()).toBe('4 Sol Ring\n1 Lightning Bolt\n');
+    });
+  });
+
   it('moves the line into the section of the tile it is dropped on', async () => {
     await mountPageAndWrite(
       '4 Sol Ring{Enter}1 Lightning Bolt{Enter}Sideboard{Enter}2 Counterspell{Enter}',
