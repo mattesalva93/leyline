@@ -87,7 +87,7 @@ export function useZoomedCard(waitMs: number): {
     // On the page itself, so no scrolling or clipping zone it was opened from can cut it.
     createPortal(
       <img
-        className={`pointer-events-none fixed z-50 ring-3 ring-border ${HARD_SHADOW}`}
+        className={`pointer-events-none fixed z-50 animate-fade-in ring-3 ring-border ${HARD_SHADOW}`}
         style={{ ...CARD_SHAPE, left: zoom.left, top: zoom.top, ...ZOOMED_CARD_PX }}
         src={zoom.face.imageUris.large}
         alt={t('zoomedCard.alt', { name: zoom.face.name })}

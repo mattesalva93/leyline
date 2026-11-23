@@ -45,6 +45,51 @@
 
   /* The lit top and shaded bottom of a side panel's edge tab. */
   --shadow-edge-tab: inset 0 2px 0 rgb(255 255 255 / 0.35), inset 0 -2px 0 rgb(0 0 0 / 0.18);
+
+  /* How long a dialog, a drawer, a panel or the zoomed card takes to come in or go away: short, so it orients without making anyone wait. */
+  --duration-enter-exit: 150ms;
+  --animate-fade-in: fade-in var(--duration-enter-exit) ease-out;
+  --animate-fade-out: fade-out var(--duration-enter-exit) ease-in forwards;
+  --animate-slide-in-from-left: slide-in-from-left var(--duration-enter-exit) ease-out;
+  --animate-slide-out-to-left: slide-out-to-left var(--duration-enter-exit) ease-in forwards;
+  --animate-slide-in-from-bottom: slide-in-from-bottom var(--duration-enter-exit) ease-out;
+  --animate-slide-out-to-bottom: slide-out-to-bottom var(--duration-enter-exit) ease-in forwards;
+}
+
+/*
+ * An exit has keyframes of its own, never an entrance played in reverse: Radix keeps a closing part
+ * on the page only when its animation's name changes. An exit holds its last frame (`forwards`) so the
+ * part does not flash back in the moment before it leaves.
+ */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes slide-in-from-left {
+  from {
+    translate: -100% 0;
+  }
+}
+@keyframes slide-out-to-left {
+  to {
+    translate: -100% 0;
+  }
+}
+@keyframes slide-in-from-bottom {
+  from {
+    translate: 0 100%;
+  }
+}
+@keyframes slide-out-to-bottom {
+  to {
+    translate: 0 100%;
+  }
 }
 
 @layer theme {
