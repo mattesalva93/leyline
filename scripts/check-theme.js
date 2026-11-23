@@ -1,5 +1,5 @@
-// Checks the web theme, the one home of the design tokens (ADR 0010): every colour pair meets
-// WCAG 2.2 AA in the light and the dark theme, each theme holds the sibling palette the card grid
+// Checks the web theme, the one home of the design tokens (ADR 0010): there is one theme and it is
+// dark (ADR 0020), every colour pair meets WCAG 2.2 AA, it holds the sibling palette the card grid
 // cycles through, and fonts and stylesheets come from the app itself.
 // Usage: node scripts/check-theme.js [theme.css] [index.html] [sibling-group-colours.ts]
 import { readFileSync } from 'node:fs';
@@ -83,16 +83,31 @@ function siblingPairs(tokens) {
     ]);
 }
 
-function contrastProblems(themeName, tokens) {
+function contrastProblems(tokens) {
   return [...PAIRS, ...siblingPairs(tokens)].flatMap(({ front, back, minimum }) => {
     const [frontColour, backColour] = [tokens.get(front), tokens.get(back)];
-    if (!frontColour || !backColour)
-      return [`${themeName} theme: no --color-${front} or --color-${back}`];
+    if (!frontColour || !backColour) return [`no --color-${front} or --color-${back}`];
     const ratio = contrastRatio(frontColour, backColour);
     return ratio < minimum
-      ? [`${themeName} theme: ${front} on ${back} is ${ratio.toFixed(2)}:1, needs ${minimum}:1`]
+      ? [`${front} on ${back} is ${ratio.toFixed(2)}:1, needs ${minimum}:1`]
       : [];
   });
+}
+
+/** Each colour token set anywhere but `@theme`: a class or a media query switching to a second theme. */
+function secondThemeProblems(themeCss, themeBlock) {
+  const outsideTheme = themeCss.replace(themeBlock, '');
+  return [...outsideTheme.matchAll(/(--color-[\w-]+)\s*:/g)].map(
+    ([, token]) => `${token} is set outside @theme: a second theme (ADR 0020)`,
+  );
+}
+
+function lightThemeProblems(tokens) {
+  const [background, foreground] = [tokens.get('background'), tokens.get('foreground')];
+  if (!background || !foreground) return [];
+  return relativeLuminance(background) > relativeLuminance(foreground)
+    ? ['the theme is light: background is lighter than foreground (ADR 0020)']
+    : [];
 }
 
 /** How many colours the card grid cycles its sibling groups through, as the web code says. */
@@ -102,23 +117,23 @@ function siblingPaletteSize(palettePath) {
   return Number(size);
 }
 
-/** Each theme block must define `--color-sibling-1` up to the palette's size, and no more. */
-function paletteProblems(themeName, ownTokens, size) {
+/** The theme must define `--color-sibling-1` up to the palette's size, and no more. */
+function paletteProblems(tokens, size) {
   const expected = Array.from({ length: size }, (_, index) => `sibling-${index + 1}`);
-  const defined = [...ownTokens.keys()].filter((name) => name.startsWith('sibling-'));
+  const defined = [...tokens.keys()].filter((name) => name.startsWith('sibling-'));
   return [
     ...expected
-      .filter((name) => !ownTokens.has(name))
-      .map((name) => `${themeName} theme: no --color-${name} for the palette of ${size}`),
+      .filter((name) => !tokens.has(name))
+      .map((name) => `no --color-${name} for the palette of ${size}`),
     ...defined
       .filter((name) => !expected.includes(name))
-      .map((name) => `${themeName} theme: --color-${name} is beyond the palette of ${size}`),
+      .map((name) => `--color-${name} is beyond the palette of ${size}`),
   ];
 }
 
 /** Each font family the theme names first in a `--font-*` token must come from @fontsource. */
-function fontProblems(themeCss, lightBlock) {
-  return [...lightBlock.matchAll(/--font-[\w-]+:\s*'([^']+)'/g)].flatMap(([, family]) => {
+function fontProblems(themeCss, themeBlock) {
+  return [...themeBlock.matchAll(/--font-[\w-]+:\s*'([^']+)'/g)].flatMap(([, family]) => {
     const fontPackage = `@fontsource-variable/${family
       .replace(/ Variable$/, '')
       .toLowerCase()
@@ -137,17 +152,14 @@ function outsideServiceProblems(path, text) {
 
 export function themeProblems(themePath, pagePath, palettePath) {
   const themeCss = readFileSync(themePath, 'utf8');
-  const lightBlock = ruleBody(themeCss, '@theme static {');
-  const lightTokens = colourTokens(lightBlock);
-  const ownDarkTokens = colourTokens(ruleBody(themeCss, '.dark {'));
-  const darkTokens = new Map([...lightTokens, ...ownDarkTokens]);
-  const paletteSize = siblingPaletteSize(palettePath);
+  const themeBlock = ruleBody(themeCss, '@theme static {');
+  const tokens = colourTokens(themeBlock);
   return [
-    ...contrastProblems('light', lightTokens),
-    ...contrastProblems('dark', darkTokens),
-    ...paletteProblems('light', lightTokens, paletteSize),
-    ...paletteProblems('dark', ownDarkTokens, paletteSize),
-    ...fontProblems(themeCss, lightBlock),
+    ...secondThemeProblems(themeCss, themeBlock),
+    ...lightThemeProblems(tokens),
+    ...contrastProblems(tokens),
+    ...paletteProblems(tokens, siblingPaletteSize(palettePath)),
+    ...fontProblems(themeCss, themeBlock),
     ...outsideServiceProblems(themePath, themeCss),
     ...outsideServiceProblems(pagePath, readFileSync(pagePath, 'utf8')),
   ];

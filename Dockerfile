@@ -5,7 +5,7 @@
 # Versions match mise.toml. Each base image is pinned by the digest of its multi-platform index
 # (ADR 0016): `docker buildx imagetools inspect <image:tag>` prints the current one.
 FROM node:26.13.1-slim@sha256:e6bedef217677b276c591795e169840edd9096dbf13f29df8ef8d1856b8820bc AS build
-RUN npm install --global pnpm@12.21.0
+RUN npm install --global pnpm@12.23.0
 WORKDIR /app
 # Manifests first, so the dependency layer is cached until they change.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./

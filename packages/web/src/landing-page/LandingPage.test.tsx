@@ -1,5 +1,4 @@
-import { screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { cleanup, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
 import { inMemoryServer } from '../test-support/in-memory-server.ts';
@@ -9,7 +8,7 @@ vi.mock('../api.ts');
 
 beforeEach(() => {
   localStorage.clear();
-  document.documentElement.classList.remove('dark');
+  vi.restoreAllMocks();
   Object.entries(inMemoryServer([])).forEach(([call, answer]) => {
     vi.mocked(api[call as keyof typeof api]).mockImplementation(answer as never);
   });
@@ -77,16 +76,21 @@ describe('the landing page under its start', () => {
     expect(new Set(descriptions).size).toBe(4);
   });
 
-  it('shows the screenshots taken in the theme in use, and the other ones once the theme is switched', async () => {
-    const user = userEvent.setup();
+  it('shows the same screenshots whatever theme the system asks for (ADR 0020)', () => {
     mountApp('/proxy');
-    const lightScreenshots = tutorialSteps().map((step) => screenshotOf(step).src);
-    lightScreenshots.forEach((address) => expect(address).toMatch(/-light\.jpg$/));
-
-    await user.click(screen.getByRole('button', { name: 'Passa al tema scuro' }));
-
-    expect(tutorialSteps().map((step) => screenshotOf(step).src)).toEqual(
-      lightScreenshots.map((address) => address.replace('-light.jpg', '-dark.jpg')),
+    const screenshots = tutorialSteps().map((step) => screenshotOf(step).src);
+    cleanup();
+    const systemMedia = window.matchMedia;
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query) =>
+        ({
+          ...systemMedia(query),
+          matches: query === '(prefers-color-scheme: dark)',
+        }) as MediaQueryList,
     );
+
+    mountApp('/proxy');
+
+    expect(tutorialSteps().map((step) => screenshotOf(step).src)).toEqual(screenshots);
   });
 });

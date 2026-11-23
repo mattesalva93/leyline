@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next';
-import { useShellOutletContext } from '../shell/shell-outlet-context.ts';
 import { BOARD_PANEL } from '../ui/board-styles.ts';
 import { LandingPageSection } from './LandingPageSection.tsx';
 import { tutorialScreenshotAddress } from './tutorial-screenshots.ts';
@@ -7,11 +6,10 @@ import { TUTORIAL_SCREENSHOT_SIZE, TUTORIAL_STEPS } from './tutorial-steps.ts';
 
 /**
  * The generator in a few steps, from the decklist to the PDF: each a sentence and a screenshot
- * of the workspace, taken in the theme the page is in.
+ * of the workspace.
  */
 export function Tutorial() {
   const { t } = useTranslation();
-  const { theme } = useShellOutletContext();
   return (
     <LandingPageSection title={t('landingPage.tutorial.title')}>
       <ol className="flex flex-col gap-8">
@@ -27,7 +25,7 @@ export function Tutorial() {
               <p className="font-semibold">{t(`landingPage.tutorial.${step}.sentence`)}</p>
             </div>
             <img
-              src={tutorialScreenshotAddress(step, theme)}
+              src={tutorialScreenshotAddress(step)}
               alt={t(`landingPage.tutorial.${step}.screenshot`)}
               width={TUTORIAL_SCREENSHOT_SIZE.width}
               height={TUTORIAL_SCREENSHOT_SIZE.height}

@@ -1,5 +1,5 @@
-// Takes the screenshots of the landing page's tutorial from the running app, each step in the
-// light and the dark theme, on the example decklist.
+// Takes the screenshots of the landing page's tutorial from the running app, one per step, on the
+// example decklist.
 //   pnpm landing:screenshots                          from the app `pnpm dev` serves
 //   pnpm landing:screenshots --app https://localhost  from an app running elsewhere
 // Needs the app running with the catalog in PostgreSQL (pnpm db:up, pnpm import:catalog) and
@@ -9,7 +9,6 @@ import { mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { chromium } from 'playwright';
-import { THEMES } from '../packages/web/src/shell/theme-choice.ts';
 import {
   TUTORIAL_SCREENSHOT_SIZE,
   TUTORIAL_STEPS,
@@ -104,29 +103,24 @@ const HOW_TO_REACH_STEP = {
 mkdirSync(SCREENSHOT_DIR, { recursive: true });
 const browser = await chromium.launch();
 try {
-  for (const theme of THEMES) {
-    // The app follows the system's theme on a first visit. `ignoreHTTPSErrors`: local staging
-    // signs its own certificate.
-    const context = await browser.newContext({
-      viewport: TUTORIAL_SCREENSHOT_SIZE,
-      colorScheme: theme,
-      ignoreHTTPSErrors: true,
+  // `ignoreHTTPSErrors`: local staging signs its own certificate.
+  const context = await browser.newContext({
+    viewport: TUTORIAL_SCREENSHOT_SIZE,
+    ignoreHTTPSErrors: true,
+  });
+  const page = await context.newPage();
+  await page.goto(`${appAddress}/proxy`);
+  await page.getByRole('button', { name: 'Prova con un esempio' }).click();
+  await page.getByRole('button', { name: 'Modifica Sol Ring' }).waitFor();
+  for (const step of TUTORIAL_STEPS) {
+    await HOW_TO_REACH_STEP[step](page);
+    const fileName = tutorialScreenshotFileName(step);
+    await page.screenshot({
+      path: `${SCREENSHOT_DIR}${fileName}`,
+      type: 'jpeg',
+      quality: JPEG_QUALITY,
     });
-    const page = await context.newPage();
-    await page.goto(`${appAddress}/proxy`);
-    await page.getByRole('button', { name: 'Prova con un esempio' }).click();
-    await page.getByRole('button', { name: 'Modifica Sol Ring' }).waitFor();
-    for (const step of TUTORIAL_STEPS) {
-      await HOW_TO_REACH_STEP[step](page);
-      const fileName = tutorialScreenshotFileName(step, theme);
-      await page.screenshot({
-        path: `${SCREENSHOT_DIR}${fileName}`,
-        type: 'jpeg',
-        quality: JPEG_QUALITY,
-      });
-      console.log(`Wrote ${fileName}`);
-    }
-    await context.close();
+    console.log(`Wrote ${fileName}`);
   }
 } finally {
   await browser.close();

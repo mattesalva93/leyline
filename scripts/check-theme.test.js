@@ -42,10 +42,9 @@ function check({ theme = appTheme, page = appPage, paletteSize } = {}) {
   }
 }
 
-/** The app's theme with one token of the light (`@theme`) or the dark (`.dark`) block changed. */
-function themeWith(block, token, value) {
-  const start = appTheme.indexOf(block === 'light' ? '@theme static {' : '.dark {');
-  const tokenStart = appTheme.indexOf(`--color-${token}:`, start);
+/** The app's theme with one of its colour tokens changed. */
+function themeWith(token, value) {
+  const tokenStart = appTheme.indexOf(`--color-${token}:`);
   const tokenEnd = appTheme.indexOf(';', tokenStart);
   return `${appTheme.slice(0, tokenStart)}--color-${token}: ${value}${appTheme.slice(tokenEnd)}`;
 }
@@ -61,70 +60,96 @@ describe('check-theme', () => {
     expect(check()).toEqual({ code: 0, stderr: '' });
   });
 
-  it('rejects text under 4.5:1, naming the theme and the pair (WCAG 1.4.3)', () => {
-    // #777777 on white is 4.48:1, the classic just-too-light grey.
-    const theme = themeWith('light', 'panel', '#ffffff').replace(
-      /(@theme static \{[^}]*--color-muted-foreground: )#[0-9a-f]+/,
-      '$1#777777',
+  it('rejects a second set of colours, whether a class or the system asks for it (ADR 0020)', () => {
+    const theme = `${appTheme}
+.light {
+  --color-background: #ffffff;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-foreground: #101010;
+  }
+}
+`;
+
+    const result = check({ theme });
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('--color-background is set outside @theme: a second theme');
+    expect(result.stderr).toContain('--color-foreground is set outside @theme: a second theme');
+  });
+
+  it('rejects a light theme: the one theme is dark (ADR 0020)', () => {
+    const theme = themeWith('background', '#ffffff').replace(
+      /--color-foreground: #[0-9a-f]+/,
+      '--color-foreground: #101010',
     );
 
     const result = check({ theme });
 
     expect(result.code).toBe(1);
-    expect(result.stderr).toContain('light theme: muted-foreground on panel is 4.48:1');
+    expect(result.stderr).toContain('the theme is light: background is lighter than foreground');
   });
 
-  it('rejects a border under 3:1 in the dark theme only (WCAG 1.4.11)', () => {
-    const result = check({ theme: themeWith('dark', 'border', '#5a5a55') });
+  it('rejects text under 4.5:1, naming the pair (WCAG 1.4.3)', () => {
+    // #777777 on white is 4.48:1, the classic just-too-light grey.
+    const theme = themeWith('panel', '#ffffff').replace(
+      /--color-muted-foreground: #[0-9a-f]+/,
+      '--color-muted-foreground: #777777',
+    );
+
+    const result = check({ theme });
 
     expect(result.code).toBe(1);
-    expect(result.stderr).toContain('dark theme: border on panel');
-    expect(result.stderr).not.toContain('light theme');
+    expect(result.stderr).toContain('muted-foreground on panel is 4.48:1');
+  });
+
+  it('rejects a border under 3:1 (WCAG 1.4.11)', () => {
+    const result = check({ theme: themeWith('border', '#5a5a55') });
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('border on panel');
   });
 
   it('rejects an edge of the selected tile that the board hides (WCAG 1.4.11)', () => {
-    // The accent on the light board: #c5f02c on #e8e6df is 1.06:1.
-    const result = check({ theme: themeWith('light', 'selection-edge', '#c5f02c') });
+    // The board's own near-black: no contrast at all, 1.00:1.
+    const result = check({ theme: themeWith('selection-edge', '#101010') });
 
     expect(result.code).toBe(1);
-    expect(result.stderr).toContain('light theme: selection-edge on background is 1.06:1');
+    expect(result.stderr).toContain('selection-edge on background is 1.00:1');
   });
 
   it('rejects a hovered primary button whose text drops under 4.5:1 (WCAG 1.4.3)', () => {
-    // #1b1a17 text on #555555 is 2.47:1.
-    const result = check({ theme: themeWith('dark', 'accent-hover', '#555555') });
+    const result = check({ theme: themeWith('accent-hover', '#555555') });
 
     expect(result.code).toBe(1);
-    expect(result.stderr).toContain('dark theme: accent-foreground on accent-hover');
+    expect(result.stderr).toContain('accent-foreground on accent-hover');
   });
 
   it('rejects a sibling group colour under 4.5:1 on the board or under the quantity on its tab', () => {
-    const result = check({ theme: themeWith('dark', 'sibling-2', '#3a3a3a') });
+    const result = check({ theme: themeWith('sibling-2', '#3a3a3a') });
 
     expect(result.code).toBe(1);
-    expect(result.stderr).toContain('dark theme: sibling-2 on background');
-    expect(result.stderr).toContain('dark theme: panel on sibling-2');
+    expect(result.stderr).toContain('sibling-2 on background');
+    expect(result.stderr).toContain('panel on sibling-2');
   });
 
   it('rejects a theme whose sibling tokens are not the palette the card grid cycles through', () => {
-    const theme = appTheme.replace(/\n\s*--color-sibling-4: #[0-9a-f]+;(?=[^]*\.dark \{)/, '');
+    const theme = appTheme.replace(/\n\s*--color-sibling-4: #[0-9a-f]+;/, '');
 
     const result = check({ theme, paletteSize: 5 });
 
     expect(result.code).toBe(1);
-    expect(result.stderr).toContain('light theme: no --color-sibling-4');
-    expect(result.stderr).toContain('light theme: no --color-sibling-5');
-    expect(result.stderr).toContain('dark theme: no --color-sibling-5');
-    expect(result.stderr).not.toContain('dark theme: no --color-sibling-4');
+    expect(result.stderr).toContain('no --color-sibling-4 for the palette of 5');
+    expect(result.stderr).toContain('no --color-sibling-5 for the palette of 5');
   });
 
   it('rejects a sibling token beyond the palette the card grid cycles through', () => {
     const result = check({ paletteSize: 3 });
 
     expect(result.code).toBe(1);
-    expect(result.stderr).toContain('light theme: --color-sibling-4 is beyond the palette of 3');
+    expect(result.stderr).toContain('--color-sibling-4 is beyond the palette of 3');
   });
-
   it('rejects a font family the theme does not bundle from @fontsource', () => {
     const theme = appTheme.replace("@import '@fontsource-variable/jetbrains-mono';\n", '');
 

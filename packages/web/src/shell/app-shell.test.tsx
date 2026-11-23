@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -208,6 +208,16 @@ describe('the app shell', () => {
       ]);
     });
 
+    it('leaves the theme out of what the device keeps: the app has one (ADR 0020)', async () => {
+      const { notice } = await openThePrivacyNotice();
+
+      const deviceSection = within(notice).getByRole('heading', {
+        name: 'Dati sul tuo dispositivo',
+      }).parentElement;
+      expect(deviceSection?.textContent).toContain('la lingua delle carte');
+      expect(deviceSection?.textContent).not.toMatch(/\btema\b/);
+    });
+
     it('styles its close button as the primary action', async () => {
       const { notice } = await openThePrivacyNotice();
 
@@ -230,68 +240,17 @@ describe('the app shell', () => {
     });
   });
 
-  describe('theme', () => {
-    const isDark = () => document.documentElement.classList.contains('dark');
+  it('offers no theme switch, in the top bar or in the phone menu (ADR 0020)', async () => {
+    const { user } = mountShellWithFourAreas();
+    expect(screen.queryByRole('button', { name: /\btema\b/ })).toBeNull();
 
-    /** Makes the operating system ask for a dark theme, as `prefers-color-scheme` reports it. */
-    function systemPrefersDark() {
-      const lightOnly = window.matchMedia;
-      vi.spyOn(window, 'matchMedia').mockImplementation((query) =>
-        query === '(prefers-color-scheme: dark)'
-          ? ({ ...lightOnly(query), matches: true } as MediaQueryList)
-          : lightOnly(query),
-      );
-    }
+    await user.click(screen.getByRole('button', { name: 'Menu' }));
 
-    beforeEach(() => {
-      document.documentElement.classList.remove('dark');
-      vi.restoreAllMocks();
-    });
-
-    it('follows the system on a first visit', () => {
-      systemPrefersDark();
-      mountShellWithFourAreas();
-
-      expect(isDark()).toBe(true);
-      expect(screen.getByRole('button', { name: 'Passa al tema chiaro' })).toBeTruthy();
-    });
-
-    it('switches theme from the top bar and keeps the choice after a reload', async () => {
-      const { user } = mountShellWithFourAreas();
-      expect(isDark()).toBe(false);
-
-      await user.click(screen.getByRole('button', { name: 'Passa al tema scuro' }));
-      expect(isDark()).toBe(true);
-
-      cleanup();
-      document.documentElement.classList.remove('dark');
-      mountShellWithFourAreas();
-
-      expect(isDark()).toBe(true);
-    });
-
-    it('switches theme from the phone menu too', async () => {
-      const { user } = mountShellWithFourAreas();
-      await user.click(screen.getByRole('button', { name: 'Menu' }));
-
-      await user.click(
-        within(screen.getByRole('dialog', { name: 'Menu' })).getByRole('button', {
-          name: 'Passa al tema scuro',
-        }),
-      );
-
-      expect(isDark()).toBe(true);
-    });
-
-    it('still starts when the device keeps nothing', () => {
-      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-        throw new Error('SecurityError');
-      });
-
-      mountShellWithFourAreas();
-
-      expect(screen.getByRole('button', { name: 'Passa al tema scuro' })).toBeTruthy();
-    });
+    expect(
+      within(screen.getByRole('dialog', { name: 'Menu' })).queryByRole('button', {
+        name: /\btema\b/,
+      }),
+    ).toBeNull();
   });
 
   it('takes the main address to the generator, at /proxy', async () => {
