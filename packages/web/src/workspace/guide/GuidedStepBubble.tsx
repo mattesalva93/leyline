@@ -1,6 +1,9 @@
-// The bubble of a guided step, an owned component on the Radix popover (ADR 0010): Radix places it
-// by its control; the look is ours.
-import * as RadixPopover from '@radix-ui/react-popover';
+// The bubble of a guided step, an owned component on Radix primitives (ADR 0010): Radix's popper
+// places it by its control and its presence keeps it on the page while it fades out; the look is
+// ours. It is no popover: a popover answers Escape and clicks elsewhere, and swallows the Escape
+// meant for the page around it, while only its X or the step's action closes a bubble.
+import * as RadixPopper from '@radix-ui/react-popper';
+import { Presence } from '@radix-ui/react-presence';
 import { Slot } from '@radix-ui/react-slot';
 import { useId, useMemo, useRef, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -29,9 +32,6 @@ export interface GuidedStepPlacement {
   /** The point inside the control, given the control's box, that the arrow's tip enters. */
   readonly aimInside: (control: DOMRect) => ScreenPoint;
 }
-
-/** Turns down what Radix would do by default: move the focus, or close on Escape or a click elsewhere. */
-const preventRadixDefault = (event: Event) => event.preventDefault();
 
 /**
  * Where the control `children` shows the bubble of its guided step `guidedStep`, at `placement`,
@@ -70,8 +70,8 @@ export function GuidedStepBubble({
     [aimInside],
   );
   return (
-    <RadixPopover.Root open={isShown} modal={false}>
-      <RadixPopover.Anchor virtualRef={aimPoint} />
+    <RadixPopper.Root>
+      <RadixPopper.Anchor virtualRef={aimPoint} />
       <Slot
         ref={controlRef}
         aria-describedby={isShown ? textId : undefined}
@@ -80,44 +80,43 @@ export function GuidedStepBubble({
         {children}
       </Slot>
       {isShown && <GuideSpotlight control={controlRef} />}
-      <RadixPopover.Content
-        role="status"
-        aria-label={t('guide.bubbleLabel')}
-        side={side}
-        sideOffset={GUIDE_ARROW_LENGTH_PX}
-        // The arrow leaves the bubble this far along its edge: the bubble starts as far before the point.
-        align="start"
-        alignOffset={-GUIDE_ARROW_INSET_PX}
-        // A bubble moved off its side would leave its arrow pointing away from the control.
-        avoidCollisions={false}
-        onOpenAutoFocus={preventRadixDefault}
-        onCloseAutoFocus={preventRadixDefault}
-        onEscapeKeyDown={preventRadixDefault}
-        onInteractOutside={preventRadixDefault}
-        className={`relative z-50 flex max-w-72 items-start gap-3 rounded-2xl border-2 border-border bg-panel py-3 pr-2 pl-4 text-base text-foreground ${HARD_DROP_SHADOW} ${FADES_IN_AND_OUT}`}
-      >
-        <GuideArrow side={side} />
-        <div className="flex flex-1 flex-col gap-1">
-          <span className={`${LABEL} text-accent`}>
-            {t('guide.stepNumber', { number: guidedStepNumber(guidedStep) })}
-          </span>
-          <p id={textId} className="leading-snug">
-            {t(`guide.steps.${guidedStep}`)}
-          </p>
-        </div>
-        <button
-          type="button"
-          aria-label={t('guide.skipStep')}
-          className={`grid size-6 shrink-0 place-items-center rounded-sm ${BUTTON_STATES}`}
-          onClick={() => {
-            // The X leaves the page with the bubble: the focus would fall back to the page's start.
-            controlRef.current?.focus();
-            guide.skipGuidedStep(guidedStep);
-          }}
+      <Presence present={isShown}>
+        <RadixPopper.Content
+          role="status"
+          aria-label={t('guide.bubbleLabel')}
+          data-state={isShown ? 'open' : 'closed'}
+          side={side}
+          sideOffset={GUIDE_ARROW_LENGTH_PX}
+          // The arrow leaves the bubble this far along its edge: the bubble starts as far before the point.
+          align="start"
+          alignOffset={-GUIDE_ARROW_INSET_PX}
+          // A bubble moved off its side would leave its arrow pointing away from the control.
+          avoidCollisions={false}
+          className={`relative z-50 flex max-w-72 items-start gap-3 rounded-2xl border-2 border-border bg-panel py-3 pr-2 pl-4 text-base text-foreground ${HARD_DROP_SHADOW} ${FADES_IN_AND_OUT}`}
         >
-          <Icon name="close" />
-        </button>
-      </RadixPopover.Content>
-    </RadixPopover.Root>
+          <GuideArrow side={side} />
+          <div className="flex flex-1 flex-col gap-1">
+            <span className={`${LABEL} text-accent`}>
+              {t('guide.stepNumber', { number: guidedStepNumber(guidedStep) })}
+            </span>
+            <p id={textId} className="leading-snug">
+              {t(`guide.steps.${guidedStep}`)}
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-label={t('guide.skipStep')}
+            className={`grid size-6 shrink-0 place-items-center rounded-sm ${BUTTON_STATES}`}
+            onClick={() => {
+              // The X leaves the page with the bubble: the focus would fall back to the page's start.
+              controlRef.current?.focus();
+              guide.skipGuidedStep(guidedStep);
+            }}
+          >
+            <Icon name="close" />
+          </button>
+        </RadixPopper.Content>
+      </Presence>
+    </RadixPopper.Root>
   );
 }
