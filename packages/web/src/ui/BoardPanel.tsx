@@ -1,6 +1,6 @@
 import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BOARD_PANEL, LABEL } from './board-styles.ts';
+import { BOARD_PANEL, BUTTON_STATES, LABEL } from './board-styles.ts';
 
 interface BoardPanelProps {
   readonly title: string;
@@ -61,7 +61,7 @@ export function BoardPanel({
               aria-label={t(isOpen ? 'boardPanel.fold' : 'boardPanel.unfold', { title })}
               aria-expanded={isOpen}
               aria-controls={bodyId}
-              className="grid size-7 place-items-center rounded-sm border-2 border-border bg-panel font-mono text-sm leading-none font-bold hover:bg-accent hover:text-accent-foreground"
+              className={`grid size-7 place-items-center rounded-sm border-2 border-border bg-panel font-mono text-sm leading-none font-bold ${BUTTON_STATES}`}
               onClick={() => setIsFoldedToTitle(!isFoldedToTitle)}
             >
               {isOpen ? '▴' : '▾'}

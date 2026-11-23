@@ -19,6 +19,7 @@ const PAIRS = [
     ['muted-foreground', 'panel'],
     ['muted-foreground', 'raised'],
     ['accent-foreground', 'accent'],
+    ['accent-foreground', 'accent-hover'],
     ['chrome-foreground', 'chrome'],
     ['warning', 'panel'],
     ['warning', 'background'],

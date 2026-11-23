@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { SINKS_DOWN_WITH_PRESSED_GROUP } from '../../ui/board-styles.ts';
 
 /**
  * The side of a side panel that faces the centre of the workspace (the card grid or the sheet),
@@ -60,7 +61,7 @@ export function PanelEdgeTab({
       />
       <span
         aria-hidden="true"
-        className={`absolute inset-x-0 inset-y-1.5 grid place-items-center border-2 border-border bg-panel shadow-edge-tab transition-transform group-focus-visible:outline-2 group-focus-visible:outline-focus ${onRight ? 'rounded-r-md border-l-0 group-hover:translate-x-0.5' : 'rounded-l-md border-r-0 group-hover:-translate-x-0.5'}`}
+        className={`absolute inset-x-0 inset-y-1.5 grid place-items-center border-2 border-border bg-panel shadow-edge-tab transition-transform ${SINKS_DOWN_WITH_PRESSED_GROUP} group-focus-visible:outline-2 group-focus-visible:outline-focus ${onRight ? 'rounded-r-md border-l-0 group-hover:translate-x-0.5' : 'rounded-l-md border-r-0 group-hover:-translate-x-0.5'}`}
       >
         {pointsLeft ? '‹' : '›'}
       </span>

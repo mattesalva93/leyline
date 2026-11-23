@@ -7,6 +7,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../ui/Dialog.tsx';
+import { PRIMARY_BUTTON } from '../ui/board-styles.ts';
 
 /** `SECURITY.md` repeats it by hand: GitHub shows that file on its own, so it cannot import this. */
 const CONTACT_EMAIL = 'mtgsuite@proton.me';
@@ -64,9 +65,7 @@ export function PrivacyNoticeDialog({ triggerClassName }: { readonly triggerClas
             ))}
           </section>
         ))}
-        <DialogClose className="mt-4 rounded-md border-2 border-border bg-accent px-3 py-1.5 font-bold text-accent-foreground">
-          {t('privacyNotice.close')}
-        </DialogClose>
+        <DialogClose className={`${PRIMARY_BUTTON} mt-4`}>{t('privacyNotice.close')}</DialogClose>
       </CenteredDialogContent>
     </Dialog>
   );

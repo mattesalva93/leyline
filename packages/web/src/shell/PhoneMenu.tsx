@@ -4,6 +4,7 @@ import { Dialog, DialogTrigger, SideDrawerContent } from '../ui/Dialog.tsx';
 import { Icon } from '../ui/Icon.tsx';
 import type { ShellArea } from './shell-area.ts';
 import { AreaNav } from './AreaNav.tsx';
+import { BUTTON_STATES } from '../ui/board-styles.ts';
 
 /**
  * The menu button of a phone's top bar and the drawer it opens: the areas, then whatever the
@@ -25,7 +26,7 @@ export function PhoneMenu({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger
         aria-label={t('shell.menu')}
-        className={`grid size-10 place-items-center ${className}`}
+        className={`grid size-10 place-items-center rounded-md ${BUTTON_STATES} ${className}`}
       >
         <Icon name="menu" className="size-5" />
       </DialogTrigger>

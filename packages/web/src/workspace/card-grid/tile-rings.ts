@@ -3,7 +3,7 @@
 // state it is in. The focused tile's outline stands past them (see focus-line.ts).
 
 /** The ring in the colour of the tile's sibling group, in CSS px. */
-const SIBLING_RING_PX = 2;
+export const SIBLING_RING_PX = 2;
 /** The accent ring of the selected tile, in CSS px. */
 const SELECTION_RING_PX = 3;
 /** The edge around the selection ring that parts it from the board, in CSS px. */

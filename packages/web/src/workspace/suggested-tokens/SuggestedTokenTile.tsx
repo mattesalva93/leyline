@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { CARD_SHAPE } from '../card-image/card-shape.ts';
 import { Icon } from '../../ui/Icon.tsx';
 import { PileFreeTileFrame } from '../card-grid/PileFreeTileFrame.tsx';
+import { SINKS_WITH_PRESSED_GROUP } from '../../ui/board-styles.ts';
 
 /** A token as its add button names it: its name, then the set and number its line is written with. */
 function tokenLabel({ candidate: { card, defaultPrint } }: SuggestedToken): string {
@@ -45,7 +46,9 @@ export function SuggestedTokenTile({
             className="group absolute inset-0 grid place-items-center"
             onClick={onAdd}
           >
-            <span className="flex items-center gap-1 rounded-full border-2 border-border bg-panel px-3 py-1 text-sm font-bold group-hover:bg-accent group-hover:text-accent-foreground">
+            <span
+              className={`flex items-center gap-1 rounded-full border-2 border-border bg-panel px-3 py-1 text-sm font-bold group-hover:bg-accent group-hover:text-accent-foreground ${SINKS_WITH_PRESSED_GROUP}`}
+            >
               <Icon name="plus" />
               {t('suggestedTokens.addOnTile')}
             </span>

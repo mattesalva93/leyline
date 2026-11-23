@@ -2,6 +2,7 @@
 // tabpanel roles and the arrow keys between the tabs; the look is ours.
 import * as RadixTabs from '@radix-ui/react-tabs';
 import type { ReactNode } from 'react';
+import { SINKS_WHEN_PRESSED } from './board-styles.ts';
 
 export const Tabs = RadixTabs.Root;
 export const TabList = RadixTabs.List;
@@ -12,7 +13,7 @@ export function Tab({ value, children }: { readonly value: string; readonly chil
   return (
     <RadixTabs.Trigger
       value={value}
-      className="rounded-md border-2 border-border px-4 py-1.5 text-lg font-bold tracking-tight hover:bg-accent hover:text-accent-foreground data-[state=active]:bg-foreground data-[state=active]:text-panel"
+      className={`rounded-md border-2 border-border px-4 py-1.5 text-lg font-bold tracking-tight hover:bg-accent hover:text-accent-foreground data-[state=active]:bg-foreground data-[state=active]:text-panel ${SINKS_WHEN_PRESSED}`}
     >
       {children}
     </RadixTabs.Trigger>

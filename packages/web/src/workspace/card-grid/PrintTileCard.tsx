@@ -12,6 +12,7 @@ import { FocusedTileOutline } from './FocusedTileOutline.tsx';
 import { cardRingsShadow, type CardRingStates } from './tile-rings.ts';
 import { TileTab } from './TileTab.tsx';
 import type { TileTabRows } from './tile-tab-geometry.ts';
+import { SINKS_WHEN_PRESSED } from '../../ui/board-styles.ts';
 
 /** The space between two tiles in a row, which the link between siblings spans, in CSS px. */
 export const TILE_GAP_PX = 22;
@@ -77,7 +78,7 @@ export function PrintTileCard({
   const backFace = printedBackFace(tile.print);
   const shownFace = (isFlipped && backFace) || frontFace;
   const warningLabel = tile.warning && t(`tile.printWarning.${tile.warning}`);
-  const quantityBackgroundClass = hasSiblings ? 'bg-(--sibling-colour)' : 'bg-foreground';
+  const quantityColour = hasSiblings ? 'var(--sibling-colour)' : 'var(--color-foreground)';
   const ringStates = { hasSiblings, isSelected };
   const quantityLabel = { name: line.card.name, print: setAndNumberOf(tile.print, t) };
   return (
@@ -90,7 +91,7 @@ export function PrintTileCard({
     >
       <TileTab
         rows={tabRows}
-        quantityBackgroundClass={quantityBackgroundClass}
+        quantityColour={quantityColour}
         quantity={{
           count: tile.quantity,
           decreaseLabel: t('tile.decrease', quantityLabel),
@@ -120,7 +121,7 @@ export function PrintTileCard({
           data-tile-image-button
           aria-label={t('tile.open', { name: line.card.name })}
           aria-pressed={isSelected}
-          className="relative z-10 block w-full bg-raised"
+          className={`relative z-10 block w-full bg-raised ${SINKS_WHEN_PRESSED}`}
           style={{
             ...CARD_SHAPE,
             boxShadow: cardRingsShadow(ringStates) ?? THREAD_OF_A_CARD_WITHOUT_RINGS,

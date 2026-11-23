@@ -7,7 +7,7 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CARD_SHAPE } from '../card-image/card-shape.ts';
-import { SECONDARY_BUTTON } from '../../ui/board-styles.ts';
+import { SINKS_WHEN_PRESSED, SECONDARY_BUTTON } from '../../ui/board-styles.ts';
 import {
   CenteredDialogContent,
   Dialog,
@@ -65,7 +65,7 @@ export function AddCardTile({ section, lang, cell, onAdd }: AddCardTileProps) {
           {...cell}
           aria-label={tileLabel}
           style={{ ...CARD_SHAPE, ...FOCUS_LINE_STYLE }}
-          className={`${SHOWN_ON_OWN_FOCUS} flex w-full flex-col items-center justify-center gap-1 border-2 border-dashed border-border bg-panel/50 text-sm font-semibold text-muted-foreground hover:border-accent hover:text-foreground`}
+          className={`${SHOWN_ON_OWN_FOCUS} flex w-full flex-col items-center justify-center gap-1 border-2 border-dashed border-border bg-panel/50 text-sm font-semibold text-muted-foreground hover:border-accent hover:text-foreground ${SINKS_WHEN_PRESSED}`}
         >
           <Icon name="plus" className="size-8" />
           {tileText}
