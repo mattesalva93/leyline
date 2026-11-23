@@ -223,6 +223,49 @@ describe('the zoomed card', () => {
     });
   });
 
+  describe('while a tile is dragged', () => {
+    /** Mounts a grid of two tiles and starts dragging the first. */
+    async function dragSolRing() {
+      await mountPageAndWrite('4 Sol Ring{Enter}4 Brainstorm{Enter}');
+      const dragged = await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+      const other = await screen.findByRole('button', { name: 'Modifica Brainstorm' });
+      startDrag(dragged);
+      return { dragged, other };
+    }
+
+    /** The pointer resting on `tile` as long as a zoom waits, entering it as a mouse does. */
+    function restOn(tile: Element) {
+      fireEvent.pointerEnter(tile, { pointerType: 'mouse' });
+      act(() => vi.advanceTimersByTime(TILE_ZOOM_WAIT_MS));
+    }
+
+    it('never shows, even when the pointer rests on another tile', async () => {
+      const { other } = await dragSolRing();
+
+      restOn(other);
+
+      expect(zoomedCard()).toBeNull();
+    });
+
+    it('shows again once the dragged tile is dropped', async () => {
+      const { other } = await dragSolRing();
+      fireEvent.drop(other);
+
+      restOn(other);
+
+      expect(zoomedCard()?.getAttribute('alt')).toBe('Brainstorm, ingrandita');
+    });
+
+    it('shows again once the drag has ended', async () => {
+      const { dragged, other } = await dragSolRing();
+      fireEvent.dragEnd(dragged);
+
+      restOn(other);
+
+      expect(zoomedCard()?.getAttribute('alt')).toBe('Brainstorm, ingrandita');
+    });
+  });
+
   it('never shows on a touch', async () => {
     await mountPageAndWrite('4 Sol Ring{Enter}');
     const tile = await screen.findByRole('button', { name: 'Modifica Sol Ring' });
