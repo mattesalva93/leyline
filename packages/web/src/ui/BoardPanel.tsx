@@ -47,7 +47,7 @@ export function BoardPanel({
   const [isFoldedToTitle, setIsFoldedToTitle] = useState(false);
   const titleFold = useFoldMotion(!isFoldedToTitle, 'top');
   const isFoldedToStrip = stripFold !== undefined && !stripFold.isShownOpen;
-  const isOpen = !isFoldedToTitle;
+  const isOpenUnderTitle = !isFoldedToTitle;
   return (
     <Landmark
       id={id}
@@ -57,7 +57,10 @@ export function BoardPanel({
       className={`${BOARD_PANEL} flex min-h-0 flex-col overflow-hidden ${isFoldedToStrip ? 'items-center py-3' : ''} ${className}`}
     >
       {isFoldedToStrip && (
-        <h2 id={titleId} className={`${LABEL} animate-fade-in [writing-mode:vertical-rl]`}>
+        <h2
+          id={titleId}
+          className={`${LABEL} [writing-mode:vertical-rl] ${stripFold?.slidingPart['data-state'] === 'closed' ? 'animate-fade-in' : ''}`}
+        >
           {title}
         </h2>
       )}
@@ -76,13 +79,13 @@ export function BoardPanel({
           {isFoldable && (
             <button
               type="button"
-              aria-label={t(isOpen ? 'boardPanel.fold' : 'boardPanel.unfold', { title })}
-              aria-expanded={isOpen}
+              aria-label={t(isOpenUnderTitle ? 'boardPanel.fold' : 'boardPanel.unfold', { title })}
+              aria-expanded={isOpenUnderTitle}
               aria-controls={bodyId}
               className={`grid size-7 place-items-center rounded-sm border-2 border-border bg-panel font-mono text-sm leading-none font-bold ${BUTTON_STATES}`}
               onClick={() => setIsFoldedToTitle(!isFoldedToTitle)}
             >
-              {isOpen ? '▴' : '▾'}
+              {isOpenUnderTitle ? '▴' : '▾'}
             </button>
           )}
         </div>

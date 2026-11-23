@@ -32,8 +32,8 @@ export function SidePanel({
   const limits = SIDE_PANEL_WIDTH_PX[name];
   const { isOpen, toggle, resize } = controls;
   const { width, maxWidth } = fitted;
-  // The panel folds towards the side of the workspace away from the centre.
-  const fold = useFoldMotion(isOpen, centreSide === 'right' ? 'left' : 'right');
+  const sideAwayFromCentre = centreSide === 'right' ? 'left' : 'right';
+  const fold = useFoldMotion(isOpen, sideAwayFromCentre);
   const panel = (
     <div className={`relative flex shrink-0 ${className}`}>
       <BoardPanel
