@@ -18,7 +18,7 @@ import {
 } from './print-picker-geometry.ts';
 import { PRINT_PICKER, PRINT_PICKER_SCROLL_ROOT } from './print-picker-marks.ts';
 import { SMALL_IMAGE } from '../card-image/scryfall-image-sizes.ts';
-import { BUTTON_STATES, PRESSED, SECONDARY_BUTTON } from '../../ui/board-styles.ts';
+import { BUTTON_STATES, SINKS_WHEN_PRESSED, SECONDARY_BUTTON } from '../../ui/board-styles.ts';
 import type { PrintPages } from './use-print-pages.ts';
 import type { PrintPickerView } from './use-print-picker-view.ts';
 import type { PrintQuery } from './use-print-query.ts';
@@ -140,7 +140,7 @@ export function PrintGrid({
                 >
                   <button
                     type="button"
-                    className={`flex flex-col ${PRESSED}`}
+                    className={`flex flex-col ${SINKS_WHEN_PRESSED}`}
                     aria-pressed={usedByLine}
                     ref={(element) => {
                       if (element) printButtons.current.set(print.id, element);

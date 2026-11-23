@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { InTopBar } from './top-bar-slot.tsx';
 import { BoardPanel } from '../ui/BoardPanel.tsx';
-import { BUTTON_STATES, LABEL, PRESSED } from '../ui/board-styles.ts';
+import { BUTTON_STATES, LABEL, SINKS_WHEN_PRESSED } from '../ui/board-styles.ts';
 import { AdSlot } from './AdSlot.tsx';
 import { CardsView } from './card-grid/CardsView.tsx';
 import { DecklistCount } from './decklist-summary/DecklistCount.tsx';
@@ -94,7 +94,7 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
             key={name}
             type="button"
             aria-current={step === name ? 'step' : undefined}
-            className={`${LABEL} border-border not-last:border-r-2 ${step === name ? `bg-foreground text-panel ${PRESSED}` : BUTTON_STATES}`}
+            className={`${LABEL} border-border not-last:border-r-2 ${step === name ? `bg-foreground text-panel ${SINKS_WHEN_PRESSED}` : BUTTON_STATES}`}
             onClick={() => state.goToStep(name)}
           >
             {t(`workspace.stepNames.${name}`)}
