@@ -51,7 +51,7 @@ function startingStepFor(isWideScreen: boolean): WorkspaceStep {
 export function Workspace({ generator }: { readonly generator: Generator }) {
   const isWideScreen = useIsWideScreen();
   const [step, setStep] = useState(() => startingStepFor(isWideScreen));
-  // A new decklist starts the workspace over from its first step, where the empty state shows.
+  // A new decklist starts the workspace over from its first step, where the empty workspace shows its invite.
   const [wasDecklistUnderWay, setWasDecklistUnderWay] = useState(generator.isDecklistUnderWay);
   if (wasDecklistUnderWay !== generator.isDecklistUnderWay) {
     setWasDecklistUnderWay(generator.isDecklistUnderWay);

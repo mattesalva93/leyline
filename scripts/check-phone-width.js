@@ -65,7 +65,7 @@ try {
     await decklist.waitFor();
     await noteOverflow(page, width, 'empty decklist, empty workspace');
 
-    // The empty state gives way to the decklist under way once a line is recognised.
+    // The empty workspace gives way to the decklist under way once a line is recognised.
     await decklist.fill(`${ONE_LINE_DECKLIST}\n`);
     await workspaceStepBar(page).waitFor();
     await goToWorkspaceStep(page, 'cards');

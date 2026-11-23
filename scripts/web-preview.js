@@ -51,7 +51,7 @@ async function setUpWorkspace(page) {
   } else {
     await page.getByLabel('Decklist').fill(flags.line.map((line) => `${line}\n`).join(''));
   }
-  // The lines are recognised by the api: the grid replaces the empty state once it answers.
+  // The lines are recognised by the api: the grid replaces the empty workspace's invite once it answers.
   await page.waitForLoadState('networkidle');
   if (flags.zoom) {
     // Only a wide screen has the zoom slider: a phone shows its tiles at the default.
