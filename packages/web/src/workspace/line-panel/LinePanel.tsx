@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { CARD_SHAPE } from '../card-image/card-shape.ts';
 import { CopyBreakdown } from './CopyBreakdown.tsx';
 import { LineQuantityField } from './LineQuantityField.tsx';
+import type { GuidedStepPlacement } from '../guide/GuidedStepBubble.tsx';
 import { PrintPicker } from '../print-picker/PrintPicker.tsx';
 import { PrintWarningNote } from './PrintWarningNote.tsx';
 import { NORMAL_IMAGE } from '../card-image/scryfall-image-sizes.ts';
@@ -29,6 +30,15 @@ export interface LinePanelProps {
   /** Gives `print` `quantity` copies, the line's quantity changing as many. */
   readonly onPrintQuantityChange: (print: Print, quantity: number) => void;
 }
+
+/**
+ * Out over the dimmed centre, left of the inspector the picker stands in: its arrow enters the
+ * picker by its first prints.
+ */
+const PRINT_PICKER_BUBBLE_PLACEMENT: GuidedStepPlacement = {
+  side: 'left',
+  aimInside: (picker) => ({ x: picker.left + 40, y: picker.top + 150 }),
+};
 
 /** The settings of one line: its quantity and the prints its copies use, in either language. */
 export function LinePanel({
@@ -69,6 +79,7 @@ export function LinePanel({
       <PrintPicker
         line={line}
         tilePrint={tilePrint}
+        guidedStepPlacement={PRINT_PICKER_BUBBLE_PLACEMENT}
         pickerView={pickerView}
         printCounts={printCounts}
         printQuery={printQuery}

@@ -1,5 +1,5 @@
 import type { LineSide } from '@mtg-suite/core';
-import { useState } from 'react';
+import { useState, type ComponentPropsWithRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { COPY_PILE_FOOTPRINT_PX } from './CopyPile.tsx';
 import { TILE_GAP_PX } from './PrintTileCard.tsx';
@@ -41,6 +41,9 @@ interface ReorderableTileItemProps {
   readonly children: React.ReactNode;
 }
 
+/** What a wrapper around the item, such as a guided step's bubble, hands on to its element. */
+type ForwardedItemProps = Omit<ComponentPropsWithRef<'li'>, keyof ReorderableTileItemProps>;
+
 /**
  * One tile of the card grid as a list item: the cell the keyboard focuses, which the mouse can
  * drag to move its line in the decklist, with the bar that shows where a dragged line lands when
@@ -54,13 +57,15 @@ export function ReorderableTileItem({
   isDragged,
   dropMarkSide,
   children,
-}: ReorderableTileItemProps) {
+  ...forwarded
+}: ReorderableTileItemProps & ForwardedItemProps) {
   const { t } = useTranslation();
   const [isGrabbed, setIsGrabbed] = useState(false);
   const letGo = () => setIsGrabbed(false);
   const sliding = slidingTileProps(slideKey);
   return (
     <li
+      {...forwarded}
       {...cell}
       {...sliding}
       className={`relative min-w-0 ${sliding.className} ${GRID_CELL_FOCUS_GROUP} ${dragHandlers ? GRABBING_HAND_WHEN_GRABBED : ''} ${isDragged ? 'opacity-40' : ''}`}

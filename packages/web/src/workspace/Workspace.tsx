@@ -2,15 +2,19 @@ import { useState } from 'react';
 import { touchIsMainInput } from '../generator/pdf-delivery.ts';
 import { useIsWideScreen } from './screen-size.ts';
 import type { Generator } from '../generator/use-generator.ts';
+import { panelLineOf } from './line-panel/SelectedLinePanel.tsx';
 import { DesktopWorkspace } from './DesktopWorkspace.tsx';
 import { gridSectionsOf } from './card-grid/grid-sections.ts';
 import {
   gridTilesOf,
+  isAnsweredLineToFix,
   linesToFixOf,
   type GridTile,
   type TileSelection,
 } from './card-grid/grid-tiles.ts';
+import { GuideContext } from './guide/guide-context.ts';
 import { useGuide } from './guide/use-guide.ts';
+import { useGeneratorWatchedByGuide } from './guide/use-generator-watched-by-guide.ts';
 import { PhoneWorkspace } from './PhoneWorkspace.tsx';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 
@@ -49,8 +53,11 @@ function startingStepFor(isWideScreen: boolean): WorkspaceStep {
  * The generator's screen. A wide screen shows its zones side by side; a phone shows them as
  * steps. Both show the same state: switching from one to the other loses nothing.
  */
-export function Workspace({ generator }: { readonly generator: Generator }) {
+export function Workspace({ generator: unwatchedGenerator }: { readonly generator: Generator }) {
   const isWideScreen = useIsWideScreen();
+  const gridTiles = gridTilesOf(unwatchedGenerator.cardLines);
+  const linesToFix = linesToFixOf(gridTiles);
+  const { generator, seen } = useGeneratorWatchedByGuide(unwatchedGenerator, linesToFix);
   const [step, setStep] = useState(() => startingStepFor(isWideScreen));
   // A new decklist starts the workspace over from its first step, where the empty workspace shows its invite.
   const [wasDecklistUnderWay, setWasDecklistUnderWay] = useState(generator.isDecklistUnderWay);
@@ -61,10 +68,7 @@ export function Workspace({ generator }: { readonly generator: Generator }) {
   const [selectionInText, setSelectionInText] = useState<SelectionInText | null>(null);
   const [tileSelectionCount, setTileSelectionCount] = useState(0);
   const [touchIsMain] = useState(touchIsMainInput);
-  const guide = useGuide({ isDecklistUnderWay: generator.isDecklistUnderWay });
   const gridSections = gridSectionsOf(generator.cardLines);
-  const gridTiles = gridTilesOf(generator.cardLines);
-  const linesToFix = linesToFixOf(gridTiles);
   const inCurrentText = (selection: TileSelection): SelectionInText => ({
     ...selection,
     writtenLineCount: generator.writtenLineCount,
@@ -74,9 +78,18 @@ export function Workspace({ generator }: { readonly generator: Generator }) {
     if (selection) setTileSelectionCount((count) => count + 1);
   };
   const selection = currentSelection(selectionInText, generator.writtenLineCount, gridTiles);
+  const guide = useGuide({
+    isDecklistUnderWay: generator.isDecklistUnderWay,
+    // A phone shows the line panel over its cards step; a wide screen beside its cards view.
+    isLinePanelOpen:
+      (isWideScreen ? step !== 'sheet' : step === 'cards') &&
+      panelLineOf(gridTiles, selection) !== null,
+    hasLineToFix: linesToFix.some(isAnsweredLineToFix),
+    isSheetInView: step === 'sheet',
+    ...seen,
+  });
   const state: WorkspaceState = {
     generator,
-    guide,
     step,
     goToStep: setStep,
     gridSections,
@@ -104,5 +117,9 @@ export function Workspace({ generator }: { readonly generator: Generator }) {
     },
     warnAboutPngWeight: touchIsMain,
   };
-  return isWideScreen ? <DesktopWorkspace state={state} /> : <PhoneWorkspace state={state} />;
+  return (
+    <GuideContext value={guide}>
+      {isWideScreen ? <DesktopWorkspace state={state} /> : <PhoneWorkspace state={state} />}
+    </GuideContext>
+  );
 }

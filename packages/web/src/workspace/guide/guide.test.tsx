@@ -2,12 +2,14 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mountApp } from '../../test-support/mount-app.tsx';
+import { centreTab, printButtonOf } from '../../test-support/grid-queries.ts';
 import { PHONE, stubScreen } from '../../test-support/test-screen.ts';
 import {
   answerApiCallsFromCatalog,
   mountPageAndWrite,
   reload,
   startNewDecklist,
+  stepBar,
 } from '../../test-support/workspace-page.ts';
 
 vi.mock('../../api.ts');
@@ -15,6 +17,13 @@ vi.mock('../../api.ts');
 beforeEach(answerApiCallsFromCatalog);
 
 const FIRST_STEP_TEXT = 'Incolla o scrivi la decklist, oppure prova un esempio.';
+const STEP_TEXT = {
+  openLinePanel: 'Apri una carta per vederne quantità e stampe.',
+  changePrint: 'Tocca un’altra stampa: le copie della carta passano a quella.',
+  fixLine: 'Questa riga va sistemata: scegli la carta giusta o toglila dalla lista.',
+  goToSheet: 'Guarda il foglio, come verrà stampato.',
+  makePdf: 'Crea il PDF da stampare.',
+} as const;
 
 /** The bubble of the guided step on screen. */
 function guidedStep() {
@@ -29,6 +38,19 @@ function isGuidedStepShown() {
 /** The X of the guided step on screen. */
 function skipStepButton() {
   return within(guidedStep()).getByRole('button', { name: 'Salta questo passo' });
+}
+
+/** The text of the guided step on screen, once it shows. */
+async function shownStepText() {
+  const bubble = await screen.findByRole('status', { name: 'Passo guidato' });
+  return within(bubble).getByRole('paragraph').textContent;
+}
+
+/** Mounts the generator with `decklistText` written and its first tile `cardName` shown. */
+async function mountWithTiles(decklistText: string, cardName = 'Sol Ring') {
+  const user = await mountPageAndWrite(decklistText);
+  await screen.findByRole('button', { name: `Modifica ${cardName}` });
+  return user;
 }
 
 describe('the guide', () => {
@@ -50,7 +72,7 @@ describe('the guide', () => {
 
     await user.keyboard('{Enter}');
 
-    await waitFor(() => expect(isGuidedStepShown()).toBe(false));
+    await waitFor(() => expect(screen.queryByText(FIRST_STEP_TEXT)).toBeNull());
   });
 
   it('closes its first guided step by itself once the example is loaded', async () => {
@@ -59,7 +81,7 @@ describe('the guide', () => {
 
     await user.click(screen.getByRole('button', { name: 'Prova con un esempio' }));
 
-    await waitFor(() => expect(isGuidedStepShown()).toBe(false));
+    await waitFor(() => expect(screen.queryByText(FIRST_STEP_TEXT)).toBeNull());
   });
 
   it('skips a guided step with its X', async () => {
@@ -140,6 +162,150 @@ describe('the guide', () => {
     expect(within(guidedStep()).getByText(FIRST_STEP_TEXT)).toBeTruthy();
   });
 
+  describe('after the first step', () => {
+    it('points to a tile, to open its line panel', async () => {
+      await mountWithTiles('4 Sol Ring{Enter}');
+
+      expect(await shownStepText()).toBe(STEP_TEXT.openLinePanel);
+      expect(within(guidedStep()).getByText('Guida · 2')).toBeTruthy();
+    });
+
+    it('describes the tile it points to with its guided step', async () => {
+      await mountWithTiles('4 Sol Ring{Enter}');
+
+      const tile = screen.getByRole('listitem', { name: /Sol Ring/ });
+      const descriptionId = tile.getAttribute('aria-describedby') ?? '';
+      expect(document.getElementById(descriptionId)?.textContent).toBe(STEP_TEXT.openLinePanel);
+    });
+
+    it('lets the keyboard reach its X right after the tile it points to', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}');
+      screen.getByRole('listitem', { name: /Sol Ring/ }).focus();
+
+      await user.tab();
+
+      expect(document.activeElement).toBe(skipStepButton());
+    });
+
+    it('leaves Escape to the inspector, which gives the focus back to the tile', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}');
+      const tile = screen.getByRole('listitem', { name: /Sol Ring/ });
+      tile.focus();
+      await user.keyboard('{Enter}');
+      expect(await shownStepText()).toBe(STEP_TEXT.changePrint);
+
+      await user.keyboard('{Escape}');
+
+      expect(document.activeElement).toBe(tile);
+    });
+
+    it('points into the print picker once a tile is open', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}');
+
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+
+      expect(await shownStepText()).toBe(STEP_TEXT.changePrint);
+    });
+
+    it('points to the sheet once a print is tapped in the print picker', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}');
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+
+      await user.click(await waitFor(() => printButtonOf('LEA #1')));
+
+      expect(await shownStepText()).toBe(STEP_TEXT.goToSheet);
+      const goToSheet = screen.getByRole('button', { name: 'Controlla il foglio →' });
+      expect(goToSheet.getAttribute('aria-describedby')).toBeTruthy();
+    });
+
+    it('points to the line to fix, when the decklist has one', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}2 Nonexistent Card{Enter}');
+      await screen.findByText('Carta non trovata');
+      await user.click(skipStepButton());
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+
+      await user.click(await waitFor(skipStepButton));
+
+      expect(await shownStepText()).toBe(STEP_TEXT.fixLine);
+      expect(within(guidedStep()).getByText('Guida · 4')).toBeTruthy();
+    });
+
+    it('closes the step of the line to fix once the line is fixed', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}2 Nonexistent Card{Enter}');
+      await screen.findByText('Carta non trovata');
+      await user.click(skipStepButton());
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+      await user.click(await waitFor(skipStepButton));
+
+      await user.click(
+        screen.getByRole('button', { name: 'Rimuovi 2 Nonexistent Card dalla lista' }),
+      );
+
+      expect(await shownStepText()).toBe(STEP_TEXT.goToSheet);
+    });
+
+    it('leaves out the step of the line to fix when the decklist has none', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}');
+      await user.click(skipStepButton());
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+
+      await user.click(await waitFor(skipStepButton));
+
+      expect(await shownStepText()).toBe(STEP_TEXT.goToSheet);
+      expect(within(guidedStep()).getByText('Guida · 4')).toBeTruthy();
+    });
+
+    it('stays on the cards once its step that goes to the sheet is skipped', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}');
+      await user.click(skipStepButton());
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+      await user.click(await waitFor(skipStepButton));
+
+      await user.click(skipStepButton());
+
+      expect(centreTab('Carte').getAttribute('aria-selected')).toBe('true');
+      expect(isGuidedStepShown()).toBe(false);
+    });
+
+    it('points to the PDF button on the sheet, and ends once the PDF is made', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}');
+      await user.click(skipStepButton());
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+      await user.click(await waitFor(skipStepButton));
+
+      await user.click(centreTab('Foglio'));
+      expect(await shownStepText()).toBe(STEP_TEXT.makePdf);
+      await user.click(screen.getByRole('button', { name: 'Scarica il PDF' }));
+
+      await waitFor(() => expect(isGuidedStepShown()).toBe(false));
+    });
+
+    it('counts an action taken before its step comes as done', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}');
+      await user.click(centreTab('Foglio'));
+      await user.click(centreTab('Carte'));
+      await user.click(skipStepButton());
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+
+      await user.click(await waitFor(skipStepButton));
+
+      expect(isGuidedStepShown()).toBe(false);
+      await user.click(centreTab('Foglio'));
+      expect(await shownStepText()).toBe(STEP_TEXT.makePdf);
+    });
+
+    it('keeps its steps done and skipped on the device', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}');
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+      await user.click(await waitFor(skipStepButton));
+
+      reload();
+
+      await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+      expect(await shownStepText()).toBe(STEP_TEXT.goToSheet);
+    });
+  });
+
   describe('on a phone', () => {
     beforeEach(() => {
       stubScreen(PHONE);
@@ -150,6 +316,23 @@ describe('the guide', () => {
       mountApp('/proxy');
 
       expect(within(guidedStep()).getByText(FIRST_STEP_TEXT)).toBeTruthy();
+    });
+
+    it('shows each step in the workspace step of its control', async () => {
+      const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+      await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+      expect(await shownStepText()).toBe(STEP_TEXT.openLinePanel);
+
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+      const linePanel = await screen.findByRole('dialog');
+      expect(await shownStepText()).toBe(STEP_TEXT.changePrint);
+      expect(linePanel.contains(guidedStep())).toBe(true);
+      await user.click(skipStepButton());
+      await user.click(within(linePanel).getByRole('button', { name: 'Chiudi' }));
+
+      expect(await shownStepText()).toBe(STEP_TEXT.goToSheet);
+      await user.click(stepBar().getByRole('button', { name: 'Foglio' }));
+      expect(await shownStepText()).toBe(STEP_TEXT.makePdf);
     });
   });
 });

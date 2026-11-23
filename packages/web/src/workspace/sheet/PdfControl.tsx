@@ -2,6 +2,17 @@ import { useTranslation } from 'react-i18next';
 import { PRIMARY_BUTTON } from '../../ui/board-styles.ts';
 import { Icon } from '../../ui/Icon.tsx';
 import type { PdfStatus, SheetPdf } from '../../generator/use-sheet-pdf.ts';
+import { GuidedStepBubble, type GuidedStepPlacement } from '../guide/GuidedStepBubble.tsx';
+
+/**
+ * Below the button at the head of the sheet, running back left from its arrow: the button stands
+ * by the right edge of the centre.
+ */
+const PDF_BUBBLE_PLACEMENT: GuidedStepPlacement = {
+  side: 'bottom',
+  align: 'end',
+  aimInside: (button) => ({ x: button.right - 32, y: button.bottom - 8 }),
+};
 
 /** The PDF button, with how far the PDF has got beside it. */
 export function PdfControl({
@@ -14,17 +25,22 @@ export function PdfControl({
   return (
     <div className={`flex flex-wrap items-center justify-end gap-3 text-sm ${className}`}>
       <PdfNotes pdf={pdf} />
-      <PdfButton pdf={pdf} className={PRIMARY_BUTTON} />
+      <PdfButton pdf={pdf} guidedStepPlacement={PDF_BUBBLE_PLACEMENT} className={PRIMARY_BUTTON} />
     </div>
   );
 }
 
-/** The button that makes the PDF, or shares the one waiting to be shared. */
+/**
+ * The button that makes the PDF, or shares the one waiting to be shared, with the bubble of the
+ * guided step that makes the PDF standing at `guidedStepPlacement`.
+ */
 export function PdfButton({
   pdf,
+  guidedStepPlacement,
   className,
 }: {
   readonly pdf: SheetPdf;
+  readonly guidedStepPlacement: GuidedStepPlacement;
   readonly className: string;
 }) {
   const { t } = useTranslation();
@@ -36,15 +52,17 @@ export function PdfButton({
   }
 
   return (
-    <button
-      type="button"
-      className={className}
-      disabled={!pdf.isAvailable}
-      onClick={pdf.makeOrShare}
-    >
-      <Icon name="download" />
-      {buttonLabel()}
-    </button>
+    <GuidedStepBubble guidedStep="makePdf" placement={guidedStepPlacement}>
+      <button
+        type="button"
+        className={className}
+        disabled={!pdf.isAvailable}
+        onClick={pdf.makeOrShare}
+      >
+        <Icon name="download" />
+        {buttonLabel()}
+      </button>
+    </GuidedStepBubble>
   );
 }
 

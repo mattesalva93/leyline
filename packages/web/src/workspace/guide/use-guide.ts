@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react';
-import { GUIDED_STEPS, isActionTaken, type GuideFacts, type GuidedStep } from './guided-steps.ts';
+import {
+  GUIDED_STEPS,
+  guidedStepsFor,
+  isActionTaken,
+  type GuideFacts,
+  type GuidedStep,
+} from './guided-steps.ts';
 import { loadGuideProgress, saveGuideProgress, type GuideProgress } from './saved-guide.ts';
 
 /** The guide as the workspace shows it: the one guided step on screen, if any. */
 export interface Guide {
   /** The first guided step neither done nor skipped, or `null` once there is none. */
   readonly shownGuidedStep: GuidedStep | null;
+  /** Where the shown step comes among the steps the decklist calls for, counting from 1. */
+  readonly shownGuidedStepNumber: number;
   readonly skipGuidedStep: (step: GuidedStep) => void;
 }
 
@@ -26,8 +34,9 @@ export function useGuide(facts: GuideFacts): Guide {
     setProgress({ ...progress, done: stepsJustDone.reduce(withGuidedStep, progress.done) });
   }
   useEffect(() => saveGuideProgress(progress), [progress]);
+  const guidedSteps = guidedStepsFor(facts);
   const shownGuidedStep =
-    GUIDED_STEPS.find(
+    guidedSteps.find(
       (step) =>
         !progress.done.includes(step) &&
         !progress.skipped.includes(step) &&
@@ -35,6 +44,7 @@ export function useGuide(facts: GuideFacts): Guide {
     ) ?? null;
   return {
     shownGuidedStep,
+    shownGuidedStepNumber: shownGuidedStep === null ? 0 : guidedSteps.indexOf(shownGuidedStep) + 1,
     skipGuidedStep: (step) =>
       setProgress((current) => ({ ...current, skipped: withGuidedStep(current.skipped, step) })),
   };

@@ -75,6 +75,11 @@ export function dropMarkSideOf(gridTile: GridTile, side: LineSide): LineSide | n
   return isAtThatEnd ? side : null;
 }
 
+/** Whether the server has answered for the line to fix `lineToFix`: one still pending may need no fixing. */
+export function isAnsweredLineToFix(lineToFix: ImagelessGridTile): boolean {
+  return lineToFix.reason !== 'pending';
+}
+
 /**
  * The lines the user has to fix before they print, in the order of the decklist text: each one
  * with an imageless tile.

@@ -26,12 +26,28 @@ import {
  * Out in the centre beside the decklist, below the empty workspace's example button, so it hides
  * none of the invite: its arrow enters the decklist a little in from its edge.
  */
-const DECKLIST_GUIDED_STEP: GuidedStepPlacement = {
+const DECKLIST_BUBBLE_PLACEMENT: GuidedStepPlacement = {
   side: 'right',
   aimInside: (decklist) => ({
     x: decklist.right - 48,
     y: Math.min(decklist.top + 290, decklist.bottom - 40),
   }),
+};
+
+/** Beside the tile, over the tiles after it: its arrow enters the card by its top. */
+const TILE_BUBBLE_PLACEMENT: GuidedStepPlacement = {
+  side: 'right',
+  aimInside: (tile) => ({ x: tile.right - 32, y: tile.top + 64 }),
+};
+
+/**
+ * Below the button at the head of the centre, running back left from its arrow: the button stands
+ * by the right edge of the centre.
+ */
+const GO_TO_SHEET_BUBBLE_PLACEMENT: GuidedStepPlacement = {
+  side: 'bottom',
+  align: 'end',
+  aimInside: (button) => ({ x: button.right - 32, y: button.bottom - 8 }),
 };
 
 /**
@@ -57,8 +73,7 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
       <SidePanel name="decklist" panel={panels.decklist} title={t('workspace.decklistPanel')}>
         <DecklistEditor
           generator={generator}
-          guide={state.guide}
-          guidedStepPlacement={DECKLIST_GUIDED_STEP}
+          guidedStepPlacement={DECKLIST_BUBBLE_PLACEMENT}
           className="min-h-48 flex-1"
         />
         <AdSlot className="shrink-0 border-t-2 border-border p-2" />
@@ -89,6 +104,7 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
                 <GoToSheetButton
                   sheetHasSomethingToPrint={generator.sheetLayout !== null}
                   onGoToSheet={() => state.goToStep('sheet')}
+                  guidedStepPlacement={GO_TO_SHEET_BUBBLE_PLACEMENT}
                   className="mr-1 ml-auto"
                 />
               </>
@@ -98,7 +114,12 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
         {/* The grid takes its own stop of Tab, so the panel around it takes none. */}
         <TabPanel value="cards" tabIndex={-1} className="min-h-0 flex-1 overflow-y-auto">
           {generator.isDecklistUnderWay ? (
-            <CardsView state={state} tileWidthPx={tileWidth} onOpenLinePanel={openLinePanel} />
+            <CardsView
+              state={state}
+              tileWidthPx={tileWidth}
+              guidedTilePlacement={TILE_BUBBLE_PLACEMENT}
+              onOpenLinePanel={openLinePanel}
+            />
           ) : (
             <EmptyWorkspaceInvite generator={generator} className="p-1" />
           )}

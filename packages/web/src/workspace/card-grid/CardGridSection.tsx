@@ -7,6 +7,8 @@ import {
   type Print,
 } from '@mtg-suite/core';
 import { useId, useState } from 'react';
+import { GuidedStepBubble, type GuidedStepPlacement } from '../guide/GuidedStepBubble.tsx';
+import type { GuidedStep } from '../guide/guided-steps.ts';
 import { useTranslation } from 'react-i18next';
 import type { ZoomOn } from '../zoomed-card/use-zoomed-card.tsx';
 import { AddCardTile } from '../add-card/AddCardTile.tsx';
@@ -46,6 +48,10 @@ export interface CardGridSectionProps {
   /** The language the add tile shows and adds cards in, and the candidates name keywords in. */
   readonly defaultLang: Lang;
   readonly onAddCard: (section: DecklistSection, candidate: Candidate) => void;
+  /** Where the bubble of a guided step stands by the tile it points to. */
+  readonly guidedTilePlacement: GuidedStepPlacement;
+  /** The guided step each tile it points to stands for, by the tile's key. */
+  readonly guidedStepsOfTiles: ReadonlyMap<string, GuidedStep>;
 }
 
 /** The side of `gridTile` where the bar of the dragged line stands, if it lands by the tile. */
@@ -73,6 +79,8 @@ export function CardGridSection({
   onRemoveLine,
   defaultLang,
   onAddCard,
+  guidedTilePlacement,
+  guidedStepsOfTiles,
 }: CardGridSectionProps) {
   const { t } = useTranslation();
   const titleId = useId();
@@ -154,18 +162,23 @@ export function CardGridSection({
             );
           const slideKey = slideKeys.get(gridTile.key) ?? gridTile.key;
           return (
-            <ReorderableTileItem
+            <GuidedStepBubble
               // By the card, not the line's place: a tile that moves keeps its element and its image.
               key={slideKey}
-              slideKey={slideKey}
-              cell={cell}
-              isSelected={selected}
-              dragHandlers={lineDrag?.tileDragHandlers(gridTile, section.name) ?? null}
-              isDragged={lineDrag?.draggedWrittenIndex === gridTile.writtenIndex}
-              dropMarkSide={dropMarkOf(gridTile, lineDrag)}
+              guidedStep={guidedStepsOfTiles.get(gridTile.key) ?? null}
+              placement={guidedTilePlacement}
             >
-              {tileContent}
-            </ReorderableTileItem>
+              <ReorderableTileItem
+                slideKey={slideKey}
+                cell={cell}
+                isSelected={selected}
+                dragHandlers={lineDrag?.tileDragHandlers(gridTile, section.name) ?? null}
+                isDragged={lineDrag?.draggedWrittenIndex === gridTile.writtenIndex}
+                dropMarkSide={dropMarkOf(gridTile, lineDrag)}
+              >
+                {tileContent}
+              </ReorderableTileItem>
+            </GuidedStepBubble>
           );
         })}
         {/* The add tile shows no card: its cell key names it as it slides. */}

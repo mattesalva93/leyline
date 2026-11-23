@@ -2,6 +2,7 @@ import type { PrintCountsByLang } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
 import { LanguagePicker } from '../../language/LanguagePicker.tsx';
 import { PrintCountHeading } from './PrintCountHeading.tsx';
+import type { GuidedStepPlacement } from '../guide/GuidedStepBubble.tsx';
 import { PrintGrid, type PrintGridProps } from './PrintGrid.tsx';
 import { PrintPickerSection } from './PrintPickerSection.tsx';
 import { PrintSearchField } from './PrintSearchField.tsx';
@@ -12,17 +13,23 @@ type PrintPickerProps = Omit<PrintGridProps, 'columns' | 'pickerView'> & {
   readonly pickerView: PrintPickerView;
   /** How many prints the card has in each language; `null` while not known. */
   readonly printCounts: PrintCountsByLang | null;
+  readonly guidedStepPlacement: GuidedStepPlacement;
 };
 
 /**
  * The print picker of a wide screen: its title, the language of its prints, a print query
  * typed to narrow them, and the grid of the prints in as many columns as fit.
  */
-export function PrintPicker({ pickerView, printCounts, ...gridProps }: PrintPickerProps) {
+export function PrintPicker({
+  pickerView,
+  printCounts,
+  guidedStepPlacement,
+  ...gridProps
+}: PrintPickerProps) {
   const { t } = useTranslation();
   const { line, printQuery, printPages } = gridProps;
   return (
-    <PrintPickerSection line={line}>
+    <PrintPickerSection line={line} guidedStepPlacement={guidedStepPlacement}>
       <PrintCountHeading total={printPages.total} isSearching={printQuery.searched !== ''} />
       <LanguagePicker
         label={t('printPicker.lang')}
