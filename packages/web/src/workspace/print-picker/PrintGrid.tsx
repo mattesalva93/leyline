@@ -18,14 +18,13 @@ import {
 } from './print-picker-geometry.ts';
 import { PRINT_PICKER, PRINT_PICKER_SCROLL_ROOT } from './print-picker-marks.ts';
 import { SMALL_IMAGE } from '../card-image/scryfall-image-sizes.ts';
-import { SECONDARY_BUTTON } from '../../ui/board-styles.ts';
+import { BUTTON_STATES, PRESSED, SECONDARY_BUTTON } from '../../ui/board-styles.ts';
 import type { PrintPages } from './use-print-pages.ts';
 import type { PrintPickerView } from './use-print-picker-view.ts';
 import type { PrintQuery } from './use-print-query.ts';
 import { PRINT_PICKER_ZOOM_WAIT_MS, useZoomedCard } from '../zoomed-card/use-zoomed-card.tsx';
 
-const COUNTER_BUTTON =
-  'grid size-7 place-items-center rounded-sm border-2 border-border bg-panel font-mono font-bold leading-none disabled:opacity-40';
+const COUNTER_BUTTON = `grid size-7 place-items-center rounded-sm border-2 border-border bg-panel font-mono font-bold leading-none disabled:opacity-40 ${BUTTON_STATES}`;
 
 export interface PrintGridProps {
   /** The line whose copies the grid allocates: the prints its copies use are marked. */
@@ -141,7 +140,7 @@ export function PrintGrid({
                 >
                   <button
                     type="button"
-                    className="flex flex-col"
+                    className={`flex flex-col ${PRESSED}`}
                     aria-pressed={usedByLine}
                     ref={(element) => {
                       if (element) printButtons.current.set(print.id, element);

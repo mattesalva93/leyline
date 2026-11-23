@@ -10,8 +10,9 @@ import { ThemeSwitch } from './ThemeSwitch.tsx';
 import type { ShellArea } from './shell-area.ts';
 import type { ShellOutletContext } from './shell-outlet-context.ts';
 import { useTheme } from './use-theme.ts';
+import { BUTTON_STATES } from '../ui/board-styles.ts';
 
-const MENU_ITEM = 'flex items-center gap-2 rounded-md px-3 py-2.5 text-left';
+const MENU_ITEM = `flex items-center gap-2 rounded-md px-3 py-2.5 text-left ${BUTTON_STATES}`;
 
 /**
  * The frame every area lives in: the top bar above, the current area below. On a wide screen
@@ -57,9 +58,9 @@ export function AppShell({ areas }: { readonly areas: readonly ShellArea[] }) {
         <InfoDialog
           isOpen={isInfoOpen}
           onOpenChange={setIsInfoOpen}
-          triggerClassName="hidden font-mono text-[11px] font-bold tracking-widest uppercase underline lg:block"
+          triggerClassName={`hidden rounded-md px-1.5 py-1 font-mono text-[11px] font-bold tracking-widest uppercase underline lg:block ${BUTTON_STATES}`}
         />
-        <ThemeSwitch theme={theme} onSwitch={switchTheme} className="hidden lg:flex" />
+        <ThemeSwitch theme={theme} onSwitch={switchTheme} className="hidden p-1.5 lg:flex" />
       </header>
       <main className="dot-grid min-h-0 flex-1 overflow-y-auto">
         <Outlet context={{ topBarSlot, theme } satisfies ShellOutletContext} />

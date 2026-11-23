@@ -14,6 +14,9 @@ export const PRESSED = 'not-disabled:active:translate-x-0.5 not-disabled:active:
 /** Under the pointer a control turns to the accent; pressed it sinks; disabled it does neither. */
 export const BUTTON_STATES = `not-disabled:hover:bg-accent not-disabled:hover:text-accent-foreground ${PRESSED}`;
 
+/** Pressed, a control's content sinks while the control stays put: for one its own translate places. */
+export const SINKS_WITH_PRESSED_GROUP = 'group-active:translate-x-0.5 group-active:translate-y-0.5';
+
 /** The main action of a zone, in the accent colour. Pressed, it sinks halfway into its shadow. */
 export const PRIMARY_BUTTON = `flex items-center gap-2 rounded-md border-2 border-border bg-accent px-5 py-2 font-bold text-accent-foreground not-disabled:hover:bg-accent-hover disabled:opacity-50 ${HARD_SHADOW} ${PRESSED} not-disabled:active:shadow-[2px_2px_0_var(--color-border)]`;
 

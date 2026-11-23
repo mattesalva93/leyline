@@ -11,10 +11,9 @@ import {
   WARNING_MARK_PX,
   type TileTabRows,
 } from './tile-tab-geometry.ts';
+import { BUTTON_STATES } from '../../ui/board-styles.ts';
 
 const BUTTON_SIZE: CSSProperties = { width: TILE_TAB_BUTTON_PX, height: TILE_TAB_BUTTON_PX };
-
-const BUTTON_STATES = 'hover:bg-accent hover:text-accent-foreground';
 
 /** The copies of the tile, which its minus and plus change. */
 interface TileTabQuantity {

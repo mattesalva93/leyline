@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../ui/Icon.tsx';
 import type { Theme } from './theme-choice.ts';
+import { BUTTON_STATES } from '../ui/board-styles.ts';
 
 /**
  * The button that flips between the light and the dark theme. It shows the theme it switches
@@ -23,7 +24,7 @@ export function ThemeSwitch({
     <button
       type="button"
       aria-label={showsWords ? undefined : label}
-      className={`flex items-center gap-2 ${className}`}
+      className={`flex items-center gap-2 rounded-md ${BUTTON_STATES} ${className}`}
       onClick={onSwitch}
     >
       <Icon name={theme === 'dark' ? 'sun' : 'moon'} />

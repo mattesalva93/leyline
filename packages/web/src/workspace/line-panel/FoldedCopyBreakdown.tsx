@@ -3,6 +3,7 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CopyBreakdown } from './CopyBreakdown.tsx';
 import { setAndNumberOf } from '../card-image/print-label.ts';
+import { BUTTON_STATES } from '../../ui/board-styles.ts';
 
 /**
  * The copy breakdown folded into one line that names each print the copies use, with its
@@ -32,7 +33,7 @@ export function FoldedCopyBreakdown({
     <div className="flex flex-col gap-2 text-sm">
       <button
         type="button"
-        className="text-left"
+        className={`rounded-sm text-left ${BUTTON_STATES}`}
         aria-expanded={isOpen}
         aria-controls={breakdownId}
         onClick={() => setIsOpen(!isOpen)}

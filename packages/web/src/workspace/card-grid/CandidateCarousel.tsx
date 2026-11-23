@@ -2,7 +2,7 @@ import { nameSharedByEvery, type Candidate, type Lang } from '@mtg-suite/core';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CARD_SHAPE } from '../card-image/card-shape.ts';
-import { SECONDARY_BUTTON } from '../../ui/board-styles.ts';
+import { SECONDARY_BUTTON, SINKS_WITH_PRESSED_GROUP } from '../../ui/board-styles.ts';
 import { Icon } from '../../ui/Icon.tsx';
 import { CardVersionCaption, cardVersionText } from './card-version.tsx';
 
@@ -19,7 +19,7 @@ interface CandidateCarouselProps {
 }
 
 const ARROW =
-  'absolute top-1/2 z-10 grid size-7 -translate-y-1/2 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80';
+  'group absolute top-1/2 z-10 grid size-7 -translate-y-1/2 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80';
 
 /**
  * The cards an ambiguous line could mean, one at a time, best match first: the arrows step
@@ -74,7 +74,7 @@ export function CandidateCarousel({
         className={`${ARROW} left-1`}
         onClick={() => step(-1)}
       >
-        <Icon name="chevronLeft" className="size-4" />
+        <Icon name="chevronLeft" className={`size-4 ${SINKS_WITH_PRESSED_GROUP}`} />
       </button>
       <button
         type="button"
@@ -83,7 +83,7 @@ export function CandidateCarousel({
         className={`${ARROW} right-1`}
         onClick={() => step(1)}
       >
-        <Icon name="chevronRight" className="size-4" />
+        <Icon name="chevronRight" className={`size-4 ${SINKS_WITH_PRESSED_GROUP}`} />
       </button>
     </>
   );
