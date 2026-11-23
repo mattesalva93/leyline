@@ -35,7 +35,7 @@
   --color-dot: #f1efe826;
   --color-overlay: #00000080;
   /* Deeper than the overlay: on a dark page, the guide's spotlight must still show. */
-  --color-spotlight-dimming: #000000bf;
+  --color-spotlight-dimming: #000000e6;
   --color-shadow: #00000099;
   /* The thread around each card of a tile's pile: it keeps their black borders apart, which the near-black background cannot. */
   --color-pile-thread: var(--color-border);
