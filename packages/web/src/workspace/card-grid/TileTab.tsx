@@ -43,21 +43,31 @@ interface TileTabProps {
   readonly warningLabel: string | null;
 }
 
-/** The minus or the plus of the quantity. */
+/** The outer top corner of the quantity each step button rounds: the minus its left, the plus its right. */
+const OUTER_CORNER = { left: 'rounded-tl-md', right: 'rounded-tr-md' } as const;
+
+/**
+ * The minus or the plus of the quantity, on its own background: a background shared behind it
+ * would show as a dark thread along its rounded corner when the hover fills it.
+ */
 function QuantityStepButton({
   symbol,
   label,
+  side,
+  backgroundClass,
   onClick,
 }: {
   readonly symbol: string;
   readonly label: string;
+  readonly side: keyof typeof OUTER_CORNER;
+  readonly backgroundClass: string;
   readonly onClick: () => void;
 }) {
   return (
     <button
       type="button"
       tabIndex={-1}
-      className={`font-mono font-bold text-panel ${BUTTON_STATES}`}
+      className={`${OUTER_CORNER[side]} ${backgroundClass} font-mono font-bold text-panel ${BUTTON_STATES}`}
       style={{ ...BUTTON_SIZE, fontSize: QUANTITY_FONT_PX }}
       aria-label={label}
       onClick={onClick}
@@ -82,15 +92,16 @@ export function TileTab({
 }: TileTabProps) {
   const { t } = useTranslation();
   const quantityGroup = (
-    // The group rounds the outer corners of its minus and plus, so their hover fills them edge to edge.
-    <div className={`flex shrink-0 overflow-hidden rounded-t-md ${quantityBackgroundClass}`}>
+    <div className="flex shrink-0">
       <QuantityStepButton
         symbol={t('panel.minus')}
         label={quantity.decreaseLabel}
+        side="left"
+        backgroundClass={quantityBackgroundClass}
         onClick={() => quantity.onChange(quantity.count - 1)}
       />
       <span
-        className="grid place-items-center font-mono font-bold text-panel tabular-nums"
+        className={`grid place-items-center font-mono font-bold text-panel tabular-nums ${quantityBackgroundClass}`}
         style={{
           height: TILE_TAB_BUTTON_PX,
           minWidth: QUANTITY_COUNT_MIN_PX,
@@ -103,6 +114,8 @@ export function TileTab({
       <QuantityStepButton
         symbol={t('panel.plus')}
         label={quantity.increaseLabel}
+        side="right"
+        backgroundClass={quantityBackgroundClass}
         onClick={() => quantity.onChange(quantity.count + 1)}
       />
     </div>
