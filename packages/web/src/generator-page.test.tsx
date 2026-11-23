@@ -25,6 +25,19 @@ describe('the generator page', () => {
     expect(await screen.findByRole('button', { name: 'Modifica Sol Ring' })).toBeTruthy();
   });
 
+  it('shows a spinner named after the recognition while the lines are recognised', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    expect(screen.queryByRole('progressbar', { name: 'Riconoscimento in corso…' })).toBeNull();
+    vi.mocked(api.resolveDecklistText).mockReturnValue(new Promise(() => {}));
+
+    await user.keyboard('1 Lightning Bolt{Enter}');
+
+    expect(screen.getAllByRole('progressbar', { name: 'Riconoscimento in corso…' })).not.toEqual(
+      [],
+    );
+  });
+
   it('recognises every pasted line, the last one too, breaking the line after a paste at the end', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });

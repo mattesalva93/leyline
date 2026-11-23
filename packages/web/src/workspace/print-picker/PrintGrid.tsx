@@ -9,6 +9,7 @@ import {
 } from '@mtg-suite/core';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LoadingSpinner } from '../../ui/LoadingSpinner.tsx';
 import { CARD_SHAPE } from '../card-image/card-shape.ts';
 import { setAndNumberOf } from '../card-image/print-label.ts';
 import {
@@ -206,7 +207,7 @@ export function PrintGrid({
         </section>
       ))}
       <div ref={endOfGridRef} className="min-h-6 text-muted-foreground" aria-live="polite">
-        {isLoading && t('printPicker.loading')}
+        {isLoading && <LoadingSpinner label={t('printPicker.loading')} />}
       </div>
       {lastRequestFailed && (
         <div role="alert">

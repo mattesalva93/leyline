@@ -52,6 +52,8 @@
   --duration-exit: 100ms;
   /* How quickly a control answers the pointer: the most frequent motion, so the shortest. */
   --duration-hover: 100ms;
+  /* One full turn of a loading spinner. */
+  --duration-loading-turn: 800ms;
   --default-transition-duration: var(--duration-hover);
 
   /* Tailwind's own animations carry durations of their own: only the ones below exist. */
@@ -62,6 +64,7 @@
   --animate-slide-out-to-left: slide-out-to-left var(--duration-exit) ease-in forwards;
   --animate-slide-in-from-bottom: slide-in-from-bottom var(--duration-enter) ease-out;
   --animate-slide-out-to-bottom: slide-out-to-bottom var(--duration-exit) ease-in forwards;
+  --animate-loading-turn: loading-turn var(--duration-loading-turn) linear infinite;
 }
 
 /*
@@ -98,6 +101,15 @@
 @keyframes slide-out-to-bottom {
   to {
     translate: 0 calc(100% * var(--movement-reach));
+  }
+}
+/* With reduced motion the spinner stands still and breathes instead: a change of opacity is not motion. */
+@keyframes loading-turn {
+  50% {
+    opacity: calc(1 - 0.6 * (1 - var(--movement-reach)));
+  }
+  to {
+    rotate: calc(1turn * var(--movement-reach));
   }
 }
 

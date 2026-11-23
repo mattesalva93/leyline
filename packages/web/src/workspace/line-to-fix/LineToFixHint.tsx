@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { LoadingSpinner } from '../../ui/LoadingSpinner.tsx';
 import type { ImagelessReason } from '../card-grid/grid-tiles.ts';
 
 /** How to fix a line still to recognise or not found; nothing for any other reason. */
@@ -13,7 +14,7 @@ export function LineToFixHint({
   if (reason === 'pending') {
     return (
       <p className="text-muted-foreground">
-        {isResolving ? t('decklist.resolving') : t('line.pending')}
+        {isResolving ? <LoadingSpinner label={t('decklist.resolving')} /> : t('line.pending')}
       </p>
     );
   }

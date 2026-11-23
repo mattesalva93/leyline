@@ -1,6 +1,7 @@
 import { searchRowsOf, type Candidate, type Lang, type SearchRow } from '@mtg-suite/core';
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LoadingSpinner } from '../../ui/LoadingSpinner.tsx';
 import { CARD_SHAPE } from '../card-image/card-shape.ts';
 import { SMALL_IMAGE } from '../card-image/scryfall-image-sizes.ts';
 import { FIELD } from '../../ui/board-styles.ts';
@@ -86,7 +87,9 @@ export function CardSearchPanel({ lang, onPick }: CardSearchPanelProps) {
       ) : (
         <>
           <p aria-live="polite" className="text-xs text-muted-foreground empty:hidden">
-            {search.status === 'searching' && t('workspace.addCard.searching')}
+            {search.status === 'searching' && (
+              <LoadingSpinner label={t('workspace.addCard.searching')} />
+            )}
             {search.status === 'failed' && t('workspace.addCard.failed')}
             {search.status === 'found' && rows.length === 0 && t('workspace.addCard.noResults')}
           </p>
