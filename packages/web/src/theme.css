@@ -66,6 +66,7 @@
   --animate-slide-out-to-left: slide-out-to-left var(--duration-exit) ease-in forwards;
   --animate-slide-in-from-bottom: slide-in-from-bottom var(--duration-enter) ease-out;
   --animate-slide-out-to-bottom: slide-out-to-bottom var(--duration-exit) ease-in forwards;
+  /* Mirrored easings, so a fold turning back halfway can start where the content is. */
   --animate-unfold: unfold var(--duration-enter) ease-out;
   --animate-fold: fold var(--duration-exit) ease-in forwards;
   --animate-loading-turn: loading-turn var(--duration-loading-turn) linear infinite;

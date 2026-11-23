@@ -25,6 +25,36 @@ export interface FoldMotion {
   };
 }
 
+/**
+ * A motion under way: when it started, how long it lasts, and the head start it took, as the share
+ * of its course it skipped.
+ */
+interface MotionUnderWay {
+  readonly startedAtMs: number;
+  readonly durationMs: number;
+  readonly headStart: number;
+}
+
+/** The share of its course `motion` has run by `nowMs`: all of it once over, or with none known. */
+function reachOf(motion: MotionUnderWay | null, nowMs: number): number {
+  if (!motion || motion.durationMs <= 0) return 1;
+  return Math.min(1, motion.headStart + (nowMs - motion.startedAtMs) / motion.durationMs);
+}
+
+/**
+ * Starts the motion `part` has just been given `headStart` of the way through its course, and
+ * says how long that course lasts, in ms: 0 where nothing runs.
+ */
+function startPartWay(part: Element, headStart: number): number {
+  // jsdom has no Web Animations.
+  if (!('getAnimations' in part)) return 0;
+  const [animation] = part.getAnimations();
+  const duration = animation?.effect?.getComputedTiming().duration;
+  if (!animation || typeof duration !== 'number') return 0;
+  animation.currentTime = headStart * duration;
+  return duration;
+}
+
 function isAnimated(element: Element | null): boolean {
   const name = element ? getComputedStyle(element).animationName : '';
   return name !== '' && name !== 'none';
@@ -35,6 +65,10 @@ function isAnimated(element: Element | null): boolean {
  * content slides in from `foldsToward` as the panel opens, and away to it before the panel shows
  * folded, as Radix keeps a closing part on the page until its exit animation ends. Nothing moves
  * on the first render: a panel already open or folded is simply there.
+ *
+ * A motion that turns back halfway starts from where the content is, not from its far end: it
+ * skips as much of its course as the motion it interrupts had left. That puts it where the content
+ * is because the theme eases the fold in and the opening out, each the mirror of the other.
  */
 export function useFoldMotion(isOpen: boolean, foldsToward: FoldSide): FoldMotion {
   const [wasOpen, setWasOpen] = useState(isOpen);
@@ -46,6 +80,18 @@ export function useFoldMotion(isOpen: boolean, foldsToward: FoldSide): FoldMotio
     if (isOpen) setIsShownOpen(true);
   }
   const ref = useRef<HTMLDivElement>(null);
+  const motionUnderWay = useRef<MotionUnderWay | null>(null);
+  useLayoutEffect(() => {
+    const part = ref.current;
+    if (!part || foldState === undefined) return;
+    const nowMs = performance.now();
+    const headStart = 1 - reachOf(motionUnderWay.current, nowMs);
+    motionUnderWay.current = {
+      startedAtMs: nowMs,
+      durationMs: startPartWay(part, headStart),
+      headStart,
+    };
+  }, [foldState]);
   const isFolding = foldState === 'closed' && isShownOpen;
   useLayoutEffect(() => {
     const part = ref.current;
@@ -55,9 +101,11 @@ export function useFoldMotion(isOpen: boolean, foldsToward: FoldSide): FoldMotio
       setIsShownOpen(false);
       return;
     }
-    const endFolding = (event: Event) => {
-      // The content's own animations, such as an image fading in, end there too.
-      if (event.target === part) setIsShownOpen(false);
+    const endFolding = (event: AnimationEvent) => {
+      // The content's own animations, such as an image fading in, end there too; and the opening
+      // this fold cut short may still report its end.
+      const isTheFold = getComputedStyle(part).animationName === event.animationName;
+      if (event.target === part && isTheFold) setIsShownOpen(false);
     };
     // Listened to natively, as Radix does: React hears no animation event where the browser
     // lacks `AnimationEvent`.
