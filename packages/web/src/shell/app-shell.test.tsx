@@ -208,6 +208,16 @@ describe('the app shell', () => {
       ]);
     });
 
+    it('leaves the theme out of what the device keeps: the app has one (ADR 0020)', async () => {
+      const { notice } = await openThePrivacyNotice();
+
+      const deviceSection = within(notice).getByRole('heading', {
+        name: 'Dati sul tuo dispositivo',
+      }).parentElement;
+      expect(deviceSection?.textContent).toContain('la lingua delle carte');
+      expect(deviceSection?.textContent).not.toContain('tema');
+    });
+
     it('styles its close button as the primary action', async () => {
       const { notice } = await openThePrivacyNotice();
 
