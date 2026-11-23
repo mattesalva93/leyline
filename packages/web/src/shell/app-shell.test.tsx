@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
 import { inMemoryServer } from '../test-support/in-memory-server.ts';
 import { mountApp } from '../test-support/mount-app.tsx';
+import { PRIMARY_BUTTON } from '../ui/board-styles.ts';
 import { AppShell } from './AppShell.tsx';
 import type { ShellArea } from './shell-area.ts';
 
@@ -129,6 +130,16 @@ describe('the app shell', () => {
       expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull();
     });
 
+    it('closes from the primary button', async () => {
+      const { user } = mountShellWithFourAreas();
+      await user.click(screen.getByRole('button', { name: 'Informazioni' }));
+      const dialog = screen.getByRole('dialog', { name: 'Informazioni' });
+
+      expect(within(dialog).getByRole('button', { name: 'Chiudi' }).className).toContain(
+        PRIMARY_BUTTON,
+      );
+    });
+
     it('closes from the keyboard, giving the focus back', async () => {
       const { user } = mountShellWithFourAreas();
       const infoButton = screen.getByRole('button', { name: 'Informazioni' });
@@ -195,6 +206,14 @@ describe('the app shell', () => {
         'Cosa non c’è',
         'I tuoi diritti',
       ]);
+    });
+
+    it('closes from the primary button', async () => {
+      const { notice } = await openThePrivacyNotice();
+
+      expect(within(notice).getByRole('button', { name: 'Chiudi' }).className).toContain(
+        PRIMARY_BUTTON,
+      );
     });
 
     it('closes back to "Informazioni", giving the focus back', async () => {

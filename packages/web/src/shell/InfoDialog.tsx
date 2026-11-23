@@ -6,6 +6,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../ui/Dialog.tsx';
+import { PRIMARY_BUTTON } from '../ui/board-styles.ts';
 import { PrivacyNoticeDialog } from './PrivacyNoticeDialog.tsx';
 
 const ISSUES_URL = 'https://github.com/mattesalva93/mtg-suite/issues';
@@ -40,9 +41,7 @@ export function InfoDialog({
         <p className="mt-2">
           <PrivacyNoticeDialog triggerClassName="text-link underline" />
         </p>
-        <DialogClose className="mt-4 rounded-md border-2 border-border bg-accent px-3 py-1.5 font-bold text-accent-foreground">
-          {t('info.close')}
-        </DialogClose>
+        <DialogClose className={`${PRIMARY_BUTTON} mt-4`}>{t('info.close')}</DialogClose>
       </CenteredDialogContent>
     </Dialog>
   );
