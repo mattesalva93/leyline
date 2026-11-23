@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AdSlot } from './AdSlot.tsx';
 import { CardsView } from './card-grid/CardsView.tsx';
 import { DecklistEditor } from '../decklist-editor/DecklistEditor.tsx';
+import { EmptyWorkspaceInvite } from './empty-workspace/EmptyWorkspaceInvite.tsx';
 import { GoToSheetButton } from './sheet/GoToSheetButton.tsx';
 import type { TileSelection } from './card-grid/grid-tiles.ts';
 import { Inspector } from './side-panel/Inspector.tsx';
@@ -23,7 +24,8 @@ import {
 /**
  * The workspace on a wide screen, filling it: from left to right the decklist text with a
  * banner's place at its foot, the centre (the card grid or the sheet, picked from the tabs at its
- * head) and the inspector. Each zone scrolls on its own.
+ * head) and the inspector. Each zone scrolls on its own. Until a decklist is under way, an invite
+ * to start one stands in place of the grid.
  */
 export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) {
   const { t } = useTranslation();
@@ -65,22 +67,28 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
               </Tab>
             ))}
           </TabList>
-          {view === 'cards' ? (
-            <>
-              <TileWidthSlider width={tileWidth} onChange={setTileWidth} />
-              <GoToSheetButton
-                sheetHasSomethingToPrint={generator.sheetLayout !== null}
-                onGoToSheet={() => state.goToStep('sheet')}
-                className="mr-1 ml-auto"
-              />
-            </>
-          ) : (
+          {view === 'sheet' ? (
             <PdfControl pdf={generator.pdf} className="mr-1 ml-auto" />
+          ) : (
+            generator.isDecklistUnderWay && (
+              <>
+                <TileWidthSlider width={tileWidth} onChange={setTileWidth} />
+                <GoToSheetButton
+                  sheetHasSomethingToPrint={generator.sheetLayout !== null}
+                  onGoToSheet={() => state.goToStep('sheet')}
+                  className="mr-1 ml-auto"
+                />
+              </>
+            )
           )}
         </div>
         {/* The grid takes its own stop of Tab, so the panel around it takes none. */}
         <TabPanel value="cards" tabIndex={-1} className="min-h-0 flex-1 overflow-y-auto">
-          <CardsView state={state} tileWidthPx={tileWidth} onOpenLinePanel={openLinePanel} />
+          {generator.isDecklistUnderWay ? (
+            <CardsView state={state} tileWidthPx={tileWidth} onOpenLinePanel={openLinePanel} />
+          ) : (
+            <EmptyWorkspaceInvite generator={generator} className="p-1" />
+          )}
         </TabPanel>
         <TabPanel value="sheet" className="flex min-h-0 flex-1 flex-col">
           <SheetView generator={generator} />

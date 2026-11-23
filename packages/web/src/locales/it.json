@@ -11,39 +11,10 @@
   "areas": {
     "generator": "Generatore"
   },
-  "landingPage": {
-    "paste": "Incolla.",
-    "pickPrints": "Scegli le stampe.",
-    "print": "Stampa.",
-    "hint": "Incolla o scrivi una decklist, una carta per riga, in inglese o in italiano (es. 4 Sol Ring, anello del sole, 1 Sol Ring (C21) 263). Ogni riga diventa una tessera appena viene riconosciuta.",
+  "emptyWorkspace": {
+    "invite": "Incolla o scrivi una decklist, una carta per riga, in inglese o in italiano (es. 4 Sol Ring, anello del sole, 1 Sol Ring (C21) 263). Ogni riga diventa una tessera appena viene riconosciuta.",
     "tryExample": "Prova con un esempio",
-    "tryExampleArrow": "→",
-    "features": {
-      "title": "Cosa sa fare",
-      "misspelledNames": "Riconosce i nomi delle carte anche scritti male.",
-      "printAndLang": "Scegli stampa e lingua, italiano o inglese, per ogni riga.",
-      "sheet": "Foglio A4 o Letter, con i segni di taglio.",
-      "pdfInBrowser": "Il PDF viene creato nel tuo browser."
-    },
-    "tutorial": {
-      "title": "Come funziona",
-      "recogniseDecklist": {
-        "sentence": "Incolla la lista: la griglia la riconosce riga per riga e segnala quelle da sistemare.",
-        "screenshot": "L’area di lavoro con la lista a sinistra e la griglia delle carte al centro: la prima tessera, tratteggiata in rosso, chiede quale carta intendevi."
-      },
-      "pickPrint": {
-        "sentence": "Seleziona una tessera e scegli la stampa: puoi ripartire le copie su stampe diverse.",
-        "screenshot": "Il pannello della riga selezionata, Lightning Bolt: le quattro copie ripartite su tre stampe e, sotto, le altre stampe tra cui scegliere."
-      },
-      "setUpSheet": {
-        "sentence": "Imposta il foglio, formato e segni di taglio, e guarda l’anteprima.",
-        "screenshot": "La vista Foglio: l’anteprima della prima pagina, nove carte con i segni di taglio, accanto alle opzioni del foglio."
-      },
-      "downloadPdf": {
-        "sentence": "Scarica il PDF e stampalo al 100%.",
-        "screenshot": "Il pulsante del PDF durante la creazione, con la barra che avanza mentre le immagini delle carte vengono scaricate."
-      }
-    }
+    "tryExampleArrow": "→"
   },
   "workspace": {
     "decklistPanel": "Lista",

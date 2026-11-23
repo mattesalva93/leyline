@@ -1,8 +1,8 @@
 import { writtenLinesOf } from '@mtg-suite/core';
-import type { LineSplitOverPrints } from '../generator/line-split.ts';
+import type { LineSplitOverPrints } from '../../generator/line-split.ts';
 
 /**
- * The decklist "Prova con un esempio" loads. It shows the generator at work: a line split over
+ * The decklist "Prova con un esempio" loads in the empty workspace. It shows the generator at work: a line split over
  * several prints (Lightning Bolt), a double-faced card (Delver of Secrets) and a sideboard.
  */
 const TEXT = `1 Sol Ring
