@@ -23,10 +23,12 @@ interface BoardPanelProps {
 
 const BOARD_PANEL_ATTRIBUTE = 'data-board-panel';
 const BOARD_PANEL_MARK = { [BOARD_PANEL_ATTRIBUTE]: '' } as const;
+const BOARD_PANEL_BODY_ATTRIBUTE = 'data-board-panel-body';
+const BOARD_PANEL_BODY_MARK = { [BOARD_PANEL_BODY_ATTRIBUTE]: '' } as const;
 
-/** The board panel that holds `element`, if any: the box a reader sees it in. */
-export function boardPanelHolding(element: Element): Element | null {
-  return element.closest(`[${BOARD_PANEL_ATTRIBUTE}]`);
+/** The body of the board panel that holds `element`, if any: the box below the panel's title bar. */
+export function boardPanelBodyHolding(element: Element): Element | null {
+  return element.closest(`[${BOARD_PANEL_BODY_ATTRIBUTE}]`);
 }
 
 /** A panel lying on the board, named by the title in its bar. */
@@ -91,6 +93,7 @@ export function BoardPanel({
         </div>
         <div
           id={bodyId}
+          {...BOARD_PANEL_BODY_MARK}
           hidden={!titleFold.isShownOpen}
           {...titleFold.slidingPart}
           className={`min-h-0 flex-1 flex-col ${titleFold.isShownOpen ? 'flex' : ''} ${titleFold.slidingPart.className} ${bodyClassName}`}
