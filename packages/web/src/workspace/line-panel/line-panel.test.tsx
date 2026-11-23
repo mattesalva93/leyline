@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../../api.ts';
@@ -10,6 +10,7 @@ import {
   answerApiCallsFromCatalog,
 } from '../../test-support/workspace-page.ts';
 import { printButtonOf } from '../../test-support/grid-queries.ts';
+import { animateRadixParts, endExitAnimation } from '../../test-support/exit-animations.ts';
 
 vi.mock('../../api.ts');
 
@@ -194,6 +195,20 @@ describe('the line panel on a phone', () => {
 
     expect(languages.getByRole('radio', { name: 'Inglese (1)', checked: true })).toBeTruthy();
     expect(await panel.findByRole('group', { name: 'Copie con C21 #1' })).toBeTruthy();
+  });
+
+  it('keeps showing the line while it slides away, then leaves the page', async () => {
+    animateRadixParts();
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await openPanelOf(user, 'Sol Ring');
+    const closingPanel = screen.getByRole('dialog', { name: 'Riga selezionata' });
+
+    await user.click(within(closingPanel).getByRole('button', { name: 'Chiudi' }));
+
+    expect(closingPanel.isConnected).toBe(true);
+    expect(within(closingPanel).getByRole('heading', { name: 'Sol Ring' })).toBeTruthy();
+    act(() => endExitAnimation(closingPanel));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('heads the panel of a line to fix with its title and a button that closes it', async () => {
