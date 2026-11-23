@@ -103,7 +103,10 @@
     translate: 0 calc(100% * var(--movement-reach));
   }
 }
-/* With reduced motion the spinner stands still and breathes instead: a change of opacity is not motion. */
+/*
+ * With reduced motion the spinner stands still and breathes instead, down to 40% opacity halfway
+ * through each turn: a change of opacity is not motion.
+ */
 @keyframes loading-turn {
   50% {
     opacity: calc(1 - 0.6 * (1 - var(--movement-reach)));
