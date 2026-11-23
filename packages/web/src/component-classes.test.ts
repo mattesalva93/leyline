@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { PRIMARY_BUTTON, SECONDARY_BUTTON, SYMBOL_BUTTON } from './ui/board-styles.ts';
 
 /** The source of every component and of the class constants they share, by its path. */
 const componentSources = import.meta.glob<string>(['./**/*.{ts,tsx}', '!./**/*.test.{ts,tsx}'], {
@@ -25,5 +26,30 @@ describe('the classes of the components', () => {
 
   it('leave the hand cursor to the theme', () => {
     expect(componentsWithClass(/\bcursor-pointer\b/g)).toEqual({});
+  });
+
+  it('leave the pressed shift to the shared button classes', () => {
+    const { './ui/board-styles.ts': sharedClasses, ...elsewhere } = componentsWithClass(
+      /\bactive:translate-[xy]-[\w.]+/g,
+    );
+
+    expect(sharedClasses).toBeDefined();
+    expect(elsewhere).toEqual({});
+  });
+});
+
+describe('the shared button classes', () => {
+  it.each([
+    ['primary', PRIMARY_BUTTON],
+    ['secondary', SECONDARY_BUTTON],
+    ['symbol', SYMBOL_BUTTON],
+  ])('sink the %s button by 2 px when pressed, unless it is disabled', (_, buttonClass) => {
+    expect(buttonClass).toContain('not-disabled:active:translate-x-0.5');
+    expect(buttonClass).toContain('not-disabled:active:translate-y-0.5');
+  });
+
+  it('sink the primary button into its hard shadow, its far edge kept in place', () => {
+    expect(PRIMARY_BUTTON).toContain('shadow-[4px_4px_0_var(--color-border)]');
+    expect(PRIMARY_BUTTON).toContain('not-disabled:active:shadow-[2px_2px_0_var(--color-border)]');
   });
 });
