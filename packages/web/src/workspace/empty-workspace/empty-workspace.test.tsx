@@ -1,32 +1,44 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { mountApp } from '../test-support/mount-app.tsx';
-import { PHONE, stubScreen } from '../test-support/test-screen.ts';
+import { mountApp } from '../../test-support/mount-app.tsx';
+import { PHONE, stubScreen } from '../../test-support/test-screen.ts';
 import {
   mountPageAndWrite,
   summary,
   stepBar,
   decklistValue,
   answerApiCallsFromCatalog,
-} from '../test-support/workspace-page.ts';
-import { cardGrid, gridTiles, tileSummary } from '../test-support/grid-queries.ts';
+} from '../../test-support/workspace-page.ts';
+import { cardGrid, gridTiles, tileSummary } from '../../test-support/grid-queries.ts';
 
-vi.mock('../api.ts');
+vi.mock('../../api.ts');
 
 beforeEach(answerApiCallsFromCatalog);
 
-describe('the landing page', () => {
-  it('opens when the device keeps no decklist: the explanation, the decklist text and the example button, with no zone of the workspace', () => {
+describe('the empty workspace', () => {
+  it('opens when the device keeps no decklist: the invite, the language of the cards and the example button in place of the grid and its controls', () => {
     mountApp('/proxy');
 
     expect(screen.getByText(/^Incolla o scrivi una decklist, una carta per riga/)).toBeTruthy();
     expect(screen.getByLabelText('Decklist')).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'Lingua delle carte' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /^Aggiungi una carta/ })).toBeNull();
-    expect(screen.queryByRole('tablist')).toBeNull();
+    expect(screen.getByRole('tablist')).toBeTruthy();
     expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
-    expect(screen.queryByRole('complementary')).toBeNull();
+    expect(screen.queryByRole('slider', { name: 'Zoom' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Controlla il foglio/ })).toBeNull();
+  });
+
+  it('shows the language of the cards with the invite, then in the summary once the first line is recognised', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring');
+    expect(summary().queryByRole('group', { name: 'Lingua delle carte' })).toBeNull();
+    expect(screen.getAllByRole('group', { name: 'Lingua delle carte' })).toHaveLength(1);
+
+    await user.keyboard('{Enter}');
+
+    expect(await summary().findByRole('group', { name: 'Lingua delle carte' })).toBeTruthy();
+    expect(screen.getAllByRole('group', { name: 'Lingua delle carte' })).toHaveLength(1);
   });
 
   it('gives way to the grid as soon as the first line is recognised, the user still typing in the decklist', async () => {
@@ -138,18 +150,21 @@ describe('the landing page', () => {
       expect(image.getAttribute('src')).toContain('counterspell-it-mh2');
     });
 
-    it('shows the explanation, the decklist text and the example button, with no step bar', async () => {
+    it('shows the invite, the language of the cards and the example button in the decklist step, until the first line is recognised', async () => {
       const user = await mountPageAndWrite('4 Sol Ring');
 
       expect(screen.getByText(/^Incolla o scrivi una decklist, una carta per riga/)).toBeTruthy();
+      expect(screen.getByRole('group', { name: 'Lingua delle carte' })).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
-      expect(screen.queryByRole('region', { name: 'Riepilogo' })).toBeNull();
-      expect(screen.queryByRole('navigation', { name: 'Passi' })).toBeNull();
+      expect(stepBar().getByRole('button', { name: 'Lista' }).getAttribute('aria-current')).toBe(
+        'step',
+      );
 
       await user.keyboard('{Enter}');
 
-      expect(await screen.findByRole('region', { name: 'Riepilogo' })).toBeTruthy();
-      expect(stepBar().getByRole('button', { name: 'Carte' })).toBeTruthy();
+      await waitFor(() =>
+        expect(screen.queryByRole('button', { name: 'Prova con un esempio' })).toBeNull(),
+      );
       await user.keyboard('1 Brainstorm');
       expect(decklistValue()).toBe('4 Sol Ring\n1 Brainstorm');
     });

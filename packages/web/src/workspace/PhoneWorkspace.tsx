@@ -7,6 +7,7 @@ import { AdSlot } from './AdSlot.tsx';
 import { CardsView } from './card-grid/CardsView.tsx';
 import { DecklistCount } from './decklist-summary/DecklistCount.tsx';
 import { DecklistEditor } from '../decklist-editor/DecklistEditor.tsx';
+import { EmptyWorkspaceInvite } from './empty-workspace/EmptyWorkspaceInvite.tsx';
 import { DecklistSummary } from './decklist-summary/DecklistSummary.tsx';
 import { PhoneLineHeading } from './line-panel/PhoneLineHeading.tsx';
 import { PhoneLinePanel } from './line-panel/PhoneLinePanel.tsx';
@@ -23,7 +24,8 @@ const STEPS: readonly WorkspaceStep[] = ['list', 'cards', 'sheet'];
 
 /**
  * The workspace on a phone: one step at a time on the whole screen (the decklist, the cards, the
- * sheet with its PDF button), picked from the bar at the foot of the screen.
+ * sheet with its PDF button), picked from the bar at the foot of the screen. Until a decklist is
+ * under way, the decklist step opens on an invite to start one.
  */
 export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
   const { t } = useTranslation();
@@ -42,6 +44,7 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
       <div className="min-h-0 flex-1 overflow-y-auto">
         {step === 'list' && (
           <div className="flex flex-col gap-4 p-3 pr-4">
+            {!generator.isDecklistUnderWay && <EmptyWorkspaceInvite generator={generator} />}
             <BoardPanel title={t('workspace.decklistPanel')} isFoldable className="shrink-0">
               <DecklistEditor generator={generator} className="h-[38dvh]" />
             </BoardPanel>

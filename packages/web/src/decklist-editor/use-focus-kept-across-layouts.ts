@@ -5,8 +5,8 @@ let caretOfEditorGoneWhileFocused: { readonly start: number; readonly end: numbe
 
 /**
  * Hands the focus and the caret on from the decklist editor that goes away to the one that takes
- * its place, as the generator changes layout (the landing page giving way to the workspace, a
- * resized screen), so the user can keep typing.
+ * its place, as the generator changes layout (a resized screen swapping the phone and the desktop
+ * workspace), so the user can keep typing.
  */
 export function useFocusKeptAcrossLayouts() {
   const ref = useRef<HTMLTextAreaElement>(null);

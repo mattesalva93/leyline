@@ -31,7 +31,7 @@ describe('the decklist saved on the device', () => {
     expect(api.resolveDecklistText).toHaveBeenCalledWith('4 Sol Ring\n1 Lightning Bolt', 'it');
   });
 
-  it('opens straight on the workspace, never the landing page, even while the server is out of reach', async () => {
+  it('opens straight on the workspace with its grid, never empty, even while the server is out of reach', async () => {
     await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
     vi.mocked(api.resolveDecklistText).mockRejectedValue(new Error('offline'));

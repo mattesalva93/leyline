@@ -6,7 +6,8 @@ import type { WorkspaceState } from '../workspace-state.ts';
 
 /**
  * The decklist as a whole, shown while no tile is selected: how many cards and pages it makes,
- * the way to its first line to fix, and the language of its cards.
+ * the way to its first line to fix, and the language of its cards once it is under way (until
+ * then, the empty workspace's invite holds it).
  */
 export function DecklistSummary({
   state: { generator, linesToFix, selectFirstLineToFix },
@@ -38,11 +39,13 @@ export function DecklistSummary({
           {t('summary.linesToFix', { count: linesToFix.length })}
         </button>
       )}
-      <LanguagePicker
-        label={t('app.defaultLang')}
-        selectedLang={generator.defaultLang}
-        onChange={generator.changeDefaultLanguage}
-      />
+      {generator.isDecklistUnderWay && (
+        <LanguagePicker
+          label={t('app.defaultLang')}
+          selectedLang={generator.defaultLang}
+          onChange={generator.changeDefaultLanguage}
+        />
+      )}
       <p className="text-sm text-muted-foreground">{t('workspace.selectTileHint')}</p>
     </div>
   );

@@ -16,7 +16,7 @@ vi.mock('../api.ts');
 beforeEach(answerApiCallsFromCatalog);
 
 describe('a new decklist', () => {
-  it('goes to the landing page once the user confirms, and opens there after a reload', async () => {
+  it('empties the workspace once the user confirms, and opens it empty after a reload', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
     await user.click(centreTab('Foglio'));

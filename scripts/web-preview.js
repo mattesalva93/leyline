@@ -47,11 +47,11 @@ if (flags.step && !(flags.step in WORKSPACE_STEP_LABELS)) {
  */
 async function setUpWorkspace(page) {
   if (flags.example) {
-    await page.getByRole('button', { name: italian.landingPage.tryExample }).click();
+    await page.getByRole('button', { name: italian.emptyWorkspace.tryExample }).click();
   } else {
     await page.getByLabel('Decklist').fill(flags.line.map((line) => `${line}\n`).join(''));
   }
-  // The lines are recognised by the api: the workspace replaces the landing page once it answers.
+  // The lines are recognised by the api: the grid replaces the empty workspace's invite once it answers.
   await page.waitForLoadState('networkidle');
   if (flags.zoom) {
     // Only a wide screen has the zoom slider: a phone shows its tiles at the default.

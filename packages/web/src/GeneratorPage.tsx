@@ -1,13 +1,7 @@
-import { LandingPage } from './landing-page/LandingPage.tsx';
 import { useGenerator } from './generator/use-generator.ts';
 import { Workspace } from './workspace/Workspace.tsx';
 
-/** The generator: the landing page until a decklist is under way, then the workspace. */
+/** The generator: its workspace, empty until a decklist is under way. */
 export function GeneratorPage() {
-  const generator = useGenerator();
-  return generator.isDecklistUnderWay ? (
-    <Workspace generator={generator} />
-  ) : (
-    <LandingPage generator={generator} />
-  );
+  return <Workspace generator={useGenerator()} />;
 }
