@@ -57,11 +57,15 @@ export interface TileSlide {
   readonly fromY: number;
 }
 
-function isSameOrder(before: readonly PlacedTile[], after: readonly PlacedTile[]): boolean {
+/** Whether the grid shows the same cells in the same order, given their slide keys in it. */
+export function isSameOrder(before: readonly string[], after: readonly string[]): boolean {
   return (
-    before.length === after.length &&
-    before.every((tile, index) => tile.slideKey === after[index]?.slideKey)
+    before.length === after.length && before.every((slideKey, index) => slideKey === after[index])
   );
+}
+
+function slideKeysIn(places: readonly PlacedTile[]): string[] {
+  return places.map((place) => place.slideKey);
 }
 
 /**
@@ -72,7 +76,7 @@ export function slidesBetween(
   before: readonly PlacedTile[],
   after: readonly PlacedTile[],
 ): TileSlide[] {
-  if (isSameOrder(before, after)) return [];
+  if (isSameOrder(slideKeysIn(before), slideKeysIn(after))) return [];
   const placeBefore = new Map(before.map((tile) => [tile.slideKey, tile]));
   return after.flatMap(({ slideKey, left, top }): TileSlide[] => {
     const was = placeBefore.get(slideKey);

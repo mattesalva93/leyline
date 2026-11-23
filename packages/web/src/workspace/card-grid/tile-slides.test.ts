@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { slideKeysOf, slidesBetween } from './tile-slides.ts';
 
+/** Print ids shaped as Scryfall's, which are UUIDs. */
+const SOL_RING_C21 = '0afa0e33-4804-4b00-b625-c2d6b61090fc';
+const LIGHTNING_BOLT_M10 = '4e4fb50c-a81f-44d3-93c5-fa9a0b37f617';
+
 /** A tile of `writtenIndex`'s line showing the print `printId`, as the grid keys it. */
 function printTile(writtenIndex: number, printId: string) {
   return {
@@ -60,19 +64,29 @@ describe('where each tile slides from as the grid reorders', () => {
 describe('what names a tile as it slides', () => {
   it('names a tile by the card it shows, the same after its line moves in the decklist', () => {
     const before = slideKeysOf([
-      { name: 'mainDeck', gridTiles: [printTile(0, 'sol-ring-c21'), printTile(1, 'bolt-m10')] },
+      {
+        name: 'mainDeck',
+        gridTiles: [printTile(0, SOL_RING_C21), printTile(1, LIGHTNING_BOLT_M10)],
+      },
     ]);
     const after = slideKeysOf([
-      { name: 'mainDeck', gridTiles: [printTile(0, 'bolt-m10'), printTile(1, 'sol-ring-c21')] },
+      {
+        name: 'mainDeck',
+        gridTiles: [printTile(0, LIGHTNING_BOLT_M10), printTile(1, SOL_RING_C21)],
+      },
     ]);
-    expect(after.get('1:sol-ring-c21')).toBe(before.get('0:sol-ring-c21'));
-    expect(after.get('0:bolt-m10')).toBe(before.get('1:bolt-m10'));
+    expect(after.get(printTile(1, SOL_RING_C21).key)).toBe(
+      before.get(printTile(0, SOL_RING_C21).key),
+    );
+    expect(after.get(printTile(0, LIGHTNING_BOLT_M10).key)).toBe(
+      before.get(printTile(1, LIGHTNING_BOLT_M10).key),
+    );
   });
 
   it('names apart two tiles showing the same print, in the same section or not', () => {
     const slideKeys = slideKeysOf([
-      { name: 'mainDeck', gridTiles: [printTile(0, 'sol-ring-c21'), printTile(1, 'sol-ring-c21')] },
-      { name: 'sideboard', gridTiles: [printTile(2, 'sol-ring-c21')] },
+      { name: 'mainDeck', gridTiles: [printTile(0, SOL_RING_C21), printTile(1, SOL_RING_C21)] },
+      { name: 'sideboard', gridTiles: [printTile(2, SOL_RING_C21)] },
     ]);
     expect(new Set(slideKeys.values()).size).toBe(slideKeys.size);
   });
@@ -81,7 +95,10 @@ describe('what names a tile as it slides', () => {
     const imageless = { kind: 'imageless', key: '0', writtenLine: '1 Sol Rnig' } as const;
     const before = slideKeysOf([{ name: 'mainDeck', gridTiles: [imageless] }]);
     const after = slideKeysOf([
-      { name: 'mainDeck', gridTiles: [printTile(0, 'bolt-m10'), { ...imageless, key: '1' }] },
+      {
+        name: 'mainDeck',
+        gridTiles: [printTile(0, LIGHTNING_BOLT_M10), { ...imageless, key: '1' }],
+      },
     ]);
     expect(after.get('1')).toBe(before.get('0'));
     expect(after.get('add:mainDeck')).toBe(before.get('add:mainDeck'));

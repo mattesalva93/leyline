@@ -1,5 +1,5 @@
 import { Component, type ReactNode, type RefObject } from 'react';
-import { slidesBetween, type PlacedTile } from './tile-slides.ts';
+import { isSameOrder, slidesBetween, type PlacedTile } from './tile-slides.ts';
 
 const SLIDE_KEY_ATTRIBUTE = 'data-slide-key';
 const SLIDE_FROM_X = '--slide-from-x';
@@ -52,7 +52,7 @@ export class TileSlides extends Component<TileSlidesProps> {
   override getSnapshotBeforeUpdate(previous: TileSlidesProps): PlacedTile[] | null {
     const grid = this.props.grid.current;
     // Only a new order makes anything slide: the grid is not measured on any other update.
-    const isNewOrder = previous.slideKeys.join(' ') !== this.props.slideKeys.join(' ');
+    const isNewOrder = !isSameOrder(previous.slideKeys, this.props.slideKeys);
     return grid && isNewOrder ? placesIn(grid) : null;
   }
 
