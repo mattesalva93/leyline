@@ -59,7 +59,8 @@
 /*
  * An exit has keyframes of its own, never an entrance played in reverse: Radix keeps a closing part
  * on the page only when its animation's name changes. An exit holds its last frame (`forwards`) so the
- * part does not flash back in the moment before it leaves.
+ * part does not flash back in the moment before it leaves. Each keyframe that moves something multiplies
+ * its distance by `--movement-reach`, which reduced motion sets to 0.
  */
 @keyframes fade-in {
   from {
@@ -73,22 +74,22 @@
 }
 @keyframes slide-in-from-left {
   from {
-    translate: -100% 0;
+    translate: calc(-100% * var(--movement-reach)) 0;
   }
 }
 @keyframes slide-out-to-left {
   to {
-    translate: -100% 0;
+    translate: calc(-100% * var(--movement-reach)) 0;
   }
 }
 @keyframes slide-in-from-bottom {
   from {
-    translate: 0 100%;
+    translate: 0 calc(100% * var(--movement-reach));
   }
 }
 @keyframes slide-out-to-bottom {
   to {
-    translate: 0 100%;
+    translate: 0 calc(100% * var(--movement-reach));
   }
 }
 
@@ -127,6 +128,12 @@
 @layer base {
   :root {
     color-scheme: light;
+    --movement-reach: 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --movement-reach: 0;
+    }
   }
   .dark {
     color-scheme: dark;
@@ -157,4 +164,18 @@
 @utility dot-grid {
   background-image: radial-gradient(var(--color-dot) 1px, transparent 1px);
   background-size: 20px 20px;
+}
+
+/*
+ * With reduced motion, a transition may still change colours or fade, but never move anything.
+ * Outside the layers, so it outranks every utility that names the moving properties.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    transition-property:
+      color, background-color, border-color, outline-color, text-decoration-color, fill, stroke,
+      opacity, box-shadow;
+  }
 }
