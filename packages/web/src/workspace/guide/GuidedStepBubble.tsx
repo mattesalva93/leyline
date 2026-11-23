@@ -79,7 +79,7 @@ export function GuidedStepBubble({
       >
         {children}
       </Slot>
-      {isShown && <GuideSpotlight />}
+      {isShown && <GuideSpotlight control={controlRef} />}
       <RadixPopover.Content
         role="status"
         aria-label={t('guide.bubbleLabel')}

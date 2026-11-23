@@ -129,6 +129,17 @@ describe('the guide', () => {
     expect(document.getElementById(descriptionId)?.textContent).toBe(FIRST_STEP_TEXT);
   });
 
+  it('comes back with the decklist once its folded panel opens again', async () => {
+    const user = userEvent.setup();
+    mountApp('/proxy');
+
+    await user.click(screen.getByRole('button', { name: 'Richiudi il pannello «Lista»' }));
+    expect(isGuidedStepShown()).toBe(false);
+    await user.click(screen.getByRole('button', { name: 'Riapri il pannello «Lista»' }));
+
+    expect(within(guidedStep()).getByText(FIRST_STEP_TEXT)).toBeTruthy();
+  });
+
   describe('on a phone', () => {
     beforeEach(() => {
       stubScreen(PHONE);
