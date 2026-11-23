@@ -20,6 +20,14 @@ interface BoardPanelProps {
   readonly children: ReactNode;
 }
 
+const BOARD_PANEL_ATTRIBUTE = 'data-board-panel';
+const BOARD_PANEL_MARK = { [BOARD_PANEL_ATTRIBUTE]: '' } as const;
+
+/** The board panel that holds `element`, if any: the box a reader sees it in. */
+export function boardPanelHolding(element: Element): Element | null {
+  return element.closest(`[${BOARD_PANEL_ATTRIBUTE}]`);
+}
+
 /** A panel lying on the board, named by the title in its bar. */
 export function BoardPanel({
   title,
@@ -40,6 +48,7 @@ export function BoardPanel({
   return (
     <Landmark
       id={id}
+      {...BOARD_PANEL_MARK}
       aria-labelledby={titleId}
       style={style}
       className={`${BOARD_PANEL} flex min-h-0 flex-col overflow-hidden ${isFoldedToStrip ? 'items-center py-3' : ''} ${className}`}
