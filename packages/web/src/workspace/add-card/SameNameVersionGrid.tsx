@@ -5,6 +5,7 @@ import { CARD_SHAPE } from '../card-image/card-shape.ts';
 import { SECONDARY_BUTTON } from '../../ui/board-styles.ts';
 import { CardVersionCaption, cardVersionText } from '../card-grid/card-version.tsx';
 import { useCardsNamed } from './use-cards-named.ts';
+import { FadingInImage } from '../card-image/FadingInImage.tsx';
 
 /**
  * Every card sharing `name`, by image, each with what tells it apart: the user picks the one
@@ -61,7 +62,11 @@ export function SameNameVersionGrid({
                     className="relative block w-full overflow-hidden bg-background"
                   >
                     {image && (
-                      <img src={image} alt="" className="absolute inset-0 size-full object-cover" />
+                      <FadingInImage
+                        src={image}
+                        alt=""
+                        className="absolute inset-0 size-full object-cover"
+                      />
                     )}
                   </span>
                   <CardVersionCaption candidate={candidate} lang={lang} />

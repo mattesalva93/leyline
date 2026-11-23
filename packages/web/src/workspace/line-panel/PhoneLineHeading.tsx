@@ -2,6 +2,7 @@ import { previewPrint, type ResolvedLine } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
 import { CARD_SHAPE } from '../card-image/card-shape.ts';
 import { SMALL_IMAGE } from '../card-image/scryfall-image-sizes.ts';
+import { FadingInImage } from '../card-image/FadingInImage.tsx';
 
 /** The card of `line` in the header of its phone panel: a small image and its name, cut if long. */
 export function PhoneLineHeading({ line }: { readonly line: ResolvedLine }) {
@@ -10,7 +11,7 @@ export function PhoneLineHeading({ line }: { readonly line: ResolvedLine }) {
   return (
     <>
       {frontFace && (
-        <img
+        <FadingInImage
           className="block w-10 shrink-0"
           style={CARD_SHAPE}
           src={frontFace.imageUris.small}

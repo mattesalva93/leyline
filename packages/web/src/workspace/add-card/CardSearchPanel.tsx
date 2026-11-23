@@ -8,6 +8,7 @@ import { FIELD } from '../../ui/board-styles.ts';
 import { Icon } from '../../ui/Icon.tsx';
 import { SameNameVersionGrid } from './SameNameVersionGrid.tsx';
 import { useCardSearch } from './use-card-search.ts';
+import { FadingInImage } from '../card-image/FadingInImage.tsx';
 
 interface CardSearchPanelProps {
   readonly lang: Lang;
@@ -147,7 +148,7 @@ function SearchRowOption({
       onClick={onTake}
     >
       {image ? (
-        <img
+        <FadingInImage
           src={image}
           alt={t('line.imageAlt', { name })}
           width={SMALL_IMAGE.width}

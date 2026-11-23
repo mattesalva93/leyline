@@ -13,6 +13,7 @@ import { PrintPicker } from '../print-picker/PrintPicker.tsx';
 import { PrintWarningNote } from './PrintWarningNote.tsx';
 import { NORMAL_IMAGE } from '../card-image/scryfall-image-sizes.ts';
 import { useLinePanelPrints } from './use-line-panel-prints.ts';
+import { FadingInImage } from '../card-image/FadingInImage.tsx';
 
 export interface LinePanelProps {
   readonly line: ResolvedLine;
@@ -47,7 +48,7 @@ export function LinePanel({
     <div ref={panelRef} className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
         {frontFace && (
-          <img
+          <FadingInImage
             className="block w-20 shrink-0"
             style={CARD_SHAPE}
             src={frontFace.imageUris.normal}

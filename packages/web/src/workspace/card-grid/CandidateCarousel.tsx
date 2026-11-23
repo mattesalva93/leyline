@@ -5,6 +5,7 @@ import { CARD_SHAPE } from '../card-image/card-shape.ts';
 import { SECONDARY_BUTTON, SINKS_WITH_PRESSED_GROUP } from '../../ui/board-styles.ts';
 import { Icon } from '../../ui/Icon.tsx';
 import { CardVersionCaption, cardVersionText } from './card-version.tsx';
+import { FadingInImage } from '../card-image/FadingInImage.tsx';
 
 interface CandidateCarouselProps {
   readonly candidates: readonly Candidate[];
@@ -49,19 +50,20 @@ export function CandidateCarousel({
 
   const images = candidates.map((candidate, candidateIndex) => {
     const image = candidate.defaultPrint?.faces[0]?.imageUris.normal;
-    const visibility = candidateIndex === shownIndex ? 'visible' : 'invisible';
+    // Never `visible` for the one shown: it would undo the hiding of an image yet to arrive.
+    const isShown = candidateIndex === shownIndex;
     return image ? (
-      <img
+      <FadingInImage
         key={candidate.card.oracleId}
         src={image}
         // The announcement and the pick button name the card shown.
         alt=""
-        className={`absolute inset-0 size-full ${isInGridCell ? 'object-cover object-top' : 'object-contain'} ${visibility}`}
+        className={`absolute inset-0 size-full ${isInGridCell ? 'object-cover object-top' : 'object-contain'} ${isShown ? '' : 'invisible'}`}
       />
     ) : (
       <span
         key={candidate.card.oracleId}
-        className={`absolute inset-0 border-2 border-dashed border-border ${visibility}`}
+        className={`absolute inset-0 border-2 border-dashed border-border ${isShown ? '' : 'invisible'}`}
       />
     );
   });

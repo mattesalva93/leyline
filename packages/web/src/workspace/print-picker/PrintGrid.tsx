@@ -24,6 +24,7 @@ import type { PrintPages } from './use-print-pages.ts';
 import type { PrintPickerView } from './use-print-picker-view.ts';
 import type { PrintQuery } from './use-print-query.ts';
 import { PRINT_PICKER_ZOOM_WAIT_MS, useZoomedCard } from '../zoomed-card/use-zoomed-card.tsx';
+import { FadingInImage } from '../card-image/FadingInImage.tsx';
 
 const COUNTER_BUTTON = `grid size-7 place-items-center rounded-sm border-2 border-border bg-panel font-mono font-bold leading-none disabled:opacity-40 ${BUTTON_STATES}`;
 
@@ -159,7 +160,7 @@ export function PrintGrid({
                     {...zoomOn(frontFace, `[${PRINT_PICKER}]`)}
                   >
                     {frontFace && (
-                      <img
+                      <FadingInImage
                         className="block w-full"
                         style={CARD_SHAPE}
                         src={frontFace.imageUris.small}
