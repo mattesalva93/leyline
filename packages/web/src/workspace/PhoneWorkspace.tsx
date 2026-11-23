@@ -17,10 +17,20 @@ import { panelLineOf, SelectedLinePanel } from './line-panel/SelectedLinePanel.t
 import { SheetSettings } from './sheet/SheetSettings.tsx';
 import { SheetView } from './sheet/SheetView.tsx';
 import { TILE_WIDTH_PX } from './card-grid/tile-width.ts';
+import type { GuidedStepPlacement } from './guide/GuidedStepBubble.tsx';
 import { focusCurrentGridCell } from './card-grid/use-grid-cell-focus.ts';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 
 const STEPS: readonly WorkspaceStep[] = ['list', 'cards', 'sheet'];
+
+/**
+ * Over the empty foot of the decklist, on the left: its arrow rises into the box, and the bubble
+ * stays clear of the fold button at the right of the panel below.
+ */
+const DECKLIST_GUIDED_STEP: GuidedStepPlacement = {
+  side: 'bottom',
+  aimInside: (decklist) => ({ x: decklist.left + 80, y: decklist.bottom - 130 }),
+};
 
 /**
  * The workspace on a phone: one step at a time on the whole screen (the decklist, the cards, the
@@ -46,7 +56,12 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
           <div className="flex flex-col gap-4 p-3 pr-4">
             {!generator.isDecklistUnderWay && <EmptyWorkspaceInvite generator={generator} />}
             <BoardPanel title={t('workspace.decklistPanel')} isFoldable className="shrink-0">
-              <DecklistEditor generator={generator} className="h-[38dvh]" />
+              <DecklistEditor
+                generator={generator}
+                guide={state.guide}
+                guidedStepPlacement={DECKLIST_GUIDED_STEP}
+                className="h-[38dvh]"
+              />
             </BoardPanel>
             <BoardPanel
               title={t('workspace.inspector.summary')}

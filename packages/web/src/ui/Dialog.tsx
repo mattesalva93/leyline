@@ -2,18 +2,16 @@
 // Escape, the focus given back and the screen-reader semantics; the look is ours.
 import * as RadixDialog from '@radix-ui/react-dialog';
 import type { ReactNode } from 'react';
+import {
+  FADES_IN_AND_OUT,
+  SLIDES_IN_AND_OUT_AT_THE_BOTTOM,
+  SLIDES_IN_AND_OUT_ON_THE_LEFT,
+} from './open-close-motion.ts';
 
 export const Dialog = RadixDialog.Root;
 export const DialogTrigger = RadixDialog.Trigger;
 export const DialogClose = RadixDialog.Close;
 export const DialogTitle = RadixDialog.Title;
-
-/** Radix keeps a closing part on the page until its exit animation ends. */
-const FADES_IN_AND_OUT = 'data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out';
-const SLIDES_IN_AND_OUT_ON_THE_LEFT =
-  'data-[state=open]:animate-slide-in-from-left data-[state=closed]:animate-slide-out-to-left';
-const SLIDES_IN_AND_OUT_AT_THE_BOTTOM =
-  'data-[state=open]:animate-slide-in-from-bottom data-[state=closed]:animate-slide-out-to-bottom';
 
 const OVERLAY = `fixed inset-0 z-40 bg-overlay ${FADES_IN_AND_OUT}`;
 

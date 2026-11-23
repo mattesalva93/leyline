@@ -218,6 +218,15 @@ describe('the app shell', () => {
       expect(deviceSection?.textContent).not.toMatch(/\btema\b/);
     });
 
+    it('names the steps of the guide done or skipped among what the device keeps', async () => {
+      const { notice } = await openThePrivacyNotice();
+
+      const deviceSection = within(notice).getByRole('heading', {
+        name: 'Dati sul tuo dispositivo',
+      }).parentElement;
+      expect(deviceSection?.textContent).toContain('i passi della guida già svolti o saltati');
+    });
+
     it('styles its close button as the primary action', async () => {
       const { notice } = await openThePrivacyNotice();
 

@@ -1,5 +1,4 @@
 import { act, cleanup, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
 import { mountApp } from '../test-support/mount-app.tsx';
@@ -8,6 +7,7 @@ import {
   mountPageAndWrite,
   decklistValue,
   answerApiCallsFromCatalog,
+  startNewDecklist,
 } from '../test-support/workspace-page.ts';
 import { centreTab } from '../test-support/grid-queries.ts';
 
@@ -41,12 +41,6 @@ describe('a new decklist', () => {
     await user.click(centreTab('Foglio'));
     expect(screen.getByLabelText<HTMLSelectElement>('Formato della pagina').value).toBe('A4');
   });
-
-  /** Starts a new decklist, confirming it. */
-  async function startNewDecklist(user: ReturnType<typeof userEvent.setup>) {
-    await user.click(screen.getByRole('button', { name: 'Nuova decklist' }));
-    await user.click(screen.getByRole('button', { name: 'Svuota' }));
-  }
 
   it('leaves no error of the emptied decklist behind', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');

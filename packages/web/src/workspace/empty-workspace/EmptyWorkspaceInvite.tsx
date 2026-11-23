@@ -3,6 +3,7 @@ import type { Generator } from '../../generator/use-generator.ts';
 import { LanguagePicker } from '../../language/LanguagePicker.tsx';
 import { PRIMARY_BUTTON } from '../../ui/board-styles.ts';
 import { EXAMPLE_DECKLIST } from './example-decklist.ts';
+import { GUIDE_SPOTLIT } from '../guide/GuideSpotlight.tsx';
 
 /**
  * What the workspace shows while no decklist is under way, in place of the grid: an invite to
@@ -18,7 +19,8 @@ export function EmptyWorkspaceInvite({
 }) {
   const { t } = useTranslation();
   return (
-    <div className={`flex flex-col items-start gap-4 ${className}`}>
+    // Lit by the guide's spotlight: the first guided step points to its example button too.
+    <div {...GUIDE_SPOTLIT} className={`flex flex-col items-start gap-4 ${className}`}>
       <p className="max-w-xl text-sm text-muted-foreground">{t('emptyWorkspace.invite')}</p>
       <LanguagePicker
         label={t('app.defaultLang')}

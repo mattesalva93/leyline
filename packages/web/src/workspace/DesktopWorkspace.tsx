@@ -10,6 +10,7 @@ import { Inspector } from './side-panel/Inspector.tsx';
 import { PdfControl } from './sheet/PdfControl.tsx';
 import { SheetView } from './sheet/SheetView.tsx';
 import { SidePanel } from './side-panel/SidePanel.tsx';
+import type { GuidedStepPlacement } from './guide/GuidedStepBubble.tsx';
 import { Tab, TabList, TabPanel, Tabs } from '../ui/Tabs.tsx';
 import { TileWidthSlider } from './card-grid/TileWidthSlider.tsx';
 import { useTileWidth } from './card-grid/tile-width.ts';
@@ -20,6 +21,18 @@ import {
   centreViewNamed,
   type WorkspaceState,
 } from './workspace-state.ts';
+
+/**
+ * Out in the centre beside the decklist, below the empty workspace's example button, so it hides
+ * none of the invite: its arrow enters the decklist a little in from its edge.
+ */
+const DECKLIST_GUIDED_STEP: GuidedStepPlacement = {
+  side: 'right',
+  aimInside: (decklist) => ({
+    x: decklist.right - 48,
+    y: Math.min(decklist.top + 290, decklist.bottom - 40),
+  }),
+};
 
 /**
  * The workspace on a wide screen, filling it: from left to right the decklist text with a
@@ -47,7 +60,12 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
         title={t('workspace.decklistPanel')}
         centreSide="right"
       >
-        <DecklistEditor generator={generator} className="min-h-48 flex-1" />
+        <DecklistEditor
+          generator={generator}
+          guide={state.guide}
+          guidedStepPlacement={DECKLIST_GUIDED_STEP}
+          className="min-h-48 flex-1"
+        />
         <AdSlot className="shrink-0 border-t-2 border-border p-2" />
       </SidePanel>
       <Tabs
