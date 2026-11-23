@@ -60,4 +60,12 @@ describe('the shared button classes', () => {
     expect(PRIMARY_BUTTON).toContain(HARD_SHADOW);
     expect(PRIMARY_BUTTON).toContain('not-disabled:active:shadow-[2px_2px_0_var(--color-border)]');
   });
+
+  it('lift the primary button by 2 px under the pointer until pressed, its shadow stretched so its far edge stays put', () => {
+    expect(PRIMARY_BUTTON).toContain('motion-safe:not-disabled:not-active:hover:-translate-x-0.5');
+    expect(PRIMARY_BUTTON).toContain('motion-safe:not-disabled:not-active:hover:-translate-y-0.5');
+    expect(PRIMARY_BUTTON).toContain(
+      'motion-safe:not-disabled:not-active:hover:shadow-[6px_6px_0_var(--color-border)]',
+    );
+  });
 });
