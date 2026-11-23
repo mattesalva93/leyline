@@ -11,9 +11,17 @@ import {
   WARNING_MARK_PX,
   type TileTabRows,
 } from './tile-tab-geometry.ts';
+import { SIBLING_RING_PX } from './tile-rings.ts';
 import { BUTTON_STATES } from '../../ui/board-styles.ts';
 
 const BUTTON_SIZE: CSSProperties = { width: TILE_TAB_BUTTON_PX, height: TILE_TAB_BUTTON_PX };
+
+/**
+ * The band at the foot of a button resting on the card, as thick as the sibling ring: it keeps the
+ * tab's colour under the hover, so the tab and the card's edge stay one frame.
+ */
+const CARD_EDGE_BAND = 'bg-clip-padding';
+const CARD_EDGE_BAND_STYLE: CSSProperties = { borderBottomWidth: SIBLING_RING_PX };
 
 /** The copies of the tile, which its minus and plus change. */
 interface TileTabQuantity {
@@ -34,8 +42,8 @@ interface TileTabFlip {
 interface TileTabProps {
   /** One row with the flip and the warning beside the quantity, or two with them above it. */
   readonly rows: TileTabRows;
-  /** The quantity's background: the sibling group's colour, or the plain one. */
-  readonly quantityBackgroundClass: string;
+  /** The quantity's colour, a CSS colour: the sibling group's, or the plain one. */
+  readonly quantityColour: string;
   readonly quantity: TileTabQuantity;
   /** `null` for a single-faced print. */
   readonly flip: TileTabFlip | null;
@@ -47,28 +55,27 @@ interface TileTabProps {
 const OUTER_CORNER = { left: 'rounded-tl-md', right: 'rounded-tr-md' } as const;
 
 /**
- * The minus or the plus of the quantity, on its own background: a background shared behind it
- * would show as a dark thread along its rounded corner when the hover fills it.
+ * The minus or the plus of the quantity, on its own background in `--quantity-colour`: a
+ * background shared behind it would show as a dark thread along its rounded corner when the hover
+ * fills it.
  */
 function QuantityStepButton({
   symbol,
   label,
   side,
-  backgroundClass,
   onClick,
 }: {
   readonly symbol: string;
   readonly label: string;
   readonly side: keyof typeof OUTER_CORNER;
-  readonly backgroundClass: string;
   readonly onClick: () => void;
 }) {
   return (
     <button
       type="button"
       tabIndex={-1}
-      className={`${OUTER_CORNER[side]} ${backgroundClass} font-mono font-bold text-panel ${BUTTON_STATES}`}
-      style={{ ...BUTTON_SIZE, fontSize: QUANTITY_FONT_PX }}
+      className={`${OUTER_CORNER[side]} ${CARD_EDGE_BAND} border-(--quantity-colour) bg-(--quantity-colour) font-mono font-bold text-panel ${BUTTON_STATES}`}
+      style={{ ...BUTTON_SIZE, ...CARD_EDGE_BAND_STYLE, fontSize: QUANTITY_FONT_PX }}
       aria-label={label}
       onClick={onClick}
     >
@@ -83,25 +90,18 @@ function QuantityStepButton({
  * its right, or both side by side above it when the card is too narrow for one row. Its buttons
  * are for the pointer: Tab stops on the tile, whose keys stand in for them.
  */
-export function TileTab({
-  rows,
-  quantityBackgroundClass,
-  quantity,
-  flip,
-  warningLabel,
-}: TileTabProps) {
+export function TileTab({ rows, quantityColour, quantity, flip, warningLabel }: TileTabProps) {
   const { t } = useTranslation();
   const quantityGroup = (
-    <div className="flex shrink-0">
+    <div className="flex shrink-0" style={{ '--quantity-colour': quantityColour } as CSSProperties}>
       <QuantityStepButton
         symbol={t('panel.minus')}
         label={quantity.decreaseLabel}
         side="left"
-        backgroundClass={quantityBackgroundClass}
         onClick={() => quantity.onChange(quantity.count - 1)}
       />
       <span
-        className={`grid place-items-center font-mono font-bold text-panel tabular-nums ${quantityBackgroundClass}`}
+        className="grid place-items-center bg-(--quantity-colour) font-mono font-bold text-panel tabular-nums"
         style={{
           height: TILE_TAB_BUTTON_PX,
           minWidth: QUANTITY_COUNT_MIN_PX,
@@ -115,7 +115,6 @@ export function TileTab({
         symbol={t('panel.plus')}
         label={quantity.increaseLabel}
         side="right"
-        backgroundClass={quantityBackgroundClass}
         onClick={() => quantity.onChange(quantity.count + 1)}
       />
     </div>
@@ -124,8 +123,8 @@ export function TileTab({
     <button
       type="button"
       tabIndex={-1}
-      className={`grid shrink-0 place-items-center rounded-t-md bg-foreground text-panel ${BUTTON_STATES}`}
-      style={BUTTON_SIZE}
+      className={`grid shrink-0 place-items-center rounded-t-md ${CARD_EDGE_BAND} border-foreground bg-foreground text-panel ${BUTTON_STATES}`}
+      style={{ ...BUTTON_SIZE, ...CARD_EDGE_BAND_STYLE }}
       aria-label={flip.label}
       aria-pressed={flip.isFlipped}
       onClick={flip.onFlip}

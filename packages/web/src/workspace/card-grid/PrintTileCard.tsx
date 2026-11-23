@@ -78,7 +78,7 @@ export function PrintTileCard({
   const backFace = printedBackFace(tile.print);
   const shownFace = (isFlipped && backFace) || frontFace;
   const warningLabel = tile.warning && t(`tile.printWarning.${tile.warning}`);
-  const quantityBackgroundClass = hasSiblings ? 'bg-(--sibling-colour)' : 'bg-foreground';
+  const quantityColour = hasSiblings ? 'var(--sibling-colour)' : 'var(--color-foreground)';
   const ringStates = { hasSiblings, isSelected };
   const quantityLabel = { name: line.card.name, print: setAndNumberOf(tile.print, t) };
   return (
@@ -91,7 +91,7 @@ export function PrintTileCard({
     >
       <TileTab
         rows={tabRows}
-        quantityBackgroundClass={quantityBackgroundClass}
+        quantityColour={quantityColour}
         quantity={{
           count: tile.quantity,
           decreaseLabel: t('tile.decrease', quantityLabel),
