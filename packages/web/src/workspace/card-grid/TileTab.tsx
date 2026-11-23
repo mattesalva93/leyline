@@ -57,7 +57,7 @@ function QuantityStepButton({
     <button
       type="button"
       tabIndex={-1}
-      className={`rounded-t-md font-mono font-bold text-panel ${BUTTON_STATES}`}
+      className={`font-mono font-bold text-panel ${BUTTON_STATES}`}
       style={{ ...BUTTON_SIZE, fontSize: QUANTITY_FONT_PX }}
       aria-label={label}
       onClick={onClick}
@@ -82,15 +82,17 @@ export function TileTab({
 }: TileTabProps) {
   const { t } = useTranslation();
   const quantityGroup = (
-    <div className={`flex shrink-0 items-center rounded-t-md ${quantityBackgroundClass}`}>
+    // The group rounds the outer corners of its minus and plus, so their hover fills them edge to edge.
+    <div className={`flex shrink-0 overflow-hidden rounded-t-md ${quantityBackgroundClass}`}>
       <QuantityStepButton
         symbol={t('panel.minus')}
         label={quantity.decreaseLabel}
         onClick={() => quantity.onChange(quantity.count - 1)}
       />
       <span
-        className="py-0.5 text-center font-mono font-bold text-panel tabular-nums"
+        className="grid place-items-center font-mono font-bold text-panel tabular-nums"
         style={{
+          height: TILE_TAB_BUTTON_PX,
           minWidth: QUANTITY_COUNT_MIN_PX,
           paddingInline: QUANTITY_COUNT_PADDING_PX,
           fontSize: QUANTITY_FONT_PX,
