@@ -44,14 +44,24 @@
   /* The lit top and shaded bottom of a side panel's edge tab. */
   --shadow-edge-tab: inset 0 2px 0 rgb(255 255 255 / 0.35), inset 0 -2px 0 rgb(0 0 0 / 0.18);
 
-  /* How long a dialog, a drawer, a panel or the zoomed card takes to come in or go away: short, so it orients without making anyone wait. */
-  --duration-enter-exit: 150ms;
-  --animate-fade-in: fade-in var(--duration-enter-exit) ease-out;
-  --animate-fade-out: fade-out var(--duration-enter-exit) ease-in forwards;
-  --animate-slide-in-from-left: slide-in-from-left var(--duration-enter-exit) ease-out;
-  --animate-slide-out-to-left: slide-out-to-left var(--duration-enter-exit) ease-in forwards;
-  --animate-slide-in-from-bottom: slide-in-from-bottom var(--duration-enter-exit) ease-out;
-  --animate-slide-out-to-bottom: slide-out-to-bottom var(--duration-enter-exit) ease-in forwards;
+  /*
+   * The one home of the app's durations: no component writes one of its own. Short, so motion
+   * orients without making anyone wait; a part goes away quicker than it came in.
+   */
+  --duration-enter: 150ms;
+  --duration-exit: 100ms;
+  /* How quickly a control answers the pointer: the most frequent motion, so the shortest. */
+  --duration-hover: 100ms;
+  --default-transition-duration: var(--duration-hover);
+
+  /* Tailwind's own animations carry durations of their own: only the ones below exist. */
+  --animate-*: initial;
+  --animate-fade-in: fade-in var(--duration-enter) ease-out;
+  --animate-fade-out: fade-out var(--duration-exit) ease-in forwards;
+  --animate-slide-in-from-left: slide-in-from-left var(--duration-enter) ease-out;
+  --animate-slide-out-to-left: slide-out-to-left var(--duration-exit) ease-in forwards;
+  --animate-slide-in-from-bottom: slide-in-from-bottom var(--duration-enter) ease-out;
+  --animate-slide-out-to-bottom: slide-out-to-bottom var(--duration-exit) ease-in forwards;
 }
 
 /*

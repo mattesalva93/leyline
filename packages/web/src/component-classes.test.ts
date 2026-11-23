@@ -28,6 +28,14 @@ describe('the classes of the components', () => {
     expect(componentsWithClass(/\bcursor-pointer\b/g)).toEqual({});
   });
 
+  it('leave every duration to the theme', () => {
+    expect(
+      componentsWithClass(
+        /\bduration-[\w[\]().-]+|\b\d+(?:\.\d+)?m?s\b|\b(?:animation|transition)Duration\b/g,
+      ),
+    ).toEqual({});
+  });
+
   it('leave the pressed shift to the shared button classes', () => {
     const { './ui/board-styles.ts': sharedClasses, ...elsewhere } = componentsWithClass(
       /\bactive:translate-[xy]-[\w.]+/g,
