@@ -30,6 +30,17 @@ describe('the empty workspace', () => {
     expect(screen.queryByRole('button', { name: /^Controlla il foglio/ })).toBeNull();
   });
 
+  it('shows the language of the cards with the invite, then in the summary once the first line is recognised', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring');
+    expect(summary().queryByRole('group', { name: 'Lingua delle carte' })).toBeNull();
+    expect(screen.getAllByRole('group', { name: 'Lingua delle carte' })).toHaveLength(1);
+
+    await user.keyboard('{Enter}');
+
+    expect(await summary().findByRole('group', { name: 'Lingua delle carte' })).toBeTruthy();
+    expect(screen.getAllByRole('group', { name: 'Lingua delle carte' })).toHaveLength(1);
+  });
+
   it('gives way to the grid as soon as the first line is recognised, the user still typing in the decklist', async () => {
     const user = await mountPageAndWrite('4 Sol Ring');
     expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
