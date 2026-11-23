@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PRIMARY_BUTTON, SECONDARY_BUTTON, SYMBOL_BUTTON } from './ui/board-styles.ts';
+import { HARD_SHADOW, PRIMARY_BUTTON, SECONDARY_BUTTON, SYMBOL_BUTTON } from './ui/board-styles.ts';
 
 /** The source of every component and of the class constants they share, by its path. */
 const componentSources = import.meta.glob<string>(['./**/*.{ts,tsx}', '!./**/*.test.{ts,tsx}'], {
@@ -49,7 +49,7 @@ describe('the shared button classes', () => {
   });
 
   it('sink the primary button into its hard shadow, its far edge kept in place', () => {
-    expect(PRIMARY_BUTTON).toContain('shadow-[4px_4px_0_var(--color-border)]');
+    expect(PRIMARY_BUTTON).toContain(HARD_SHADOW);
     expect(PRIMARY_BUTTON).toContain('not-disabled:active:shadow-[2px_2px_0_var(--color-border)]');
   });
 });

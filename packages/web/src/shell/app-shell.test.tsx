@@ -130,7 +130,7 @@ describe('the app shell', () => {
       expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull();
     });
 
-    it('closes from the primary button', async () => {
+    it('styles its close button as the primary action', async () => {
       const { user } = mountShellWithFourAreas();
       await user.click(screen.getByRole('button', { name: 'Informazioni' }));
       const dialog = screen.getByRole('dialog', { name: 'Informazioni' });
@@ -208,7 +208,7 @@ describe('the app shell', () => {
       ]);
     });
 
-    it('closes from the primary button', async () => {
+    it('styles its close button as the primary action', async () => {
       const { notice } = await openThePrivacyNotice();
 
       expect(within(notice).getByRole('button', { name: 'Chiudi' }).className).toContain(
