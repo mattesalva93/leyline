@@ -69,6 +69,7 @@
   /* Mirrored easings, so a fold turning back halfway can start where the content is. */
   --animate-unfold: unfold var(--duration-enter) ease-out;
   --animate-fold: fold var(--duration-exit) ease-in forwards;
+  --animate-slide-into-place: slide-into-place var(--duration-enter) ease-out;
   --animate-loading-turn: loading-turn var(--duration-loading-turn) linear infinite;
 }
 
@@ -134,6 +135,16 @@
 }
 @utility folds-toward-top {
   --fold-reach-y: -100%;
+}
+/*
+ * A tile of the card grid slides into its place from where it stood before the grid reordered, as
+ * far away as its `--slide-from-*` say; with none set it is simply there.
+ */
+@keyframes slide-into-place {
+  from {
+    translate: calc(var(--slide-from-x, 0px) * var(--movement-reach))
+      calc(var(--slide-from-y, 0px) * var(--movement-reach));
+  }
 }
 /*
  * With reduced motion the spinner stands still and breathes instead, down to 40% opacity halfway

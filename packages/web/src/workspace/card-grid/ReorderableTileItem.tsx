@@ -7,6 +7,7 @@ import { TILE_TAB_HEIGHT_CSS } from './tile-tab-geometry.ts';
 import type { TileCellProps } from './tile-cell.ts';
 import { GRID_CELL_FOCUS_GROUP } from './focus-line.ts';
 import type { TileDragHandlers } from './use-line-drag.ts';
+import { slidingTileProps } from './TileSlides.tsx';
 
 /** How wide the bar showing where a dragged line lands is, in CSS px. */
 const DROP_MARK_WIDTH_PX = 4;
@@ -28,6 +29,8 @@ const GRABBING_HAND_WHEN_GRABBED =
 
 interface ReorderableTileItemProps {
   readonly cell: TileCellProps;
+  /** Names the tile by the card it shows, so it slides from where that card stood. */
+  readonly slideKey: string;
   readonly isSelected: boolean;
   /** `null` where touch is the main input: there the order changes in the text alone. */
   readonly dragHandlers: TileDragHandlers | null;
@@ -40,10 +43,12 @@ interface ReorderableTileItemProps {
 
 /**
  * One tile of the card grid as a list item: the cell the keyboard focuses, which the mouse can
- * drag to move its line in the decklist, with the bar that shows where a dragged line lands when it lands by this tile.
+ * drag to move its line in the decklist, with the bar that shows where a dragged line lands when
+ * it lands by this tile. It slides into its new place as the grid reorders.
  */
 export function ReorderableTileItem({
   cell,
+  slideKey,
   isSelected,
   dragHandlers,
   isDragged,
@@ -53,10 +58,12 @@ export function ReorderableTileItem({
   const { t } = useTranslation();
   const [isGrabbed, setIsGrabbed] = useState(false);
   const letGo = () => setIsGrabbed(false);
+  const sliding = slidingTileProps(slideKey);
   return (
     <li
       {...cell}
-      className={`relative min-w-0 ${GRID_CELL_FOCUS_GROUP} ${dragHandlers ? GRABBING_HAND_WHEN_GRABBED : ''} ${isDragged ? 'opacity-40' : ''}`}
+      {...sliding}
+      className={`relative min-w-0 ${sliding.className} ${GRID_CELL_FOCUS_GROUP} ${dragHandlers ? GRABBING_HAND_WHEN_GRABBED : ''} ${isDragged ? 'opacity-40' : ''}`}
       aria-current={isSelected || undefined}
       draggable={dragHandlers !== null || undefined}
       data-grabbed={isGrabbed || undefined}

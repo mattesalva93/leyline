@@ -17,6 +17,7 @@ import { PrintTileCard } from './PrintTileCard.tsx';
 import { ReorderableTileItem } from './ReorderableTileItem.tsx';
 import { siblingGroupColoursOf } from './sibling-group-colours.ts';
 import { tileCellLabel, tileKeyHandler } from './tile-cell.ts';
+import { slidingTileProps } from './TileSlides.tsx';
 import { GRID_SECTION_TITLE_ROW_CLASS, TILE_GRID_CLASS, tileGridStyle } from './tile-grid.ts';
 import { cardWidthOf } from './CopyPile.tsx';
 import { tileTabHeightStyle, tileTabRowsOn } from './tile-tab-geometry.ts';
@@ -37,6 +38,8 @@ export interface CardGridSectionProps {
   /** Selects the tile and takes the focus to its line's panel, as Enter on the tile does. */
   readonly onOpenLinePanel: (selection: TileSelection) => void;
   readonly cellPropsOf: CellPropsOf;
+  /** Names each cell by the card it shows, by its key: a tile keeps it as its line moves. */
+  readonly slideKeys: ReadonlyMap<string, string>;
   readonly onPickCandidate: (writtenIndex: number, oracleId: string) => void;
   readonly onTileQuantityChange: (writtenIndex: number, print: Print, quantity: number) => void;
   readonly onRemoveLine: (writtenIndex: number) => void;
@@ -64,6 +67,7 @@ export function CardGridSection({
   onSelect,
   onOpenLinePanel,
   cellPropsOf,
+  slideKeys,
   onPickCandidate,
   onTileQuantityChange,
   onRemoveLine,
@@ -148,9 +152,12 @@ export function CardGridSection({
                 onRemove={() => onRemoveLine(gridTile.writtenIndex)}
               />
             );
+          const slideKey = slideKeys.get(gridTile.key) ?? gridTile.key;
           return (
             <ReorderableTileItem
-              key={gridTile.key}
+              // By the card, not the line's place: a tile that moves keeps its element and its image.
+              key={slideKey}
+              slideKey={slideKey}
               cell={cell}
               isSelected={selected}
               dragHandlers={lineDrag?.tileDragHandlers(gridTile, section.name) ?? null}
@@ -161,7 +168,8 @@ export function CardGridSection({
             </ReorderableTileItem>
           );
         })}
-        <li>
+        {/* The add tile shows no card: its cell key names it as it slides. */}
+        <li {...slidingTileProps(addTileKeyOf(section.name))}>
           <AddCardTile
             section={section.name}
             lang={defaultLang}

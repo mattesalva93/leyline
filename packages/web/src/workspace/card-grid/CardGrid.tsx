@@ -6,12 +6,14 @@ import { CardGridSection, type CardGridSectionProps } from './CardGridSection.ts
 import { gridCellKeysOf, type GridSection } from './grid-sections.ts';
 import { OnlyAddTileRow } from './OnlyAddTileRow.tsx';
 import { SideboardDropZone } from './SideboardDropZone.tsx';
+import { slideKeysOf } from './tile-slides.ts';
+import { TileSlides } from './TileSlides.tsx';
 import { isOnEmptyGridSpace, useGridCellFocus } from './use-grid-cell-focus.ts';
 import { useLineDrag } from './use-line-drag.ts';
 
 interface CardGridProps extends Omit<
   CardGridSectionProps,
-  'section' | 'zoomOn' | 'lineDrag' | 'cellPropsOf'
+  'section' | 'zoomOn' | 'lineDrag' | 'cellPropsOf' | 'slideKeys'
 > {
   readonly sections: readonly GridSection[];
   /** Whether the mouse can drag tiles to reorder the decklist: not where touch is the main input. */
@@ -25,7 +27,8 @@ interface CardGridProps extends Omit<
  * The decklist as tiles, section by section, in the order of the text within each, each line's
  * sibling tiles side by side, each section ending with its add tile; a decklist with no card shows a
  * lone add tile. A tile the pointer rests on shows its card enlarged; the mouse
- * drags a tile to move its line, into another section too. The keyboard stops on the grid once,
+ * drags a tile to move its line, into another section too. As the grid reorders, its tiles slide
+ * into their new places. The keyboard stops on the grid once,
  * and the arrows go from tile to tile. A click on the grid outside every tile lets go of the
  * selected one.
  */
@@ -44,6 +47,7 @@ export function CardGrid({
   const lineDrag = useLineDrag(onMoveLine);
   // `null` where touch is the main input: there no tile can be dragged.
   const mouseLineDrag = tilesAreDraggable ? lineDrag : null;
+  const slideKeys = slideKeysOf(sections);
   const hasSideboard = sections.some((section) => section.name === 'sideboard');
   // A tile can be selected from outside the grid, such as the first line to fix: bring it in.
   useEffect(() => {
@@ -63,18 +67,21 @@ export function CardGrid({
         {...gridFocusHandlers}
         {...(mouseLineDrag?.gridDropHandlers ?? {})}
       >
-        {sections.map((section) => (
-          <CardGridSection
-            key={section.name}
-            section={section}
-            selection={selection}
-            onSelect={onSelect}
-            zoomOn={zoomOn}
-            lineDrag={mouseLineDrag}
-            cellPropsOf={cellPropsOf}
-            {...sectionProps}
-          />
-        ))}
+        <TileSlides grid={gridRef} slideKeys={[...slideKeys.values()]}>
+          {sections.map((section) => (
+            <CardGridSection
+              key={section.name}
+              section={section}
+              selection={selection}
+              onSelect={onSelect}
+              zoomOn={zoomOn}
+              lineDrag={mouseLineDrag}
+              cellPropsOf={cellPropsOf}
+              slideKeys={slideKeys}
+              {...sectionProps}
+            />
+          ))}
+        </TileSlides>
         {afterSections}
         {sections.length === 0 && (
           <OnlyAddTileRow
