@@ -7,11 +7,16 @@ const SPOTLIT_ATTRIBUTE = 'data-guide-spotlight';
 /** Marks an element the spotlight of the guide leaves lit and clickable. */
 export const GUIDE_SPOTLIT = { [SPOTLIT_ATTRIBUTE]: '' } as const;
 
-/** How far the light reaches past a lit box, in CSS px: clear of its hard shadow. */
-const LIGHT_MARGIN_PX = 8;
-const LIGHT_CORNER_RADIUS_PX = 10;
+/**
+ * How far the light reaches past a spotlit element, in CSS px: out past one standing free, clear
+ * of its controls' hard shadows; in from the edges of one inside a board panel, so the dimming
+ * frames it inside its box like a padding and keeps off the panel's own controls (its fold
+ * button, its edge tab).
+ */
+const LIGHT_MARGIN_PX = { standingFree: 8, insideABoardPanel: -6 } as const;
+const LIGHT_CORNER_RADIUS_PX = 8;
 
-/** `rect` grown by `marginPx` on every side. */
+/** `rect` grown by `marginPx` on every side, or shrunk by a negative one. */
 function grown(rect: DOMRect, marginPx: number): DOMRect {
   return new DOMRect(
     rect.x - marginPx,
@@ -50,62 +55,47 @@ function screenWithHoles(holes: readonly string[]): string {
   return `path(evenodd, '${[screen, ...holes].join(' ')}')`;
 }
 
-/**
- * Where the spotlight lets light and clicks through: the light over the whole box each spotlit
- * element sits in (its board panel, with its border and shadow), the clicks over the spotlit
- * element alone. Between the two the page looks lit but takes no click, as a padding inside
- * the box: a panel's own controls (its fold button, its edge tab) wait for the guided step.
- */
-function spotlightClipPaths(): { readonly light: string; readonly clicks: string } {
-  const spotlit = [...document.querySelectorAll(`[${SPOTLIT_ATTRIBUTE}]`)].filter((element) =>
-    isOnScreen(element.getBoundingClientRect()),
-  );
-  const boxes = spotlit.map((element) => {
-    const box = (boardPanelHolding(element) ?? element).getBoundingClientRect();
-    return roundedRectOver(grown(box, LIGHT_MARGIN_PX), LIGHT_CORNER_RADIUS_PX);
-  });
-  const elements = spotlit.map((element) => roundedRectOver(element.getBoundingClientRect(), 0));
-  return { light: screenWithHoles(boxes), clicks: screenWithHoles(elements) };
+/** Where the spotlight lets light and clicks through: a hole over each spotlit element. */
+function spotlightClipPath(): string {
+  const lights = [...document.querySelectorAll(`[${SPOTLIT_ATTRIBUTE}]`)]
+    .map((element) => {
+      const margin = boardPanelHolding(element)
+        ? LIGHT_MARGIN_PX.insideABoardPanel
+        : LIGHT_MARGIN_PX.standingFree;
+      return grown(element.getBoundingClientRect(), margin);
+    })
+    .filter(isOnScreen)
+    .map((light) => roundedRectOver(light, LIGHT_CORNER_RADIUS_PX));
+  return screenWithHoles(lights);
 }
 
 /**
  * The page dimmed and deaf to the pointer while the guided step's control `control` shows, but for
- * the elements marked `GUIDE_SPOTLIT`, lit in their boxes (see `spotlightClipPaths`). A clip path
- * cuts the holes, and a cut-out part takes no click. The holes follow their elements as the page
- * moves under them. Once the control
- * is out of sight (its panel folded), the bubble with its X goes with it, so the dimming goes too:
- * it never holds the page with no way out.
+ * the elements marked `GUIDE_SPOTLIT` (see `LIGHT_MARGIN_PX`). A clip path cuts the holes, and a
+ * cut-out part takes no click. The holes follow their elements as the page moves under them. Once
+ * the control is out of sight (its panel folded), the bubble with its X goes with it, so the
+ * dimming goes too: it never holds the page with no way out.
  */
 export function GuideSpotlight({ control }: { readonly control: RefObject<HTMLElement | null> }) {
-  const [clipPaths, setClipPaths] = useState<ReturnType<typeof spotlightClipPaths> | null>(null);
+  const [clipPath, setClipPath] = useState<string | null>(null);
   useEffect(() => {
     let frame = 0;
     const follow = () => {
       const controlBox = control.current?.getBoundingClientRect();
-      const next = controlBox && isOnScreen(controlBox) ? spotlightClipPaths() : null;
-      // Unchanged paths keep the same state, so a still page renders nothing each frame.
-      setClipPaths((current) =>
-        current?.light === next?.light && current?.clicks === next?.clicks ? current : next,
-      );
+      // An unchanged path is the same state, so a still page renders nothing each frame.
+      setClipPath(controlBox && isOnScreen(controlBox) ? spotlightClipPath() : null);
       frame = requestAnimationFrame(follow);
     };
     follow();
     return () => cancelAnimationFrame(frame);
   }, [control]);
-  if (clipPaths === null) return null;
+  if (clipPath === null) return null;
   return createPortal(
-    <>
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0 z-40 animate-fade-in bg-spotlight-dimming"
-        style={{ clipPath: clipPaths.light }}
-      />
-      <div
-        aria-hidden="true"
-        className="fixed inset-0 z-40"
-        style={{ clipPath: clipPaths.clicks }}
-      />
-    </>,
+    <div
+      aria-hidden="true"
+      className="fixed inset-0 z-40 animate-fade-in bg-spotlight-dimming"
+      style={{ clipPath }}
+    />,
     document.body,
   );
 }
