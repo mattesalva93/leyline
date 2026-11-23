@@ -1,6 +1,7 @@
 import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BOARD_PANEL, BUTTON_STATES, LABEL } from './board-styles.ts';
+import { useFoldMotion, type FoldMotion } from './use-fold-motion.ts';
 
 interface BoardPanelProps {
   readonly title: string;
@@ -9,10 +10,10 @@ interface BoardPanelProps {
   /** Gives the title bar a button that folds the panel down to its title, and opens it again. */
   readonly isFoldable?: boolean;
   /**
-   * Folds the panel down to a narrow strip that keeps only its title, on its side. Its content
-   * stays mounted, hidden, so it comes back as it was left.
+   * Folds the panel down to a narrow strip that keeps only its title, on its side, once its content
+   * has slid away. Its content stays mounted, hidden, so it comes back as it was left.
    */
-  readonly isFoldedToStrip?: boolean;
+  readonly stripFold?: FoldMotion;
   readonly id?: string;
   readonly className?: string;
   readonly style?: CSSProperties | undefined;
@@ -33,7 +34,7 @@ export function BoardPanel({
   title,
   as: Landmark = 'section',
   isFoldable = false,
-  isFoldedToStrip = false,
+  stripFold,
   id,
   className = '',
   style,
@@ -44,7 +45,9 @@ export function BoardPanel({
   const titleId = useId();
   const bodyId = useId();
   const [isFoldedToTitle, setIsFoldedToTitle] = useState(false);
-  const isOpen = !isFoldedToTitle && !isFoldedToStrip;
+  const titleFold = useFoldMotion(!isFoldedToTitle, 'top');
+  const isFoldedToStrip = stripFold !== undefined && !stripFold.isShownOpen;
+  const isOpenUnderTitle = !isFoldedToTitle;
   return (
     <Landmark
       id={id}
@@ -53,37 +56,47 @@ export function BoardPanel({
       style={style}
       className={`${BOARD_PANEL} flex min-h-0 flex-col overflow-hidden ${isFoldedToStrip ? 'items-center py-3' : ''} ${className}`}
     >
-      {isFoldedToStrip ? (
-        <h2 id={titleId} className={`${LABEL} [writing-mode:vertical-rl]`}>
+      {isFoldedToStrip && (
+        <h2
+          id={titleId}
+          className={`${LABEL} [writing-mode:vertical-rl] ${stripFold?.slidingPart['data-state'] === 'closed' ? 'animate-fade-in' : ''}`}
+        >
           {title}
         </h2>
-      ) : (
+      )}
+      <div
+        {...stripFold?.slidingPart}
+        hidden={isFoldedToStrip}
+        className={`min-h-0 flex-1 flex-col ${isFoldedToStrip ? '' : 'flex'} ${stripFold?.slidingPart.className ?? ''}`}
+      >
+        {/* Above the content, which slides away under it as the panel folds to its title. */}
         <div
-          className={`flex shrink-0 items-center justify-between gap-2 bg-raised px-3 py-1 ${isOpen ? 'border-b-2 border-border' : ''}`}
+          className={`relative z-10 flex shrink-0 items-center justify-between gap-2 bg-raised px-3 py-1 ${titleFold.isShownOpen ? 'border-b-2 border-border' : ''}`}
         >
-          <h2 id={titleId} className={LABEL}>
+          <h2 id={isFoldedToStrip ? undefined : titleId} className={LABEL}>
             {title}
           </h2>
           {isFoldable && (
             <button
               type="button"
-              aria-label={t(isOpen ? 'boardPanel.fold' : 'boardPanel.unfold', { title })}
-              aria-expanded={isOpen}
+              aria-label={t(isOpenUnderTitle ? 'boardPanel.fold' : 'boardPanel.unfold', { title })}
+              aria-expanded={isOpenUnderTitle}
               aria-controls={bodyId}
               className={`grid size-7 place-items-center rounded-sm border-2 border-border bg-panel font-mono text-sm leading-none font-bold ${BUTTON_STATES}`}
               onClick={() => setIsFoldedToTitle(!isFoldedToTitle)}
             >
-              {isOpen ? '▴' : '▾'}
+              {isOpenUnderTitle ? '▴' : '▾'}
             </button>
           )}
         </div>
-      )}
-      <div
-        id={bodyId}
-        hidden={!isOpen}
-        className={`min-h-0 flex-1 flex-col ${isOpen ? 'flex' : ''} ${bodyClassName}`}
-      >
-        {children}
+        <div
+          id={bodyId}
+          hidden={!titleFold.isShownOpen}
+          {...titleFold.slidingPart}
+          className={`min-h-0 flex-1 flex-col ${titleFold.isShownOpen ? 'flex' : ''} ${titleFold.slidingPart.className} ${bodyClassName}`}
+        >
+          {children}
+        </div>
       </div>
     </Landmark>
   );

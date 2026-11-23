@@ -1,5 +1,6 @@
-import { cleanup, fireEvent, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { animateRadixParts, endExitAnimationsWithin } from '../../test-support/exit-animations.ts';
 import { mountApp } from '../../test-support/mount-app.tsx';
 import { mountPageAndWrite, answerApiCallsFromCatalog } from '../../test-support/workspace-page.ts';
 
@@ -22,6 +23,22 @@ describe('the side panels on a wide screen', () => {
     await user.click(screen.getByRole('button', { name: 'Riapri il pannello «Lista»' }));
 
     expect(screen.getByRole('textbox', { name: 'Decklist' })).toBe(decklist);
+  });
+
+  it('keeps a folding panel as wide as it was, its content in sight, until the content has slid away', async () => {
+    animateRadixParts();
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+    const panel = screen.getByRole('region', { name: 'Lista' });
+    const openWidth = panel.style.width;
+
+    await user.click(screen.getByRole('button', { name: 'Richiudi il pannello «Lista»' }));
+
+    expect(panel.style.width).toBe(openWidth);
+    expect(screen.getByRole('textbox', { name: 'Decklist' })).toBeTruthy();
+    act(() => endExitAnimationsWithin(panel));
+    expect(panel.style.width).toBe('');
+    expect(screen.queryByRole('textbox', { name: 'Decklist' })).toBeNull();
   });
 
   it('folds the inspector down to a strip with the title of what it shows', async () => {

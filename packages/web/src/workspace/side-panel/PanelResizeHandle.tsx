@@ -1,6 +1,6 @@
 import { useRef, type KeyboardEvent, type PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { CentreSide } from './PanelEdgeTab.tsx';
+import type { CentreSide } from './side-panel-layout.ts';
 import { SIDE_PANEL_KEY_STEP_PX, type SidePanelWidthLimits } from './side-panel-layout.ts';
 
 /**

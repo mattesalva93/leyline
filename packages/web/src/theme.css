@@ -66,6 +66,9 @@
   --animate-slide-out-to-left: slide-out-to-left var(--duration-exit) ease-in forwards;
   --animate-slide-in-from-bottom: slide-in-from-bottom var(--duration-enter) ease-out;
   --animate-slide-out-to-bottom: slide-out-to-bottom var(--duration-exit) ease-in forwards;
+  /* Mirrored easings, so a fold turning back halfway can start where the content is. */
+  --animate-unfold: unfold var(--duration-enter) ease-out;
+  --animate-fold: fold var(--duration-exit) ease-in forwards;
   --animate-loading-turn: loading-turn var(--duration-loading-turn) linear infinite;
 }
 
@@ -104,6 +107,33 @@
   to {
     translate: 0 calc(100% * var(--movement-reach));
   }
+}
+/*
+ * A panel's content slides in from the side it folds towards, set by a `folds-toward-*` utility,
+ * and fades in as it does, so with reduced motion it still fades.
+ */
+@keyframes unfold {
+  from {
+    opacity: 0;
+    translate: calc(var(--fold-reach-x, 0%) * var(--movement-reach))
+      calc(var(--fold-reach-y, 0%) * var(--movement-reach));
+  }
+}
+@keyframes fold {
+  to {
+    opacity: 0;
+    translate: calc(var(--fold-reach-x, 0%) * var(--movement-reach))
+      calc(var(--fold-reach-y, 0%) * var(--movement-reach));
+  }
+}
+@utility folds-toward-left {
+  --fold-reach-x: -100%;
+}
+@utility folds-toward-right {
+  --fold-reach-x: 100%;
+}
+@utility folds-toward-top {
+  --fold-reach-y: -100%;
 }
 /*
  * With reduced motion the spinner stands still and breathes instead, down to 40% opacity halfway

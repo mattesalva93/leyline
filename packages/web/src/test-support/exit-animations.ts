@@ -43,3 +43,8 @@ export function endExitAnimation(part: Element) {
   });
   fireEvent(part, animationEnd);
 }
+
+/** Ends the exit animation of every closing part inside `root`. */
+export function endExitAnimationsWithin(root: Element) {
+  root.querySelectorAll('[data-state="closed"]').forEach(endExitAnimation);
+}
