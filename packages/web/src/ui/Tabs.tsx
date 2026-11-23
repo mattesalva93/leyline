@@ -13,7 +13,7 @@ export function Tab({ value, children }: { readonly value: string; readonly chil
   return (
     <RadixTabs.Trigger
       value={value}
-      className={`rounded-md border-2 border-border px-4 py-1.5 text-lg font-bold tracking-tight data-[state=active]:bg-foreground data-[state=active]:text-panel data-[state=inactive]:hover:bg-accent data-[state=inactive]:hover:text-accent-foreground ${SINKS_WHEN_PRESSED}`}
+      className={`rounded-md border-2 border-border px-4 py-1.5 text-lg font-bold tracking-tight hover:bg-accent hover:text-accent-foreground data-[state=active]:bg-foreground data-[state=active]:text-panel ${SINKS_WHEN_PRESSED}`}
     >
       {children}
     </RadixTabs.Trigger>
