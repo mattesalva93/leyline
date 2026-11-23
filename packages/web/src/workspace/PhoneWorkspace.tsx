@@ -17,17 +17,19 @@ import { panelLineOf, SelectedLinePanel } from './line-panel/SelectedLinePanel.t
 import { SheetSettings } from './sheet/SheetSettings.tsx';
 import { SheetView } from './sheet/SheetView.tsx';
 import { TILE_WIDTH_PX } from './card-grid/tile-width.ts';
-import { GUIDED_STEP_GAP_PX, type GuidedStepPlacement } from './guide/GuidedStepBubble.tsx';
+import type { GuidedStepPlacement } from './guide/GuidedStepBubble.tsx';
 import { focusCurrentGridCell } from './card-grid/use-grid-cell-focus.ts';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 
 const STEPS: readonly WorkspaceStep[] = ['list', 'cards', 'sheet'];
 
-/** Under the decklist, on the left: clear of the fold button at the right of the panel below. */
+/**
+ * Over the empty foot of the decklist, on the left: its arrow rises into the box, and the bubble
+ * stays clear of the fold button at the right of the panel below.
+ */
 const DECKLIST_GUIDED_STEP: GuidedStepPlacement = {
   side: 'bottom',
-  align: 'start',
-  gapPx: GUIDED_STEP_GAP_PX,
+  aimInside: (decklist) => ({ x: decklist.left + 80, y: decklist.bottom - 130 }),
 };
 
 /**

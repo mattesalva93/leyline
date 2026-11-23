@@ -2,6 +2,11 @@
 export const GUIDED_STEPS = ['startDecklist'] as const;
 export type GuidedStep = (typeof GUIDED_STEPS)[number];
 
+/** Where `step` comes in the guide, counting from 1. */
+export function guidedStepNumber(step: GuidedStep): number {
+  return GUIDED_STEPS.indexOf(step) + 1;
+}
+
 export function isGuidedStep(value: unknown): value is GuidedStep {
   return GUIDED_STEPS.some((step) => step === value);
 }

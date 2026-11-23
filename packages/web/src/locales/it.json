@@ -304,6 +304,7 @@
     "skipStep": "Salta questo passo",
     "steps": {
       "startDecklist": "Incolla o scrivi la decklist, oppure prova un esempio."
-    }
+    },
+    "stepNumber": "Guida · {{number}}"
   }
 }

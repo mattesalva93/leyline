@@ -8,7 +8,7 @@ import { SINKS_DOWN_WITH_PRESSED_GROUP } from '../../ui/board-styles.ts';
 export type CentreSide = 'left' | 'right';
 
 /** How far the tab stands out of its panel's edge, in CSS px. */
-export const EDGE_TAB_REACH_PX = 14;
+const EDGE_TAB_REACH_PX = 14;
 
 /**
  * The tab standing out of a side panel's edge at mid height, on the side facing the centre:

@@ -10,8 +10,7 @@ import { Inspector } from './side-panel/Inspector.tsx';
 import { PdfControl } from './sheet/PdfControl.tsx';
 import { SheetView } from './sheet/SheetView.tsx';
 import { SidePanel } from './side-panel/SidePanel.tsx';
-import { EDGE_TAB_REACH_PX } from './side-panel/PanelEdgeTab.tsx';
-import { GUIDED_STEP_GAP_PX, type GuidedStepPlacement } from './guide/GuidedStepBubble.tsx';
+import type { GuidedStepPlacement } from './guide/GuidedStepBubble.tsx';
 import { Tab, TabList, TabPanel, Tabs } from '../ui/Tabs.tsx';
 import { TileWidthSlider } from './card-grid/TileWidthSlider.tsx';
 import { useTileWidth } from './card-grid/tile-width.ts';
@@ -23,11 +22,16 @@ import {
   type WorkspaceState,
 } from './workspace-state.ts';
 
-/** Out in the centre, clear of the decklist panel's edge tab at mid height. */
+/**
+ * Out in the centre beside the decklist, below the empty workspace's example button, so it hides
+ * none of the invite: its arrow enters the decklist a little in from its edge.
+ */
 const DECKLIST_GUIDED_STEP: GuidedStepPlacement = {
   side: 'right',
-  align: 'center',
-  gapPx: EDGE_TAB_REACH_PX + GUIDED_STEP_GAP_PX,
+  aimInside: (decklist) => ({
+    x: decklist.right - 48,
+    y: Math.min(decklist.top + 290, decklist.bottom - 40),
+  }),
 };
 
 /**

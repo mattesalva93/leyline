@@ -38,6 +38,12 @@ describe('the guide', () => {
     expect(within(guidedStep()).getByText(FIRST_STEP_TEXT)).toBeTruthy();
   });
 
+  it('tells which step of the guide its bubble is', () => {
+    mountApp('/proxy');
+
+    expect(within(guidedStep()).getByText('Guida · 1')).toBeTruthy();
+  });
+
   it('closes its first guided step by itself once the first line is recognised', async () => {
     const user = await mountPageAndWrite('4 Sol Ring');
     expect(isGuidedStepShown()).toBe(true);

@@ -2,6 +2,9 @@
 
 export const HARD_SHADOW = 'shadow-[4px_4px_0_var(--color-border)]';
 
+/** The hard shadow cast by a shape and what stands out of it, such as a bubble and its arrow. */
+export const HARD_DROP_SHADOW = 'drop-shadow-[4px_4px_0_var(--color-border)]';
+
 /** The hard shadow of a pressed button, cut by the 2 px it sank, so its far edge stays put. */
 const HALF_SUNK_HARD_SHADOW = 'not-disabled:active:shadow-[2px_2px_0_var(--color-border)]';
 
