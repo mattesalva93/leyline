@@ -7,6 +7,9 @@ import { SINKS_DOWN_WITH_PRESSED_GROUP } from '../../ui/board-styles.ts';
  */
 export type CentreSide = 'left' | 'right';
 
+/** How far the tab stands out of its panel's edge, in CSS px. */
+export const EDGE_TAB_REACH_PX = 14;
+
 /**
  * The tab standing out of a side panel's edge at mid height, on the side facing the centre:
  * it folds the panel down to a strip and opens it again, its arrow pointing the way the panel's
@@ -40,7 +43,8 @@ export function PanelEdgeTab({
       title={label}
       aria-expanded={isOpen}
       aria-controls={panelId}
-      className={`group absolute outline-none top-1/2 z-20 h-14 w-4 -translate-y-1/2 font-mono text-xs font-bold text-foreground ${onRight ? '-right-[14px]' : '-left-[14px]'}`}
+      className="group absolute top-1/2 z-20 h-14 w-4 -translate-y-1/2 font-mono text-xs font-bold text-foreground outline-none"
+      style={{ [onRight ? 'right' : 'left']: -EDGE_TAB_REACH_PX }}
       onClick={onToggle}
     >
       <span
