@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import {
-  GuidedStepAnchor,
+  GuidedStepBubble,
   type GuidedStepPlacement,
-} from '../workspace/guide/GuidedStepAnchor.tsx';
+} from '../workspace/guide/GuidedStepBubble.tsx';
 import type { Guide } from '../workspace/guide/use-guide.ts';
 import { LoadingSpinner } from '../ui/LoadingSpinner.tsx';
 import type { Generator } from '../generator/use-generator.ts';
@@ -30,7 +30,7 @@ export function DecklistEditor({
   const ref = useFocusKeptAcrossLayouts();
   return (
     <>
-      <GuidedStepAnchor guide={guide} step="startDecklist" placement={guidedStepPlacement}>
+      <GuidedStepBubble guide={guide} guidedStep="startDecklist" placement={guidedStepPlacement}>
         <textarea
           ref={ref}
           id="decklist"
@@ -59,7 +59,7 @@ export function DecklistEditor({
           }}
           onBlur={generator.resolveEveryLine}
         />
-      </GuidedStepAnchor>
+      </GuidedStepBubble>
       <p className="shrink-0 px-3 text-xs text-muted-foreground empty:hidden" aria-live="polite">
         {generator.isResolving && <LoadingSpinner label={t('decklist.resolving')} />}
       </p>

@@ -5,11 +5,11 @@ import { loadGuideProgress, saveGuideProgress, type GuideProgress } from './save
 /** The guide as the workspace shows it: the one guided step on screen, if any. */
 export interface Guide {
   /** The first guided step neither done nor skipped, or `null` once there is none. */
-  readonly shownStep: GuidedStep | null;
-  readonly skipStep: (step: GuidedStep) => void;
+  readonly shownGuidedStep: GuidedStep | null;
+  readonly skipGuidedStep: (step: GuidedStep) => void;
 }
 
-function withStep(steps: readonly GuidedStep[], step: GuidedStep): readonly GuidedStep[] {
+function withGuidedStep(steps: readonly GuidedStep[], step: GuidedStep): readonly GuidedStep[] {
   return steps.includes(step) ? steps : [...steps, step];
 }
 
@@ -23,10 +23,10 @@ export function useGuide(facts: GuideFacts): Guide {
     (step) => !progress.done.includes(step) && isActionTaken(step, facts),
   );
   if (stepsJustDone.length > 0) {
-    setProgress({ ...progress, done: stepsJustDone.reduce(withStep, progress.done) });
+    setProgress({ ...progress, done: stepsJustDone.reduce(withGuidedStep, progress.done) });
   }
   useEffect(() => saveGuideProgress(progress), [progress]);
-  const shownStep =
+  const shownGuidedStep =
     GUIDED_STEPS.find(
       (step) =>
         !progress.done.includes(step) &&
@@ -34,8 +34,8 @@ export function useGuide(facts: GuideFacts): Guide {
         !stepsJustDone.includes(step),
     ) ?? null;
   return {
-    shownStep,
-    skipStep: (step) =>
-      setProgress((current) => ({ ...current, skipped: withStep(current.skipped, step) })),
+    shownGuidedStep,
+    skipGuidedStep: (step) =>
+      setProgress((current) => ({ ...current, skipped: withGuidedStep(current.skipped, step) })),
   };
 }

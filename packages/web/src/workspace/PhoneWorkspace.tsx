@@ -17,7 +17,7 @@ import { panelLineOf, SelectedLinePanel } from './line-panel/SelectedLinePanel.t
 import { SheetSettings } from './sheet/SheetSettings.tsx';
 import { SheetView } from './sheet/SheetView.tsx';
 import { TILE_WIDTH_PX } from './card-grid/tile-width.ts';
-import { GUIDED_STEP_GAP_PX, type GuidedStepPlacement } from './guide/GuidedStepAnchor.tsx';
+import { GUIDED_STEP_GAP_PX, type GuidedStepPlacement } from './guide/GuidedStepBubble.tsx';
 import { focusCurrentGridCell } from './card-grid/use-grid-cell-focus.ts';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 

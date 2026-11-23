@@ -12,6 +12,9 @@ import type { Guide } from './use-guide.ts';
 /** The space between a bubble and its control, in CSS px: close, never over it. */
 export const GUIDED_STEP_GAP_PX = 10;
 
+/** The least a bubble keeps from the screen's edges, in CSS px, as the page's side gutter does. */
+const SCREEN_EDGE_CLEARANCE_PX = 16;
+
 /**
  * Where a bubble stands by its control: on which side, lined up with which end of it, and how far
  * from it.
@@ -23,30 +26,30 @@ export interface GuidedStepPlacement {
 }
 
 /** Turns down what Radix would do by default: move the focus, or close on Escape or a click elsewhere. */
-const turnDown = (event: Event) => event.preventDefault();
+const preventRadixDefault = (event: Event) => event.preventDefault();
 
 /**
- * Where the control `children` shows the bubble of its guided step `step`, at `placement`,
+ * Where the control `children` shows the bubble of its guided step `guidedStep`, at `placement`,
  * while the guide has that step on screen. The bubble follows the control in the page, so Tab
  * reaches its X right after the control; it never takes the focus, and only its X or the step's
  * action closes it. The X gives the focus to the control, which the bubble's text describes while
  * it is on screen: a screen reader reads it out when it reaches the control.
  */
-export function GuidedStepAnchor({
+export function GuidedStepBubble({
   guide,
-  step,
+  guidedStep,
   placement,
   children,
 }: {
   readonly guide: Guide;
-  readonly step: GuidedStep;
+  readonly guidedStep: GuidedStep;
   readonly placement: GuidedStepPlacement;
   readonly children: ReactElement;
 }) {
   const { t } = useTranslation();
   const controlRef = useRef<HTMLElement | null>(null);
   const textId = useId();
-  const isShown = guide.shownStep === step;
+  const isShown = guide.shownGuidedStep === guidedStep;
   return (
     <RadixPopover.Root open={isShown} modal={false}>
       <RadixPopover.Anchor
@@ -65,15 +68,15 @@ export function GuidedStepAnchor({
         side={placement.side}
         align={placement.align}
         sideOffset={placement.gapPx}
-        collisionPadding={16}
-        onOpenAutoFocus={turnDown}
-        onCloseAutoFocus={turnDown}
-        onEscapeKeyDown={turnDown}
-        onInteractOutside={turnDown}
+        collisionPadding={SCREEN_EDGE_CLEARANCE_PX}
+        onOpenAutoFocus={preventRadixDefault}
+        onCloseAutoFocus={preventRadixDefault}
+        onEscapeKeyDown={preventRadixDefault}
+        onInteractOutside={preventRadixDefault}
         className={`z-30 flex max-w-64 items-start gap-2 rounded-lg border-2 border-border bg-panel py-2 pr-2 pl-3 text-sm text-foreground ${HARD_SHADOW} ${FADES_IN_AND_OUT}`}
       >
         <p id={textId} className="flex-1">
-          {t(`guide.steps.${step}`)}
+          {t(`guide.steps.${guidedStep}`)}
         </p>
         <button
           type="button"
@@ -82,7 +85,7 @@ export function GuidedStepAnchor({
           onClick={() => {
             // The X leaves the page with the bubble: the focus would fall back to the page's start.
             controlRef.current?.focus();
-            guide.skipStep(step);
+            guide.skipGuidedStep(guidedStep);
           }}
         >
           <Icon name="close" />

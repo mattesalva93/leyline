@@ -11,7 +11,7 @@ import { PdfControl } from './sheet/PdfControl.tsx';
 import { SheetView } from './sheet/SheetView.tsx';
 import { SidePanel } from './side-panel/SidePanel.tsx';
 import { EDGE_TAB_REACH_PX } from './side-panel/PanelEdgeTab.tsx';
-import { GUIDED_STEP_GAP_PX, type GuidedStepPlacement } from './guide/GuidedStepAnchor.tsx';
+import { GUIDED_STEP_GAP_PX, type GuidedStepPlacement } from './guide/GuidedStepBubble.tsx';
 import { Tab, TabList, TabPanel, Tabs } from '../ui/Tabs.tsx';
 import { TileWidthSlider } from './card-grid/TileWidthSlider.tsx';
 import { useTileWidth } from './card-grid/tile-width.ts';
