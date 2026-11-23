@@ -50,20 +50,19 @@ export function CandidateCarousel({
 
   const images = candidates.map((candidate, candidateIndex) => {
     const image = candidate.defaultPrint?.faces[0]?.imageUris.normal;
-    // Never `visible` for the one shown: it would undo the hiding of an image yet to arrive.
-    const isShown = candidateIndex === shownIndex;
+    const visibility = candidateIndex === shownIndex ? 'visible' : 'invisible';
     return image ? (
       <FadingInImage
         key={candidate.card.oracleId}
         src={image}
         // The announcement and the pick button name the card shown.
         alt=""
-        className={`absolute inset-0 size-full ${isInGridCell ? 'object-cover object-top' : 'object-contain'} ${isShown ? '' : 'invisible'}`}
+        className={`absolute inset-0 size-full ${isInGridCell ? 'object-cover object-top' : 'object-contain'} ${visibility}`}
       />
     ) : (
       <span
         key={candidate.card.oracleId}
-        className={`absolute inset-0 border-2 border-dashed border-border ${isShown ? '' : 'invisible'}`}
+        className={`absolute inset-0 border-2 border-dashed border-border ${visibility}`}
       />
     );
   });
