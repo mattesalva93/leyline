@@ -3,6 +3,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
 import { DESKTOP, PHONE, stubScreen } from '../test-support/test-screen.ts';
+import { animateRadixParts, endExitAnimationsWithin } from '../test-support/exit-animations.ts';
 import {
   mountPageAndWrite,
   pickCandidate,
@@ -397,6 +398,18 @@ describe('the workspace on a phone', () => {
 
     expect(screen.getByRole('textbox', { name: 'Decklist' })).toBe(decklist);
     expect(screen.queryByRole('group', { name: 'Lingua delle carte' })).toBeNull();
+  });
+
+  it("keeps a folding panel's content in sight until it has slid up under the title", async () => {
+    animateRadixParts();
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const panel = screen.getByRole('region', { name: 'Lista' });
+
+    await user.click(screen.getByRole('button', { name: 'Richiudi il pannello «Lista»' }));
+
+    expect(screen.getByRole('textbox', { name: 'Decklist' })).toBeTruthy();
+    act(() => endExitAnimationsWithin(panel));
+    expect(screen.queryByRole('textbox', { name: 'Decklist' })).toBeNull();
   });
 
   it('makes the PDF from the "Foglio" step and hands it to the share menu of a phone that can', async () => {

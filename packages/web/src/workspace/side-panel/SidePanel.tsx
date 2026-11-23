@@ -1,5 +1,6 @@
 import { useId, type ReactNode } from 'react';
 import { BoardPanel } from '../../ui/BoardPanel.tsx';
+import { useFoldMotion } from '../../ui/use-fold-motion.ts';
 import { PanelEdgeTab, type CentreSide } from './PanelEdgeTab.tsx';
 import { PanelResizeHandle } from './PanelResizeHandle.tsx';
 import { SIDE_PANEL_WIDTH_PX, type SidePanelName } from './side-panel-layout.ts';
@@ -31,15 +32,17 @@ export function SidePanel({
   const limits = SIDE_PANEL_WIDTH_PX[name];
   const { isOpen, toggle, resize } = controls;
   const { width, maxWidth } = fitted;
+  // The panel folds towards the side of the workspace away from the centre.
+  const fold = useFoldMotion(isOpen, centreSide === 'right' ? 'left' : 'right');
   const panel = (
     <div className={`relative flex shrink-0 ${className}`}>
       <BoardPanel
         id={panelId}
         as={as}
         title={title}
-        isFoldedToStrip={!isOpen}
-        className={isOpen ? '' : 'w-10'}
-        style={isOpen ? { width } : undefined}
+        stripFold={fold}
+        className={fold.isShownOpen ? '' : 'w-10'}
+        style={fold.isShownOpen ? { width } : undefined}
       >
         {children}
       </BoardPanel>
