@@ -8,7 +8,14 @@ export const DialogTrigger = RadixDialog.Trigger;
 export const DialogClose = RadixDialog.Close;
 export const DialogTitle = RadixDialog.Title;
 
-const OVERLAY = 'fixed inset-0 z-40 bg-overlay';
+/** Radix keeps a closing part on the page until its exit animation ends. */
+const FADES_IN_AND_OUT = 'data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out';
+const SLIDES_IN_AND_OUT_ON_THE_LEFT =
+  'data-[state=open]:animate-slide-in-from-left data-[state=closed]:animate-slide-out-to-left';
+const SLIDES_IN_AND_OUT_AT_THE_BOTTOM =
+  'data-[state=open]:animate-slide-in-from-bottom data-[state=closed]:animate-slide-out-to-bottom';
+
+const OVERLAY = `fixed inset-0 z-40 bg-overlay ${FADES_IN_AND_OUT}`;
 
 /**
  * Marks a field that Escape empties while it has text. Radix hears Escape before the field
@@ -45,7 +52,7 @@ export function CenteredDialogContent({
       <RadixDialog.Content
         aria-label={ariaLabel}
         aria-describedby={undefined}
-        className={`fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] ${CENTERED_DIALOG_MAX_WIDTH[width]} -translate-x-1/2 -translate-y-1/2 rounded-lg border-2 border-border bg-panel p-5 text-sm text-foreground shadow-[4px_4px_0_var(--color-border)] ${className}`}
+        className={`fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] ${CENTERED_DIALOG_MAX_WIDTH[width]} -translate-x-1/2 -translate-y-1/2 ${FADES_IN_AND_OUT} rounded-lg border-2 border-border bg-panel p-5 text-sm text-foreground shadow-[4px_4px_0_var(--color-border)] ${className}`}
       >
         {children}
       </RadixDialog.Content>
@@ -61,7 +68,7 @@ export function SideDrawerContent({ ariaLabel, className = '', children }: Dialo
       <RadixDialog.Content
         aria-label={ariaLabel}
         aria-describedby={undefined}
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col gap-1 border-r-2 border-border bg-panel p-4 font-sans text-foreground ${className}`}
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col gap-1 border-r-2 border-border bg-panel p-4 font-sans text-foreground ${SLIDES_IN_AND_OUT_ON_THE_LEFT} ${className}`}
       >
         {children}
       </RadixDialog.Content>
@@ -69,7 +76,7 @@ export function SideDrawerContent({ ariaLabel, className = '', children }: Dialo
   );
 }
 
-/** A panel over the whole screen, as a phone shows a step of its own. */
+/** A panel over the whole screen that rises from the bottom, as a phone shows a step of its own. */
 export function FullScreenPanelContent({
   ariaLabel,
   className = '',
@@ -86,7 +93,7 @@ export function FullScreenPanelContent({
         aria-describedby={undefined}
         onCloseAutoFocus={onCloseAutoFocus}
         onEscapeKeyDown={leaveEscapeToAFieldItEmpties}
-        className={`fixed inset-x-0 top-0 z-50 flex h-dvh flex-col bg-panel font-sans text-foreground ${className}`}
+        className={`fixed inset-x-0 top-0 z-50 flex h-dvh flex-col bg-panel font-sans text-foreground ${SLIDES_IN_AND_OUT_AT_THE_BOTTOM} ${className}`}
       >
         {children}
       </RadixDialog.Content>

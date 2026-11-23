@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PHONE, stubScreen } from '../../test-support/test-screen.ts';
 import {
@@ -9,6 +9,7 @@ import {
   answerApiCallsFromCatalog,
 } from '../../test-support/workspace-page.ts';
 import { cardGrid, gridTiles, tileAt, focusOutlineOf } from '../../test-support/grid-queries.ts';
+import { animateRadixParts, endExitAnimation } from '../../test-support/exit-animations.ts';
 
 vi.mock('../../api.ts');
 
@@ -139,6 +140,26 @@ describe('the card grid from the keyboard', () => {
     expect(within(panel).getByRole('heading', { name: 'Sol Ring' })).toBeTruthy();
     await user.keyboard('{Escape}');
 
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        focusableTile('Sol Ring, C21 #1, 4 copie, Stampa in inglese'),
+      ),
+    );
+  });
+
+  it('gives the focus back to the tile once the phone panel has slid away', async () => {
+    stubScreen(PHONE);
+    animateRadixParts();
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+    focusableTile('Sol Ring, C21 #1, 4 copie, Stampa in inglese').focus();
+    await user.keyboard('{Enter}');
+    const panel = await screen.findByRole('dialog', { name: 'Riga selezionata' });
+
+    await user.keyboard('{Escape}');
+    act(() => endExitAnimation(panel));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
     await waitFor(() =>
       expect(document.activeElement).toBe(
         focusableTile('Sol Ring, C21 #1, 4 copie, Stampa in inglese'),

@@ -92,7 +92,9 @@ export function moveEveryCopy(line: ResolvedLine, toPrint: Print): AllocationCho
 
 /**
  * The allocation choice moving every copy of the tile of `fromPrint` onto `toPrint`, which joins
- * the tile of `toPrint` if the line has one and becomes the most recently changed allocation.
+ * the tile of `toPrint` if the line has one. The moved copies take the tile's place, both among
+ * its siblings and in the order the line loses copies in: the default print's tile stands first
+ * in the grid, so its copies go before every allocation.
  */
 export function moveTileCopies(
   line: ResolvedLine,
@@ -102,11 +104,20 @@ export function moveTileCopies(
   const { oracleId } = line.card;
   if (fromPrint.id === toPrint.id) return { oracleId, allocations: line.allocations };
   const tileCopies = copiesByPrint(line).find(({ print }) => print.id === fromPrint.id);
-  const others = line.allocations.filter(
-    ({ print }) => print.id !== fromPrint.id && print.id !== toPrint.id,
-  );
-  const quantity = (tileCopies?.quantity ?? 0) + copiesAllocatedTo(line, toPrint);
-  return { oracleId, allocations: [...others, { print: toPrint, quantity }] };
+  const moved = {
+    print: toPrint,
+    quantity: (tileCopies?.quantity ?? 0) + copiesAllocatedTo(line, toPrint),
+  };
+  const withoutToPrint = line.allocations.filter(({ print }) => print.id !== toPrint.id);
+  if (fromPrint.id === line.defaultPrint?.id) {
+    const others = withoutToPrint.filter(({ print }) => print.id !== fromPrint.id);
+    return { oracleId, allocations: [moved, ...others] };
+  }
+  const tilePlace = withoutToPrint.findIndex(({ print }) => print.id === fromPrint.id);
+  // `with(-1)` would replace the last allocation: a print with no tile leaves its copies at the end.
+  const allocations =
+    tilePlace === -1 ? [...withoutToPrint, moved] : withoutToPrint.with(tilePlace, moved);
+  return { oracleId, allocations };
 }
 
 /**

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { PRINT_PICKER_SCROLL_ROOT_PROPS } from '../print-picker/print-picker-marks.ts';
 import { SYMBOL_BUTTON } from '../../ui/board-styles.ts';
 import { Dialog, DialogClose, FullScreenPanelContent } from '../../ui/Dialog.tsx';
+import { useShownUntilGone } from './use-shown-until-gone.ts';
 
 /**
  * On a phone, the panel of the tapped tile's line, over the whole screen: the content the
@@ -27,28 +28,27 @@ export function PhoneLinePanel({
 }) {
   const { t } = useTranslation();
   const isOpen = children !== null;
+  const panelContent = useShownUntilGone({ title, heading, children }, isOpen);
   return (
     <Dialog open={isOpen} onOpenChange={(open) => open || onClose()}>
-      {isOpen && (
-        <FullScreenPanelContent
-          ariaLabel={title}
-          onCloseAutoFocus={(event) => {
-            event.preventDefault();
-            onClosed();
-          }}
-        >
-          {/* Outside the scrolling body, so nothing it brings into view goes under the header. */}
-          <header className="flex shrink-0 items-center gap-3 border-b-2 border-border px-4 py-2">
-            <div className="flex min-w-0 flex-1 items-center gap-3">{heading}</div>
-            <DialogClose className={`${SYMBOL_BUTTON} shrink-0`} aria-label={t('panel.close')}>
-              {t('panel.closeSymbol')}
-            </DialogClose>
-          </header>
-          <div className="min-h-0 flex-1 overflow-y-auto p-4" {...PRINT_PICKER_SCROLL_ROOT_PROPS}>
-            {children}
-          </div>
-        </FullScreenPanelContent>
-      )}
+      <FullScreenPanelContent
+        ariaLabel={panelContent.title}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          onClosed();
+        }}
+      >
+        {/* Outside the scrolling body, so nothing it brings into view goes under the header. */}
+        <header className="flex shrink-0 items-center gap-3 border-b-2 border-border px-4 py-2">
+          <div className="flex min-w-0 flex-1 items-center gap-3">{panelContent.heading}</div>
+          <DialogClose className={`${SYMBOL_BUTTON} shrink-0`} aria-label={t('panel.close')}>
+            {t('panel.closeSymbol')}
+          </DialogClose>
+        </header>
+        <div className="min-h-0 flex-1 overflow-y-auto p-4" {...PRINT_PICKER_SCROLL_ROOT_PROPS}>
+          {panelContent.children}
+        </div>
+      </FullScreenPanelContent>
     </Dialog>
   );
 }

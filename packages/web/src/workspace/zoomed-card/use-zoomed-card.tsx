@@ -35,8 +35,9 @@ interface Zoom {
 
 /**
  * A card shown enlarged, at reading size, beside the element the pointer has rested on for
- * `waitMs`. Only a pointer zooms: a touch never does. Leaving the element, pressing on it,
- * scrolling anything or starting a drag puts the card away, so it is never in the way.
+ * `waitMs`. Only a pointer zooms: a touch never does, nor a pointer carrying a drag. Leaving the
+ * element, pressing on it, scrolling anything or starting a drag puts the card away, so it is never
+ * in the way.
  */
 export function useZoomedCard(waitMs: number): {
   readonly zoomOn: ZoomOn;
@@ -44,6 +45,8 @@ export function useZoomedCard(waitMs: number): {
 } {
   const { t } = useTranslation();
   const timer = useRef<number | undefined>(undefined);
+  // Some browsers still report the pointer entering tiles while a drag carries it over them.
+  const isDragging = useRef(false);
   const [zoom, setZoom] = useState<Zoom | null>(null);
 
   const hide = useCallback(() => {
@@ -52,19 +55,31 @@ export function useZoomedCard(waitMs: number): {
   }, []);
 
   useEffect(() => {
+    const startDrag = () => {
+      isDragging.current = true;
+      hide();
+    };
+    const endDrag = () => {
+      isDragging.current = false;
+    };
     // Capturing, since a scroll does not bubble: the scroll of any zone reaches the window.
     window.addEventListener('scroll', hide, true);
-    window.addEventListener('dragstart', hide, true);
+    window.addEventListener('dragstart', startDrag, true);
+    window.addEventListener('dragend', endDrag, true);
+    // A drop too: the reorder it makes may take the dragged tile out, and its `dragend` with it.
+    window.addEventListener('drop', endDrag, true);
     return () => {
       window.removeEventListener('scroll', hide, true);
-      window.removeEventListener('dragstart', hide, true);
+      window.removeEventListener('dragstart', startDrag, true);
+      window.removeEventListener('dragend', endDrag, true);
+      window.removeEventListener('drop', endDrag, true);
       window.clearTimeout(timer.current);
     };
   }, [hide]);
 
   const zoomOn: ZoomOn = (face, besideClosest) => ({
     onPointerEnter(event) {
-      if (!face || event.pointerType === 'touch') return;
+      if (!face || event.pointerType === 'touch' || isDragging.current) return;
       const element = event.currentTarget;
       window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => {
@@ -87,7 +102,7 @@ export function useZoomedCard(waitMs: number): {
     // On the page itself, so no scrolling or clipping zone it was opened from can cut it.
     createPortal(
       <img
-        className={`pointer-events-none fixed z-50 ring-3 ring-border ${HARD_SHADOW}`}
+        className={`pointer-events-none fixed z-50 animate-fade-in ring-3 ring-border ${HARD_SHADOW}`}
         style={{ ...CARD_SHAPE, left: zoom.left, top: zoom.top, ...ZOOMED_CARD_PX }}
         src={zoom.face.imageUris.large}
         alt={t('zoomedCard.alt', { name: zoom.face.name })}

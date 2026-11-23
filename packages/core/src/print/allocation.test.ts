@@ -8,6 +8,7 @@ import {
   moveEveryCopy,
   moveTileCopies,
   previewPrint,
+  printTiles,
   createInMemoryCatalog,
   resolveDecklist,
   unallocatedCopies,
@@ -154,6 +155,27 @@ describe('moveTileCopies', () => {
     ]);
   });
 
+  it('leaves the tile where it stood among its siblings, whichever it is', async () => {
+    const line = await forestSplitTwoOneOne();
+
+    expect(
+      tilesOf(applyAllocationChoice(line, moveTileCopies(line, forestM21, forestNeo))),
+    ).toEqual([
+      ['forest-neo', 2],
+      ['forest-znr', 1],
+      ['forest-fdn', 1],
+    ]);
+  });
+
+  it('takes the place of the tile in the order the line loses copies in, too', async () => {
+    const line = await forestSplitTwoOneOne();
+    const moved = moveTileCopies(line, forestM21, forestNeo);
+
+    expect(fitAllocations(moved, 2).allocations).toMatchObject([
+      { print: { id: 'forest-neo' }, quantity: 2 },
+    ]);
+  });
+
   it('joins the tile of the tapped print when it already has one, adding up their copies', async () => {
     const line = await forestSplitTwoOneOne();
 
@@ -198,19 +220,34 @@ describe('moveTileCopies', () => {
     expect(
       tilesOf(applyAllocationChoice(line, moveTileCopies(line, forestFdn, forestNeo))),
     ).toEqual([
+      ['forest-neo', 2],
       ['forest-m21', 2],
       ['forest-znr', 1],
-      ['forest-neo', 2],
     ]);
   });
 
-  it('makes the tapped print the most recently changed: the first to lose copies', async () => {
+  it('leaves the tile of the default print first, where the grid shows it', async () => {
     const line = await forestSplitTwoOneOne();
-    const joined = moveTileCopies(line, forestFdn, forestM21);
 
-    expect(fitAllocations(joined, 3).allocations).toMatchObject([
-      { print: { id: 'forest-znr' }, quantity: 1 },
-      { print: { id: 'forest-m21' }, quantity: 2 },
+    const moved = resolved(applyAllocationChoice(line, moveTileCopies(line, forestFdn, forestNeo)));
+
+    expect(printTiles(moved).map(({ print, quantity }) => [print.id, quantity])).toEqual([
+      ['forest-neo', 1],
+      ['forest-m21', 2],
+      ['forest-znr', 1],
+    ]);
+  });
+
+  it('leaves the tile of the default print first when it joins another tile', async () => {
+    const line = await forestSplitTwoOneOne();
+
+    const joined = resolved(
+      applyAllocationChoice(line, moveTileCopies(line, forestFdn, forestZnr)),
+    );
+
+    expect(printTiles(joined).map(({ print, quantity }) => [print.id, quantity])).toEqual([
+      ['forest-znr', 2],
+      ['forest-m21', 2],
     ]);
   });
 });

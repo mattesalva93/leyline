@@ -24,7 +24,7 @@ export function DecklistEditor({
         id="decklist"
         aria-label={t('decklist.label')}
         spellCheck={false}
-        className={`resize-none bg-transparent p-3 font-mono text-[13px] leading-5 -outline-offset-4 ${className}`}
+        className={`resize-none bg-transparent p-3 font-mono text-[13px] leading-5 outline-none ${className}`}
         value={generator.decklistText}
         placeholder={t('decklist.placeholder')}
         onChange={(event) =>
