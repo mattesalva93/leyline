@@ -10,6 +10,10 @@ export const DialogTitle = RadixDialog.Title;
 
 /** Radix keeps a closing part on the page until its exit animation ends. */
 const FADES_IN_AND_OUT = 'data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out';
+const SLIDES_IN_AND_OUT_ON_THE_LEFT =
+  'data-[state=open]:animate-slide-in-from-left data-[state=closed]:animate-slide-out-to-left';
+const SLIDES_IN_AND_OUT_AT_THE_BOTTOM =
+  'data-[state=open]:animate-slide-in-from-bottom data-[state=closed]:animate-slide-out-to-bottom';
 
 const OVERLAY = `fixed inset-0 z-40 bg-overlay ${FADES_IN_AND_OUT}`;
 
@@ -64,7 +68,7 @@ export function SideDrawerContent({ ariaLabel, className = '', children }: Dialo
       <RadixDialog.Content
         aria-label={ariaLabel}
         aria-describedby={undefined}
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col gap-1 border-r-2 border-border bg-panel p-4 font-sans text-foreground data-[state=open]:animate-slide-in-from-left data-[state=closed]:animate-slide-out-to-left ${className}`}
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col gap-1 border-r-2 border-border bg-panel p-4 font-sans text-foreground ${SLIDES_IN_AND_OUT_ON_THE_LEFT} ${className}`}
       >
         {children}
       </RadixDialog.Content>
@@ -89,7 +93,7 @@ export function FullScreenPanelContent({
         aria-describedby={undefined}
         onCloseAutoFocus={onCloseAutoFocus}
         onEscapeKeyDown={leaveEscapeToAFieldItEmpties}
-        className={`fixed inset-x-0 top-0 z-50 flex h-dvh flex-col bg-panel font-sans text-foreground data-[state=open]:animate-slide-in-from-bottom data-[state=closed]:animate-slide-out-to-bottom ${className}`}
+        className={`fixed inset-x-0 top-0 z-50 flex h-dvh flex-col bg-panel font-sans text-foreground ${SLIDES_IN_AND_OUT_AT_THE_BOTTOM} ${className}`}
       >
         {children}
       </RadixDialog.Content>

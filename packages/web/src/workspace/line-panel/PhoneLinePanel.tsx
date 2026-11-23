@@ -28,11 +28,11 @@ export function PhoneLinePanel({
 }) {
   const { t } = useTranslation();
   const isOpen = children !== null;
-  const shown = useShownUntilGone({ title, heading, children }, isOpen);
+  const panelContent = useShownUntilGone({ title, heading, children }, isOpen);
   return (
     <Dialog open={isOpen} onOpenChange={(open) => open || onClose()}>
       <FullScreenPanelContent
-        ariaLabel={shown.title}
+        ariaLabel={panelContent.title}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
           onClosed();
@@ -40,13 +40,13 @@ export function PhoneLinePanel({
       >
         {/* Outside the scrolling body, so nothing it brings into view goes under the header. */}
         <header className="flex shrink-0 items-center gap-3 border-b-2 border-border px-4 py-2">
-          <div className="flex min-w-0 flex-1 items-center gap-3">{shown.heading}</div>
+          <div className="flex min-w-0 flex-1 items-center gap-3">{panelContent.heading}</div>
           <DialogClose className={`${SYMBOL_BUTTON} shrink-0`} aria-label={t('panel.close')}>
             {t('panel.closeSymbol')}
           </DialogClose>
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto p-4" {...PRINT_PICKER_SCROLL_ROOT_PROPS}>
-          {shown.children}
+          {panelContent.children}
         </div>
       </FullScreenPanelContent>
     </Dialog>

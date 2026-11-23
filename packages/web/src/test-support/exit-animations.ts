@@ -1,8 +1,15 @@
 import { fireEvent } from '@testing-library/react';
 import { onTestFinished, vi } from 'vitest';
 
+/** The states a Radix part that opens and closes takes, in its `data-state`. */
+type OpenOrClosed = 'open' | 'closed';
+
+function isOpenOrClosed(state: string | null): state is OpenOrClosed {
+  return state === 'open' || state === 'closed';
+}
+
 /** The animation a Radix part runs in each state, as the theme's classes would give it. */
-const ANIMATION_BY_STATE: Readonly<Record<string, string>> = {
+const ANIMATION_BY_STATE: Readonly<Record<OpenOrClosed, string>> = {
   open: 'test-enter',
   closed: 'test-exit',
 };
@@ -18,7 +25,10 @@ export function animateRadixParts() {
     const style = realGetComputedStyle(element, pseudoElement);
     // A getter, since a computed style is live: Radix reads it again once the part has closed.
     Object.defineProperty(style, 'animationName', {
-      get: () => ANIMATION_BY_STATE[element.getAttribute('data-state') ?? ''] ?? 'none',
+      get: () => {
+        const state = element.getAttribute('data-state');
+        return isOpenOrClosed(state) ? ANIMATION_BY_STATE[state] : 'none';
+      },
     });
     return style;
   });
