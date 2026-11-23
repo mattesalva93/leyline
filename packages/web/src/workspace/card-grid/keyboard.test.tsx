@@ -39,10 +39,11 @@ describe('the card grid from the keyboard', () => {
   });
 
   it('takes one stop of Tab, on its first tile, and the next Tab leaves it', async () => {
-    const user = await focusBeforeTheGrid(
-      '4 Sol Ring{Enter}1 Lightning Bolt{Enter}',
-      'Lightning Bolt',
-    );
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Lightning Bolt' });
+    // The X of a guided step pointing to the first tile would be the next stop.
+    await user.click(screen.getByRole('button', { name: 'Salta questo passo' }));
+    screen.getByRole('button', { name: 'Controlla il foglio →' }).focus();
 
     await user.tab();
     expect(document.activeElement).toBe(gridTiles()[0]);

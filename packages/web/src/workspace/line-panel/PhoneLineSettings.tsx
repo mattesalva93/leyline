@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { FoldedCopyBreakdown } from './FoldedCopyBreakdown.tsx';
+import type { GuidedStepPlacement } from '../guide/GuidedStepBubble.tsx';
 import { LanguageSegments } from '../../language/LanguageSegments.tsx';
 import type { LinePanelProps } from './LinePanel.tsx';
 import { LineQuantityField } from './LineQuantityField.tsx';
@@ -10,6 +11,15 @@ import { PrintPickerSection } from '../print-picker/PrintPickerSection.tsx';
 import { PrintSearchField } from '../print-picker/PrintSearchField.tsx';
 import { PrintWarningNote } from './PrintWarningNote.tsx';
 import { useLinePanelPrints } from './use-line-panel-prints.ts';
+
+/**
+ * Above the picker, over the quantity and the breakdown: its arrow comes down into the picker by
+ * its first prints.
+ */
+const PRINT_PICKER_BUBBLE_PLACEMENT: GuidedStepPlacement = {
+  side: 'top',
+  aimInside: (picker) => ({ x: picker.left + 80, y: picker.top + 110 }),
+};
 
 /**
  * The settings of one line laid out for a phone, under the header that names the card: the
@@ -36,7 +46,11 @@ export function PhoneLineSettings({
       />
       <LineQuantityField quantity={line.quantity} onQuantityChange={onQuantityChange} />
       <FoldedCopyBreakdown line={line} openingQuantity={openingQuantity} />
-      <PrintPickerSection line={line} className="border-t-2 border-border pt-3">
+      <PrintPickerSection
+        line={line}
+        guidedStepPlacement={PRINT_PICKER_BUBBLE_PLACEMENT}
+        className="border-t-2 border-border pt-3"
+      >
         <PrintCountHeading total={printPages.total} isSearching={printQuery.searched !== ''} />
         <div className="mt-2 flex items-center gap-2">
           <LanguageSegments

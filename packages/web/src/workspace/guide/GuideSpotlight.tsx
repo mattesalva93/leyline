@@ -1,20 +1,33 @@
 import { useEffect, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import { boardPanelHolding } from '../../ui/BoardPanel.tsx';
+import { boardPanelBodyHolding } from '../../ui/BoardPanel.tsx';
 
 const SPOTLIT_ATTRIBUTE = 'data-guide-spotlight';
 
 /** Marks an element the spotlight of the guide leaves lit and clickable. */
 export const GUIDE_SPOTLIT = { [SPOTLIT_ATTRIBUTE]: '' } as const;
 
+/** How far the light reaches past a spotlit element, in CSS px: clear of its controls' hard shadows. */
+const LIGHT_REACH_PX = 8;
 /**
- * How far the light reaches past a spotlit element, in CSS px: out past one standing free, clear
- * of its controls' hard shadows; in from the edges of one inside a board panel, so the dimming
- * frames it inside its box like a padding and keeps off the panel's own controls (its fold
- * button, its edge tab).
+ * How far in from the edges of a board panel's body the light stops, in CSS px: the dimming frames
+ * an element filling the body inside its box like a padding, and keeps off the panel's own
+ * controls (its fold button, its edge tab) and off what the body scrolls out of sight.
  */
-const LIGHT_MARGIN_PX = { standingFree: 8, insideABoardPanel: -6 } as const;
+const LIGHT_INSET_IN_A_BOARD_PANEL_PX = 6;
 const LIGHT_CORNER_RADIUS_PX = 8;
+
+/** Where `a` and `b` overlap: a box with no size when they do not. */
+function overlap(a: DOMRect, b: DOMRect): DOMRect {
+  const left = Math.max(a.left, b.left);
+  const top = Math.max(a.top, b.top);
+  return new DOMRect(
+    left,
+    top,
+    Math.max(Math.min(a.right, b.right) - left, 0),
+    Math.max(Math.min(a.bottom, b.bottom) - top, 0),
+  );
+}
 
 /** `rect` grown by `marginPx` on every side, or shrunk by a negative one. */
 function grown(rect: DOMRect, marginPx: number): DOMRect {
@@ -55,15 +68,18 @@ function screenWithHoles(holes: readonly string[]): string {
   return `path(evenodd, '${[screen, ...holes].join(' ')}')`;
 }
 
+/** The light over a spotlit element, kept inside the body of a board panel holding it. */
+function lightOver(element: Element): DOMRect {
+  const light = grown(element.getBoundingClientRect(), LIGHT_REACH_PX);
+  const panelBody = boardPanelBodyHolding(element);
+  if (!panelBody) return light;
+  return overlap(light, grown(panelBody.getBoundingClientRect(), -LIGHT_INSET_IN_A_BOARD_PANEL_PX));
+}
+
 /** Where the spotlight lets light and clicks through: a hole over each spotlit element. */
 function spotlightClipPath(): string {
   const lights = [...document.querySelectorAll(`[${SPOTLIT_ATTRIBUTE}]`)]
-    .map((element) => {
-      const margin = boardPanelHolding(element)
-        ? LIGHT_MARGIN_PX.insideABoardPanel
-        : LIGHT_MARGIN_PX.standingFree;
-      return grown(element.getBoundingClientRect(), margin);
-    })
+    .map(lightOver)
     .filter(isOnScreen)
     .map((light) => roundedRectOver(light, LIGHT_CORNER_RADIUS_PX));
   return screenWithHoles(lights);
@@ -71,7 +87,7 @@ function spotlightClipPath(): string {
 
 /**
  * The page dimmed and deaf to the pointer while the guided step's control `control` shows, but for
- * the elements marked `GUIDE_SPOTLIT` (see `LIGHT_MARGIN_PX`). A clip path cuts the holes, and a
+ * the elements marked `GUIDE_SPOTLIT` (see `lightOver`). A clip path cuts the holes, and a
  * cut-out part takes no click. The holes follow their elements as the page moves under them. Once
  * the control is out of sight (its panel folded), the bubble with its X goes with it, so the
  * dimming goes too: it never holds the page with no way out.

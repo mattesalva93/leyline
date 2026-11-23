@@ -6,6 +6,7 @@ import { CardGridSection, type CardGridSectionProps } from './CardGridSection.ts
 import { gridCellKeysOf, type GridSection } from './grid-sections.ts';
 import { OnlyAddTileRow } from './OnlyAddTileRow.tsx';
 import { SideboardDropZone } from './SideboardDropZone.tsx';
+import { guidedStepsOfTiles } from './guided-tiles.ts';
 import { slideKeysOf } from './tile-slides.ts';
 import { TileSlides } from './TileSlides.tsx';
 import { isOnEmptyGridSpace, useGridCellFocus } from './use-grid-cell-focus.ts';
@@ -13,7 +14,7 @@ import { useLineDrag } from './use-line-drag.ts';
 
 interface CardGridProps extends Omit<
   CardGridSectionProps,
-  'section' | 'zoomOn' | 'lineDrag' | 'cellPropsOf' | 'slideKeys'
+  'section' | 'zoomOn' | 'lineDrag' | 'cellPropsOf' | 'slideKeys' | 'guidedStepsOfTiles'
 > {
   readonly sections: readonly GridSection[];
   /** Whether the mouse can drag tiles to reorder the decklist: not where touch is the main input. */
@@ -48,6 +49,7 @@ export function CardGrid({
   // `null` where touch is the main input: there no tile can be dragged.
   const mouseLineDrag = tilesAreDraggable ? lineDrag : null;
   const slideKeys = slideKeysOf(sections);
+  const guidedSteps = guidedStepsOfTiles(sections);
   const hasSideboard = sections.some((section) => section.name === 'sideboard');
   // A tile can be selected from outside the grid, such as the first line to fix: bring it in.
   useEffect(() => {
@@ -78,6 +80,7 @@ export function CardGrid({
               lineDrag={mouseLineDrag}
               cellPropsOf={cellPropsOf}
               slideKeys={slideKeys}
+              guidedStepsOfTiles={guidedSteps}
               {...sectionProps}
             />
           ))}

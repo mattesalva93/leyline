@@ -303,7 +303,12 @@
     "bubbleLabel": "Passo guidato",
     "skipStep": "Salta questo passo",
     "steps": {
-      "startDecklist": "Incolla o scrivi la decklist, oppure prova un esempio."
+      "startDecklist": "Incolla o scrivi la decklist, oppure prova un esempio.",
+      "openLinePanel": "Apri una carta per vederne quantità e stampe.",
+      "changePrint": "Tocca un’altra stampa: le copie della carta passano a quella.",
+      "fixLine": "Questa riga va sistemata: scegli la carta giusta o toglila dalla lista.",
+      "goToSheet": "Guarda il foglio, come verrà stampato.",
+      "makePdf": "Crea il PDF da stampare."
     },
     "stepNumber": "Guida · {{number}}"
   }

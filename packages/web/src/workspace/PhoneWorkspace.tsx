@@ -17,7 +17,7 @@ import { panelLineOf, SelectedLinePanel } from './line-panel/SelectedLinePanel.t
 import { SheetSettings } from './sheet/SheetSettings.tsx';
 import { SheetView } from './sheet/SheetView.tsx';
 import { TILE_WIDTH_PX } from './card-grid/tile-width.ts';
-import type { GuidedStepPlacement } from './guide/GuidedStepBubble.tsx';
+import { GuidedStepBubble, type GuidedStepPlacement } from './guide/GuidedStepBubble.tsx';
 import { focusCurrentGridCell } from './card-grid/use-grid-cell-focus.ts';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 
@@ -27,9 +27,25 @@ const STEPS: readonly WorkspaceStep[] = ['list', 'cards', 'sheet'];
  * Over the empty foot of the decklist, on the left: its arrow rises into the box, and the bubble
  * stays clear of the fold button at the right of the panel below.
  */
-const DECKLIST_GUIDED_STEP: GuidedStepPlacement = {
+const DECKLIST_BUBBLE_PLACEMENT: GuidedStepPlacement = {
   side: 'bottom',
   aimInside: (decklist) => ({ x: decklist.left + 80, y: decklist.bottom - 130 }),
+};
+
+/** Below the tile, over the tiles under it: its arrow rises into the card by its foot. */
+const TILE_BUBBLE_PLACEMENT: GuidedStepPlacement = {
+  side: 'bottom',
+  aimInside: (tile) => ({ x: tile.left + 48, y: tile.bottom - 40 }),
+};
+
+/**
+ * Above the bar at the foot of the screen, running back left from its arrow: the sheet's button
+ * is the last of the bar, by the right edge.
+ */
+const SHEET_BUTTON_BUBBLE_PLACEMENT: GuidedStepPlacement = {
+  side: 'top',
+  align: 'end',
+  aimInside: (button) => ({ x: button.left + button.width / 2, y: button.top + 8 }),
 };
 
 /**
@@ -58,8 +74,7 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
             <BoardPanel title={t('workspace.decklistPanel')} isFoldable className="shrink-0">
               <DecklistEditor
                 generator={generator}
-                guide={state.guide}
-                guidedStepPlacement={DECKLIST_GUIDED_STEP}
+                guidedStepPlacement={DECKLIST_BUBBLE_PLACEMENT}
                 className="h-[38dvh]"
               />
             </BoardPanel>
@@ -79,6 +94,7 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
             <CardsView
               state={state}
               tileWidthPx={TILE_WIDTH_PX.default}
+              guidedTilePlacement={TILE_BUBBLE_PLACEMENT}
               // The panel rises over the grid and takes the focus as it opens.
               onOpenLinePanel={(selection) => {
                 isLinePanelOpenedByKeyboard.current = true;
@@ -108,15 +124,20 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
         style={{ gridTemplateColumns: `repeat(${STEPS.length}, 1fr)` }}
       >
         {STEPS.map((name) => (
-          <button
+          <GuidedStepBubble
             key={name}
-            type="button"
-            aria-current={step === name ? 'step' : undefined}
-            className={`${LABEL} border-border not-last:border-r-2 ${step === name ? `bg-foreground text-panel ${SINKS_WHEN_PRESSED}` : BUTTON_STATES}`}
-            onClick={() => state.goToStep(name)}
+            guidedStep={name === 'sheet' ? 'goToSheet' : null}
+            placement={SHEET_BUTTON_BUBBLE_PLACEMENT}
           >
-            {t(`workspace.stepNames.${name}`)}
-          </button>
+            <button
+              type="button"
+              aria-current={step === name ? 'step' : undefined}
+              className={`${LABEL} border-border not-last:border-r-2 ${step === name ? `bg-foreground text-panel ${SINKS_WHEN_PRESSED}` : BUTTON_STATES}`}
+              onClick={() => state.goToStep(name)}
+            >
+              {t(`workspace.stepNames.${name}`)}
+            </button>
+          </GuidedStepBubble>
         ))}
       </nav>
       <PhoneLinePanel

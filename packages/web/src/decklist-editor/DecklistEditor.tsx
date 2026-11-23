@@ -3,7 +3,6 @@ import {
   GuidedStepBubble,
   type GuidedStepPlacement,
 } from '../workspace/guide/GuidedStepBubble.tsx';
-import type { Guide } from '../workspace/guide/use-guide.ts';
 import { LoadingSpinner } from '../ui/LoadingSpinner.tsx';
 import type { Generator } from '../generator/use-generator.ts';
 import { NewDecklistButton } from './NewDecklistButton.tsx';
@@ -17,12 +16,10 @@ import { useFocusKeptAcrossLayouts } from './use-focus-kept-across-layouts.ts';
  */
 export function DecklistEditor({
   generator,
-  guide,
   guidedStepPlacement,
   className = '',
 }: {
   readonly generator: Generator;
-  readonly guide: Guide;
   readonly guidedStepPlacement: GuidedStepPlacement;
   readonly className?: string;
 }) {
@@ -30,7 +27,7 @@ export function DecklistEditor({
   const ref = useFocusKeptAcrossLayouts();
   return (
     <>
-      <GuidedStepBubble guide={guide} guidedStep="startDecklist" placement={guidedStepPlacement}>
+      <GuidedStepBubble guidedStep="startDecklist" placement={guidedStepPlacement}>
         <textarea
           ref={ref}
           id="decklist"

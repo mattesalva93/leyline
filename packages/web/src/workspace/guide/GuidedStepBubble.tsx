@@ -1,8 +1,11 @@
-// The bubble of a guided step, an owned component on the Radix popover (ADR 0010): Radix places it
-// by its control; the look is ours.
-import * as RadixPopover from '@radix-ui/react-popover';
+// The bubble of a guided step, an owned component on Radix primitives (ADR 0010): Radix's popper
+// places it by its control and its presence keeps it on the page while it fades out; the look is
+// ours. It is no popover: a popover answers Escape and clicks elsewhere, and swallows the Escape
+// meant for the page around it, while only its X or the step's action closes a bubble.
+import * as RadixPopper from '@radix-ui/react-popper';
+import { Presence } from '@radix-ui/react-presence';
 import { Slot } from '@radix-ui/react-slot';
-import { useId, useMemo, useRef, type ReactElement } from 'react';
+import { useEffect, useId, useMemo, useRef, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BUTTON_STATES, HARD_DROP_SHADOW, LABEL } from '../../ui/board-styles.ts';
 import { Icon } from '../../ui/Icon.tsx';
@@ -11,11 +14,12 @@ import {
   GUIDE_ARROW_INSET_PX,
   GUIDE_ARROW_LENGTH_PX,
   GuideArrow,
+  type GuideBubbleAlign,
   type GuideBubbleSide,
 } from './GuideArrow.tsx';
 import { GUIDE_SPOTLIT, GuideSpotlight } from './GuideSpotlight.tsx';
-import { guidedStepNumber, type GuidedStep } from './guided-steps.ts';
-import type { Guide } from './use-guide.ts';
+import type { GuidedStep } from './guided-steps.ts';
+import { useWorkspaceGuide } from './guide-context.ts';
 
 /** A point on the screen, in CSS px. */
 interface ScreenPoint {
@@ -23,39 +27,49 @@ interface ScreenPoint {
   readonly y: number;
 }
 
-/** Where a bubble stands by its control: on which side, and where in the control its arrow points. */
+/**
+ * Where a bubble stands by its control: on which side, which way along that side it runs from
+ * its arrow, and where in the control its arrow points.
+ */
 export interface GuidedStepPlacement {
   readonly side: GuideBubbleSide;
+  /** `end` for a control near the far edge of the screen: the bubble runs back from its arrow. */
+  readonly align?: GuideBubbleAlign;
   /** The point inside the control, given the control's box, that the arrow's tip enters. */
   readonly aimInside: (control: DOMRect) => ScreenPoint;
 }
 
-/** Turns down what Radix would do by default: move the focus, or close on Escape or a click elsewhere. */
-const preventRadixDefault = (event: Event) => event.preventDefault();
-
 /**
  * Where the control `children` shows the bubble of its guided step `guidedStep`, at `placement`,
- * while the guide has that step on screen, the page dimmed around the step's controls. The bubble
- * follows the control in the page, so Tab reaches its X right after the control; it never takes
+ * while the workspace's guide has that step on screen, the page dimmed around the step's
+ * controls. The bubble follows the control in the page, so Tab reaches its X right after the control; it never takes
  * the focus, and only its X or the step's action closes it. The X gives the focus to the control,
  * which the bubble's text describes while it is on screen: a screen reader reads it out when it
  * reaches the control.
  */
 export function GuidedStepBubble({
-  guide,
   guidedStep,
-  placement: { side, aimInside },
+  placement: { side, align = 'start', aimInside },
   children,
 }: {
-  readonly guide: Guide;
-  readonly guidedStep: GuidedStep;
+  /** `null` for a control no guided step points to now: it keeps its element as one comes and goes. */
+  readonly guidedStep: GuidedStep | null;
   readonly placement: GuidedStepPlacement;
   readonly children: ReactElement;
 }) {
   const { t } = useTranslation();
+  const guide = useWorkspaceGuide();
   const controlRef = useRef<HTMLElement>(null);
   const textId = useId();
-  const isShown = guide.shownGuidedStep === guidedStep;
+  const isShown = guidedStep !== null && guide.shownGuidedStep === guidedStep;
+  // A control out of sight, such as a line to fix far down the grid, comes to the middle of the
+  // screen, leaving its bubble room on either side.
+  useEffect(() => {
+    const control = controlRef.current;
+    if (!isShown || !control) return;
+    const { top, bottom } = control.getBoundingClientRect();
+    if (top < 0 || bottom > window.innerHeight) control.scrollIntoView({ block: 'center' });
+  }, [isShown]);
   // The bubble stands by a point inside the control, read as the control is now: a control that
   // comes back in a new element, as a phone's folding panel brings it, keeps its bubble.
   const aimPoint = useMemo(
@@ -70,8 +84,8 @@ export function GuidedStepBubble({
     [aimInside],
   );
   return (
-    <RadixPopover.Root open={isShown} modal={false}>
-      <RadixPopover.Anchor virtualRef={aimPoint} />
+    <RadixPopper.Root>
+      <RadixPopper.Anchor virtualRef={aimPoint} />
       <Slot
         ref={controlRef}
         aria-describedby={isShown ? textId : undefined}
@@ -80,44 +94,43 @@ export function GuidedStepBubble({
         {children}
       </Slot>
       {isShown && <GuideSpotlight control={controlRef} />}
-      <RadixPopover.Content
-        role="status"
-        aria-label={t('guide.bubbleLabel')}
-        side={side}
-        sideOffset={GUIDE_ARROW_LENGTH_PX}
-        // The arrow leaves the bubble this far along its edge: the bubble starts as far before the point.
-        align="start"
-        alignOffset={-GUIDE_ARROW_INSET_PX}
-        // A bubble moved off its side would leave its arrow pointing away from the control.
-        avoidCollisions={false}
-        onOpenAutoFocus={preventRadixDefault}
-        onCloseAutoFocus={preventRadixDefault}
-        onEscapeKeyDown={preventRadixDefault}
-        onInteractOutside={preventRadixDefault}
-        className={`relative z-50 flex max-w-72 items-start gap-3 rounded-2xl border-2 border-border bg-panel py-3 pr-2 pl-4 text-base text-foreground ${HARD_DROP_SHADOW} ${FADES_IN_AND_OUT}`}
-      >
-        <GuideArrow side={side} />
-        <div className="flex flex-1 flex-col gap-1">
-          <span className={`${LABEL} text-accent`}>
-            {t('guide.stepNumber', { number: guidedStepNumber(guidedStep) })}
-          </span>
-          <p id={textId} className="leading-snug">
-            {t(`guide.steps.${guidedStep}`)}
-          </p>
-        </div>
-        <button
-          type="button"
-          aria-label={t('guide.skipStep')}
-          className={`grid size-6 shrink-0 place-items-center rounded-sm ${BUTTON_STATES}`}
-          onClick={() => {
-            // The X leaves the page with the bubble: the focus would fall back to the page's start.
-            controlRef.current?.focus();
-            guide.skipGuidedStep(guidedStep);
-          }}
+      <Presence present={isShown}>
+        <RadixPopper.Content
+          role="status"
+          aria-label={t('guide.bubbleLabel')}
+          data-state={isShown ? 'open' : 'closed'}
+          side={side}
+          sideOffset={GUIDE_ARROW_LENGTH_PX}
+          // The arrow leaves the bubble this far along its edge: the bubble starts as far before the point.
+          align={align}
+          alignOffset={-GUIDE_ARROW_INSET_PX}
+          // A bubble moved off its side would leave its arrow pointing away from the control.
+          avoidCollisions={false}
+          className={`relative z-50 flex max-w-72 items-start gap-3 rounded-2xl border-2 border-border bg-panel py-3 pr-2 pl-4 text-base text-foreground ${HARD_DROP_SHADOW} ${FADES_IN_AND_OUT}`}
         >
-          <Icon name="close" />
-        </button>
-      </RadixPopover.Content>
-    </RadixPopover.Root>
+          <GuideArrow side={side} align={align} />
+          <div className="flex flex-1 flex-col gap-1">
+            <span className={`${LABEL} text-accent`}>
+              {t('guide.stepNumber', { number: guide.shownGuidedStepNumber })}
+            </span>
+            <p id={textId} className="leading-snug">
+              {guidedStep && t(`guide.steps.${guidedStep}`)}
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-label={t('guide.skipStep')}
+            className={`grid size-6 shrink-0 place-items-center rounded-sm ${BUTTON_STATES}`}
+            onClick={() => {
+              // The X leaves the page with the bubble: the focus would fall back to the page's start.
+              controlRef.current?.focus();
+              if (guidedStep) guide.skipGuidedStep(guidedStep);
+            }}
+          >
+            <Icon name="close" />
+          </button>
+        </RadixPopper.Content>
+      </Presence>
+    </RadixPopper.Root>
   );
 }
