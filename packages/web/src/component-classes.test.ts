@@ -28,6 +28,14 @@ describe('the classes of the components', () => {
     expect(componentsWithClass(/\bcursor-pointer\b/g)).toEqual({});
   });
 
+  it('leave every duration to the theme', () => {
+    expect(
+      componentsWithClass(
+        /\bduration-[\w[\]().-]+|\b\d+(?:\.\d+)?m?s\b|\b(?:animation|transition)Duration\b/g,
+      ),
+    ).toEqual({});
+  });
+
   it('leave the pressed shift to the shared button classes', () => {
     const { './ui/board-styles.ts': sharedClasses, ...elsewhere } = componentsWithClass(
       /\bactive:translate-[xy]-[\w.]+/g,
@@ -51,5 +59,13 @@ describe('the shared button classes', () => {
   it('sink the primary button into its hard shadow, its far edge kept in place', () => {
     expect(PRIMARY_BUTTON).toContain(HARD_SHADOW);
     expect(PRIMARY_BUTTON).toContain('not-disabled:active:shadow-[2px_2px_0_var(--color-border)]');
+  });
+
+  it('lift the primary button by 2 px under the pointer until pressed, its shadow stretched so its far edge stays put', () => {
+    expect(PRIMARY_BUTTON).toContain('motion-safe:not-disabled:not-active:hover:-translate-x-0.5');
+    expect(PRIMARY_BUTTON).toContain('motion-safe:not-disabled:not-active:hover:-translate-y-0.5');
+    expect(PRIMARY_BUTTON).toContain(
+      'motion-safe:not-disabled:not-active:hover:shadow-[6px_6px_0_var(--color-border)]',
+    );
   });
 });

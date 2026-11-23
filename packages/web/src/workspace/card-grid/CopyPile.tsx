@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { CARD_SHAPE } from '../card-image/card-shape.ts';
+import { FadingInImage } from '../card-image/FadingInImage.tsx';
 
 /** The most copies a pile draws: past it, a tile of more copies looks the same. */
 const MAX_COPIES = 5;
@@ -68,7 +69,7 @@ export function CopyPile({ copies, imageUrl, ringColour }: CopyPileProps) {
         }}
       >
         {imageUrl && (
-          <img
+          <FadingInImage
             className="block w-full"
             style={CARD_SHAPE}
             src={imageUrl}

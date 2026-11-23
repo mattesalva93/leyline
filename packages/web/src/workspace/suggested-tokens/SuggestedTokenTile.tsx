@@ -4,6 +4,7 @@ import { CARD_SHAPE } from '../card-image/card-shape.ts';
 import { Icon } from '../../ui/Icon.tsx';
 import { PileFreeTileFrame } from '../card-grid/PileFreeTileFrame.tsx';
 import { SINKS_WITH_PRESSED_GROUP } from '../../ui/board-styles.ts';
+import { FadingInImage } from '../card-image/FadingInImage.tsx';
 
 /** A token as its add button names it: its name, then the set and number its line is written with. */
 function tokenLabel({ candidate: { card, defaultPrint } }: SuggestedToken): string {
@@ -33,7 +34,7 @@ export function SuggestedTokenTile({
           className="relative overflow-hidden border-2 border-dashed border-border"
         >
           {face && (
-            <img
+            <FadingInImage
               src={face.imageUris.normal}
               alt={t('line.imageAlt', { name: face.name })}
               loading="lazy"

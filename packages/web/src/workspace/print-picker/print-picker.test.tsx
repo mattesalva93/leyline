@@ -463,3 +463,16 @@ describe('the print search in the print picker', () => {
     expect(await phonePanel().findByText('3 stampe disponibili')).toBeTruthy();
   });
 });
+
+describe('the print picker while its prints load', () => {
+  it('shows a spinner named after the prints it loads', async () => {
+    const user = await mountPageAndWrite('4 Brainstorm{Enter}');
+    vi.mocked(api.fetchPrintPage).mockReturnValue(new Promise(() => {}));
+
+    await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
+
+    expect(
+      await screen.findByRole('progressbar', { name: 'Caricamento delle stampe…' }),
+    ).toBeTruthy();
+  });
+});

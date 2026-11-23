@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { LoadingSpinner } from '../ui/LoadingSpinner.tsx';
 import type { Generator } from '../generator/use-generator.ts';
 import { NewDecklistButton } from './NewDecklistButton.tsx';
 import { textAfterPasteAtEnd } from './paste-at-end.ts';
@@ -48,7 +49,7 @@ export function DecklistEditor({
         onBlur={generator.resolveEveryLine}
       />
       <p className="shrink-0 px-3 text-xs text-muted-foreground empty:hidden" aria-live="polite">
-        {generator.isResolving && t('decklist.resolving')}
+        {generator.isResolving && <LoadingSpinner label={t('decklist.resolving')} />}
       </p>
       {generator.lastResolveFailed && (
         <p role="alert" className="shrink-0 px-3 pb-2 text-xs text-danger">

@@ -79,7 +79,8 @@ try {
     if (flags.line.length > 0 || flags.example) await setUpWorkspace(page);
     await waitUntilImagesOnScreenArrived(page);
     const path = `${PREVIEW_DIR}web-${width}.png`;
-    await page.screenshot({ path });
+    // An image that just arrived is still fading in: the shot shows where every animation ends.
+    await page.screenshot({ path, animations: 'disabled' });
     console.log(`Wrote ${path}`);
     await context.close();
   }

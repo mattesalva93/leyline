@@ -137,6 +137,29 @@ describe('the add tile', () => {
     expect(vi.mocked(api.searchCardsByName)).toHaveBeenCalledWith('lightn', 'it');
   });
 
+  it('shows a spinner named after the search while it searches', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    vi.mocked(api.searchCardsByName).mockReturnValue(new Promise(() => {}));
+
+    await searchToAdd(user, 'Mazzo', 'lightn');
+
+    expect(screen.getByRole('progressbar', { name: 'Ricerca in corso…' })).toBeTruthy();
+  });
+
+  it('shows a spinner named after the versions it loads, opening a name shared by several cards', async () => {
+    const otherIsland = catalogEntry('island-other', 'Island', 'oth');
+    Object.entries(inMemoryServer([...CATALOG, otherIsland])).forEach(([call, answer]) => {
+      vi.mocked(api[call as keyof typeof api]).mockImplementation(answer as never);
+    });
+    vi.mocked(api.fetchCardsNamed).mockReturnValue(new Promise(() => {}));
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    const found = await searchToAdd(user, 'Mazzo', 'island');
+
+    await user.click(await within(found).findByRole('option', { name: 'Island: 2 versioni' }));
+
+    expect(screen.getByRole('progressbar', { name: 'Carico le versioni di Island…' })).toBeTruthy();
+  });
+
   it('forgives a misspelled name, as the decklist does', async () => {
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
 

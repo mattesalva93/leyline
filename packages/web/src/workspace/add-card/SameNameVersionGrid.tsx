@@ -1,9 +1,11 @@
 import type { Candidate, Lang } from '@mtg-suite/core';
 import { useTranslation } from 'react-i18next';
+import { LoadingSpinner } from '../../ui/LoadingSpinner.tsx';
 import { CARD_SHAPE } from '../card-image/card-shape.ts';
 import { SECONDARY_BUTTON } from '../../ui/board-styles.ts';
 import { CardVersionCaption, cardVersionText } from '../card-grid/card-version.tsx';
 import { useCardsNamed } from './use-cards-named.ts';
+import { FadingInImage } from '../card-image/FadingInImage.tsx';
 
 /**
  * Every card sharing `name`, by image, each with what tells it apart: the user picks the one
@@ -28,7 +30,9 @@ export function SameNameVersionGrid({
         {t('workspace.addCard.backToResults')}
       </button>
       <p aria-live="polite" className="font-semibold">
-        {versions.status === 'loading' && t('workspace.addCard.loadingVersions', { name })}
+        {versions.status === 'loading' && (
+          <LoadingSpinner label={t('workspace.addCard.loadingVersions', { name })} />
+        )}
         {versions.status === 'failed' && t('workspace.addCard.versionsFailed', { name })}
         {versions.status === 'found' &&
           t('workspace.addCard.versions', { name, count: versions.cards.length })}
@@ -58,7 +62,11 @@ export function SameNameVersionGrid({
                     className="relative block w-full overflow-hidden bg-background"
                   >
                     {image && (
-                      <img src={image} alt="" className="absolute inset-0 size-full object-cover" />
+                      <FadingInImage
+                        src={image}
+                        alt=""
+                        className="absolute inset-0 size-full object-cover"
+                      />
                     )}
                   </span>
                   <CardVersionCaption candidate={candidate} lang={lang} />

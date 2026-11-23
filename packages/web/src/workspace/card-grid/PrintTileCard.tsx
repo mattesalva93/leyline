@@ -13,6 +13,7 @@ import { cardRingsShadow, type CardRingStates } from './tile-rings.ts';
 import { TileTab } from './TileTab.tsx';
 import type { TileTabRows } from './tile-tab-geometry.ts';
 import { SINKS_WHEN_PRESSED } from '../../ui/board-styles.ts';
+import { FadingInImage } from '../card-image/FadingInImage.tsx';
 
 /** The space between two tiles in a row, which the link between siblings spans, in CSS px. */
 export const TILE_GAP_PX = 22;
@@ -130,7 +131,7 @@ export function PrintTileCard({
           {...zoomOn(shownFace)}
         >
           {shownFace && (
-            <img
+            <FadingInImage
               className="block w-full"
               style={CARD_SHAPE}
               src={shownFace.imageUris.normal}

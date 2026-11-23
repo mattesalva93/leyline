@@ -5,6 +5,7 @@ import { CARD_SHAPE } from '../card-image/card-shape.ts';
 import { SECONDARY_BUTTON, SINKS_WITH_PRESSED_GROUP } from '../../ui/board-styles.ts';
 import { Icon } from '../../ui/Icon.tsx';
 import { CardVersionCaption, cardVersionText } from './card-version.tsx';
+import { FadingInImage } from '../card-image/FadingInImage.tsx';
 
 interface CandidateCarouselProps {
   readonly candidates: readonly Candidate[];
@@ -51,7 +52,7 @@ export function CandidateCarousel({
     const image = candidate.defaultPrint?.faces[0]?.imageUris.normal;
     const visibility = candidateIndex === shownIndex ? 'visible' : 'invisible';
     return image ? (
-      <img
+      <FadingInImage
         key={candidate.card.oracleId}
         src={image}
         // The announcement and the pick button name the card shown.

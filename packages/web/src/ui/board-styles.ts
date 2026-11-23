@@ -27,8 +27,26 @@ export const SINKS_WITH_PRESSED_GROUP = 'group-active:translate-x-0.5 group-acti
 /** Pressed, a control's content sinks straight down: for content that already moves sideways on hover. */
 export const SINKS_DOWN_WITH_PRESSED_GROUP = 'group-active:translate-y-0.5';
 
-/** The main action of a zone, in the accent colour. Pressed, it sinks halfway into its shadow. */
-export const PRIMARY_BUTTON = `flex items-center gap-2 rounded-md border-2 border-border bg-accent px-5 py-2 font-bold text-accent-foreground not-disabled:hover:bg-accent-hover disabled:opacity-50 ${HARD_SHADOW} ${SINKS_WHEN_PRESSED} ${HALF_SUNK_HARD_SHADOW}`;
+/**
+ * Under the pointer a button rises 2 px off the board, its hard shadow stretched by as much, so
+ * its far edge stays put: the mirror of the press, which it gives way to. Only where motion is
+ * welcome.
+ */
+const RISES_UNDER_POINTER =
+  'motion-safe:not-disabled:not-active:hover:-translate-x-0.5 motion-safe:not-disabled:not-active:hover:-translate-y-0.5 motion-safe:not-disabled:not-active:hover:shadow-[6px_6px_0_var(--color-border)]';
+
+/**
+ * Eases the rise and the colour under the pointer; the press itself answers at once, while the
+ * release eases back.
+ */
+const EASES_UNDER_POINTER =
+  'transition-[translate,box-shadow,background-color] not-disabled:active:transition-none';
+
+/**
+ * The main action of a zone, in the accent colour. Under the pointer it darkens a little and
+ * rises; pressed, it sinks halfway into its shadow.
+ */
+export const PRIMARY_BUTTON = `flex items-center gap-2 rounded-md border-2 border-border bg-accent px-5 py-2 font-bold text-accent-foreground not-disabled:hover:bg-accent-hover disabled:opacity-50 ${HARD_SHADOW} ${RISES_UNDER_POINTER} ${SINKS_WHEN_PRESSED} ${HALF_SUNK_HARD_SHADOW} ${EASES_UNDER_POINTER}`;
 
 /** A plain bordered button. */
 export const SECONDARY_BUTTON = `rounded-md border-2 border-border bg-panel px-3 py-1.5 font-semibold disabled:opacity-40 ${BUTTON_STATES}`;
