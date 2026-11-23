@@ -104,6 +104,25 @@ describe('the guide', () => {
     expect(document.activeElement).toBe(skipStepButton());
   });
 
+  it('gives the focus back to the decklist once the keyboard skips the guided step', async () => {
+    const user = userEvent.setup();
+    mountApp('/proxy');
+    await user.click(screen.getByLabelText('Decklist'));
+    await user.tab();
+
+    await user.keyboard('{Enter}');
+
+    expect(isGuidedStepShown()).toBe(false);
+    expect(document.activeElement).toBe(screen.getByLabelText('Decklist'));
+  });
+
+  it('describes the decklist with the guided step beside it, for a screen reader to read out', () => {
+    mountApp('/proxy');
+
+    const descriptionId = screen.getByLabelText('Decklist').getAttribute('aria-describedby') ?? '';
+    expect(document.getElementById(descriptionId)?.textContent).toBe(FIRST_STEP_TEXT);
+  });
+
   describe('on a phone', () => {
     beforeEach(() => {
       stubScreen(PHONE);

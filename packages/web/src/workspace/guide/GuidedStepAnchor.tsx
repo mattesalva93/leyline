@@ -1,7 +1,7 @@
 // The bubble of a guided step, an owned component on the Radix popover (ADR 0010): Radix places it
 // beside its control and keeps it in sight; the look is ours.
 import * as RadixPopover from '@radix-ui/react-popover';
-import type { ReactElement } from 'react';
+import { useId, useRef, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BUTTON_STATES, HARD_SHADOW } from '../../ui/board-styles.ts';
 import { Icon } from '../../ui/Icon.tsx';
@@ -29,7 +29,8 @@ const turnDown = (event: Event) => event.preventDefault();
  * Where the control `children` shows the bubble of its guided step `step`, at `placement`,
  * while the guide has that step on screen. The bubble follows the control in the page, so Tab
  * reaches its X right after the control; it never takes the focus, and only its X or the step's
- * action closes it.
+ * action closes it. The X gives the focus to the control, which the bubble's text describes while
+ * it is on screen: a screen reader reads it out when it reaches the control.
  */
 export function GuidedStepAnchor({
   guide,
@@ -43,9 +44,21 @@ export function GuidedStepAnchor({
   readonly children: ReactElement;
 }) {
   const { t } = useTranslation();
+  const controlRef = useRef<HTMLElement | null>(null);
+  const textId = useId();
+  const isShown = guide.shownStep === step;
   return (
-    <RadixPopover.Root open={guide.shownStep === step} modal={false}>
-      <RadixPopover.Anchor asChild>{children}</RadixPopover.Anchor>
+    <RadixPopover.Root open={isShown} modal={false}>
+      <RadixPopover.Anchor
+        asChild
+        // Radix types the anchor as a div; the control is any element.
+        ref={(control) => {
+          controlRef.current = control;
+        }}
+        aria-describedby={isShown ? textId : undefined}
+      >
+        {children}
+      </RadixPopover.Anchor>
       <RadixPopover.Content
         role="status"
         aria-label={t('guide.bubbleLabel')}
@@ -59,12 +72,18 @@ export function GuidedStepAnchor({
         onInteractOutside={turnDown}
         className={`z-30 flex max-w-64 items-start gap-2 rounded-lg border-2 border-border bg-panel py-2 pr-2 pl-3 text-sm text-foreground ${HARD_SHADOW} ${FADES_IN_AND_OUT}`}
       >
-        <p className="flex-1">{t(`guide.steps.${step}`)}</p>
+        <p id={textId} className="flex-1">
+          {t(`guide.steps.${step}`)}
+        </p>
         <button
           type="button"
           aria-label={t('guide.skipStep')}
           className={`grid size-6 shrink-0 place-items-center rounded-sm ${BUTTON_STATES}`}
-          onClick={() => guide.skipStep(step)}
+          onClick={() => {
+            // The X leaves the page with the bubble: the focus would fall back to the page's start.
+            controlRef.current?.focus();
+            guide.skipStep(step);
+          }}
         >
           <Icon name="close" />
         </button>
