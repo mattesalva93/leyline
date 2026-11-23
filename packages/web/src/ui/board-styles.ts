@@ -9,7 +9,7 @@ export const BOARD_PANEL = `rounded-lg border-2 border-border bg-panel ${HARD_SH
 export const LABEL = 'font-mono text-[11px] font-bold tracking-widest uppercase';
 
 /** The main action of a zone, in the accent colour. */
-export const PRIMARY_BUTTON = `flex items-center gap-2 rounded-md border-2 border-border bg-accent px-5 py-2 font-bold text-accent-foreground disabled:opacity-50 ${HARD_SHADOW}`;
+export const PRIMARY_BUTTON = `flex items-center gap-2 rounded-md border-2 border-border bg-accent px-5 py-2 font-bold text-accent-foreground hover:bg-accent-hover disabled:opacity-50 disabled:hover:bg-accent ${HARD_SHADOW}`;
 
 /** A plain bordered button. */
 export const SECONDARY_BUTTON =

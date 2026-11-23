@@ -90,6 +90,14 @@ describe('check-theme', () => {
     expect(result.stderr).toContain('light theme: selection-edge on background is 1.06:1');
   });
 
+  it('rejects a hovered primary button whose text drops under 4.5:1 (WCAG 1.4.3)', () => {
+    // #1b1a17 text on #555555 is 2.47:1.
+    const result = check({ theme: themeWith('dark', 'accent-hover', '#555555') });
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('dark theme: accent-foreground on accent-hover');
+  });
+
   it('rejects a sibling group colour under 4.5:1 on the board or under the quantity on its tab', () => {
     const result = check({ theme: themeWith('dark', 'sibling-2', '#3a3a3a') });
 
