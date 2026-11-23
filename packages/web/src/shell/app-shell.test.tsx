@@ -215,7 +215,7 @@ describe('the app shell', () => {
         name: 'Dati sul tuo dispositivo',
       }).parentElement;
       expect(deviceSection?.textContent).toContain('la lingua delle carte');
-      expect(deviceSection?.textContent).not.toContain('tema');
+      expect(deviceSection?.textContent).not.toMatch(/\btema\b/);
     });
 
     it('styles its close button as the primary action', async () => {
@@ -242,12 +242,14 @@ describe('the app shell', () => {
 
   it('offers no theme switch, in the top bar or in the phone menu (ADR 0020)', async () => {
     const { user } = mountShellWithFourAreas();
-    expect(screen.queryByRole('button', { name: /tema/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /\btema\b/ })).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'Menu' }));
 
     expect(
-      within(screen.getByRole('dialog', { name: 'Menu' })).queryByRole('button', { name: /tema/ }),
+      within(screen.getByRole('dialog', { name: 'Menu' })).queryByRole('button', {
+        name: /\btema\b/,
+      }),
     ).toBeNull();
   });
 
