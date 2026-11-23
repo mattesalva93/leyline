@@ -1,5 +1,6 @@
 import type { LineDestination } from '@mtg-suite/core';
 import type { Generator } from '../generator/use-generator.ts';
+import type { Guide } from './guide/use-guide.ts';
 import type { GridSection } from './card-grid/grid-sections.ts';
 import type { GridTile, ImagelessGridTile, TileSelection } from './card-grid/grid-tiles.ts';
 
@@ -26,6 +27,7 @@ export function centreViewAt(step: WorkspaceStep): CentreView {
 /** The state both layouts of the workspace show, each in its own arrangement of the zones. */
 export interface WorkspaceState {
   readonly generator: Generator;
+  readonly guide: Guide;
   readonly step: WorkspaceStep;
   readonly goToStep: (step: WorkspaceStep) => void;
   readonly gridSections: readonly GridSection[];

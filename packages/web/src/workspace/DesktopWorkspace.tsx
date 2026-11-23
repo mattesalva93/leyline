@@ -10,6 +10,8 @@ import { Inspector } from './side-panel/Inspector.tsx';
 import { PdfControl } from './sheet/PdfControl.tsx';
 import { SheetView } from './sheet/SheetView.tsx';
 import { SidePanel } from './side-panel/SidePanel.tsx';
+import { EDGE_TAB_REACH_PX } from './side-panel/PanelEdgeTab.tsx';
+import { GUIDED_STEP_GAP_PX, type GuidedStepPlacement } from './guide/GuidedStepAnchor.tsx';
 import { Tab, TabList, TabPanel, Tabs } from '../ui/Tabs.tsx';
 import { TileWidthSlider } from './card-grid/TileWidthSlider.tsx';
 import { useTileWidth } from './card-grid/tile-width.ts';
@@ -20,6 +22,13 @@ import {
   centreViewNamed,
   type WorkspaceState,
 } from './workspace-state.ts';
+
+/** Out in the centre, clear of the decklist panel's edge tab at mid height. */
+const DECKLIST_GUIDED_STEP: GuidedStepPlacement = {
+  side: 'right',
+  align: 'center',
+  gapPx: EDGE_TAB_REACH_PX + GUIDED_STEP_GAP_PX,
+};
 
 /**
  * The workspace on a wide screen, filling it: from left to right the decklist text with a
@@ -47,7 +56,12 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
         title={t('workspace.decklistPanel')}
         centreSide="right"
       >
-        <DecklistEditor generator={generator} className="min-h-48 flex-1" />
+        <DecklistEditor
+          generator={generator}
+          guide={state.guide}
+          guidedStepPlacement={DECKLIST_GUIDED_STEP}
+          className="min-h-48 flex-1"
+        />
         <AdSlot className="shrink-0 border-t-2 border-border p-2" />
       </SidePanel>
       <Tabs

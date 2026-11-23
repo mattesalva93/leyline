@@ -10,6 +10,7 @@ import {
   type GridTile,
   type TileSelection,
 } from './card-grid/grid-tiles.ts';
+import { useGuide } from './guide/use-guide.ts';
 import { PhoneWorkspace } from './PhoneWorkspace.tsx';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 
@@ -60,6 +61,7 @@ export function Workspace({ generator }: { readonly generator: Generator }) {
   const [selectionInText, setSelectionInText] = useState<SelectionInText | null>(null);
   const [tileSelectionCount, setTileSelectionCount] = useState(0);
   const [touchIsMain] = useState(touchIsMainInput);
+  const guide = useGuide({ isDecklistUnderWay: generator.isDecklistUnderWay });
   const gridSections = gridSectionsOf(generator.cardLines);
   const gridTiles = gridTilesOf(generator.cardLines);
   const linesToFix = linesToFixOf(gridTiles);
@@ -74,6 +76,7 @@ export function Workspace({ generator }: { readonly generator: Generator }) {
   const selection = currentSelection(selectionInText, generator.writtenLineCount, gridTiles);
   const state: WorkspaceState = {
     generator,
+    guide,
     step,
     goToStep: setStep,
     gridSections,

@@ -17,10 +17,18 @@ import { panelLineOf, SelectedLinePanel } from './line-panel/SelectedLinePanel.t
 import { SheetSettings } from './sheet/SheetSettings.tsx';
 import { SheetView } from './sheet/SheetView.tsx';
 import { TILE_WIDTH_PX } from './card-grid/tile-width.ts';
+import { GUIDED_STEP_GAP_PX, type GuidedStepPlacement } from './guide/GuidedStepAnchor.tsx';
 import { focusCurrentGridCell } from './card-grid/use-grid-cell-focus.ts';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
 
 const STEPS: readonly WorkspaceStep[] = ['list', 'cards', 'sheet'];
+
+/** Under the decklist, on the left: clear of the fold button at the right of the panel below. */
+const DECKLIST_GUIDED_STEP: GuidedStepPlacement = {
+  side: 'bottom',
+  align: 'start',
+  gapPx: GUIDED_STEP_GAP_PX,
+};
 
 /**
  * The workspace on a phone: one step at a time on the whole screen (the decklist, the cards, the
@@ -46,7 +54,12 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
           <div className="flex flex-col gap-4 p-3 pr-4">
             {!generator.isDecklistUnderWay && <EmptyWorkspaceInvite generator={generator} />}
             <BoardPanel title={t('workspace.decklistPanel')} isFoldable className="shrink-0">
-              <DecklistEditor generator={generator} className="h-[38dvh]" />
+              <DecklistEditor
+                generator={generator}
+                guide={state.guide}
+                guidedStepPlacement={DECKLIST_GUIDED_STEP}
+                className="h-[38dvh]"
+              />
             </BoardPanel>
             <BoardPanel
               title={t('workspace.inspector.summary')}

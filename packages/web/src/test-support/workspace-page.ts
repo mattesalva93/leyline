@@ -129,6 +129,12 @@ export async function mountPageAndWrite(decklistText: string) {
   return user;
 }
 
+/** Starts a new decklist from the decklist editor, confirming it. */
+export async function startNewDecklist(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Nuova decklist' }));
+  await user.click(screen.getByRole('button', { name: 'Svuota' }));
+}
+
 /**
  * Steps the carousel of an ambiguous line, in `scope`, to the candidate `name` whose version
  * starts with `version`, and picks it.

@@ -10,6 +10,7 @@ const ICON_PATHS = {
   sheet: 'M6 3h9l4 4v14H6zM9 11h7M9 15h7',
   chevronLeft: 'm15 18-6-6 6-6',
   chevronRight: 'm9 18 6-6-6-6',
+  close: 'M6 6l12 12M18 6 6 18',
 } as const;
 
 type IconName = keyof typeof ICON_PATHS;

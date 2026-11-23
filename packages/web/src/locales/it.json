@@ -298,5 +298,12 @@
     "changeSinceOpened": "{{change}} rispetto a {{count}}",
     "printSummary": "{{lang}} {{print}} ×{{count}}",
     "printSummarySeparator": " · "
+  },
+  "guide": {
+    "bubbleLabel": "Passo guidato",
+    "skipStep": "Salta questo passo",
+    "steps": {
+      "startDecklist": "Incolla o scrivi la decklist, oppure prova un esempio."
+    }
   }
 }
