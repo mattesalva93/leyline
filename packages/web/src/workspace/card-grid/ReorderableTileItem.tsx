@@ -1,4 +1,5 @@
 import type { LineSide } from '@mtg-suite/core';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { COPY_PILE_FOOTPRINT_PX } from './CopyPile.tsx';
 import { TILE_GAP_PX } from './PrintTileCard.tsx';
@@ -18,11 +19,12 @@ const DROP_MARK_OFFSET_PX = {
 };
 
 /**
- * A pressed tile shows it is grabbed, over its card too: the card's button, marked
- * `data-tile-image-button`, would otherwise keep the theme's hand.
+ * A grabbed tile shows it, over its card too: the card's button, marked `data-tile-image-button`,
+ * would otherwise keep the theme's hand. Marked by the tile rather than read from `:active`, which
+ * Chrome leaves on a tile after a drag until the pointer moves again.
  */
-const GRABBED_WHILE_PRESSED =
-  'active:cursor-grabbing [&_[data-tile-image-button]:active]:cursor-grabbing';
+const GRABBING_HAND_WHEN_GRABBED =
+  'data-grabbed:cursor-grabbing data-grabbed:[&_[data-tile-image-button]]:cursor-grabbing';
 
 interface ReorderableTileItemProps {
   readonly cell: TileCellProps;
@@ -49,13 +51,25 @@ export function ReorderableTileItem({
   children,
 }: ReorderableTileItemProps) {
   const { t } = useTranslation();
+  const [isGrabbed, setIsGrabbed] = useState(false);
+  const letGo = () => setIsGrabbed(false);
   return (
     <li
       {...cell}
-      className={`relative min-w-0 ${GRID_CELL_FOCUS_GROUP} ${dragHandlers ? GRABBED_WHILE_PRESSED : ''} ${isDragged ? 'opacity-40' : ''}`}
+      className={`relative min-w-0 ${GRID_CELL_FOCUS_GROUP} ${dragHandlers ? GRABBING_HAND_WHEN_GRABBED : ''} ${isDragged ? 'opacity-40' : ''}`}
       aria-current={isSelected || undefined}
       draggable={dragHandlers !== null || undefined}
+      data-grabbed={isGrabbed || undefined}
       {...dragHandlers}
+      {...(dragHandlers && {
+        onPointerDown: () => setIsGrabbed(true),
+        onPointerUp: letGo,
+        onPointerCancel: letGo,
+        onDragEnd: () => {
+          letGo();
+          dragHandlers.onDragEnd();
+        },
+      })}
     >
       {children}
       {dropMarkSide && (

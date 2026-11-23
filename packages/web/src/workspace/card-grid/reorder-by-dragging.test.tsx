@@ -237,15 +237,47 @@ describe('reordering the decklist by dragging tiles', () => {
     expect(selected.map((tile) => tileSummary(tile)[0])).toEqual(['Immagine di Sol Ring']);
   });
 
-  it('shows the hand on a tile at rest and the grabbing hand while its card is pressed', async () => {
-    await mountPageAndWrite('4 Sol Ring{Enter}');
-    const tile = tileOf(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+  describe('the grabbing hand', () => {
+    /** Whether `tile` shows the grabbing hand, over its card too. */
+    function showsGrabbingHand(tile: HTMLElement) {
+      return tile.hasAttribute('data-grabbed');
+    }
 
-    expect(tile.className.split(' ')).not.toContain('cursor-grab');
-    expect(tile.className).toContain('[&_[data-tile-image-button]:active]:cursor-grabbing');
-    expect(tile.querySelector('[data-tile-image-button]')).toBe(
-      screen.getByRole('button', { name: 'Modifica Sol Ring' }),
-    );
+    /** Mounts a grid of one tile and presses it. */
+    async function pressSolRing() {
+      await mountPageAndWrite('4 Sol Ring{Enter}');
+      const tile = tileOf(await screen.findByRole('button', { name: 'Modifica Sol Ring' }));
+      expect(showsGrabbingHand(tile)).toBe(false);
+      fireEvent.pointerDown(tile, { pointerType: 'mouse' });
+      return tile;
+    }
+
+    it('shows on a tile while it is pressed, and goes once it is let go', async () => {
+      const tile = await pressSolRing();
+      expect(showsGrabbingHand(tile)).toBe(true);
+
+      fireEvent.pointerUp(tile, { pointerType: 'mouse' });
+
+      expect(showsGrabbingHand(tile)).toBe(false);
+    });
+
+    it('goes once a drag ends, even with the tile dropped where it was', async () => {
+      const tile = await pressSolRing();
+      startDrag(tile);
+
+      fireEvent.dragEnd(tile);
+
+      expect(showsGrabbingHand(tile)).toBe(false);
+    });
+
+    it("covers the card too, whose button would otherwise keep the theme's hand", async () => {
+      const tile = await pressSolRing();
+
+      expect(tile.className).toContain('data-grabbed:[&_[data-tile-image-button]]:cursor-grabbing');
+      expect(tile.querySelector('[data-tile-image-button]')).toBe(
+        screen.getByRole('button', { name: 'Modifica Sol Ring' }),
+      );
+    });
   });
 
   it('lets no tile be dragged where touch is the main input, and nothing suggests it', async () => {
