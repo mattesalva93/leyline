@@ -229,14 +229,9 @@ fi
 
 banner "Leyline alpha on an OVHcloud VPS"
 
-stage "OVHcloud: order the VPS"
-say "Order a VPS-1 (2 vCore, 4 GB) running Ubuntu LTS, x86, in an EU data centre, or a VPS-2"
-say "if no EU location has a VPS-1: never a location outside the EU (ADR 0016)."
-open_url "https://www.ovhcloud.com/it/vps/"
-step "Pick the plan, an EU location (France, Germany, Poland...) and the latest Ubuntu LTS image."
-step "Bill it monthly, and drop the automated backup: the catalog is rebuilt from Scryfall."
-step "In the configurator, check the monthly price has no minimum commitment and no setup fee:"
-note "  research/vps-alpha-hosting.md could not verify either. Stop if one shows up."
+stage "OVHcloud: the VPS"
+say "The alpha needs a VPS-1 (2 vCore, 4 GB) running Ubuntu LTS, x86, in an EU data centre, or a"
+say "VPS-2 if no EU location has a VPS-1: never a location outside the EU (ADR 0016)."
 ask OWNER_SSH_PUBLIC_KEY "Your SSH public key file (empty: ~/.ssh/id_ed25519.pub):"
 OWNER_SSH_PUBLIC_KEY=${OWNER_SSH_PUBLIC_KEY:-$HOME/.ssh/id_ed25519.pub}
 if [[ ! -f "$OWNER_SSH_PUBLIC_KEY" ]]; then
@@ -245,9 +240,22 @@ if [[ ! -f "$OWNER_SSH_PUBLIC_KEY" ]]; then
   ssh-keygen -t ed25519 -f "${OWNER_SSH_PUBLIC_KEY%.pub}"
 fi
 write_env OWNER_SSH_PUBLIC_KEY "$OWNER_SSH_PUBLIC_KEY"
-step "If the order offers an SSH key, paste this one (else OVHcloud mails a password):"
-note "  $(cat "$OWNER_SSH_PUBLIC_KEY")"
-step "Complete the order and wait for the e-mail saying the VPS is ready."
+if confirm "Is the VPS already ordered?"; then
+  step "Control panel → Bare Metal Cloud → VPS → your VPS: check its plan,"
+  step "location and architecture. Stop if one is wrong: only a new order changes them."
+  step "Check it runs Ubuntu LTS; if not, reinstall it with the latest Ubuntu LTS image."
+  step "Billing → My services: check it is billed monthly. Stop if a minimum commitment shows up."
+  note "  Its delivery e-mail holds a secure link to the temporary password: the next stages use it."
+else
+  open_url "https://www.ovhcloud.com/it/vps/"
+  step "Pick the plan, an EU location (France, Germany, Poland...) and the latest Ubuntu LTS image."
+  step "Bill it monthly, and drop the automated backup: the catalog is rebuilt from Scryfall."
+  step "In the configurator, check the monthly price has no minimum commitment and no setup fee:"
+  note "  research/vps-alpha-hosting.md could not verify either. Stop if one shows up."
+  step "If the order offers an SSH key, paste this one (else OVHcloud mails how to log in):"
+  note "  $(cat "$OWNER_SSH_PUBLIC_KEY")"
+  step "Complete the order and wait for the e-mail saying the VPS is ready."
+fi
 ask VPS_ADDRESS "The VPS's IPv4 address (from the e-mail or the control panel):"
 write_env VPS_ADDRESS "$VPS_ADDRESS"
 ask VPS_ADMIN_USER "The user the e-mail names (ubuntu on Ubuntu images):"
@@ -274,21 +282,31 @@ confirm "Does the fingerprint match the console's?" || { warn 'Stop: something e
 ssh-keygen -F "$VPS_ADDRESS" >/dev/null || printf '%s\n' "$VPS_KNOWN_HOSTS" >> ~/.ssh/known_hosts
 # BatchMode: fail instead of asking for a password, to tell whether the key already works.
 if ! ssh -o BatchMode=yes "$ADMIN" true 2>/dev/null; then
-  say "Your key is not on the VPS yet: ssh-copy-id adds it, asking once for the e-mailed password."
+  say "Your key is not on the VPS yet. First, change the temporary password from the delivery"
+  say "e-mail's secure link: OVHcloud makes the first login do that, then closes the session."
+  step "In another terminal: ssh $ADMIN, type the temporary password, then a new one twice."
+  pause "Press Enter once the password is changed."
+  say "ssh-copy-id now adds your key, asking once for the new password."
   ssh-copy-id -i "$OWNER_SSH_PUBLIC_KEY" "$ADMIN"
 fi
 ssh -o BatchMode=yes "$ADMIN" true || { warn "$VPS_ADMIN_USER still cannot log in with your key."; exit 1; }
 say "✓ $VPS_ADMIN_USER logs in with your key."
 
 stage "DNS: the site's name, IPv4 only"
-ask APP_DOMAIN "The site's domain (e.g. alpha.example.com):"
-write_env APP_DOMAIN "$APP_DOMAIN"
-step "At your DNS provider, add an A record: $APP_DOMAIN → $VPS_ADDRESS."
-step "Add no AAAA record, and remove one if it is there: the alpha is IPv4 only (ADR 0016)."
+ask APP_DOMAIN "The site's domain (empty: leyline.website):"
+write_env APP_DOMAIN "${APP_DOMAIN:-leyline.website}"
+step "OVHcloud control panel → Web Cloud → Domain names → $APP_DOMAIN → DNS zone."
+step "Point the A record of $APP_DOMAIN itself (subdomain '@') at $VPS_ADDRESS: edit the"
+note "  default one, which points at OVHcloud's parking page, rather than adding a second."
+step "Delete its AAAA record, if there is one: the alpha is IPv4 only (ADR 0016)."
+step "Point the A record of www.$APP_DOMAIN (subdomain 'www') at $VPS_ADDRESS too: Caddy sends it"
+note "  to $APP_DOMAIN. The zone's other default records (MX, TXT) can stay."
 # `getent ahostsv4/ahostsv6` asks the system resolver for one address family.
-until [[ "$(getent ahostsv4 "$APP_DOMAIN" | awk 'NR == 1 { print $1 }')" == "$VPS_ADDRESS" ]] &&
+# Every A answer, deduplicated: a parking address left beside the VPS's must not pass.
+until [[ "$(getent ahostsv4 "$APP_DOMAIN" | awk '{ print $1 }' | sort -u)" == "$VPS_ADDRESS" ]] &&
   ! getent ahostsv6 "$APP_DOMAIN" | grep -qv '::ffff:'; do
-  note "  $APP_DOMAIN does not resolve to $VPS_ADDRESS alone yet (new records can take minutes)."
+  note "  $APP_DOMAIN does not resolve to $VPS_ADDRESS alone yet: a changed record can stay"
+  note "  cached until its old TTL runs out."
   pause "Press Enter to look again, or Ctrl-C to stop and re-run later."
 done
 say "✓ $APP_DOMAIN resolves to $VPS_ADDRESS, with no IPv6 address."
@@ -297,14 +315,17 @@ stage "OVHcloud: the Edge Network Firewall"
 say "The provider's firewall drops traffic before it reaches the VPS. It covers IPv4 only;"
 say "ufw, set up in the next stage, covers both."
 open_url "https://docs.ovhcloud.com/en/guides/bare-metal-cloud/dedicated-servers/firewall-network"
-step "Control panel → Network → Public IP addresses → $VPS_ADDRESS → Edge Network Firewall."
-say "It is stateless: replies to the VPS's own traffic need rules of their own. In this order:"
-step "Permit TCP with the 'established' option (replies to the VPS's own connections)."
-step "Permit UDP from source port 53 (DNS replies) and from source port 123 (NTP replies)."
-step "Permit TCP to ports 22, 80 and 443, and UDP to port 443, from any address (ADR 0019)."
-step "Last, deny all other IPv4."
+step "Control panel → Bare Metal Cloud → Network → IP addresses → $VPS_ADDRESS → Edge Firewall tab."
+say "It is stateless: replies to the VPS's own traffic need rules of their own. With 'Add Rule',"
+say "leaving the source IP and every unnamed port empty, add, by sequence number:"
+step "0 PERMIT TCP, TCP option ESTABLISHED (replies to the VPS's own connections)"
+step "1 PERMIT UDP, source port 53 (DNS replies)      2 PERMIT UDP, source port 123 (NTP replies)"
+step "3 PERMIT TCP, destination port 22 (ADR 0019)    4 PERMIT TCP, destination port 80"
+step "5 PERMIT TCP, destination port 443              6 PERMIT UDP, destination port 443 (HTTP/3)"
+step "7 PERMIT ICMP (ping and path MTU discovery, as OVHcloud's own example keeps)"
+step "19 DENY IPv4: everything the rules above do not permit"
 note "  Without the replies' rules apt and the importer cannot reach the network."
-step "Enable the firewall."
+step "Turn the 'Firewall enabled' switch on above the rules: it applies at once."
 pause "Press Enter once it is on."
 
 stage "Harden the VPS"
@@ -331,7 +352,8 @@ ssh -t "$ADMIN" "sudo bash /tmp/prepare-host.sh $(printf '%q ' \
   --admin-user "$VPS_ADMIN_USER" --deploy-user "$DEPLOY_USER" --deploy-path "$DEPLOY_PATH" \
   --deploy-key "$(cat "$DEPLOY_KEY_DIR/deploy_key.pub")" \
   --deploy-key "$(cat "$OWNER_SSH_PUBLIC_KEY")") && rm /tmp/prepare-host.sh"
-ssh -o BatchMode=yes "$DEPLOYER" docker version --format 'Docker {{.Server.Version}}' ||
+# One string: ssh joins its arguments with spaces, so the format's own quotes must reach the VPS.
+ssh -o BatchMode=yes "$DEPLOYER" "docker version --format 'Docker {{.Server.Version}}'" ||
   { warn "$DEPLOY_USER cannot log in or drive Docker."; exit 1; }
 say "✓ $DEPLOY_USER logs in and drives Docker."
 # The workflow's key goes to GitHub now: the VPS just stopped taking any earlier one.
@@ -388,7 +410,7 @@ add_tester() {
 if ! grep -q '^check-staging ' "$TESTER_CREDENTIALS_FILE"; then
   say "pnpm check:staging signs in with a credential of its own:"
   add_tester check-staging
-  step "Save it in your password manager: the last stage and every later check need it."
+  step "Save it in your password manager: \`check:staging --access closed\` needs it while the guard is on."
   pause
 fi
 while confirm "Add a tester, for when the guard is on?"; do

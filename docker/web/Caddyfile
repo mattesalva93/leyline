@@ -51,6 +51,13 @@
 	}
 }
 
+# The `www.` name, with a certificate of its own, sends every visitor to the site: a link with
+# `www.` still lands on the alpha, while the site keeps one address. HSTS needs no header here:
+# the site's `includeSubDomains` already covers this name.
+www.{$SITE_ADDRESS} {
+	redir https://{$SITE_ADDRESS}{uri} permanent
+}
+
 # For the compose healthcheck only, never published: plain HTTP, because the public site's
 # certificate names its domain, which a request from inside the container cannot match. Outside
 # the testers' guard, so the healthcheck needs no credential and the deploy stays automatic

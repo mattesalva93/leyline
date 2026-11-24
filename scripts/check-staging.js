@@ -31,12 +31,14 @@ import { securityHeaderFailures } from './staging-checks/security-headers.js';
 import { sshLoginFailures } from './staging-checks/ssh-login.js';
 import { testerAccessFailures } from './staging-checks/tester-access.js';
 import { openVpsConnection, vpsFromDockerHost } from './staging-checks/vps-connection.js';
+import { wwwRedirectFailures } from './staging-checks/www-redirect.js';
 
 /** Each check resolves to the list of what it found wrong, empty when the stack passes it. */
 const CHECKS = {
   'tester access': testerAccessFailures,
   'security headers': securityHeaderFailures,
   'search indexing': searchIndexingFailures,
+  'www redirect': wwwRedirectFailures,
   'CSP in the browser': cspInBrowserFailures,
   'access log': accessLogFailures,
   'access log rotation': accessLogRotationFailures,
