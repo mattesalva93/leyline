@@ -6,7 +6,7 @@ import { landingSideOf, type GridTile } from './grid-tiles.ts';
  * What a dragged line carries for the browser. A type of the app's own, so no text field takes
  * the drop as text to paste.
  */
-const LINE_DRAG_TYPE = 'application/x-mtg-suite-line';
+const LINE_DRAG_TYPE = 'application/x-leyline-line';
 
 /** The handlers a draggable tile takes. */
 export interface TileDragHandlers {

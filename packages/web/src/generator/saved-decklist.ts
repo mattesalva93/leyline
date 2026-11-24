@@ -12,7 +12,7 @@ import {
 } from '@mtg-suite/core';
 import type { LineChoices } from './line-choices.ts';
 
-const STORAGE_KEY = 'mtg-suite.decklist';
+const STORAGE_KEY = 'leyline.decklist';
 /** Raised whenever the saved shape changes: data of any other version is left unread. */
 const SAVED_DECKLIST_VERSION = 1;
 

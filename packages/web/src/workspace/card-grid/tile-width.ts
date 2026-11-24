@@ -6,7 +6,7 @@ import { useState } from 'react';
  */
 export const TILE_WIDTH_PX = { min: 110, max: 280, step: 10, default: 150 } as const;
 
-const STORAGE_KEY = 'mtg-suite.tileWidth';
+const STORAGE_KEY = 'leyline.tileWidth';
 
 function isTileWidth(value: number): boolean {
   return Number.isFinite(value) && value >= TILE_WIDTH_PX.min && value <= TILE_WIDTH_PX.max;

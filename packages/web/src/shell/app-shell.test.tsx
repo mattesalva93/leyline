@@ -54,6 +54,12 @@ describe('the app shell', () => {
     expect(linkNames(screen.getByRole('navigation', { name: 'Aree' }))).toEqual(['Generatore']);
   });
 
+  it('names the app Leyline in the top bar', () => {
+    mountShellWithFourAreas();
+
+    expect(within(screen.getByRole('banner')).queryByText('Leyline')).not.toBeNull();
+  });
+
   it('lists four areas in the top bar, in order, and marks the current one', () => {
     mountShellWithFourAreas();
 

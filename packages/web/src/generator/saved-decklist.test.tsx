@@ -73,10 +73,10 @@ describe('the decklist saved on the device', () => {
     const user = await mountPageAndWrite('4 Brainstorm{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
     await moveOneCopy(user, 'Brainstorm', 'ICE #1', 'MMQ #1');
-    const saved = localStorage.getItem('mtg-suite.decklist') ?? '';
+    const saved = localStorage.getItem('leyline.decklist') ?? '';
     const withoutNewFields = saved.replace(/"setName":"[^"]*",|,?"artist":"[^"]*"/g, '');
     expect(withoutNewFields).not.toMatch(/setName|artist/);
-    localStorage.setItem('mtg-suite.decklist', withoutNewFields);
+    localStorage.setItem('leyline.decklist', withoutNewFields);
 
     reload();
 
@@ -128,7 +128,7 @@ describe('the decklist saved on the device', () => {
     ],
     ['of the wrong shape', JSON.stringify({ version: 1, decklistText: ['4 Sol Ring'] })],
   ])('starts empty, with no error, from saved data %s', (_kind, stored) => {
-    localStorage.setItem('mtg-suite.decklist', stored);
+    localStorage.setItem('leyline.decklist', stored);
 
     mountApp('/proxy');
 

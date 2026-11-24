@@ -429,7 +429,7 @@ describe('the workspace on a phone', () => {
     await user.click(await screen.findByRole('button', { name: 'Salva o condividi' }));
 
     expect(share).toHaveBeenCalledWith({
-      files: [expect.objectContaining({ name: 'proxy-mtg-suite.pdf', type: 'application/pdf' })],
+      files: [expect.objectContaining({ name: 'proxy-leyline.pdf', type: 'application/pdf' })],
     });
   });
 

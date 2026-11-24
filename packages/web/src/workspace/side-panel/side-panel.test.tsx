@@ -143,8 +143,8 @@ describe('the side panels on a wide screen', () => {
   });
 
   it('starts open at its usual width when what the device kept of it cannot be read', async () => {
-    localStorage.setItem('mtg-suite.sidePanel.decklist', '{"isOpen": "no", "width": 9000}');
-    localStorage.setItem('mtg-suite.sidePanel.inspector', 'not json');
+    localStorage.setItem('leyline.sidePanel.decklist', '{"isOpen": "no", "width": 9000}');
+    localStorage.setItem('leyline.sidePanel.inspector', 'not json');
     await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
 
@@ -154,8 +154,8 @@ describe('the side panels on a wide screen', () => {
 
   it('starts open at its usual width when the device kept it in a version it does not know', async () => {
     const otherVersion = '{"version": 99, "isOpen": false, "width": 300}';
-    localStorage.setItem('mtg-suite.sidePanel.decklist', otherVersion);
-    localStorage.setItem('mtg-suite.sidePanel.inspector', otherVersion);
+    localStorage.setItem('leyline.sidePanel.decklist', otherVersion);
+    localStorage.setItem('leyline.sidePanel.inspector', otherVersion);
 
     await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });
@@ -212,11 +212,11 @@ describe('the side panels on a screen with little room', () => {
 
   it('narrows both panels, each by its share of what it can give, when they come back too wide for the screen', async () => {
     localStorage.setItem(
-      'mtg-suite.sidePanel.decklist',
+      'leyline.sidePanel.decklist',
       '{"version": 1, "isOpen": true, "width": 420}',
     );
     localStorage.setItem(
-      'mtg-suite.sidePanel.inspector',
+      'leyline.sidePanel.inspector',
       '{"version": 1, "isOpen": true, "width": 520}',
     );
     // 100 + 420 + 520 - 320 = 720px for both: 220px too few. The decklist panel can give
@@ -240,7 +240,7 @@ describe('the side panels on a screen with little room', () => {
 
   it('gets back its own width on a screen with room for it again', async () => {
     localStorage.setItem(
-      'mtg-suite.sidePanel.decklist',
+      'leyline.sidePanel.decklist',
       '{"version": 1, "isOpen": true, "width": 420}',
     );
     stubCentreWidth(100);
