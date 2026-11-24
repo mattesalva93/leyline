@@ -299,6 +299,48 @@ describe('the rate limit', () => {
     expect(refused.status).toBe(429);
     expect(refused.headers.get('retry-after')).toBe('60');
   });
+
+  it.each([
+    {
+      route: 'GET /api/cards/named',
+      limit: 120,
+      send: (o: string) => fetch(`${o}/api/cards/named?name=counterspell`),
+    },
+    {
+      route: 'GET /api/cards/:oracleId/prints',
+      limit: 300,
+      send: (o: string) => fetch(`${o}/api/cards/${randomUUID()}/prints`),
+    },
+    {
+      route: 'GET /api/cards/:oracleId/print-counts',
+      limit: 300,
+      send: (o: string) => fetch(`${o}/api/cards/${randomUUID()}/print-counts`),
+    },
+    {
+      route: 'POST /api/decklists/suggested-tokens',
+      limit: 120,
+      send: (o: string) => post(o, '/api/decklists/suggested-tokens', { lines: [] }),
+    },
+  ])('answers 429 to $route past $limit requests within a minute', async ({ limit, send }) => {
+    const { origin } = await serveApp();
+
+    const allowed: number[] = [];
+    for (let i = 0; i < limit; i++) allowed.push((await send(origin)).status);
+    const refused = await send(origin);
+
+    expect(allowed).not.toContain(429);
+    expect(refused.status).toBe(429);
+    expect(refused.headers.get('retry-after')).toBe('60');
+  });
+
+  it('never limits the health check, which the compose healthcheck asks', async () => {
+    const { origin } = await serveApp();
+
+    const statuses: number[] = [];
+    for (let i = 0; i < 400; i++) statuses.push((await fetch(`${origin}/api/health`)).status);
+
+    expect(statuses).toEqual(Array(400).fill(200));
+  });
 });
 
 function post(origin: string, path: string, body: unknown): Promise<Response> {
