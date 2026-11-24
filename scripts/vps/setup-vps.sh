@@ -229,14 +229,20 @@ fi
 
 banner "Leyline alpha on an OVHcloud VPS"
 
-stage "OVHcloud: order the VPS"
-say "Order a VPS-1 (2 vCore, 4 GB) running Ubuntu LTS, x86, in an EU data centre, or a VPS-2"
-say "if no EU location has a VPS-1: never a location outside the EU (ADR 0016)."
-open_url "https://www.ovhcloud.com/it/vps/"
-step "Pick the plan, an EU location (France, Germany, Poland...) and the latest Ubuntu LTS image."
-step "Bill it monthly, and drop the automated backup: the catalog is rebuilt from Scryfall."
-step "In the configurator, check the monthly price has no minimum commitment and no setup fee:"
-note "  research/vps-alpha-hosting.md could not verify either. Stop if one shows up."
+stage "OVHcloud: the VPS"
+if confirm "Is the VPS already ordered?"; then
+  step "Control panel → Bare Metal Cloud → Virtual private servers → your VPS: check it is a VPS-1"
+  step "or VPS-2 in an EU location, on x86, running Ubuntu LTS (ADR 0016). Reinstall it if not."
+  step "Billing → My services: check it is billed monthly, with no minimum commitment."
+else
+  say "Order a VPS-1 (2 vCore, 4 GB) running Ubuntu LTS, x86, in an EU data centre, or a VPS-2"
+  say "if no EU location has a VPS-1: never a location outside the EU (ADR 0016)."
+  open_url "https://www.ovhcloud.com/it/vps/"
+  step "Pick the plan, an EU location (France, Germany, Poland...) and the latest Ubuntu LTS image."
+  step "Bill it monthly, and drop the automated backup: the catalog is rebuilt from Scryfall."
+  step "In the configurator, check the monthly price has no minimum commitment and no setup fee:"
+  note "  research/vps-alpha-hosting.md could not verify either. Stop if one shows up."
+fi
 ask OWNER_SSH_PUBLIC_KEY "Your SSH public key file (empty: ~/.ssh/id_ed25519.pub):"
 OWNER_SSH_PUBLIC_KEY=${OWNER_SSH_PUBLIC_KEY:-$HOME/.ssh/id_ed25519.pub}
 if [[ ! -f "$OWNER_SSH_PUBLIC_KEY" ]]; then
@@ -245,9 +251,9 @@ if [[ ! -f "$OWNER_SSH_PUBLIC_KEY" ]]; then
   ssh-keygen -t ed25519 -f "${OWNER_SSH_PUBLIC_KEY%.pub}"
 fi
 write_env OWNER_SSH_PUBLIC_KEY "$OWNER_SSH_PUBLIC_KEY"
-step "If the order offers an SSH key, paste this one (else OVHcloud mails a password):"
+step "If the order offers an SSH key, paste this one (else OVHcloud mails how to log in):"
 note "  $(cat "$OWNER_SSH_PUBLIC_KEY")"
-step "Complete the order and wait for the e-mail saying the VPS is ready."
+step "Wait for the e-mail saying the VPS is ready, if it has not come yet."
 ask VPS_ADDRESS "The VPS's IPv4 address (from the e-mail or the control panel):"
 write_env VPS_ADDRESS "$VPS_ADDRESS"
 ask VPS_ADMIN_USER "The user the e-mail names (ubuntu on Ubuntu images):"
@@ -281,14 +287,18 @@ ssh -o BatchMode=yes "$ADMIN" true || { warn "$VPS_ADMIN_USER still cannot log i
 say "✓ $VPS_ADMIN_USER logs in with your key."
 
 stage "DNS: the site's name, IPv4 only"
-ask APP_DOMAIN "The site's domain (e.g. alpha.example.com):"
-write_env APP_DOMAIN "$APP_DOMAIN"
-step "At your DNS provider, add an A record: $APP_DOMAIN → $VPS_ADDRESS."
-step "Add no AAAA record, and remove one if it is there: the alpha is IPv4 only (ADR 0016)."
+ask APP_DOMAIN "The site's domain (empty: leyline.website):"
+write_env APP_DOMAIN "${APP_DOMAIN:-leyline.website}"
+step "OVHcloud control panel → Web Cloud → Domain names → $APP_DOMAIN → DNS zone."
+step "Point the A record of $APP_DOMAIN itself (empty subdomain) at $VPS_ADDRESS: edit the"
+note "  default one, which points at OVHcloud's parking page, rather than adding a second."
+step "Delete its AAAA record, if there is one: the alpha is IPv4 only (ADR 0016)."
+note "  The zone's other default records (www, MX, TXT) can stay: the site answers on $APP_DOMAIN only."
 # `getent ahostsv4/ahostsv6` asks the system resolver for one address family.
 until [[ "$(getent ahostsv4 "$APP_DOMAIN" | awk 'NR == 1 { print $1 }')" == "$VPS_ADDRESS" ]] &&
   ! getent ahostsv6 "$APP_DOMAIN" | grep -qv '::ffff:'; do
-  note "  $APP_DOMAIN does not resolve to $VPS_ADDRESS alone yet (new records can take minutes)."
+  note "  $APP_DOMAIN does not resolve to $VPS_ADDRESS alone yet: a changed record can stay"
+  note "  cached for its old TTL, an hour on OVHcloud's default zone."
   pause "Press Enter to look again, or Ctrl-C to stop and re-run later."
 done
 say "✓ $APP_DOMAIN resolves to $VPS_ADDRESS, with no IPv6 address."
