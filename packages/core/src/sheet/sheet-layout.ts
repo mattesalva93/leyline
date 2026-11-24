@@ -84,13 +84,18 @@ function lineCopies(line: DecklistLine): Copy[] {
   });
 }
 
+/** The URL of the image `sheet` prints `face` with, at its image quality. */
+export function imageUrlOf(face: PrintFace, sheet: Sheet): string {
+  return face.imageUris[sheet.options.imageQuality];
+}
+
 /** The distinct image URLs the sheet needs, in print order: fetch these for `generateSheetPdf`. */
 export function sheetImageUrls(sheet: Sheet): string[] {
   return [
     ...new Set(
       copiesOf(sheet)
         .flat()
-        .map((slot) => slot.face.imageUris[sheet.options.imageQuality]),
+        .map(({ face }) => imageUrlOf(face, sheet)),
     ),
   ];
 }
@@ -103,7 +108,7 @@ export function printsShowingImages(sheet: Sheet, imageUrls: readonly string[]):
   const printByImageUrl = new Map(
     copiesOf(sheet)
       .flat()
-      .map(({ face, print }) => [face.imageUris[sheet.options.imageQuality], print]),
+      .map(({ face, print }) => [imageUrlOf(face, sheet), print]),
   );
   return imageUrls.flatMap((url) => printByImageUrl.get(url) ?? []);
 }
