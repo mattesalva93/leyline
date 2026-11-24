@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from './app.ts';
+import { importBulk } from '../catalog-import/import-bulk.ts';
 import { migrate } from '../catalog/db.ts';
+import { bulkStream, scryfallCard } from '../test-support/scryfall-fixtures.ts';
 import { listen, type ListeningApp } from '../test-support/listening-app.ts';
 import { manualClock } from '../test-support/manual-clock.ts';
 import { recordedSecurityLog } from '../test-support/recorded-security-log.ts';
@@ -419,6 +421,70 @@ describe('the rate limit', () => {
     for (let i = 0; i < 400; i++) statuses.push((await fetch(`${origin}/api/health`)).status);
 
     expect(statuses).toEqual(Array(400).fill(200));
+  });
+});
+
+describe('a tester using the app as meant', () => {
+  const DECK_SIZE = 100;
+  const oracleIdOf = (i: number) => `aaaaaaaa-0000-0000-0000-${String(i).padStart(12, '0')}`;
+  const nameOf = (i: number) => `Tester Deck Card ${i}`;
+
+  beforeAll(async () => {
+    await importBulk(
+      db.sql,
+      bulkStream(
+        Array.from({ length: DECK_SIZE }, (_, i) =>
+          scryfallCard({
+            id: `bbbbbbbb-0000-0000-0000-${String(i).padStart(12, '0')}`,
+            oracle_id: oracleIdOf(i),
+            name: nameOf(i),
+          }),
+        ),
+      ),
+    );
+  });
+
+  it('stays under every rate limit and the concurrency cap within one minute', async () => {
+    const { origin, securityLog } = await serveApp();
+    const decklist = Array.from({ length: DECK_SIZE }, (_, i) => `1 ${nameOf(i)}`).join('\n');
+    const statuses: number[] = [];
+    const send = async (request: Promise<Response>) => {
+      statuses.push((await request).status);
+    };
+    const suggestTokens = () =>
+      send(
+        post(origin, '/api/decklists/suggested-tokens', {
+          lines: Array.from({ length: DECK_SIZE }, (_, i) => ({
+            oracleId: oracleIdOf(i),
+            previewPrintId: null,
+          })),
+        }),
+      );
+
+    // Pastes a 100-card decklist, then edits it a few times.
+    for (let edit = 0; edit < 10; edit++) {
+      await send(post(origin, '/api/decklists/resolve', { text: decklist }));
+      await suggestTokens();
+    }
+    // Opens every tile, as the browser does all at once: its prints, their counts, a page more
+    // and a print query; then picks a print, which asks for the tokens again.
+    for (let i = 0; i < DECK_SIZE; i++) {
+      const prints = `${origin}/api/cards/${oracleIdOf(i)}/prints`;
+      await Promise.all([
+        send(fetch(`${prints}?limit=50`)),
+        send(fetch(`${prints}?limit=50&q=c21`)),
+        send(fetch(`${origin}/api/cards/${oracleIdOf(i)}/print-counts`)),
+      ]);
+      await suggestTokens();
+    }
+    // Adds a few cards by typing their names, letter by letter.
+    for (const typed of ['T', 'Te', 'Tes', 'Test', 'Teste', 'Tester']) {
+      await send(fetch(`${origin}/api/cards/search?q=${typed}`));
+      await send(fetch(`${origin}/api/cards/named?name=${encodeURIComponent(nameOf(0))}`));
+    }
+
+    expect(statuses.filter((status) => status !== 200)).toEqual([]);
+    expect(securityLog.events).toEqual([]);
   });
 });
 
