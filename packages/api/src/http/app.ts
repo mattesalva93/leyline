@@ -13,10 +13,12 @@ import {
   type TokenQueryLine,
 } from '@leyline/core';
 import { Hono } from 'hono';
-import { hasCatalogTables, type Sql } from '../catalog/db.ts';
+import { except } from 'hono/combine';
+import { DATABASE_POOL_SIZE, hasCatalogTables, type Sql } from '../catalog/db.ts';
 import { createPostgresCatalog } from '../catalog/postgres-catalog.ts';
 import { clientAddress } from './client-address.ts';
 import type { Clock } from './clock.ts';
+import { concurrencyCap } from './concurrency-cap.ts';
 import { rateLimit } from './rate-limit.ts';
 import { requestBodyLimit } from './request-body-limit.ts';
 import { requestTimeout } from './request-timeout.ts';
@@ -66,6 +68,12 @@ const SUGGESTED_TOKENS_RATE_LIMIT = { requestsPerWindow: 120, windowSeconds: 60 
  * changes: above a tester opening every tile of a 100-card deck within a minute, and paging on.
  */
 const ONE_CARD_PRINTS_RATE_LIMIT = { requestsPerWindow: 300, windowSeconds: 60 };
+
+/**
+ * Most requests served at once. With one CPU (compose.yaml) the API mostly waits for PostgreSQL:
+ * past twice its pool, a request would only queue for a connection, holding memory meanwhile.
+ */
+const MAX_REQUESTS_IN_FLIGHT = 2 * DATABASE_POOL_SIZE;
 
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 
@@ -117,6 +125,11 @@ export function createApp(deps: AppDeps): Hono {
 
   app.onError(serverErrorHandler(deps.securityLog));
   app.use('/api/*', clientAddress(deps.trustedProxyHost, deps.clock));
+  // The healthcheck tells a serving API apart from a stuck one, even while it is full.
+  app.use(
+    '/api/*',
+    except('/api/health', concurrencyCap(MAX_REQUESTS_IN_FLIGHT, deps.securityLog)),
+  );
   app.use('/api/*', requestTimeout(deps.clock, deps.securityLog));
   app.use('/api/*', requestBodyLimit(deps.securityLog));
 

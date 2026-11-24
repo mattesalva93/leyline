@@ -40,6 +40,24 @@ async function serveApp({
   return { origin: server.origin, clock, securityLog };
 }
 
+/** Holds every catalog table locked until `release`, so a request reading the catalog waits. */
+async function lockCatalog() {
+  let release!: () => void;
+  const released = new Promise<void>((settle) => (release = settle));
+  let locked!: () => void;
+  const lockTaken = new Promise<void>((settle) => (locked = settle));
+  const transaction = db.sql.begin(async (tx) => {
+    await tx`lock table cards, card_names, prints, token_links in access exclusive mode`;
+    locked();
+    await released;
+  });
+  await lockTaken;
+  return async () => {
+    release();
+    await transaction;
+  };
+}
+
 describe('the request body limit', () => {
   it('refuses a body whose Content-Length is over 1 MiB with 413', async () => {
     const { origin, securityLog } = await serveApp();
@@ -122,30 +140,12 @@ describe('the request body limit', () => {
 });
 
 describe('the request timeout', () => {
-  /** Holds every catalog table locked until `release`, so a request reading the catalog waits. */
-  async function lockCatalog() {
-    let release!: () => void;
-    const released = new Promise<void>((settle) => (release = settle));
-    let locked!: () => void;
-    const lockTaken = new Promise<void>((settle) => (locked = settle));
-    const transaction = db.sql.begin(async (tx) => {
-      await tx`lock table cards, card_names, prints, token_links in access exclusive mode`;
-      locked();
-      await released;
-    });
-    await lockTaken;
-    return async () => {
-      release();
-      await transaction;
-    };
-  }
-
   it('answers 503 to a request still running after 10 seconds', async () => {
     const { origin, clock, securityLog } = await serveApp();
     const unlockCatalog = await lockCatalog();
 
     const answer = fetch(`${origin}/api/cards/search?q=counterspell`);
-    await clock.timerRunning();
+    await clock.timersRunning();
     clock.advance(10_000);
     const response = await answer;
     await unlockCatalog();
@@ -167,13 +167,92 @@ describe('the request timeout', () => {
     const unlockCatalog = await lockCatalog();
 
     const answer = fetch(`${origin}/api/cards/search?q=counterspell`);
-    await clock.timerRunning();
+    await clock.timersRunning();
     clock.advance(9_999);
     await unlockCatalog();
     const response = await answer;
 
     expect(response.status).toBe(200);
     expect(securityLog.events).toEqual([]);
+  });
+});
+
+describe('the concurrency cap', () => {
+  /** Twice the database pool: past it, a request would only queue for a connection. */
+  const CAP = 20;
+
+  /**
+   * `CAP` searches held in flight on the locked catalog. Each one let in runs its own timeout,
+   * and the search's rate limit window runs one more timer.
+   */
+  async function fillTheApi(origin: string, clock: ReturnType<typeof manualClock>) {
+    const inFlight = Array.from({ length: CAP }, () =>
+      fetch(`${origin}/api/cards/search?q=counterspell`),
+    );
+    await clock.timersRunning(CAP + 1);
+    return inFlight;
+  }
+
+  it('answers 503 instead of queueing past the concurrency cap', async () => {
+    const { origin, clock } = await serveApp();
+    const unlockCatalog = await lockCatalog();
+
+    const inFlight = await fillTheApi(origin, clock);
+    const refused = await fetch(`${origin}/api/cards/${randomUUID()}/print-counts`);
+    await unlockCatalog();
+    const served = await Promise.all(inFlight);
+
+    expect(refused.status).toBe(503);
+    expect(refused.headers.get('retry-after')).toBe('1');
+    expect(await refused.json()).toEqual({ error: 'The server is busy: retry in 1 second.' });
+    expect(served.map((response) => response.status)).toEqual(Array(CAP).fill(200));
+  });
+
+  it('logs the first refusal while the API stays full, not each one', async () => {
+    const { origin, clock, securityLog } = await serveApp({ trustedProxyHost: 'localhost' });
+    const unlockCatalog = await lockCatalog();
+
+    const inFlight = await fillTheApi(origin, clock);
+    for (const client of ['203.0.113.7', '198.51.100.4']) {
+      await fetch(`${origin}/api/cards/named?name=counterspell`, {
+        headers: { 'x-forwarded-for': client },
+      });
+    }
+    await unlockCatalog();
+    await Promise.all(inFlight);
+
+    expect(securityLog.events).toEqual([
+      {
+        kind: 'over-capacity',
+        method: 'GET',
+        path: '/api/cards/named',
+        clientNetwork: '203.0.113.0',
+      },
+    ]);
+  });
+
+  it('serves again once a request in flight has ended', async () => {
+    const { origin, clock } = await serveApp();
+    const unlockCatalog = await lockCatalog();
+
+    const inFlight = await fillTheApi(origin, clock);
+    await unlockCatalog();
+    await Promise.all(inFlight);
+    const served = await fetch(`${origin}/api/cards/search?q=counterspell`);
+
+    expect(served.status).toBe(200);
+  });
+
+  it('still answers the health check while the API is full', async () => {
+    const { origin, clock } = await serveApp();
+    const unlockCatalog = await lockCatalog();
+
+    const inFlight = await fillTheApi(origin, clock);
+    const health = fetch(`${origin}/api/health`);
+    await unlockCatalog();
+    await Promise.all(inFlight);
+
+    expect((await health).status).toBe(200);
   });
 });
 
