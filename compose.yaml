@@ -37,12 +37,12 @@ services:
       - caddy-config:/config
       # The access log, rotated by Caddy itself (Caddyfile).
       - caddy-logs:/var/log/caddy
-      # The testers' credentials, never in the image or the repository (docs/staging.md).
-      # `create_host_path: false`: a missing file stops `up`, instead of Docker mounting an
-      # empty directory in its place.
+      # The testers' guard, never in the image or the repository: on while the folder holds it
+      # (ADR 0023, docs/staging.md). A folder, not a file, so Caddy sees the guard written or
+      # removed on its next reload.
       - type: bind
-        source: ./docker/web/tester-credentials.caddy
-        target: /etc/caddy/tester-credentials.caddy
+        source: ./docker/web/tester-guard
+        target: /etc/caddy/tester-guard
         read_only: true
         bind: { create_host_path: false }
     restart: unless-stopped
@@ -140,7 +140,7 @@ services:
 
 # `internal` networks have no route out of Docker: only the services on them reach each other.
 networks:
-  # Published ports and outgoing traffic: the testers reach Caddy, the importer reaches Scryfall.
+  # Published ports and outgoing traffic: visitors reach Caddy, the importer reaches Scryfall.
   internet:
   # Caddy forwarding /api to the api.
   proxy:

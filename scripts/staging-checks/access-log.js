@@ -21,11 +21,11 @@ async function readAccessLog() {
   return (await execInService('web', 'cat', ACCESS_LOG)).split('\n').filter(Boolean);
 }
 
-/** Sends one request per public path, as a tester and as a stranger, each marked to find it. */
-async function sendMarkedRequests({ anonymousRequest, testerRequest, appAddress }) {
+/** Sends one request per public path, as a visitor the site lets in and as a stranger, each marked to find it. */
+async function sendMarkedRequests({ anonymousRequest, visitorRequest, appAddress }) {
   const marker = `check-staging=${randomUUID()}`;
   const requests = PUBLIC_PATHS.flatMap((path) =>
-    [anonymousRequest, testerRequest].map((request) =>
+    [anonymousRequest, visitorRequest].map((request) =>
       request.get(`${appAddress}${path}?${marker}`, {
         headers: SPOOFED_CLIENT_HEADERS,
         maxRedirects: 0,
@@ -49,7 +49,7 @@ async function waitForMarkedLines(marker, count) {
 /**
  * @param {{
  *   anonymousRequest: import('playwright').APIRequestContext,
- *   testerRequest: import('playwright').APIRequestContext,
+ *   visitorRequest: import('playwright').APIRequestContext,
  *   appAddress: string,
  * }} staging
  */

@@ -9,3 +9,4 @@ coverage/
 .vscode/settings.json
 .preview/
 docker/web/tester-credentials.caddy
+docker/web/tester-guard/*.caddy

@@ -1,11 +1,14 @@
 // Checks, on the running staging stack, the behaviour that lives in its configuration (Caddy,
 // Compose, Dockerfiles, database permissions) rather than in code. Exits with an error listing
 // every check that failed.
-//   pnpm check:staging                       against local staging on https://localhost
-//   pnpm check:staging --app https://host    against the stack running elsewhere, such as the VPS
-// Needs the stack running (docker compose up -d --wait, see docs/staging.md) with the catalog
-// imported, a test credential in CHECK_STAGING_USERNAME and CHECK_STAGING_PASSWORD (read from
-// `.env` too), and Playwright's browser (pnpm exec playwright install chromium). It talks to the
+//   pnpm check:staging --access open                       local staging on https://localhost
+//   pnpm check:staging --access closed                     the same, with the testers' guard on
+//   pnpm check:staging --access open --app https://host    the stack elsewhere, such as the VPS
+// `--access` names the state the testers' guard should be in (ADR 0023): the checks never guess
+// it from the answers. Needs the stack running (docker compose up -d --wait, see
+// docs/staging.md) with the catalog imported, Playwright's browser (pnpm exec playwright install
+// chromium) and, with `--access closed`, a test credential in CHECK_STAGING_USERNAME and
+// CHECK_STAGING_PASSWORD (read from `.env` too). It talks to the
 // stack from outside, as a browser would, and reads its logs and settings through `docker`
 // (DOCKER_HOST for the VPS, see docs/deploy.md), so it stays out of `pnpm check`: run it
 // whenever the configuration changes and after every deploy. With DOCKER_HOST=ssh://..., it also
@@ -50,15 +53,25 @@ const VPS_CHECKS = {
   'host maintenance': hostMaintenanceFailures,
 };
 
-const { values: flags } = parseArgs({ options: { app: { type: 'string' } } });
+const { values: flags } = parseArgs({
+  options: { app: { type: 'string' }, access: { type: 'string' } },
+});
 const appAddress = (flags.app ?? 'https://localhost').replace(/\/$/, '');
+if (flags.access !== 'open' && flags.access !== 'closed') {
+  console.error(
+    "Say which state the testers' guard should be in: --access open or --access closed.",
+  );
+  process.exit(1);
+}
+const access = flags.access;
 
 const { CHECK_STAGING_USERNAME: username, CHECK_STAGING_PASSWORD: password } = process.env;
-if (!username || !password) {
+if (access === 'closed' && (!username || !password)) {
   console.error('Set CHECK_STAGING_USERNAME and CHECK_STAGING_PASSWORD to a test credential.');
   process.exit(1);
 }
-const testerCredential = { username, password };
+/** The credential the checks sign in with, `null` while the site is open. */
+const testerCredential = access === 'closed' ? { username, password } : null;
 
 const vpsAddress = vpsFromDockerHost(process.env.DOCKER_HOST);
 const vps = vpsAddress && (await openVpsConnection(vpsAddress));
@@ -68,20 +81,21 @@ else console.log('VPS checks: skipped, DOCKER_HOST is not ssh://');
 const checksToRun = { ...CHECKS, ...(vps ? VPS_CHECKS : {}) };
 
 const failures = [];
-let anonymousRequest, testerRequest, browser;
+let anonymousRequest, visitorRequest, browser;
 try {
   // `ignoreHTTPSErrors`: local staging signs its own certificate. `send: 'always'`: every
   // request carries the credential, instead of waiting for a 401 to ask for it.
   anonymousRequest = await playwrightRequest.newContext({ ignoreHTTPSErrors: true });
-  testerRequest = await playwrightRequest.newContext({
+  // Whom the site lets in: anyone while it is open, a tester while the guard is on.
+  visitorRequest = await playwrightRequest.newContext({
     ignoreHTTPSErrors: true,
-    httpCredentials: { ...testerCredential, send: 'always' },
+    ...(testerCredential && { httpCredentials: { ...testerCredential, send: 'always' } }),
   });
   browser = await chromium.launch();
   for (const [name, check] of Object.entries(checksToRun)) {
     const checkFailures = await check({
       anonymousRequest,
-      testerRequest,
+      visitorRequest,
       browser,
       appAddress,
       testerCredential,
@@ -92,7 +106,7 @@ try {
   }
 } finally {
   await anonymousRequest?.dispose();
-  await testerRequest?.dispose();
+  await visitorRequest?.dispose();
   await browser?.close();
   await vps?.close();
 }

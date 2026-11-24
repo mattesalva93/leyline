@@ -1,10 +1,10 @@
 # Local staging
 
-Staging is the production stack (`compose.yaml`) running on this machine: Caddy serving the web app and `/api` over HTTPS, `api`, `importer` and PostgreSQL (ADR 0011). It answers on https://localhost, to the testers' credentials only, and is updated by hand.
+Staging is the production stack (`compose.yaml`) running on this machine: Caddy serving the web app and `/api` over HTTPS, `api`, `importer` and PostgreSQL (ADR 0011). It answers on https://localhost, open to anyone like the alpha (ADR 0023), and is updated by hand.
 
-## Tester credentials
+## The testers' guard
 
-Caddy lets in only the testers listed in `docker/web/tester-credentials.caddy` (ADR 0016), a file git ignores and `docker compose up` refuses to start without. Create it once from the example, which explains its format:
+The site is open while `docker/web/tester-guard/` holds no `.caddy` file (ADR 0023). The testers' guard, the emergency switch, lets in only the testers listed in `docker/web/tester-credentials.caddy`, a file git ignores. Create it once from the example, which explains its format:
 
 ```sh
 cp docker/web/tester-credentials.example.caddy docker/web/tester-credentials.caddy
@@ -17,15 +17,25 @@ password=$(openssl rand -base64 33)   # 33 random bytes, printed as 44 base64 ch
 printf '%s\n' "$password" | docker compose run --rm --no-deps -T web caddy hash-password --algorithm argon2id
 ```
 
-The hash comes from the stack's own Caddy image. `--no-deps` starts no other service, and `-T` gives the command no terminal, so `caddy hash-password` reads the password from the pipe and it never appears on a command line. Add `<username> <hash>` as one line of the file, and give the tester their password over a private channel. Removing a line revokes that tester. A running stack picks a change up with:
+The hash comes from the stack's own Caddy image. `--no-deps` starts no other service, and `-T` gives the command no terminal, so `caddy hash-password` reads the password from the pipe and it never appears on a command line. Add `<username> <hash>` as one line of the file, and give the tester their password over a private channel. Removing a line revokes that tester.
+
+Turn the guard on, or pick up a changed credential, by writing the guard from the file and reloading Caddy:
 
 ```sh
-docker compose restart web
+sh scripts/tester-guard.sh < docker/web/tester-credentials.caddy > docker/web/tester-guard/basic-auth.caddy
+docker compose exec web caddy reload --config /etc/caddy/Caddyfile
 ```
 
-`restart` rather than `caddy reload`: an editor that saves by replacing the file leaves the running container on the old one, and only a restart mounts the new one.
+Turn it off, opening the site again, by removing the guard and reloading:
 
-`pnpm check:staging` signs in with a credential of its own: make one as above for a username such as `check-staging`, add its line to the file, and put the username and the password in `.env` as `CHECK_STAGING_USERNAME` and `CHECK_STAGING_PASSWORD`.
+```sh
+rm docker/web/tester-guard/basic-auth.caddy
+docker compose exec web caddy reload --config /etc/caddy/Caddyfile
+```
+
+`compose.yaml` mounts the folder, not the file, so a reload sees the guard written or removed.
+
+`pnpm check:staging` takes the state the guard should be in: `--access open`, or `--access closed`, where it signs in with a credential of its own. Make one as above for a username such as `check-staging`, add its line to the file, and put the username and the password in `.env` as `CHECK_STAGING_USERNAME` and `CHECK_STAGING_PASSWORD`.
 
 ## Start
 

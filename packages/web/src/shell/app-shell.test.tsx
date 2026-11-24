@@ -280,7 +280,7 @@ describe('the app shell', () => {
       ).toBe('https://www.garanteprivacy.it');
     });
 
-    it('covers every point a privacy notice owes the testers', async () => {
+    it('covers every point a privacy notice owes the visitors', async () => {
       const { notice } = await openThePrivacyNotice();
 
       expect(
@@ -296,6 +296,17 @@ describe('the app shell', () => {
         'Cosa non c’è',
         'I tuoi diritti',
       ]);
+    });
+
+    it('describes the open alpha, with the testers’ credentials only while access is restricted (ADR 0023)', async () => {
+      const { notice } = await openThePrivacyNotice();
+
+      expect(notice.textContent).toContain('aperta a chiunque');
+      expect(notice.textContent).toContain('il sito non chiede credenziali');
+      expect(notice.textContent).toContain(
+        'il nome utente del tester quando l’accesso è ristretto',
+      );
+      expect(notice.textContent).not.toMatch(/chiusa|riservarlo ai tester/);
     });
 
     it('leaves the theme out of what the device keeps: the app has one (ADR 0020)', async () => {

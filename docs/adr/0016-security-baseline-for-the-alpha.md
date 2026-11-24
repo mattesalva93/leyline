@@ -1,6 +1,6 @@
 # 0016: Security baseline for the alpha
 
-**Status:** accepted (2026-11-18)
+**Status:** accepted (2026-11-18), superseded in part by ADR 0023 (2026-11-24): access
 
 ## Decision
 

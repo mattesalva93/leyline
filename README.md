@@ -4,7 +4,7 @@ Leyline is a free, unofficial web app for Magic: The Gathering players. Not affi
 
 ## Status
 
-Closed alpha: a first module, the proxy sheet generator, shared with a few testers before a public release. The app is reachable only with the credentials each tester is given. To report a vulnerability, see [`SECURITY.md`](SECURITY.md).
+Open alpha: a first module, the proxy sheet generator, open to anyone before a public release. Nobody needs an account or a credential. To report a vulnerability, see [`SECURITY.md`](SECURITY.md).
 
 ## What it does
 
@@ -50,7 +50,7 @@ pnpm build                # production build of web and api
 pnpm sheet:preview        # render a sample sheet to .preview/sheet-*.png (needs pdftoppm: brew install poppler)
 pnpm web:preview          # screenshot the running app at phone and desktop widths into .preview/web-*.png
 pnpm check:phone-width    # check in the running app that the phone workspace never outgrows the screen
-pnpm check:staging        # check on the running staging stack what lives in its configuration, such as the security headers
+pnpm check:staging --access open   # check on the running staging stack what lives in its configuration, such as the security headers
 ```
 
 Each of these scripts explains its options in its first lines.

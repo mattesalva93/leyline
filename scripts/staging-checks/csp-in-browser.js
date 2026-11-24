@@ -32,7 +32,10 @@ function labelStart(template) {
   return new RegExp(`^${RegExp.escape(text.split('{{')[0])}`);
 }
 
-/** Switches the guide off, pastes the decklist, gives a copy to a print that had none, then downloads the sheet's PDF. */
+/**
+ * Switches the guide off, pastes the decklist, gives a copy to a print that had none, then
+ * downloads the sheet's PDF.
+ */
 async function walkTheWholeJourney(page, appAddress) {
   await page.goto(`${appAddress}/proxy`);
   // A first visit starts the guide, whose spotlight dims every control but the one it points to.
@@ -69,7 +72,7 @@ async function walkTheWholeJourney(page, appAddress) {
  * @param {{
  *   browser: import('playwright').Browser,
  *   appAddress: string,
- *   testerCredential: { username: string, password: string },
+ *   testerCredential: { username: string, password: string } | null,
  * }} staging
  */
 export async function cspInBrowserFailures({ browser, appAddress, testerCredential }) {
@@ -78,7 +81,7 @@ export async function cspInBrowserFailures({ browser, appAddress, testerCredenti
     viewport: DESKTOP_VIEWPORT,
     ignoreHTTPSErrors: true,
     acceptDownloads: true,
-    httpCredentials: testerCredential,
+    ...(testerCredential && { httpCredentials: testerCredential }),
   });
   const failures = [];
   try {
