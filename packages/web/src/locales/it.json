@@ -327,6 +327,7 @@
       "openLinePanel": "Apri una carta per vederne quantità e stampe.",
       "changePrint": "Tocca un’altra stampa: le copie della carta passano a quella.",
       "fixLine": "Questa riga va sistemata: scegli la carta giusta o toglila dalla lista.",
+      "fixDeckLink": "Questa riga è il link di un mazzo: incolla nella lista l’export testuale del mazzo, poi togli il link.",
       "goToSheet": "Guarda il foglio, come verrà stampato.",
       "makePdf": "Crea il PDF da stampare."
     },

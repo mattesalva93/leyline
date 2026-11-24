@@ -15,6 +15,7 @@ import { AddCardTile } from '../add-card/AddCardTile.tsx';
 import { addTileKeyOf, type GridSection } from './grid-sections.ts';
 import { dropMarkSideOf, isSelected, type GridTile, type TileSelection } from './grid-tiles.ts';
 import { ImagelessTile } from './ImagelessTile.tsx';
+import { guidedStepTextKeyOf } from './guided-tiles.ts';
 import { PrintTileCard } from './PrintTileCard.tsx';
 import { ReorderableTileItem } from './ReorderableTileItem.tsx';
 import { siblingGroupColoursOf } from './sibling-group-colours.ts';
@@ -161,11 +162,13 @@ export function CardGridSection({
               />
             );
           const slideKey = slideKeys.get(gridTile.key) ?? gridTile.key;
+          const guidedStep = guidedStepsOfTiles.get(gridTile.key) ?? null;
           return (
             <GuidedStepBubble
               // By the card, not the line's place: a tile that moves keeps its element and its image.
               key={slideKey}
-              guidedStep={guidedStepsOfTiles.get(gridTile.key) ?? null}
+              guidedStep={guidedStep}
+              textKey={guidedStep && guidedStepTextKeyOf(guidedStep, gridTile)}
               placement={guidedTilePlacement}
             >
               <ReorderableTileItem

@@ -49,11 +49,14 @@ export interface GuidedStepPlacement {
  */
 export function GuidedStepBubble({
   guidedStep,
+  textKey = guidedStep,
   placement: { side, align = 'start', aimInside },
   children,
 }: {
   /** `null` for a control no guided step points to now: it keeps its element as one comes and goes. */
   readonly guidedStep: GuidedStep | null;
+  /** The key of the bubble's text among the steps' texts, when the control needs its own. */
+  readonly textKey?: string | null;
   readonly placement: GuidedStepPlacement;
   readonly children: ReactElement;
 }) {
@@ -119,7 +122,7 @@ export function GuidedStepBubble({
               {t('guide.stepNumber', { number: shownStepNumber })}
             </span>
             <p id={textId} className="leading-snug">
-              {guidedStep && t(`guide.steps.${guidedStep}`)}
+              {textKey && t(`guide.steps.${textKey}`)}
             </p>
           </div>
           <button
