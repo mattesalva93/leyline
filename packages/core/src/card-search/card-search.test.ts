@@ -40,6 +40,22 @@ describe('searchCards', () => {
     expect(names).toEqual(['Lightning Bolt', 'Lightning Helix', 'Lightning Greaves']);
   });
 
+  it('finds a card by the alternate name of one of its prints', async () => {
+    const cyclonicRift = aCard({ oracleId: 'cyclonic-rift', name: 'Cyclonic Rift' });
+    const riftCatalog = createInMemoryCatalog([
+      { card: cyclonicRift, prints: [aPrint(), aPrint({ flavorName: "Hope's Aero Magic" })] },
+    ]);
+
+    const found = await searchCards(riftCatalog, {
+      query: "Hope's Aero Magic",
+      lang: 'en',
+      today: '2026-11-13',
+      limit: 8,
+    });
+
+    expect(found.map(({ card }) => card.name)).toEqual(['Cyclonic Rift']);
+  });
+
   it('forgives a misspelled name', async () => {
     const names = (await search('Contrspell')).map((found) => found.card.name);
 
