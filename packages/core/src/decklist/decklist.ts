@@ -44,6 +44,11 @@ export interface ParsedLine {
 const QUANTITY_NAME = /^(\d+)x?\s+(.+)$/i;
 /** "Sol Ring (C21) 263", maybe with a finish marker such as "*F*" (foil) after the number. */
 const NAME_SET_NUMBER = /^(.+?)\s+\(([A-Za-z0-9]+)\)\s+(\S+)(?:\s+\*[A-Za-z]+\*)?$/;
+/**
+ * What an Archidekt Text export ends a line with: its categories (" [Ramp,Draw{top}]") and its
+ * color tag (" ^Buy,#0066ff^"). No card name holds "[", "]" or "^".
+ */
+const ARCHIDEKT_TAIL = /(?:\s+(?:\[[^\]]*\]|\^[^^]*\^))+$/;
 const COMMENT = /^(\/\/|#)/;
 
 function isIgnored(trimmed: string): boolean {
@@ -61,8 +66,9 @@ export function parseLine(text: string): ParsedLine | null {
   const quantityMatch = QUANTITY_NAME.exec(trimmed);
   const quantity = quantityMatch?.[1] ? Number(quantityMatch[1]) : 1;
   const rest = quantityMatch?.[2] ?? trimmed;
-  const [, name, set, collectorNumber] = NAME_SET_NUMBER.exec(rest) ?? [];
-  if (!name || !set || !collectorNumber) return { text, quantity, name: rest, printRef: null };
+  const card = rest.replace(ARCHIDEKT_TAIL, '');
+  const [, name, set, collectorNumber] = NAME_SET_NUMBER.exec(card) ?? [];
+  if (!name || !set || !collectorNumber) return { text, quantity, name: card, printRef: null };
   return {
     text,
     quantity,

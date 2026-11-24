@@ -124,6 +124,31 @@ describe('resolveDecklist', () => {
     ]);
   });
 
+  it('ignores the categories and color tag an Archidekt Text export ends a line with', async () => {
+    const otherSolRing = aPrint({ id: 'sol-ring-cmr', set: 'cmr', collectorNumber: '472' });
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21, otherSolRing] }]);
+
+    const lines = await resolveDecklist(
+      [
+        '1x Sol Ring (cmr) 472 *F* [Ramp] ^Buy,#0066ff^',
+        '1x Sol Ring (cmr) 472 [Commander{top},Ramp{noDeck}{noPrice}]',
+        '2x Sol Ring [Ramp]',
+        '3x Sol Ring ^Have,#37d67a^',
+      ].join('\n'),
+      catalog,
+      { today, lang: 'en' },
+    );
+
+    expect(
+      lines.map((line) => [line.quantity, line.status === 'resolved' && line.defaultPrint?.id]),
+    ).toEqual([
+      [1, 'sol-ring-cmr'],
+      [1, 'sol-ring-cmr'],
+      [2, 'sol-ring-c21'],
+      [3, 'sol-ring-c21'],
+    ]);
+  });
+
   it('matches set and collector number whatever their case', async () => {
     const variant = aPrint({ id: 'sol-ring-variant', set: 'plst', collectorNumber: 'c21-263' });
     const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21, variant] }]);
