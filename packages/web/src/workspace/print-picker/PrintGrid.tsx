@@ -25,6 +25,7 @@ import type { PrintPickerView } from './use-print-picker-view.ts';
 import type { PrintQuery } from './use-print-query.ts';
 import { PRINT_PICKER_ZOOM_WAIT_MS, useZoomedCard } from '../zoomed-card/use-zoomed-card.tsx';
 import { FadingInImage } from '../card-image/FadingInImage.tsx';
+import { AlternateNameTag } from '../card-image/AlternateNameTag.tsx';
 
 const COUNTER_BUTTON = `grid size-7 place-items-center rounded-sm border-2 border-border bg-panel font-mono font-bold leading-none disabled:opacity-40 ${BUTTON_STATES}`;
 
@@ -142,7 +143,7 @@ export function PrintGrid({
                 >
                   <button
                     type="button"
-                    className={`flex flex-col ${SINKS_WHEN_PRESSED}`}
+                    className={`flex flex-col items-center ${SINKS_WHEN_PRESSED}`}
                     aria-pressed={usedByLine}
                     ref={(element) => {
                       if (element) printButtons.current.set(print.id, element);
@@ -171,6 +172,7 @@ export function PrintGrid({
                       />
                     )}
                     <span className="mt-1 font-mono">{setAndNumber}</span>
+                    <AlternateNameTag alternateName={print.flavorName} cardName={line.card.name} />
                     <span className={print.imageStatus === 'lowres' ? 'text-warning' : ''}>
                       {t(`printPicker.quality.${print.imageStatus}`)}
                     </span>

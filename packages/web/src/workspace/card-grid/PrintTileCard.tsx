@@ -14,6 +14,7 @@ import { TileTab } from './TileTab.tsx';
 import type { TileTabRows } from './tile-tab-geometry.ts';
 import { SINKS_WHEN_PRESSED } from '../../ui/board-styles.ts';
 import { FadingInImage } from '../card-image/FadingInImage.tsx';
+import { AlternateNameTag } from '../card-image/AlternateNameTag.tsx';
 
 /** The space between two tiles in a row, which the link between siblings spans, in CSS px. */
 export const TILE_GAP_PX = 22;
@@ -164,12 +165,13 @@ export function PrintTileCard({
         />
       )}
       <p
-        className="flex justify-between gap-2 font-mono text-[11px] text-muted-foreground"
+        className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground"
         style={{ marginTop: BELOW_CARD_PX }}
       >
         <span className="truncate">{setAndNumberOf(tile.print, t)}</span>
+        <AlternateNameTag alternateName={tile.print.flavorName} cardName={line.card.name} />
         {hasSiblings && (
-          <span className="font-bold text-(--sibling-colour)">
+          <span className="ml-auto font-bold text-(--sibling-colour)">
             {t('tile.siblingMark', { index: siblingIndex + 1, count: siblingCount })}
           </span>
         )}

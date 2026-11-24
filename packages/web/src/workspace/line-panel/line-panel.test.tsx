@@ -7,9 +7,10 @@ import {
   mountPageAndWrite,
   stepBar,
   decklistValue,
+  moveOneCopy,
   answerApiCallsFromCatalog,
 } from '../../test-support/workspace-page.ts';
-import { printButtonOf } from '../../test-support/grid-queries.ts';
+import { printButtonOf, tileAt } from '../../test-support/grid-queries.ts';
 import { animateRadixParts, endExitAnimation } from '../../test-support/exit-animations.ts';
 
 vi.mock('../../api.ts');
@@ -108,6 +109,38 @@ describe('the copy breakdown in the line panel', () => {
 
     expect(decklistValue()).toBe('4 Sol Ring\n');
     expect(breakdown().prints).toEqual([['Inglese', 'LEA #1', '4']]);
+  });
+});
+
+describe("the alternate name of the tile's print in the line panel", () => {
+  const ALTERNATE_NAME_TAG = "nome alt. «Hope's Aero Magic»";
+
+  it("spells out the alternate name of the opened tile's print, and not a sibling's without one", async () => {
+    const user = await mountPageAndWrite('2 Cyclonic Rift{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Cyclonic Rift' }));
+    await moveOneCopy(user, 'Cyclonic Rift', 'RTR #35', 'SLD #1869');
+    const inspector = () => within(screen.getByRole('complementary', { name: 'Riga selezionata' }));
+
+    await user.click(tileAt(1).getByRole('button', { name: 'Modifica Cyclonic Rift' }));
+    const tag = inspector().getByText(ALTERNATE_NAME_TAG);
+    expect(tag.title).toBe("Hope's Aero Magic: nome alternativo di Cyclonic Rift");
+
+    await user.click(tileAt(0).getByRole('button', { name: 'Modifica Cyclonic Rift' }));
+    expect(inspector().queryByText(ALTERNATE_NAME_TAG)).toBeNull();
+  });
+
+  it('spells out the alternate name on a phone too, once the copies move onto its print', async () => {
+    stubScreen(PHONE);
+    const user = await mountPageAndWrite('1 Cyclonic Rift{Enter}');
+    await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+    await user.click(await screen.findByRole('button', { name: 'Modifica Cyclonic Rift' }));
+    const phonePanel = () => within(screen.getByRole('dialog', { name: 'Riga selezionata' }));
+    expect(phonePanel().queryByText(ALTERNATE_NAME_TAG)).toBeNull();
+
+    await phonePanel().findByRole('group', { name: 'Copie con SLD #1869' });
+    await user.click(printButtonOf('SLD #1869'));
+
+    expect(phonePanel().getByText(ALTERNATE_NAME_TAG)).toBeTruthy();
   });
 });
 

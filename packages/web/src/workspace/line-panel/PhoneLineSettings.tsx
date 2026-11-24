@@ -11,6 +11,7 @@ import { PrintPickerSection } from '../print-picker/PrintPickerSection.tsx';
 import { PrintSearchField } from '../print-picker/PrintSearchField.tsx';
 import { PrintWarningNote } from './PrintWarningNote.tsx';
 import { useLinePanelPrints } from './use-line-panel-prints.ts';
+import { AlternateNameTag } from '../card-image/AlternateNameTag.tsx';
 
 /**
  * Above the picker, over the quantity and the breakdown: its arrow comes down into the picker by
@@ -39,6 +40,11 @@ export function PhoneLineSettings({
     useLinePanelPrints(line, tilePrint, tileSelectionCount, PHONE_PRINT_GRID_COLUMNS);
   return (
     <div ref={panelRef} className="flex flex-col gap-3">
+      <AlternateNameTag
+        alternateName={tilePrint?.flavorName ?? null}
+        cardName={line.card.name}
+        showsAlternateName
+      />
       <PrintWarningNote
         line={line}
         warning={printWarning}

@@ -92,6 +92,25 @@ const TRINISPHERE: CatalogEntry = {
   ],
 };
 
+/**
+ * A card with a regular print and a Secret Lair print that carries an alternate name instead of
+ * the card's, as Scryfall has them.
+ */
+const CYCLONIC_RIFT: CatalogEntry = {
+  card: aCard({ oracleId: 'cyclonic-rift', name: 'Cyclonic Rift' }),
+  prints: [
+    {
+      ...printOf('Cyclonic Rift', 'cyclonic-rift-rtr', 'rtr', '2012-10-05'),
+      collectorNumber: '35',
+    },
+    {
+      ...printOf('Cyclonic Rift', 'cyclonic-rift-sld', 'sld', '2025-06-27'),
+      collectorNumber: '1869',
+      flavorName: "Hope's Aero Magic",
+    },
+  ],
+};
+
 /** A card Scryfall has no scan of: it has no printable print. */
 const UNSCANNED: CatalogEntry = {
   card: aCard({ oracleId: 'unscanned', name: 'Unscanned Card' }),
@@ -107,6 +126,7 @@ export const CATALOG = [
   catalogEntry('lightning-bolt', 'Lightning Bolt', 'tst', 'm10', '2x2'),
   catalogEntry('lightning-helix', 'Lightning Helix'),
   COUNTERSPELL,
+  CYCLONIC_RIFT,
   catalogEntry('swords', 'Swords to Plowshares', 'ice', 'mmq', 'c21', 'sta'),
   // The rest of the example decklist.
   catalogEntry('ponder', 'Ponder'),
