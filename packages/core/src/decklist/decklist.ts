@@ -102,7 +102,7 @@ export function parseLine(text: string): ParsedLine | null {
  * Whether a written line stands for a line of the decklist, a card or a deck link: it is no
  * blank line, comment or section header.
  */
-export function namesACard(writtenLine: string): boolean {
+export function writesADecklistLine(writtenLine: string): boolean {
   return parseLine(writtenLine) !== null;
 }
 

@@ -6,7 +6,7 @@ import {
   withoutSideboardPrefix,
 } from './decklist-section.ts';
 import { writtenLinesOf } from './decklist-text.ts';
-import { namesACard } from './decklist.ts';
+import { writesADecklistLine } from './decklist.ts';
 import type { DecklistLine, DecklistSection } from '../types.ts';
 
 /** Which side of a line another one is written on. */
@@ -39,13 +39,13 @@ interface PlacedLine {
 
 /**
  * Where to write a line at the end of `section` among `lines`: after the last line of the
- * section that names a card, or right under its last header when it has none; `null` when the
- * text has no header of it either.
+ * section that writes a line of the decklist, a card or a deck link, or right under its last
+ * header when it has none; `null` when the text has no header of it either.
  */
 function endOfSection(lines: readonly PlacedLine[], section: DecklistSection): number | null {
   const sections = sectionOfEachWrittenLine(lines.map(({ writtenLine }) => writtenLine));
   const lastCard = lines.findLastIndex(
-    ({ writtenLine }, index) => sections[index] === section && namesACard(writtenLine),
+    ({ writtenLine }, index) => sections[index] === section && writesADecklistLine(writtenLine),
   );
   const lastHeader = lines.findLastIndex(
     ({ writtenLine }) => sectionOpenedBy(writtenLine) === section,
