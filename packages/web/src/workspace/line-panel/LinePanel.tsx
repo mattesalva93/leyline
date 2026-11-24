@@ -15,6 +15,7 @@ import { PrintWarningNote } from './PrintWarningNote.tsx';
 import { NORMAL_IMAGE } from '../card-image/scryfall-image-sizes.ts';
 import { useLinePanelPrints } from './use-line-panel-prints.ts';
 import { FadingInImage } from '../card-image/FadingInImage.tsx';
+import { AlternateNameTag } from '../card-image/AlternateNameTag.tsx';
 
 export interface LinePanelProps {
   readonly line: ResolvedLine;
@@ -67,7 +68,10 @@ export function LinePanel({
             height={NORMAL_IMAGE.height}
           />
         )}
-        <h3 className="text-lg leading-tight font-bold">{line.card.name}</h3>
+        <div className="flex flex-col gap-1">
+          <h3 className="text-lg leading-tight font-bold">{line.card.name}</h3>
+          {tilePrint && <AlternateNameTag print={tilePrint} cardName={line.card.name} spellsName />}
+        </div>
       </div>
       <PrintWarningNote
         line={line}
