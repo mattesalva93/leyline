@@ -8,6 +8,7 @@ const script = join(import.meta.dirname, 'check-theme.js');
 const repoRoot = join(import.meta.dirname, '..');
 const appTheme = readFileSync(join(repoRoot, 'packages/web/src/theme.css'), 'utf8');
 const appPage = readFileSync(join(repoRoot, 'packages/web/index.html'), 'utf8');
+const appFavicon = readFileSync(join(repoRoot, 'packages/web/public/favicon.svg'), 'utf8');
 const appPalette = readFileSync(
   join(repoRoot, 'packages/web/src/workspace/card-grid/sibling-group-colours.ts'),
   'utf8',
@@ -16,15 +17,17 @@ const appPalette = readFileSync(
 let dir;
 
 /**
- * Runs the check on a theme, a page and the card grid's sibling palette, `paletteSize` colours
- * long if given; resolves to its exit code and stderr.
+ * Runs the check on a theme, a page, the card grid's sibling palette, `paletteSize` colours long if
+ * given, and the favicon; resolves to its exit code and stderr.
  */
-function check({ theme = appTheme, page = appPage, paletteSize } = {}) {
+function check({ theme = appTheme, page = appPage, paletteSize, favicon = appFavicon } = {}) {
   const themePath = join(dir, 'theme.css');
   const pagePath = join(dir, 'index.html');
   const palettePath = join(dir, 'sibling-group-colours.ts');
+  const faviconPath = join(dir, 'favicon.svg');
   writeFileSync(themePath, theme);
   writeFileSync(pagePath, page);
+  writeFileSync(faviconPath, favicon);
   writeFileSync(
     palettePath,
     paletteSize === undefined
@@ -32,7 +35,7 @@ function check({ theme = appTheme, page = appPage, paletteSize } = {}) {
       : appPalette.replace(/SIBLING_PALETTE_SIZE = \d+/, `SIBLING_PALETTE_SIZE = ${paletteSize}`),
   );
   try {
-    execFileSync('node', [script, themePath, pagePath, palettePath], {
+    execFileSync('node', [script, themePath, pagePath, palettePath, faviconPath], {
       encoding: 'utf8',
       stdio: 'pipe',
     });
@@ -158,6 +161,26 @@ describe('check-theme', () => {
     expect(result.code).toBe(1);
     expect(result.stderr).toContain(
       "'JetBrains Mono Variable' is not bundled: no @import '@fontsource-variable/jetbrains-mono'",
+    );
+  });
+
+  it('rejects a favicon colour the theme does not hold (ADR 0010)', () => {
+    const favicon = appFavicon.replace(/#[0-9a-f]{6}/i, '#123456');
+
+    const result = check({ favicon });
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain(
+      'favicon.svg draws with #123456, a colour the theme does not hold',
+    );
+  });
+
+  it('rejects a favicon that drops the accent the theme has changed to (ADR 0010)', () => {
+    const result = check({ theme: appTheme.replaceAll('#4cc9f0', '#3ddc97') });
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain(
+      'favicon.svg draws with #4cc9f0, a colour the theme does not hold',
     );
   });
 

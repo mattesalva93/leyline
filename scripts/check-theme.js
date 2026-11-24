@@ -1,7 +1,8 @@
 // Checks the web theme, the one home of the design tokens (ADR 0010): there is one theme and it is
 // dark (ADR 0020), every colour pair meets WCAG 2.2 AA, it holds the sibling palette the card grid
-// cycles through, and fonts and stylesheets come from the app itself.
-// Usage: node scripts/check-theme.js [theme.css] [index.html] [sibling-group-colours.ts]
+// cycles through, the favicon draws only with its colours, and fonts and stylesheets come from the
+// app itself.
+// Usage: node scripts/check-theme.js [theme.css] [index.html] [sibling-group-colours.ts] [favicon.svg]
 import { readFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -150,7 +151,18 @@ function outsideServiceProblems(path, text) {
   );
 }
 
-export function themeProblems(themePath, pagePath, palettePath) {
+/** An SVG cannot read the theme's tokens, so each colour it names must be one of them. */
+function faviconProblems(faviconPath, tokens) {
+  const held = new Set([...tokens.values()].map((colour) => colour.toLowerCase()));
+  const drawn = new Set(readFileSync(faviconPath, 'utf8').match(/#[0-9a-f]{6}\b/gi) ?? []);
+  return [...drawn]
+    .filter((colour) => !held.has(colour.toLowerCase()))
+    .map(
+      (colour) => `${basename(faviconPath)} draws with ${colour}, a colour the theme does not hold`,
+    );
+}
+
+export function themeProblems(themePath, pagePath, palettePath, faviconPath) {
   const themeCss = readFileSync(themePath, 'utf8');
   const themeBlock = ruleBody(themeCss, '@theme static {');
   const tokens = colourTokens(themeBlock);
@@ -159,6 +171,7 @@ export function themeProblems(themePath, pagePath, palettePath) {
     ...lightThemeProblems(tokens),
     ...contrastProblems(tokens),
     ...paletteProblems(tokens, siblingPaletteSize(palettePath)),
+    ...faviconProblems(faviconPath, tokens),
     ...fontProblems(themeCss, themeBlock),
     ...outsideServiceProblems(themePath, themeCss),
     ...outsideServiceProblems(pagePath, readFileSync(pagePath, 'utf8')),
@@ -170,8 +183,9 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     themePath = 'packages/web/src/theme.css',
     pagePath = 'packages/web/index.html',
     palettePath = 'packages/web/src/workspace/card-grid/sibling-group-colours.ts',
+    faviconPath = 'packages/web/public/favicon.svg',
   ] = process.argv.slice(2);
-  const problems = themeProblems(themePath, pagePath, palettePath);
+  const problems = themeProblems(themePath, pagePath, palettePath, faviconPath);
   if (problems.length > 0) {
     console.error(
       ['check-theme: the web theme fails its checks.', ...problems.map((p) => `  ${p}`)].join('\n'),
