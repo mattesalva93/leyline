@@ -15,8 +15,11 @@ export function isGuidedStep(value: unknown): value is GuidedStep {
 
 /** What the generator tells the guide, for it to know which actions the user has taken. */
 export interface GuideFacts {
-  /** A first line recognised, or the example loaded. */
-  readonly isDecklistUnderWay: boolean;
+  /**
+   * A first line recognised, or the example loaded; once the guide is started over, only with the
+   * decklist written to since.
+   */
+  readonly hasStartedDecklist: boolean;
   /** A tile is open on the `LinePanel` of its line. */
   readonly isLinePanelOpen: boolean;
   /** A print has been tapped in the `PrintPicker`, its copies moving onto it. */
@@ -31,7 +34,7 @@ export interface GuideFacts {
 }
 
 const IS_ACTION_TAKEN: Readonly<Record<GuidedStep, (facts: GuideFacts) => boolean>> = {
-  startDecklist: (facts) => facts.isDecklistUnderWay,
+  startDecklist: (facts) => facts.hasStartedDecklist,
   openLinePanel: (facts) => facts.isLinePanelOpen,
   changePrint: (facts) => facts.hasChangedPrint,
   fixLine: (facts) => facts.hasFixedLine,

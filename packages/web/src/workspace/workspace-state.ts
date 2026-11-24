@@ -28,6 +28,8 @@ export interface WorkspaceState {
   readonly generator: Generator;
   readonly step: WorkspaceStep;
   readonly goToStep: (step: WorkspaceStep) => void;
+  /** How many times the guide was started over in this visit: each time, the decklist shows again. */
+  readonly guideRestartCount: number;
   readonly gridSections: readonly GridSection[];
   /** Every tile of the grid, in the order of the decklist text whatever its section. */
   readonly gridTiles: readonly GridTile[];

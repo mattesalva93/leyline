@@ -63,6 +63,12 @@ export function DesktopWorkspace({ state }: { readonly state: WorkspaceState }) 
   const [tileWidth, setTileWidth] = useTileWidth();
   const { centreRef, panels } = useFittedSidePanels();
   const [inspectorFocusRequestCount, setInspectorFocusRequestCount] = useState(0);
+  // The guide started over points into the decklist first: a folded decklist panel opens for it.
+  const [guideRestartCount, setGuideRestartCount] = useState(state.guideRestartCount);
+  if (guideRestartCount !== state.guideRestartCount) {
+    setGuideRestartCount(state.guideRestartCount);
+    if (!panels.decklist.controls.isOpen) panels.decklist.controls.toggle();
+  }
   const openLinePanel = (selection: TileSelection) => {
     state.selectTile(selection);
     if (!panels.inspector.controls.isOpen) panels.inspector.controls.toggle();

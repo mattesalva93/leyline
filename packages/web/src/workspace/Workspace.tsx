@@ -72,6 +72,14 @@ export function Workspace({ generator: unwatchedGenerator }: { readonly generato
     if (!generator.isDecklistUnderWay) setStep(startingStepFor(isWideScreen));
   }
   const [selectionInText, setSelectionInText] = useState<SelectionInText | null>(null);
+  // The guide started over takes the workspace back to its first step, the tile let go, where
+  // the first guided step points to the decklist.
+  const [guideRestartCount, setGuideRestartCount] = useState(guideOnDevice.restartCount);
+  if (guideRestartCount !== guideOnDevice.restartCount) {
+    setGuideRestartCount(guideOnDevice.restartCount);
+    setStep(startingStepFor(isWideScreen));
+    setSelectionInText(null);
+  }
   const [tileSelectionCount, setTileSelectionCount] = useState(0);
   const [touchIsMain] = useState(touchIsMainInput);
   const gridSections = gridSectionsOf(generator.cardLines);
@@ -86,7 +94,6 @@ export function Workspace({ generator: unwatchedGenerator }: { readonly generato
   const selection = currentSelection(selectionInText, generator.writtenLineCount, gridTiles);
   const guide = useGuide(
     {
-      isDecklistUnderWay: generator.isDecklistUnderWay,
       // A phone shows the line panel over its cards step; a wide screen beside its cards view.
       isLinePanelOpen:
         (isWideScreen ? step !== 'sheet' : step === 'cards') &&
@@ -101,6 +108,7 @@ export function Workspace({ generator: unwatchedGenerator }: { readonly generato
     generator,
     step,
     goToStep: setStep,
+    guideRestartCount,
     gridSections,
     gridTiles,
     selection,
