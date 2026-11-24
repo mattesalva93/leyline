@@ -295,11 +295,12 @@ describe('resolveDecklist', () => {
   });
 
   it('prefers a regular paper print over one with an alternate name', async () => {
+    const walkingBallista = aCard({ oracleId: 'walking-ballista', name: 'Walking Ballista' });
     const regular = aPrint({ id: 'regular', releasedAt: '2010-01-01' });
     const alternateName = aPrint({
       id: 'alternate-name',
       releasedAt: '2024-01-01',
-      flavorName: 'Ring of Power',
+      flavorName: 'Assaultron Invader',
     });
     const playtest = aPrint({ id: 'playtest', releasedAt: '2025-01-01', promoTypes: ['playtest'] });
 
@@ -308,8 +309,8 @@ describe('resolveDecklist', () => {
         [regular, alternateName, playtest],
         [alternateName, playtest],
       ].map(async (prints) => {
-        const catalog = createInMemoryCatalog([{ card: solRing, prints }]);
-        const [line] = await resolveDecklist('1 Sol Ring', catalog, { today, lang: 'en' });
+        const catalog = createInMemoryCatalog([{ card: walkingBallista, prints }]);
+        const [line] = await resolveDecklist('1 Walking Ballista', catalog, { today, lang: 'en' });
         return line?.status === 'resolved' ? line.defaultPrint?.id : line?.status;
       }),
     );
@@ -485,7 +486,7 @@ describe('resolveDecklist', () => {
       releasedAt: '2024-12-02',
       flavorName: "Hope's Aero Magic",
     });
-    // Close to "Hope's Aero Magic" by trigrams, as Scryfall's Secret Lair cards are.
+    // Shares "magic" with "Hope's Aero Magic": a name search by trigrams suggests it too.
     const hexMagic = aCard({ oracleId: 'hex-magic', name: 'Hex Magic' });
     const catalog = createInMemoryCatalog([
       { card: cyclonicRift, prints: [regularRift, aeroMagicRift, newestRegularRift] },
