@@ -30,6 +30,7 @@ interface ScryfallFace {
   readonly name: string;
   readonly artist?: string;
   readonly printed_name?: string;
+  readonly flavor_name?: string;
   readonly oracle_id?: string;
   readonly power?: string;
   readonly toughness?: string;
@@ -50,6 +51,7 @@ interface ScryfallCard {
   readonly artist?: string;
   readonly lang: string;
   readonly printed_name?: string;
+  readonly flavor_name?: string;
   readonly released_at: string;
   readonly set: string;
   readonly set_name: string;
@@ -96,6 +98,7 @@ interface PrintRow {
   readonly set_type: string;
   readonly promo_types: readonly string[];
   readonly faces: readonly PrintFace[];
+  readonly flavor_name: string | null;
 }
 
 interface TokenLinkRow {
@@ -140,6 +143,17 @@ function printedNameOf(card: ScryfallCard): string {
   const faces = card.card_faces ?? [];
   if (!faces.some((face) => face.printed_name)) return card.name;
   return faces.map((face) => face.printed_name ?? face.name).join(' // ');
+}
+
+/**
+ * Scryfall sets `flavor_name` on the card, or on the faces of a multi-face print: a face without
+ * one shows its own name. A print with none on any face has no alternate name.
+ */
+function flavorNameOf(card: ScryfallCard): string | null {
+  if (card.flavor_name) return card.flavor_name;
+  const faces = card.card_faces ?? [];
+  if (!faces.some((face) => face.flavor_name)) return null;
+  return faces.map((face) => face.flavor_name ?? face.name).join(' // ');
 }
 
 /**
@@ -209,6 +223,7 @@ function toRows(
       set_type: card.set_type,
       promo_types: card.promo_types ?? [],
       faces: facesOf(card),
+      flavor_name: flavorNameOf(card),
     },
     tokenLinks: tokenLinksOf(card),
   };
@@ -277,7 +292,9 @@ async function importLocked(sql: Sql, bulk: Readable): Promise<{ prints: number 
     cardsOfBatch.set(rows.card.oracle_id, rows.card);
     prints.push(rows.print);
     tokenLinks.push(...rows.tokenLinks);
-    for (const key of cardKeys(rows.card.name, [rows.print.printed_name])) {
+    for (const key of cardKeys(rows.card.name, [
+      { printedName: rows.print.printed_name, flavorName: rows.print.flavor_name },
+    ])) {
       names.set(`${key}\n${rows.card.oracle_id}`, { key, oracle_id: rows.card.oracle_id });
     }
     if (prints.length >= BATCH_SIZE) await flush();

@@ -7,8 +7,9 @@ export function isTokenLayout(layout: string): boolean {
   return TOKEN_LAYOUTS.has(layout);
 }
 
-/** The kinds of print less preferred than a regular paper one, most preferred first (ADR 0014). */
+/** The kinds of print less preferred than a regular paper one, most preferred first (ADR 0022). */
 const LESS_PREFERRED_KINDS = [
+  (print: Print) => print.flavorName !== null,
   (print: Print) => print.promoTypes.includes('playtest'),
   (print: Print) => print.oversized,
   (print: Print) => print.layout === 'art_series',

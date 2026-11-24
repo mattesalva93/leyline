@@ -123,10 +123,7 @@ export async function resolveDecklist(
   const entries = await catalog.findByNames(names, { minSimilarity: MIN_SIMILARITY });
   // Keys and trigrams once per entry, not once per line: a decklist has a hundred lines.
   const named = entries.map((entry) => {
-    const keys = cardKeys(
-      entry.card.name,
-      entry.prints.map((print) => print.printedName),
-    );
+    const keys = cardKeys(entry.card.name, entry.prints);
     return { entry, keys, trigrams: keys.map(trigrams) };
   });
 

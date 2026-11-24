@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
 import { mountApp } from '../test-support/mount-app.tsx';
+import { loadSavedDecklist } from './saved-decklist.ts';
 import {
   reload,
   mountPageAndWrite,
@@ -69,13 +70,16 @@ describe('the decklist saved on the device', () => {
     ).toEqual(['brainstorm-it-ice', 'brainstorm-it-mmq', 'brainstorm-c21']);
   });
 
-  it('brings back the choices saved before prints had a set name and artists', async () => {
+  it('brings back the choices saved before prints had a set name, artists and alternate names', async () => {
     const user = await mountPageAndWrite('4 Brainstorm{Enter}');
     await user.click(await screen.findByRole('button', { name: 'Modifica Brainstorm' }));
     await moveOneCopy(user, 'Brainstorm', 'ICE #1', 'MMQ #1');
     const saved = localStorage.getItem('leyline.decklist') ?? '';
-    const withoutNewFields = saved.replace(/"setName":"[^"]*",|,?"artist":"[^"]*"/g, '');
-    expect(withoutNewFields).not.toMatch(/setName|artist/);
+    const withoutNewFields = saved.replace(
+      /"setName":"[^"]*",|,?"artist":"[^"]*"|"flavorName":(null|"[^"]*"),/g,
+      '',
+    );
+    expect(withoutNewFields).not.toMatch(/setName|artist|flavorName/);
     localStorage.setItem('leyline.decklist', withoutNewFields);
 
     reload();
@@ -86,6 +90,10 @@ describe('the decklist saved on the device', () => {
         ['Immagine di Brainstorm', '1×', '2/2'],
       ]),
     );
+    const savedPrints = loadSavedDecklist()?.choicesByLine.flatMap(
+      ([, choices]) => choices.allocations?.allocations.map(({ print }) => print) ?? [],
+    );
+    expect(savedPrints?.map((print) => print.flavorName)).toEqual([null]);
   });
 
   it('brings back the sheet options', async () => {

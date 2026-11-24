@@ -10,10 +10,7 @@ interface SearchMatch {
 }
 
 function searchMatch(entry: CatalogEntry, key: string, minSimilarity: number): SearchMatch | null {
-  const keys = cardKeys(
-    entry.card.name,
-    entry.prints.map((print) => print.printedName),
-  );
+  const keys = cardKeys(entry.card.name, entry.prints);
   const keyTrigrams = trigrams(key);
   const similarity = Math.max(...keys.map((k) => trigramSimilarity(trigrams(k), keyTrigrams)));
   if (keys.includes(key)) return { entry, group: 0, similarity };

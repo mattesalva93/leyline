@@ -294,6 +294,29 @@ describe('resolveDecklist', () => {
     expect(defaults).toEqual(['paper', 'playtest', 'oversized', 'art-series', 'token', 'digital']);
   });
 
+  it('prefers a regular paper print over one with an alternate name', async () => {
+    const regular = aPrint({ id: 'regular', releasedAt: '2010-01-01' });
+    const alternateName = aPrint({
+      id: 'alternate-name',
+      releasedAt: '2024-01-01',
+      flavorName: 'Ring of Power',
+    });
+    const playtest = aPrint({ id: 'playtest', releasedAt: '2025-01-01', promoTypes: ['playtest'] });
+
+    const [withRegular, withoutRegular] = await Promise.all(
+      [
+        [regular, alternateName, playtest],
+        [alternateName, playtest],
+      ].map(async (prints) => {
+        const catalog = createInMemoryCatalog([{ card: solRing, prints }]);
+        const [line] = await resolveDecklist('1 Sol Ring', catalog, { today, lang: 'en' });
+        return line?.status === 'resolved' ? line.defaultPrint?.id : line?.status;
+      }),
+    );
+
+    expect([withRegular, withoutRegular]).toEqual(['regular', 'alternate-name']);
+  });
+
   it('defaults to the most recent print of the most preferred kind', async () => {
     const older = aPrint({ id: 'older', releasedAt: '2010-01-01' });
     const latestPaper = aPrint({ id: 'latest-paper', releasedAt: '2024-06-01' });

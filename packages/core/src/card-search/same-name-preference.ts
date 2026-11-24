@@ -16,10 +16,7 @@ export function namedCandidate(
   entry: CatalogEntry,
   { lang, today }: { readonly lang: Lang; readonly today: string },
 ): NamedCandidate {
-  const keys = cardKeys(
-    entry.card.name,
-    entry.prints.map((print) => print.printedName),
-  );
+  const keys = cardKeys(entry.card.name, entry.prints);
   return { candidate: { card: entry.card, ...defaultPrintFor(entry.prints, lang, today) }, keys };
 }
 
@@ -30,7 +27,7 @@ function shareAName(a: NamedCandidate, b: NamedCandidate): boolean {
 /**
  * The card among `named` that `one` gives way to: of the cards sharing a name with it, the first
  * whose default print is the most preferred, when that beats `one`'s; `null` when none does. Art
- * series, for one, are separate cards named after the card (ADR 0014).
+ * series, for one, are separate cards named after the card (ADR 0022).
  */
 function beaterOf(one: NamedCandidate, named: readonly NamedCandidate[]): NamedCandidate | null {
   const preference = (it: NamedCandidate) => defaultPrintPreference(it.candidate);

@@ -1,3 +1,5 @@
+import type { Print } from './types.ts';
+
 // How a written name is compared with card names. `api` builds its search index with
 // `cardKeys`, so the catalog and `core` agree on what a name looks like.
 
@@ -35,9 +37,22 @@ function nameKeys(name: string): string[] {
   return keys;
 }
 
-/** Keys a card answers to: those of its English name and of every name printed on its prints. */
-export function cardKeys(cardName: string, printedNames: readonly string[]): string[] {
-  return [...new Set([cardName, ...printedNames].flatMap(nameKeys))];
+/** The names of a print a card answers to. */
+export type PrintNames = Pick<Print, 'printedName' | 'flavorName'>;
+
+/** Keys a card answers to by its own names: its English name and every name printed on its prints. */
+export function ownNameKeys(cardName: string, prints: readonly PrintNames[]): string[] {
+  return [...new Set([cardName, ...prints.map((print) => print.printedName)].flatMap(nameKeys))];
+}
+
+/** Keys a print answers to by its alternate name: none when it has none. */
+export function alternateNameKeys(print: Pick<Print, 'flavorName'>): string[] {
+  return print.flavorName === null ? [] : nameKeys(print.flavorName);
+}
+
+/** Keys a card answers to: its own names' (`ownNameKeys`) and its prints' alternate names'. */
+export function cardKeys(cardName: string, prints: readonly PrintNames[]): string[] {
+  return [...new Set([...ownNameKeys(cardName, prints), ...prints.flatMap(alternateNameKeys)])];
 }
 
 /** pg_trgm's trigrams: each alphanumeric word padded with two spaces before and one after. */
