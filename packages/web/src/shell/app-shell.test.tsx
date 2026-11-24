@@ -194,6 +194,18 @@ describe('the app shell', () => {
       expectTheInformation(screen.getByRole('dialog', { name: 'Informazioni' }));
     });
 
+    it('says next to the disclaimer that the printed cards are proxies for private playtesting only', async () => {
+      const { user } = mountShellWithFourAreas();
+
+      await user.click(screen.getByRole('button', { name: 'Informazioni' }));
+
+      expect(
+        within(screen.getByRole('dialog', { name: 'Informazioni' })).getByText(
+          'Le carte stampate sono proxy solo per il playtest privato: non sono ammesse nei tornei sanzionati e non vanno mai spacciate per carte vere né vendute.',
+        ),
+      ).toBeTruthy();
+    });
+
     it('opens from the phone menu too, closing the menu', async () => {
       const { user } = mountShellWithFourAreas();
       await user.click(screen.getByRole('button', { name: 'Menu' }));
