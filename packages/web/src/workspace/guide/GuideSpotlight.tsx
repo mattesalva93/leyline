@@ -86,6 +86,12 @@ function spotlightClipPath(): string {
 }
 
 /**
+ * Stands an element above the dimming, lit and taking clicks: for the shell's way to switch the
+ * guide off, which a guided step on screen must leave usable.
+ */
+export const ABOVE_GUIDE_SPOTLIGHT = 'relative z-50';
+
+/**
  * The page dimmed and deaf to the pointer while the guided step's control `control` shows, but for
  * the elements marked `GUIDE_SPOTLIT` (see `lightOver`). A clip path cuts the holes, and a
  * cut-out part takes no click. The holes follow their elements as the page moves under them. Once

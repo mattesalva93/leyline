@@ -19,14 +19,20 @@ const NONE_SEEN: ActionsSeenByGuide = {
  * `generator` as the workspace hands it on, telling the guide of the actions in
  * `ActionsSeenByGuide` as the user takes them, wherever in the workspace: a print tapped in the
  * print picker, a line among `linesToFix` given its card or removed, the PDF button pressed.
+ * The guide started over for the `restartCount`th time has seen none of them yet.
  */
 export function useGeneratorWatchedByGuide(
   generator: Generator,
   linesToFix: readonly ImagelessGridTile[],
+  restartCount: number,
 ): { readonly generator: Generator; readonly seen: ActionsSeenByGuide } {
-  const [seen, setSeen] = useState(NONE_SEEN);
+  const [seenSinceRestart, setSeenSinceRestart] = useState({ restartCount, seen: NONE_SEEN });
+  const seen = seenSinceRestart.restartCount === restartCount ? seenSinceRestart.seen : NONE_SEEN;
   const see = (action: keyof ActionsSeenByGuide) =>
-    setSeen((current) => (current[action] ? current : { ...current, [action]: true }));
+    setSeenSinceRestart((current) => {
+      const seenNow = current.restartCount === restartCount ? current.seen : NONE_SEEN;
+      return seenNow[action] ? current : { restartCount, seen: { ...seenNow, [action]: true } };
+    });
   const isLineToFix = (writtenIndex: number) =>
     linesToFix.some((lineToFix) => lineToFix.writtenIndex === writtenIndex);
   return {

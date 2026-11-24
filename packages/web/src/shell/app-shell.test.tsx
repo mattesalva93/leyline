@@ -88,6 +88,45 @@ describe('the app shell', () => {
     expect(document.activeElement).toBe(menuButton);
   });
 
+  describe('"Guida" and "Ricomincia la guida"', () => {
+    const isGuidedStepShown = () =>
+      screen.queryByRole('status', { name: 'Passo guidato' }) !== null;
+
+    it('switch the guide off and start it over from the top bar, by keyboard', async () => {
+      const user = userEvent.setup();
+      mountApp('/proxy');
+      const guideSwitch = screen.getByRole('switch', { name: 'Guida' });
+      guideSwitch.focus();
+
+      await user.keyboard(' ');
+      expect(isGuidedStepShown()).toBe(false);
+      await user.tab();
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'Ricomincia la guida' }),
+      );
+      await user.keyboard('{Enter}');
+
+      expect(isGuidedStepShown()).toBe(true);
+    });
+
+    it('switch the guide off and start it over from the phone menu, closing it', async () => {
+      const user = userEvent.setup();
+      mountApp('/proxy');
+      const menuButton = screen.getByRole('button', { name: 'Menu' });
+      const menu = () => screen.getByRole('dialog', { name: 'Menu' });
+
+      await user.click(menuButton);
+      await user.click(within(menu()).getByRole('switch', { name: 'Guida' }));
+      expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull();
+      expect(isGuidedStepShown()).toBe(false);
+      await user.click(menuButton);
+      await user.click(within(menu()).getByRole('button', { name: 'Ricomincia la guida' }));
+
+      expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull();
+      expect(isGuidedStepShown()).toBe(true);
+    });
+  });
+
   it('credits Scryfall on the generator screen, with no footer below it', async () => {
     mountApp('/proxy');
     await screen.findByRole('textbox', { name: 'Decklist' });

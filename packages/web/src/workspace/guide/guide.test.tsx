@@ -306,6 +306,71 @@ describe('the guide', () => {
     });
   });
 
+  describe('from the shell', () => {
+    /** The "Guida" switch of the top bar. */
+    function guideSwitch() {
+      return screen.getByRole('switch', { name: 'Guida' });
+    }
+
+    it('shows no guided step once "Guida" is off, even after the app is opened again', async () => {
+      const user = userEvent.setup();
+      mountApp('/proxy');
+
+      await user.click(guideSwitch());
+
+      expect(isGuidedStepShown()).toBe(false);
+      expect(guideSwitch().getAttribute('aria-checked')).toBe('false');
+      reload();
+      expect(isGuidedStepShown()).toBe(false);
+      expect(guideSwitch().getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('takes up again from the first step neither done nor skipped once "Guida" is back on', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}');
+      await user.click(skipStepButton());
+      await user.click(guideSwitch());
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+      expect(isGuidedStepShown()).toBe(false);
+
+      await user.click(guideSwitch());
+
+      expect(await shownStepText()).toBe(STEP_TEXT.changePrint);
+      expect(guideSwitch().getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('shows its first guided step again once "Ricomincia la guida" is pressed', async () => {
+      const user = userEvent.setup();
+      mountApp('/proxy');
+      await user.click(skipStepButton());
+
+      await user.click(screen.getByRole('button', { name: 'Ricomincia la guida' }));
+
+      expect(await shownStepText()).toBe(FIRST_STEP_TEXT);
+    });
+
+    it('asks again for a print tapped before "Ricomincia la guida"', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}');
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+      await user.click(await waitFor(() => printButtonOf('LEA #1')));
+      expect(await shownStepText()).toBe(STEP_TEXT.goToSheet);
+
+      await user.click(screen.getByRole('button', { name: 'Ricomincia la guida' }));
+
+      expect(await shownStepText()).toBe(STEP_TEXT.changePrint);
+    });
+
+    it('turns the guide back on as it starts over', async () => {
+      const user = userEvent.setup();
+      mountApp('/proxy');
+      await user.click(guideSwitch());
+
+      await user.click(screen.getByRole('button', { name: 'Ricomincia la guida' }));
+
+      expect(await shownStepText()).toBe(FIRST_STEP_TEXT);
+      expect(guideSwitch().getAttribute('aria-checked')).toBe('true');
+    });
+  });
+
   describe('on a phone', () => {
     beforeEach(() => {
       stubScreen(PHONE);

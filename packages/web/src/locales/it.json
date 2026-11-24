@@ -6,6 +6,8 @@
     "appName": "mtg-suite",
     "areas": "Aree",
     "menu": "Menu",
+    "guide": "Guida",
+    "restartGuide": "Ricomincia la guida",
     "scryfallCredit": "Dati e immagini da <scryfall>Scryfall</scryfall>"
   },
   "areas": {
