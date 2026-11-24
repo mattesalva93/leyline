@@ -2,7 +2,7 @@ import type { Print } from '@leyline/core';
 import { useTranslation } from 'react-i18next';
 
 const TAG =
-  'shrink-0 self-start rounded-sm border border-muted-foreground px-1 font-sans text-[10px] leading-4 font-normal text-muted-foreground';
+  'inline-block w-fit shrink-0 rounded-sm border border-muted-foreground px-1 font-sans text-[10px] leading-4 font-normal text-muted-foreground';
 
 interface AlternateNameTagProps {
   readonly print: Print;

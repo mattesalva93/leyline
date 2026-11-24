@@ -464,6 +464,23 @@ describe('the print search in the print picker', () => {
   });
 });
 
+describe('a print with an alternate name in the print picker', () => {
+  it('tags only the prints that carry an alternate name, naming the card it stands for', async () => {
+    const user = await mountPageAndWrite('1 Cyclonic Rift{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Cyclonic Rift' }));
+    await screen.findByRole('group', { name: 'Copie con SLD #1869' });
+    const printOf = (setAndNumber: string) => {
+      const button = printButtonOf(setAndNumber);
+      return within(button.closest('li') ?? button);
+    };
+
+    const tag = printOf('SLD #1869').getByText('nome alt.');
+
+    expect(tag.title).toBe("Hope's Aero Magic: nome alternativo di Cyclonic Rift");
+    expect(printOf('RTR #35').queryByText('nome alt.')).toBeNull();
+  });
+});
+
 describe('the print picker while its prints load', () => {
   it('shows a spinner named after the prints it loads', async () => {
     const user = await mountPageAndWrite('4 Brainstorm{Enter}');
