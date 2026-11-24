@@ -143,7 +143,7 @@ export function PrintGrid({
                 >
                   <button
                     type="button"
-                    className={`flex flex-col ${SINKS_WHEN_PRESSED}`}
+                    className={`flex flex-col items-center ${SINKS_WHEN_PRESSED}`}
                     aria-pressed={usedByLine}
                     ref={(element) => {
                       if (element) printButtons.current.set(print.id, element);
@@ -171,13 +171,8 @@ export function PrintGrid({
                         loading="lazy"
                       />
                     )}
-                    <span className="mt-1 font-mono">
-                      {setAndNumber}{' '}
-                      <AlternateNameTag
-                        alternateName={print.flavorName}
-                        cardName={line.card.name}
-                      />
-                    </span>
+                    <span className="mt-1 font-mono">{setAndNumber}</span>
+                    <AlternateNameTag alternateName={print.flavorName} cardName={line.card.name} />
                     <span className={print.imageStatus === 'lowres' ? 'text-warning' : ''}>
                       {t(`printPicker.quality.${print.imageStatus}`)}
                     </span>
