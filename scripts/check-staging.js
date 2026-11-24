@@ -26,6 +26,7 @@ import { databaseNetworkFailures } from './staging-checks/database-network.js';
 import { databaseRoleFailures } from './staging-checks/database-roles.js';
 import { hostMaintenanceFailures } from './staging-checks/host-maintenance.js';
 import { publicReachFailures } from './staging-checks/public-reach.js';
+import { searchIndexingFailures } from './staging-checks/search-indexing.js';
 import { securityHeaderFailures } from './staging-checks/security-headers.js';
 import { sshLoginFailures } from './staging-checks/ssh-login.js';
 import { testerAccessFailures } from './staging-checks/tester-access.js';
@@ -35,6 +36,7 @@ import { openVpsConnection, vpsFromDockerHost } from './staging-checks/vps-conne
 const CHECKS = {
   'tester access': testerAccessFailures,
   'security headers': securityHeaderFailures,
+  'search indexing': searchIndexingFailures,
   'CSP in the browser': cspInBrowserFailures,
   'access log': accessLogFailures,
   'access log rotation': accessLogRotationFailures,

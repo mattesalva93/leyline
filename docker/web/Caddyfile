@@ -5,9 +5,6 @@
 }
 
 {$SITE_ADDRESS} {
-	# Not for search engines yet (also <meta name="robots"> in index.html).
-	header X-Robots-Tag "noindex, nofollow"
-
 	# The security baseline (ADR 0016), on the page and on /api alike; `pnpm check:staging` pins it.
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
