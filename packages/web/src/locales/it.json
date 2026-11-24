@@ -7,7 +7,11 @@
     "areas": "Aree",
     "menu": "Menu",
     "guide": "Guida",
-    "restartGuide": "Ricomincia la guida",
+    "guideMenu": "Guida <state>· {{state}}</state>",
+    "guideOn": "sì",
+    "guideOff": "no",
+    "showGuidedSteps": "Mostra i passi guidati",
+    "restartGuide": "Ricomincia dal primo passo",
     "scryfallCredit": "Dati e immagini da <scryfall>Scryfall</scryfall>"
   },
   "areas": {

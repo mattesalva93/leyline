@@ -50,7 +50,7 @@ async function goToWorkspaceStep(page, step) {
 async function switchGuideOff(page) {
   const menu = page.getByRole('dialog', { name: italian.shell.menu });
   await page.getByRole('button', { name: italian.shell.menu }).click();
-  await menu.getByRole('switch', { name: italian.shell.guide }).click();
+  await menu.getByRole('checkbox', { name: italian.shell.showGuidedSteps }).click();
   await menu.waitFor({ state: 'hidden' });
   await guidedStepBubble(page).waitFor({ state: 'hidden' });
 }

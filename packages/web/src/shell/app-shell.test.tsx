@@ -88,39 +88,72 @@ describe('the app shell', () => {
     expect(document.activeElement).toBe(menuButton);
   });
 
-  describe('"Guida" and "Ricomincia la guida"', () => {
+  describe('"Guida"', () => {
     const isGuidedStepShown = () =>
       screen.queryByRole('status', { name: 'Passo guidato' }) !== null;
 
-    it('switch the guide off and start it over from the top bar, by keyboard', async () => {
+    it('switches the guide off and starts it over from its menu in the top bar, by keyboard', async () => {
       const user = userEvent.setup();
       mountApp('/proxy');
-      const guideSwitch = screen.getByRole('switch', { name: 'Guida' });
-      guideSwitch.focus();
+      const guideMenuButton = screen.getByRole('button', { name: 'Guida · sì' });
+      guideMenuButton.focus();
 
+      await user.keyboard('{Enter}');
+      const showGuidedSteps = screen.getByRole('menuitemcheckbox', {
+        name: 'Mostra i passi guidati',
+      });
+      expect(document.activeElement).toBe(showGuidedSteps);
       await user.keyboard(' ');
-      expect(isGuidedStepShown()).toBe(false);
-      await user.tab();
+      expect(showGuidedSteps.getAttribute('aria-checked')).toBe('false');
+      expect(guideMenuButton.textContent).toBe('Guida · no');
+      await user.keyboard('{ArrowDown}');
       expect(document.activeElement).toBe(
-        screen.getByRole('button', { name: 'Ricomincia la guida' }),
+        screen.getByRole('menuitem', { name: 'Ricomincia dal primo passo' }),
       );
       await user.keyboard('{Enter}');
 
+      expect(screen.queryByRole('menu')).toBeNull();
+      expect(document.activeElement).toBe(guideMenuButton);
+      expect(guideMenuButton.textContent).toBe('Guida · sì');
       expect(isGuidedStepShown()).toBe(true);
     });
 
-    it('switch the guide off and start it over from the phone menu, closing it', async () => {
+    it('closes its menu on Escape, giving the focus back to its button', async () => {
+      const user = userEvent.setup();
+      mountApp('/proxy');
+      const guideMenuButton = screen.getByRole('button', { name: 'Guida · sì' });
+      await user.click(guideMenuButton);
+
+      await user.keyboard('{Escape}');
+
+      expect(screen.queryByRole('menu')).toBeNull();
+      expect(document.activeElement).toBe(guideMenuButton);
+    });
+
+    it('switches the guide off and starts it over from the phone menu, closing it', async () => {
       const user = userEvent.setup();
       mountApp('/proxy');
       const menuButton = screen.getByRole('button', { name: 'Menu' });
-      const menu = () => screen.getByRole('dialog', { name: 'Menu' });
+      const guideItems = () =>
+        within(screen.getByRole('dialog', { name: 'Menu' })).getByRole('group', {
+          name: 'Guida',
+        });
 
       await user.click(menuButton);
-      await user.click(within(menu()).getByRole('switch', { name: 'Guida' }));
+      await user.click(
+        within(guideItems()).getByRole('checkbox', { name: 'Mostra i passi guidati' }),
+      );
       expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull();
       expect(isGuidedStepShown()).toBe(false);
       await user.click(menuButton);
-      await user.click(within(menu()).getByRole('button', { name: 'Ricomincia la guida' }));
+      expect(
+        within(guideItems())
+          .getByRole('checkbox', { name: 'Mostra i passi guidati' })
+          .getAttribute('aria-checked'),
+      ).toBe('false');
+      await user.click(
+        within(guideItems()).getByRole('button', { name: 'Ricomincia dal primo passo' }),
+      );
 
       expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull();
       expect(isGuidedStepShown()).toBe(true);

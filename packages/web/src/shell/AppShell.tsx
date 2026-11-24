@@ -5,7 +5,8 @@ import { Icon } from '../ui/Icon.tsx';
 import { ABOVE_GUIDE_SPOTLIGHT } from '../workspace/guide/GuideSpotlight.tsx';
 import { useGuideOnDevice } from '../workspace/guide/use-guide-on-device.ts';
 import { AreaNav } from './AreaNav.tsx';
-import { GuideControls } from './GuideControls.tsx';
+import { GuideMenu } from './GuideMenu.tsx';
+import { PhoneGuideItems } from './PhoneGuideItems.tsx';
 import { InfoDialog } from './InfoDialog.tsx';
 import { PhoneMenu } from './PhoneMenu.tsx';
 import { ScryfallCredit } from './ScryfallCredit.tsx';
@@ -14,7 +15,6 @@ import type { ShellOutletContext } from './shell-outlet-context.ts';
 import { BUTTON_STATES } from '../ui/board-styles.ts';
 
 const MENU_ITEM = `flex items-center gap-2 rounded-md px-3 py-2.5 text-left ${BUTTON_STATES}`;
-const TOP_BAR_ITEM = `rounded-md px-1.5 py-1 font-mono text-[11px] font-bold tracking-widest uppercase ${BUTTON_STATES}`;
 
 /**
  * The frame every area lives in: the top bar above, the current area below. On a wide screen
@@ -32,9 +32,9 @@ export function AppShell({ areas }: { readonly areas: readonly ShellArea[] }) {
         <PhoneMenu areas={areas} className={`lg:hidden ${ABOVE_GUIDE_SPOTLIGHT}`}>
           {(closeMenu) => (
             <>
-              <GuideControls
+              <PhoneGuideItems
                 guideOnDevice={guideOnDevice}
-                controlClassName={MENU_ITEM}
+                itemClassName={MENU_ITEM}
                 afterControlPressed={closeMenu}
               />
               <button
@@ -64,14 +64,12 @@ export function AppShell({ areas }: { readonly areas: readonly ShellArea[] }) {
         <InfoDialog
           isOpen={isInfoOpen}
           onOpenChange={setIsInfoOpen}
-          triggerClassName={`hidden underline lg:block ${TOP_BAR_ITEM}`}
+          triggerClassName={`hidden rounded-md px-1.5 py-1 font-mono text-[11px] font-bold tracking-widest uppercase underline lg:block ${BUTTON_STATES}`}
         />
-        <div className={`hidden items-center gap-1 lg:flex ${ABOVE_GUIDE_SPOTLIGHT}`}>
-          <GuideControls
-            guideOnDevice={guideOnDevice}
-            controlClassName={`flex items-center gap-1.5 whitespace-nowrap ${TOP_BAR_ITEM}`}
-          />
-        </div>
+        <GuideMenu
+          guideOnDevice={guideOnDevice}
+          className={`hidden lg:flex ${ABOVE_GUIDE_SPOTLIGHT}`}
+        />
       </header>
       <main className="dot-grid min-h-0 flex-1 overflow-y-auto">
         <Outlet context={{ topBarSlot, guideOnDevice } satisfies ShellOutletContext} />
