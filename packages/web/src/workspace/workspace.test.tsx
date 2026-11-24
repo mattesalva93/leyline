@@ -180,11 +180,24 @@ describe('the workspace', () => {
     await user.click(centreTab('Foglio'));
 
     expect(screen.getByRole('img', { name: 'Pagina 1 di 1 come verrà stampata' })).toBeTruthy();
-    expect(screen.getByRole('note').textContent).toContain('Stampa al 100%');
+    expect(screen.getAllByRole('note')[0]?.textContent).toContain('Stampa al 100%');
     expect(screen.getByText(/^1 riga non verrà stampata/)).toBeTruthy();
     const inspector = within(screen.getByRole('complementary', { name: 'Opzioni del foglio' }));
     expect(inspector.getByLabelText('Formato della pagina')).toBeTruthy();
     expect(screen.queryByRole('region', { name: 'Griglia delle carte' })).toBeNull();
+  });
+
+  it('notes in the sheet view, after the 100% reminder, that the printed cards are proxies for private playtesting only', async () => {
+    const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    await user.click(centreTab('Foglio'));
+
+    const [printAtActualSize, proxyUse] = screen.getAllByRole('note');
+    expect(printAtActualSize?.textContent).toContain('Stampa al 100%');
+    expect(proxyUse?.textContent).toBe(
+      'Le carte stampate sono proxy solo per il playtest privato: non sono ammesse nei tornei sanzionati e non vanno mai spacciate per carte vere né vendute.',
+    );
   });
 
   it('offers the PDF in the sheet view only, the cards view leading there from «Controlla il foglio →»', async () => {
@@ -422,7 +435,7 @@ describe('the workspace on a phone', () => {
 
     await user.click(stepBar().getByRole('button', { name: 'Foglio' }));
 
-    expect(screen.getByRole('note').textContent).toContain('Stampa al 100%');
+    expect(screen.getAllByRole('note')[0]?.textContent).toContain('Stampa al 100%');
     expect(screen.getByRole('img', { name: 'Pagina 1 di 1 come verrà stampata' })).toBeTruthy();
     expect(screen.queryByLabelText('Decklist')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Crea il PDF' }));
