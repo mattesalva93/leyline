@@ -11,6 +11,7 @@ export type SecurityEvent =
   | ({ readonly kind: 'body-too-large' } & RequestFacts)
   | ({ readonly kind: 'request-timeout' } & RequestFacts)
   | ({ readonly kind: 'rate-limited' } & RequestFacts)
+  | ({ readonly kind: 'over-capacity' } & RequestFacts)
   | ({ readonly kind: 'server-error'; readonly error: string } & RequestFacts);
 
 /** Where the API records what an operator should know about attacks and failures. */

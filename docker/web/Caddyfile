@@ -5,9 +5,6 @@
 }
 
 {$SITE_ADDRESS} {
-	# Not for search engines yet (also <meta name="robots"> in index.html).
-	header X-Robots-Tag "noindex, nofollow"
-
 	# The security baseline (ADR 0016), on the page and on /api alike; `pnpm check:staging` pins it.
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -38,11 +35,10 @@
 		}
 	}
 
-	# Only the testers of the closed alpha, on the page and on /api alike (ADR 0016). Their
-	# credentials stay out of the repository: see tester-credentials.example.caddy.
-	basic_auth argon2id {
-		import /etc/caddy/tester-credentials.caddy
-	}
+	# The testers' guard, the emergency switch of the open alpha (ADR 0023): on the page and on
+	# /api alike while `scripts/tester-guard.sh` has written it, open while the folder holds none.
+	# A glob that matches no file only warns, where a missing file would stop Caddy.
+	import /etc/caddy/tester-guard/*.caddy
 
 	handle /api/* {
 		reverse_proxy api:3000
@@ -57,7 +53,8 @@
 
 # For the compose healthcheck only, never published: plain HTTP, because the public site's
 # certificate names its domain, which a request from inside the container cannot match. Outside
-# the testers' guard, so the healthcheck needs no credential and the deploy stays automatic.
+# the testers' guard, so the healthcheck needs no credential and the deploy stays automatic
+# whether the guard is on or off.
 http://127.0.0.1:8081 {
 	bind 127.0.0.1
 	root * /srv

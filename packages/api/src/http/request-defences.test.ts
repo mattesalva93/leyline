@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from './app.ts';
+import { importBulk } from '../catalog-import/import-bulk.ts';
 import { migrate } from '../catalog/db.ts';
+import { bulkStream, scryfallCard } from '../test-support/scryfall-fixtures.ts';
 import { listen, type ListeningApp } from '../test-support/listening-app.ts';
 import { manualClock } from '../test-support/manual-clock.ts';
 import { recordedSecurityLog } from '../test-support/recorded-security-log.ts';
@@ -38,6 +40,24 @@ async function serveApp({
   const securityLog = recordedSecurityLog();
   server = await listen(createApp({ sql, clock, securityLog, trustedProxyHost }));
   return { origin: server.origin, clock, securityLog };
+}
+
+/** Holds every catalog table locked until `release`, so a request reading the catalog waits. */
+async function lockCatalog() {
+  let release!: () => void;
+  const released = new Promise<void>((settle) => (release = settle));
+  let locked!: () => void;
+  const lockTaken = new Promise<void>((settle) => (locked = settle));
+  const transaction = db.sql.begin(async (tx) => {
+    await tx`lock table cards, card_names, prints, token_links in access exclusive mode`;
+    locked();
+    await released;
+  });
+  await lockTaken;
+  return async () => {
+    release();
+    await transaction;
+  };
 }
 
 describe('the request body limit', () => {
@@ -122,30 +142,12 @@ describe('the request body limit', () => {
 });
 
 describe('the request timeout', () => {
-  /** Holds every catalog table locked until `release`, so a request reading the catalog waits. */
-  async function lockCatalog() {
-    let release!: () => void;
-    const released = new Promise<void>((settle) => (release = settle));
-    let locked!: () => void;
-    const lockTaken = new Promise<void>((settle) => (locked = settle));
-    const transaction = db.sql.begin(async (tx) => {
-      await tx`lock table cards, card_names, prints, token_links in access exclusive mode`;
-      locked();
-      await released;
-    });
-    await lockTaken;
-    return async () => {
-      release();
-      await transaction;
-    };
-  }
-
   it('answers 503 to a request still running after 10 seconds', async () => {
     const { origin, clock, securityLog } = await serveApp();
     const unlockCatalog = await lockCatalog();
 
     const answer = fetch(`${origin}/api/cards/search?q=counterspell`);
-    await clock.timerRunning();
+    await clock.timersRunning();
     clock.advance(10_000);
     const response = await answer;
     await unlockCatalog();
@@ -167,13 +169,92 @@ describe('the request timeout', () => {
     const unlockCatalog = await lockCatalog();
 
     const answer = fetch(`${origin}/api/cards/search?q=counterspell`);
-    await clock.timerRunning();
+    await clock.timersRunning();
     clock.advance(9_999);
     await unlockCatalog();
     const response = await answer;
 
     expect(response.status).toBe(200);
     expect(securityLog.events).toEqual([]);
+  });
+});
+
+describe('the concurrency cap', () => {
+  /** Twice the database pool: past it, a request would only queue for a connection. */
+  const CAP = 20;
+
+  /**
+   * `CAP` searches held in flight on the locked catalog. Each one let in runs its own timeout,
+   * and the search's rate limit window runs one more timer.
+   */
+  async function fillTheApi(origin: string, clock: ReturnType<typeof manualClock>) {
+    const inFlight = Array.from({ length: CAP }, () =>
+      fetch(`${origin}/api/cards/search?q=counterspell`),
+    );
+    await clock.timersRunning(CAP + 1);
+    return inFlight;
+  }
+
+  it('answers 503 instead of queueing past the concurrency cap', async () => {
+    const { origin, clock } = await serveApp();
+    const unlockCatalog = await lockCatalog();
+
+    const inFlight = await fillTheApi(origin, clock);
+    const refused = await fetch(`${origin}/api/cards/${randomUUID()}/print-counts`);
+    await unlockCatalog();
+    const served = await Promise.all(inFlight);
+
+    expect(refused.status).toBe(503);
+    expect(refused.headers.get('retry-after')).toBe('1');
+    expect(await refused.json()).toEqual({ error: 'The server is busy: retry in 1 second.' });
+    expect(served.map((response) => response.status)).toEqual(Array(CAP).fill(200));
+  });
+
+  it('logs the first refusal while the API stays full, not each one', async () => {
+    const { origin, clock, securityLog } = await serveApp({ trustedProxyHost: 'localhost' });
+    const unlockCatalog = await lockCatalog();
+
+    const inFlight = await fillTheApi(origin, clock);
+    for (const client of ['203.0.113.7', '198.51.100.4']) {
+      await fetch(`${origin}/api/cards/named?name=counterspell`, {
+        headers: { 'x-forwarded-for': client },
+      });
+    }
+    await unlockCatalog();
+    await Promise.all(inFlight);
+
+    expect(securityLog.events).toEqual([
+      {
+        kind: 'over-capacity',
+        method: 'GET',
+        path: '/api/cards/named',
+        clientNetwork: '203.0.113.0',
+      },
+    ]);
+  });
+
+  it('serves again once a request in flight has ended', async () => {
+    const { origin, clock } = await serveApp();
+    const unlockCatalog = await lockCatalog();
+
+    const inFlight = await fillTheApi(origin, clock);
+    await unlockCatalog();
+    await Promise.all(inFlight);
+    const served = await fetch(`${origin}/api/cards/search?q=counterspell`);
+
+    expect(served.status).toBe(200);
+  });
+
+  it('still answers the health check while the API is full', async () => {
+    const { origin, clock } = await serveApp();
+    const unlockCatalog = await lockCatalog();
+
+    const inFlight = await fillTheApi(origin, clock);
+    const health = fetch(`${origin}/api/health`);
+    await unlockCatalog();
+    await Promise.all(inFlight);
+
+    expect((await health).status).toBe(200);
   });
 });
 
@@ -298,6 +379,112 @@ describe('the rate limit', () => {
     expect(allowed).toEqual(Array(30).fill(200));
     expect(refused.status).toBe(429);
     expect(refused.headers.get('retry-after')).toBe('60');
+  });
+
+  it.each([
+    {
+      route: 'GET /api/cards/named',
+      limit: 120,
+      send: (o: string) => fetch(`${o}/api/cards/named?name=counterspell`),
+    },
+    {
+      route: 'GET /api/cards/:oracleId/prints',
+      limit: 300,
+      send: (o: string) => fetch(`${o}/api/cards/${randomUUID()}/prints`),
+    },
+    {
+      route: 'GET /api/cards/:oracleId/print-counts',
+      limit: 300,
+      send: (o: string) => fetch(`${o}/api/cards/${randomUUID()}/print-counts`),
+    },
+    {
+      route: 'POST /api/decklists/suggested-tokens',
+      limit: 120,
+      send: (o: string) => post(o, '/api/decklists/suggested-tokens', { lines: [] }),
+    },
+  ])('answers 429 to $route past $limit requests within a minute', async ({ limit, send }) => {
+    const { origin } = await serveApp();
+
+    const allowed: number[] = [];
+    for (let i = 0; i < limit; i++) allowed.push((await send(origin)).status);
+    const refused = await send(origin);
+
+    expect(allowed).not.toContain(429);
+    expect(refused.status).toBe(429);
+    expect(refused.headers.get('retry-after')).toBe('60');
+  });
+
+  it('never limits the health check, which the compose healthcheck asks', async () => {
+    const { origin } = await serveApp();
+
+    const statuses: number[] = [];
+    for (let i = 0; i < 400; i++) statuses.push((await fetch(`${origin}/api/health`)).status);
+
+    expect(statuses).toEqual(Array(400).fill(200));
+  });
+});
+
+describe('a tester using the app as meant', () => {
+  const DECK_SIZE = 100;
+  const oracleIdOf = (i: number) => `aaaaaaaa-0000-0000-0000-${String(i).padStart(12, '0')}`;
+  const nameOf = (i: number) => `Tester Deck Card ${i}`;
+
+  beforeAll(async () => {
+    await importBulk(
+      db.sql,
+      bulkStream(
+        Array.from({ length: DECK_SIZE }, (_, i) =>
+          scryfallCard({
+            id: `bbbbbbbb-0000-0000-0000-${String(i).padStart(12, '0')}`,
+            oracle_id: oracleIdOf(i),
+            name: nameOf(i),
+          }),
+        ),
+      ),
+    );
+  });
+
+  it('stays under every rate limit and the concurrency cap within one minute', async () => {
+    const { origin, securityLog } = await serveApp();
+    const decklist = Array.from({ length: DECK_SIZE }, (_, i) => `1 ${nameOf(i)}`).join('\n');
+    const statuses: number[] = [];
+    const send = async (request: Promise<Response>) => {
+      statuses.push((await request).status);
+    };
+    const suggestTokens = () =>
+      send(
+        post(origin, '/api/decklists/suggested-tokens', {
+          lines: Array.from({ length: DECK_SIZE }, (_, i) => ({
+            oracleId: oracleIdOf(i),
+            previewPrintId: null,
+          })),
+        }),
+      );
+
+    // Pastes a 100-card decklist, then edits it a few times.
+    for (let edit = 0; edit < 10; edit++) {
+      await send(post(origin, '/api/decklists/resolve', { text: decklist }));
+      await suggestTokens();
+    }
+    // Opens every tile, as the browser does all at once: its prints, their counts, a page more
+    // and a print query; then picks a print, which asks for the tokens again.
+    for (let i = 0; i < DECK_SIZE; i++) {
+      const prints = `${origin}/api/cards/${oracleIdOf(i)}/prints`;
+      await Promise.all([
+        send(fetch(`${prints}?limit=50`)),
+        send(fetch(`${prints}?limit=50&q=c21`)),
+        send(fetch(`${origin}/api/cards/${oracleIdOf(i)}/print-counts`)),
+      ]);
+      await suggestTokens();
+    }
+    // Adds a few cards by typing their names, letter by letter.
+    for (const typed of ['T', 'Te', 'Tes', 'Test', 'Teste', 'Tester']) {
+      await send(fetch(`${origin}/api/cards/search?q=${typed}`));
+      await send(fetch(`${origin}/api/cards/named?name=${encodeURIComponent(nameOf(0))}`));
+    }
+
+    expect(statuses.filter((status) => status !== 200)).toEqual([]);
+    expect(securityLog.events).toEqual([]);
   });
 });
 

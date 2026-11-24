@@ -365,7 +365,8 @@ EOF
 fi
 
 stage "The testers' credentials"
-say "Production's testers live in a file outside the repository, beside your passwords."
+say "The alpha is open (ADR 0023). The testers' guard is its emergency switch: its credentials"
+say "live in a file outside the repository, beside your passwords, ready for when it is needed."
 ask TESTER_CREDENTIALS_FILE "Its path (empty: ~/leyline-production/tester-credentials.caddy):"
 write_env TESTER_CREDENTIALS_FILE "${TESTER_CREDENTIALS_FILE:-$HOME/leyline-production/tester-credentials.caddy}"
 mkdir -p "$(dirname "$TESTER_CREDENTIALS_FILE")"
@@ -390,14 +391,14 @@ if ! grep -q '^check-staging ' "$TESTER_CREDENTIALS_FILE"; then
   step "Save it in your password manager: the last stage and every later check need it."
   pause
 fi
-while confirm "Add a tester?"; do
+while confirm "Add a tester, for when the guard is on?"; do
   ask TESTER_NAME "Their username:"
   add_tester "$TESTER_NAME"
   step "Send it to them over a private channel."
 done
 
 stage "GitHub: the deploy's settings"
-set_environment_secret TESTER_CREDENTIALS "$(cat "$TESTER_CREDENTIALS_FILE")"
+# No TESTER_CREDENTIALS: without it the deploy leaves the guard off (docs/deploy.md).
 set_var DEPLOY_HOST "$VPS_ADDRESS"
 set_var DEPLOY_USER "$DEPLOY_USER"
 set_var DEPLOY_PATH "$DEPLOY_PATH"
@@ -419,15 +420,11 @@ note "  DOCKER_HOST=ssh://$DEPLOYER docker compose -p ${DEPLOY_PATH##*/} logs -f
 pause "Press Enter once it has finished, to check the VPS."
 
 stage "Check the VPS"
-ask CHECK_STAGING_USERNAME "check:staging's username (empty: check-staging):"
-CHECK_STAGING_USERNAME=${CHECK_STAGING_USERNAME:-check-staging}
-ask_secret CHECK_STAGING_PASSWORD "Its password (from your password manager):"
 pnpm exec playwright install chromium
-# The shell's variables take precedence over .env's; ${DEPLOY_PATH##*/} is its last folder,
+# The site is open, so the check needs no credential. ${DEPLOY_PATH##*/} is its last folder,
 # which Compose names the stack after (docs/deploy.md).
-CHECK_STAGING_USERNAME="$CHECK_STAGING_USERNAME" CHECK_STAGING_PASSWORD="$CHECK_STAGING_PASSWORD" \
-  DOCKER_HOST="ssh://$DEPLOYER" COMPOSE_PROJECT_NAME="${DEPLOY_PATH##*/}" \
-  pnpm check:staging --app "https://$APP_DOMAIN"
+DOCKER_HOST="ssh://$DEPLOYER" COMPOSE_PROJECT_NAME="${DEPLOY_PATH##*/}" \
+  pnpm check:staging --access open --app "https://$APP_DOMAIN"
 
 finish
 }

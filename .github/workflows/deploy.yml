@@ -67,23 +67,30 @@ jobs:
           # shellcheck disable=SC2029
           git archive --format=tar HEAD | ssh deploy "mkdir -p '$DEPLOY_PATH' && tar -x -C '$DEPLOY_PATH'"
 
-      # The secret reaches the host through stdin only, never on a command line or in the log.
-      # `cat >` rewrites the file in place: Docker mounts it by inode, so a new file put in its
-      # place would stay unseen by the running container. `umask 077`: readable by its owner only.
-      - name: Write the testers' credentials
+      # The emergency switch (ADR 0023): a secret holding credential lines turns the testers'
+      # guard on, an empty or missing one turns it off and the site is open. The secret reaches
+      # the host through stdin only, never on a command line or in the log. Readable by anyone
+      # on the host (`chmod 644`): Caddy reads it as its own user, not the deploy user, and the
+      # file holds only argon2id hashes, never a password.
+      - name: Switch the testers' guard
         env:
           TESTER_CREDENTIALS: ${{ secrets.TESTER_CREDENTIALS }}
         run: |
-          if [ -z "$TESTER_CREDENTIALS" ]; then
-            echo '::error::The TESTER_CREDENTIALS secret is empty: Caddy would let no tester in.'
-            exit 1
+          guard_file="$DEPLOY_PATH/docker/web/tester-guard/basic-auth.caddy"
+          guard=$(printf '%s\n' "$TESTER_CREDENTIALS" | sh scripts/tester-guard.sh)
+          if [ -n "$guard" ]; then
+            # shellcheck disable=SC2029
+            printf '%s\n' "$guard" | ssh deploy "cat > '$guard_file' && chmod 644 '$guard_file'"
+            echo "The testers' guard is on: only their credentials open the site."
+          else
+            # shellcheck disable=SC2029
+            ssh deploy "rm -f '$guard_file'"
+            echo "The testers' guard is off: the site is open."
           fi
-          # shellcheck disable=SC2029
-          printf '%s\n' "$TESTER_CREDENTIALS" |
-            ssh deploy "umask 077 && cat > '$DEPLOY_PATH/docker/web/tester-credentials.caddy'"
 
       # `up` keeps a container whose image did not change, so Caddy reloads its configuration
-      # too: a revoked tester loses access with this deploy, not with the next new image.
+      # too: the guard switched, or a revoked tester, takes effect with this deploy, not with the
+      # next new image.
       - name: Rebuild and restart
         run: |
           # shellcheck disable=SC2029

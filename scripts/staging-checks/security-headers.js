@@ -49,11 +49,11 @@ const EXPECTED_HEADERS = {
 /** Scryfall's images send no Cross-Origin-Resource-Policy, so COEP would block them. */
 const FORBIDDEN_HEADERS = ['cross-origin-embedder-policy'];
 
-/** @param {{ testerRequest: import('playwright').APIRequestContext, appAddress: string }} staging */
-export async function securityHeaderFailures({ testerRequest, appAddress }) {
+/** @param {{ visitorRequest: import('playwright').APIRequestContext, appAddress: string }} staging */
+export async function securityHeaderFailures({ visitorRequest, appAddress }) {
   const failures = [];
   for (const path of PUBLIC_PATHS) {
-    const response = await testerRequest.get(`${appAddress}${path}`, { maxRedirects: 0 });
+    const response = await visitorRequest.get(`${appAddress}${path}`, { maxRedirects: 0 });
     const headers = response.headers();
     for (const [name, expected] of Object.entries(EXPECTED_HEADERS)) {
       const actual = headers[name];

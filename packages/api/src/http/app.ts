@@ -13,10 +13,12 @@ import {
   type TokenQueryLine,
 } from '@leyline/core';
 import { Hono } from 'hono';
-import { hasCatalogTables, type Sql } from '../catalog/db.ts';
+import { except } from 'hono/combine';
+import { DATABASE_POOL_SIZE, hasCatalogTables, type Sql } from '../catalog/db.ts';
 import { createPostgresCatalog } from '../catalog/postgres-catalog.ts';
 import { clientAddress } from './client-address.ts';
 import type { Clock } from './clock.ts';
+import { concurrencyCap } from './concurrency-cap.ts';
 import { rateLimit } from './rate-limit.ts';
 import { requestBodyLimit } from './request-body-limit.ts';
 import { requestTimeout } from './request-timeout.ts';
@@ -51,6 +53,27 @@ const SEARCH_RATE_LIMIT = { requestsPerWindow: 120, windowSeconds: 60 };
 
 /** Far above how often a tester pastes or edits a decklist, far below what a script can. */
 const RESOLVE_RATE_LIMIT = { requestsPerWindow: 30, windowSeconds: 60 };
+
+/** A listing is asked for each card a search picks: as often as searches. */
+const CARDS_NAMED_RATE_LIMIT = SEARCH_RATE_LIMIT;
+
+/**
+ * Asked again whenever the decklist or a print in it changes: above a tester picking a print on
+ * every tile of a 100-card deck within a minute, below a script scanning the catalog.
+ */
+const SUGGESTED_TOKENS_RATE_LIMIT = { requestsPerWindow: 120, windowSeconds: 60 };
+
+/**
+ * Cheap reads of one card, asked each time a tile opens, its picker scrolls or its print query
+ * changes: above a tester opening every tile of a 100-card deck within a minute, and paging on.
+ */
+const ONE_CARD_PRINTS_RATE_LIMIT = { requestsPerWindow: 300, windowSeconds: 60 };
+
+/**
+ * Most requests served at once. With one CPU (compose.yaml) the API mostly waits for PostgreSQL:
+ * past twice its pool, a request would only queue for a connection, holding memory meanwhile.
+ */
+const MAX_REQUESTS_IN_FLIGHT = 2 * DATABASE_POOL_SIZE;
 
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 
@@ -102,6 +125,11 @@ export function createApp(deps: AppDeps): Hono {
 
   app.onError(serverErrorHandler(deps.securityLog));
   app.use('/api/*', clientAddress(deps.trustedProxyHost, deps.clock));
+  // The healthcheck tells a serving API apart from a stuck one, even while it is full.
+  app.use(
+    '/api/*',
+    except('/api/health', concurrencyCap(MAX_REQUESTS_IN_FLIGHT, deps.securityLog)),
+  );
   app.use('/api/*', requestTimeout(deps.clock, deps.securityLog));
   app.use('/api/*', requestBodyLimit(deps.securityLog));
 
@@ -134,22 +162,26 @@ export function createApp(deps: AppDeps): Hono {
     },
   );
 
-  app.post('/api/decklists/suggested-tokens', async (c) => {
-    const request = tokenSuggestionRequest(await c.req.json().catch(() => null));
-    if (!request) {
-      return c.json(
-        {
-          error: `Expected a JSON body { "lines": up to ${MAX_TOKEN_QUERY_LINES} of { "oracleId": string, "previewPrintId": string | null }, "lang"?: "en" | "it" }.`,
-        },
-        400,
-      );
-    }
-    const tokens = await suggestTokens(catalog, request.lines, {
-      today: today(),
-      lang: request.lang,
-    });
-    return c.json({ tokens });
-  });
+  app.post(
+    '/api/decklists/suggested-tokens',
+    rateLimit(SUGGESTED_TOKENS_RATE_LIMIT, deps.clock, deps.securityLog),
+    async (c) => {
+      const request = tokenSuggestionRequest(await c.req.json().catch(() => null));
+      if (!request) {
+        return c.json(
+          {
+            error: `Expected a JSON body { "lines": up to ${MAX_TOKEN_QUERY_LINES} of { "oracleId": string, "previewPrintId": string | null }, "lang"?: "en" | "it" }.`,
+          },
+          400,
+        );
+      }
+      const tokens = await suggestTokens(catalog, request.lines, {
+        today: today(),
+        lang: request.lang,
+      });
+      return c.json({ tokens });
+    },
+  );
 
   app.get(
     '/api/cards/search',
@@ -167,50 +199,62 @@ export function createApp(deps: AppDeps): Hono {
     },
   );
 
-  app.get('/api/cards/named', async (c) => {
-    const { name, lang = 'en' } = c.req.query();
-    if (!isValidNameQuery(name) || !isLang(lang)) return c.json(nameQueryError('name'), 400);
-    const cards = await listCardsNamed(catalog, { name, lang, today: today() });
-    return c.json({ cards });
-  });
+  app.get(
+    '/api/cards/named',
+    rateLimit(CARDS_NAMED_RATE_LIMIT, deps.clock, deps.securityLog),
+    async (c) => {
+      const { name, lang = 'en' } = c.req.query();
+      if (!isValidNameQuery(name) || !isLang(lang)) return c.json(nameQueryError('name'), 400);
+      const cards = await listCardsNamed(catalog, { name, lang, today: today() });
+      return c.json({ cards });
+    },
+  );
 
-  app.get('/api/cards/:oracleId/prints', async (c) => {
-    const oracleId = c.req.param('oracleId');
-    if (!isId(oracleId)) return c.json(ORACLE_ID_ERROR, 400);
-    const { lang = 'en', limit, cursor, q } = c.req.query();
-    const limitIsValid = limit === undefined || POSITIVE_INTEGER.test(limit);
-    const cursorIsValid = cursor === undefined || isPrintCursor(cursor);
-    const queryIsValid = q === undefined || q.length <= MAX_PRINT_QUERY_LENGTH;
-    if (!isLang(lang) || !limitIsValid || !cursorIsValid || !queryIsValid) {
-      return c.json(
-        {
-          error: `Expected the query ?lang=en|it&limit=<whole number of at least 1>&cursor=<nextCursor of the previous page>&q=<a print query of up to ${MAX_PRINT_QUERY_LENGTH} characters>.`,
-        },
-        400,
-      );
-    }
-    const page = await listPrints(catalog, {
-      oracleId,
-      lang,
-      today: today(),
-      limit: Math.min(Number(limit ?? MAX_PRINTS_PER_PAGE), MAX_PRINTS_PER_PAGE),
-      cursor,
-      query: q,
-    });
-    if (!page) return c.json({ error: 'No card has this oracle id.' }, 404);
-    return c.json(page);
-  });
+  app.get(
+    '/api/cards/:oracleId/prints',
+    rateLimit(ONE_CARD_PRINTS_RATE_LIMIT, deps.clock, deps.securityLog),
+    async (c) => {
+      const oracleId = c.req.param('oracleId');
+      if (!isId(oracleId)) return c.json(ORACLE_ID_ERROR, 400);
+      const { lang = 'en', limit, cursor, q } = c.req.query();
+      const limitIsValid = limit === undefined || POSITIVE_INTEGER.test(limit);
+      const cursorIsValid = cursor === undefined || isPrintCursor(cursor);
+      const queryIsValid = q === undefined || q.length <= MAX_PRINT_QUERY_LENGTH;
+      if (!isLang(lang) || !limitIsValid || !cursorIsValid || !queryIsValid) {
+        return c.json(
+          {
+            error: `Expected the query ?lang=en|it&limit=<whole number of at least 1>&cursor=<nextCursor of the previous page>&q=<a print query of up to ${MAX_PRINT_QUERY_LENGTH} characters>.`,
+          },
+          400,
+        );
+      }
+      const page = await listPrints(catalog, {
+        oracleId,
+        lang,
+        today: today(),
+        limit: Math.min(Number(limit ?? MAX_PRINTS_PER_PAGE), MAX_PRINTS_PER_PAGE),
+        cursor,
+        query: q,
+      });
+      if (!page) return c.json({ error: 'No card has this oracle id.' }, 404);
+      return c.json(page);
+    },
+  );
 
-  app.get('/api/cards/:oracleId/print-counts', async (c) => {
-    const oracleId = c.req.param('oracleId');
-    if (!isId(oracleId)) return c.json(ORACLE_ID_ERROR, 400);
-    const counts = await countPrintsByLang(catalog, {
-      oracleId,
-      today: today(),
-    });
-    if (!counts) return c.json({ error: 'No card has this oracle id.' }, 404);
-    return c.json(counts);
-  });
+  app.get(
+    '/api/cards/:oracleId/print-counts',
+    rateLimit(ONE_CARD_PRINTS_RATE_LIMIT, deps.clock, deps.securityLog),
+    async (c) => {
+      const oracleId = c.req.param('oracleId');
+      if (!isId(oracleId)) return c.json(ORACLE_ID_ERROR, 400);
+      const counts = await countPrintsByLang(catalog, {
+        oracleId,
+        today: today(),
+      });
+      if (!counts) return c.json({ error: 'No card has this oracle id.' }, 404);
+      return c.json(counts);
+    },
+  );
 
   return app;
 }

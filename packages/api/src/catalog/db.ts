@@ -7,8 +7,12 @@ interface ConnectOptions {
   readonly schema?: string;
 }
 
+/** Most connections one process opens: postgres.js's own default, a request beyond waits. */
+export const DATABASE_POOL_SIZE = 10;
+
 export function connect(url: string, options: ConnectOptions = {}): Sql {
   return postgres(url, {
+    max: DATABASE_POOL_SIZE,
     onnotice: () => {},
     ...(options.schema ? { connection: { search_path: `${options.schema}, public` } } : {}),
   });

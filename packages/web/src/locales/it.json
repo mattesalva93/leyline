@@ -119,22 +119,22 @@
   },
   "privacyNotice": {
     "title": "Informativa privacy",
-    "intro": "Come Leyline tratta i dati personali di chi lo usa durante l’alpha chiusa.",
+    "intro": "Come Leyline tratta i dati personali di chi lo usa durante l’alpha, aperta a chiunque.",
     "controller": {
       "heading": "Titolare del trattamento",
       "who": "Matteo Salvalaggio, che gestisce Leyline. Per qualunque richiesta sui tuoi dati scrivi a <email>{{email}}</email>."
     },
     "purpose": {
       "heading": "Finalità e base giuridica",
-      "why": "I dati servono solo alla sicurezza del servizio: riservarlo ai tester, difenderlo da abusi e attacchi e capire cosa è successo quando qualcosa non va.",
+      "why": "I dati servono solo alla sicurezza del servizio: difenderlo da abusi e attacchi, restringerne l’accesso ai tester quando serve a fermare un abuso e capire cosa è successo quando qualcosa non va.",
       "legalBasis": "La base giuridica è il legittimo interesse del titolare alla sicurezza del servizio (art. 6, par. 1, lett. f del GDPR)."
     },
     "data": {
       "heading": "Dati trattati",
-      "credentials": "Accesso: il titolare assegna a ogni tester un nome utente e una password. Sul server resta solo un’impronta cifrata (hash) della password.",
-      "accessLog": "Registro degli accessi: per ogni richiesta al sito, la data e l’ora, la rete da cui arriva (l’indirizzo IP mascherato, senza la sua ultima parte), il nome utente del tester, l’indirizzo richiesto e l’esito. Il registro non contiene le intestazioni della richiesta ed è conservato per 14 giorni.",
-      "rateLimit": "Limite di richieste: per contare le ricerche e i riconoscimenti di decklist che arrivano da ogni indirizzo IP, il server tiene l’indirizzo completo solo in memoria, per un minuto al massimo, e non lo scrive mai.",
-      "securityEvents": "Eventi di sicurezza: quando una richiesta viene rifiutata (troppe richieste, troppo grande o troppo lenta) o fallisce, il server annota la data e l’ora, il tipo di richiesta e l’indirizzo richiesto, la rete da cui arriva (mai l’indirizzo IP completo) e, per un errore, la sua descrizione tecnica. Le annotazioni più vecchie vengono cancellate a rotazione quando il registro raggiunge la sua dimensione massima."
+      "credentials": "Accesso: il sito non chiede credenziali. Solo se un abuso costringe il titolare a restringere l’accesso, e finché dura la restrizione, il sito si apre con il nome utente e la password che il titolare assegna a ogni tester. Sul server resta solo un’impronta cifrata (hash) della password.",
+      "accessLog": "Registro degli accessi: per ogni richiesta al sito, la data e l’ora, la rete da cui arriva (l’indirizzo IP mascherato, senza la sua ultima parte), il nome utente del tester quando l’accesso è ristretto, l’indirizzo richiesto e l’esito. Il registro non contiene le intestazioni della richiesta ed è conservato per 14 giorni.",
+      "rateLimit": "Limite di richieste: per contare le richieste che arrivano da ogni indirizzo IP, il server tiene l’indirizzo completo solo in memoria, per un minuto al massimo, e non lo scrive mai.",
+      "securityEvents": "Eventi di sicurezza: quando una richiesta viene rifiutata (troppe richieste, server al completo, troppo grande o troppo lenta) o fallisce, il server annota la data e l’ora, il tipo di richiesta e l’indirizzo richiesto, la rete da cui arriva (mai l’indirizzo IP completo) e, per un errore, la sua descrizione tecnica. Le annotazioni più vecchie vengono cancellate a rotazione quando il registro raggiunge la sua dimensione massima."
     },
     "recipients": {
       "heading": "Destinatari",

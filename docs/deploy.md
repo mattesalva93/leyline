@@ -38,33 +38,44 @@ The VPS builds the images itself on every deploy (ADR 0012). Measured on staging
    gh variable set DEPLOY_PATH --body <absolute path on the host>
    gh variable set DEPLOY_PORT --body <port>             # optional
    gh variable set DEPLOY_ENABLED --body true
-   gh secret set TESTER_CREDENTIALS --env production < tester-credentials.caddy
    ```
 
-   `gh secret set --env production` creates the secret in the `production` environment, so only jobs of that environment can read it. `tester-credentials.caddy` is a file outside the repository holding production's testers, made as `docs/staging.md` says, with a line of its own for `pnpm check:staging`; see [Testers](#testers). Then delete the local `deploy_key`.
+   `gh secret set --env production` creates the secret in the `production` environment, so only jobs of that environment can read it. Leave `TESTER_CREDENTIALS` unset: the alpha is open, and the secret is its emergency switch (see [The testers' guard](#the-testers-guard)). Then delete the local `deploy_key`.
 
 6. **Deploy once by hand** to check it: `gh workflow run deploy.yml --ref main`, then `gh run watch` to follow it.
 
 From then on, every push to `main` that passes CI is deployed. `gh variable set DEPLOY_ENABLED --body false` turns it off again.
 
-## Testers
+## The testers' guard
 
-Every deploy writes the `TESTER_CREDENTIALS` secret to `docker/web/tester-credentials.caddy` on the host and reloads Caddy, so the host lets in exactly the testers the secret lists. The secret holds that file whole, in the format `docker/web/tester-credentials.example.caddy` explains. The deploy fails if the secret is empty.
+The alpha is open to anyone (ADR 0023). Caddy's `basic_auth` stays ready as an emergency switch, for when the site is abused: every deploy reads the `TESTER_CREDENTIALS` secret, and
 
-GitHub never shows a secret again, so keep production's `tester-credentials.caddy` outside the repository, where you keep the passwords. To add or revoke a tester, change that file, set the secret again from it, and deploy:
+- with credential lines in it, writes the guard `scripts/tester-guard.sh` makes of them to `docker/web/tester-guard/basic-auth.caddy` on the host, so only the testers the secret lists get in;
+- empty or missing, removes that file, so the site is open.
+
+Either way it reloads Caddy. The secret holds a credentials file whole, in the format `docker/web/tester-credentials.example.caddy` explains.
+
+Keep production's `tester-credentials.caddy` outside the repository, where you keep the passwords, made as `docs/staging.md` says with a line of its own for `pnpm check:staging`: GitHub never shows a secret again. To close the site, or to add or revoke a tester while it is closed, set the secret from that file and deploy:
 
 ```sh
 gh secret set TESTER_CREDENTIALS --env production < tester-credentials.caddy
 gh workflow run deploy.yml --ref main
 ```
 
-After a deploy, `pnpm check:staging --app https://<domain>` checks the host once `CHECK_STAGING_USERNAME` and `CHECK_STAGING_PASSWORD` in the shell hold production's check credential: they take precedence over `.env`'s. Set them with `read -s`, which hides what you type, rather than on a command line, which the shell history keeps.
+To open it again, delete the secret and deploy:
+
+```sh
+gh secret delete TESTER_CREDENTIALS --env production
+gh workflow run deploy.yml --ref main
+```
+
+After a deploy, `pnpm check:staging --access open --app https://<domain>` checks the host. With the guard on, `--access closed` checks it instead, once `CHECK_STAGING_USERNAME` and `CHECK_STAGING_PASSWORD` in the shell hold production's check credential: they take precedence over `.env`'s. Set them with `read -s`, which hides what you type, rather than on a command line, which the shell history keeps.
 
 The access log and the containers' log settings are read through `docker`, not over HTTPS, so point it at the host's engine for that run:
 
 ```sh
 DOCKER_HOST=ssh://<user>@<host> COMPOSE_PROJECT_NAME=<last folder of DEPLOY_PATH> \
-  pnpm check:staging --app https://<domain>
+  pnpm check:staging --access open --app https://<domain>
 ```
 
 `DOCKER_HOST=ssh://...` makes the local `docker` CLI drive the host's Docker over SSH. `COMPOSE_PROJECT_NAME` names the stack as the host knows it: Compose names a project after the folder it runs in. With an `ssh://` address the checks also cover the host itself, its SSH logins, what it lets in from outside, its updates and its swap, all through one SSH connection: the host rate-limits new ones (ADR 0019).
