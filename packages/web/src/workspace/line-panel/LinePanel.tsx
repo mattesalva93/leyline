@@ -4,7 +4,7 @@ import {
   type Print,
   type PrintWarning,
   type ResolvedLine,
-} from '@mtg-suite/core';
+} from '@leyline/core';
 import { useTranslation } from 'react-i18next';
 import { CARD_SHAPE } from '../card-image/card-shape.ts';
 import { CopyBreakdown } from './CopyBreakdown.tsx';

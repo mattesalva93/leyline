@@ -1,4 +1,4 @@
-import type { Print } from '@mtg-suite/core';
+import type { Print } from '@leyline/core';
 import type { TFunction } from 'i18next';
 
 /** How the UI names a print: its set code and collector number, as printed on the card. */

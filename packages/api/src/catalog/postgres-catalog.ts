@@ -1,4 +1,4 @@
-import type { Card, Catalog, CatalogEntry, Print, PrintFace } from '@mtg-suite/core';
+import type { Card, Catalog, CatalogEntry, Print, PrintFace } from '@leyline/core';
 import type { Sql } from './db.ts';
 
 /** A face as the catalog stores it: imports before artists were kept have none. */

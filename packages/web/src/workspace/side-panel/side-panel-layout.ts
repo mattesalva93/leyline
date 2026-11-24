@@ -47,7 +47,7 @@ export interface SidePanelLayout {
 const SAVED_LAYOUT_VERSION = 1;
 
 function storageKey(panel: SidePanelName): string {
-  return `mtg-suite.sidePanel.${panel}`;
+  return `leyline.sidePanel.${panel}`;
 }
 
 function defaultLayout(panel: SidePanelName): SidePanelLayout {

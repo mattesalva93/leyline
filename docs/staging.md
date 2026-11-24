@@ -60,10 +60,10 @@ docker compose up -d --wait
 PostgreSQL has three roles (ADR 0016):
 
 - the superuser, `POSTGRES_USER`, only initialises the database;
-- `mtg_owner` owns the schema and is the `importer`'s: it migrates the database before each import;
-- `mtg_reader` is the `api`'s: it can only read, and its queries stop after a statement timeout.
+- `leyline_owner` owns the schema and is the `importer`'s: it migrates the database before each import;
+- `leyline_reader` is the `api`'s: it can only read, and its queries stop after a statement timeout.
 
-`docker/postgres/init/02-database-roles.sh` creates the two roles, with the passwords in `MTG_OWNER_PASSWORD` and `MTG_READER_PASSWORD`, when PostgreSQL creates its volume. A volume created before the roles existed gets them, and hands its tables to `mtg_owner`, by running the same script once:
+`docker/postgres/init/02-database-roles.sh` creates the two roles, with the passwords in `LEYLINE_OWNER_PASSWORD` and `LEYLINE_READER_PASSWORD`, when PostgreSQL creates its volume. A volume created before the roles existed gets them, and hands its tables to `leyline_owner`, by running the same script once:
 
 ```sh
 docker compose up -d --wait postgres

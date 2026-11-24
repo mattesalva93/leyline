@@ -1,5 +1,5 @@
-import { CARD_SEARCH_LIMIT, type CatalogEntry } from '@mtg-suite/core';
-import { aCard } from '@mtg-suite/core/test-fixtures';
+import { CARD_SEARCH_LIMIT, type CatalogEntry } from '@leyline/core';
+import { aCard } from '@leyline/core/test-fixtures';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

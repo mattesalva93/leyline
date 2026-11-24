@@ -1,4 +1,4 @@
-import type { Candidate, Lang } from '@mtg-suite/core';
+import type { Candidate, Lang } from '@leyline/core';
 import { useTranslation } from 'react-i18next';
 import { LoadingSpinner } from '../../ui/LoadingSpinner.tsx';
 import { CARD_SHAPE } from '../card-image/card-shape.ts';

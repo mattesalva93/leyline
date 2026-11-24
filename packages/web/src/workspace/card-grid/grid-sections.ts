@@ -1,4 +1,4 @@
-import { DECKLIST_SECTIONS, copyCount, type DecklistSection } from '@mtg-suite/core';
+import { DECKLIST_SECTIONS, copyCount, type DecklistSection } from '@leyline/core';
 import type { WrittenCardLine } from '../../generator/use-generator.ts';
 import { gridTilesOf, type GridTile } from './grid-tiles.ts';
 

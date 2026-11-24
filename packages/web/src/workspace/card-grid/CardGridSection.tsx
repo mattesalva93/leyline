@@ -5,7 +5,7 @@ import {
   type Lang,
   type LineSide,
   type Print,
-} from '@mtg-suite/core';
+} from '@leyline/core';
 import { useId, useState } from 'react';
 import { GuidedStepBubble, type GuidedStepPlacement } from '../guide/GuidedStepBubble.tsx';
 import type { GuidedStep } from '../guide/guided-steps.ts';

@@ -1,4 +1,4 @@
-import type { Candidate, Lang } from '@mtg-suite/core';
+import type { Candidate, Lang } from '@leyline/core';
 import { useEffect, useState } from 'react';
 import { fetchCardsNamed } from '../../api.ts';
 

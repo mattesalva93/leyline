@@ -1,5 +1,5 @@
-import { type CatalogEntry } from '@mtg-suite/core';
-import { aCard, aPrint } from '@mtg-suite/core/test-fixtures';
+import { type CatalogEntry } from '@leyline/core';
+import { aCard, aPrint } from '@leyline/core/test-fixtures';
 import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';

@@ -1,6 +1,6 @@
 import { isGuidedStep, type GuidedStep } from './guided-steps.ts';
 
-const STORAGE_KEY = 'mtg-suite.guide';
+const STORAGE_KEY = 'leyline.guide';
 /** Raised whenever the saved shape changes: data of any other version is left unread. */
 const SAVED_GUIDE_VERSION = 1;
 

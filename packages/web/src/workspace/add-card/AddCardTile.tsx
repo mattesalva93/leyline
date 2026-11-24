@@ -3,7 +3,7 @@ import {
   type Candidate,
   type DecklistSection,
   type Lang,
-} from '@mtg-suite/core';
+} from '@leyline/core';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CARD_SHAPE } from '../card-image/card-shape.ts';

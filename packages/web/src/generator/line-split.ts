@@ -1,4 +1,4 @@
-import type { AllocationChoice, Print, ResolvedLine } from '@mtg-suite/core';
+import type { AllocationChoice, Print, ResolvedLine } from '@leyline/core';
 
 /** A written line to show split over its `printCount` newest prints once it is resolved. */
 export interface LineSplitOverPrints {

@@ -6,12 +6,12 @@ function requiredEnv(name: string): string {
   return value;
 }
 
-/** `READER_DATABASE_URL`: `mtg_reader`, who can only read the catalog (ADR 0016). */
+/** `READER_DATABASE_URL`: `leyline_reader`, who can only read the catalog (ADR 0016). */
 export function readerDatabaseUrl(): string {
   return requiredEnv('READER_DATABASE_URL');
 }
 
-/** `OWNER_DATABASE_URL`: `mtg_owner`, who owns the schema, migrates it and imports (ADR 0016). */
+/** `OWNER_DATABASE_URL`: `leyline_owner`, who owns the schema, migrates it and imports (ADR 0016). */
 export function ownerDatabaseUrl(): string {
   return requiredEnv('OWNER_DATABASE_URL');
 }

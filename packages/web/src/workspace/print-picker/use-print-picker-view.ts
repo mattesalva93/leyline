@@ -5,7 +5,7 @@ import {
   type Print,
   type PrintCountsByLang,
   type ResolvedLine,
-} from '@mtg-suite/core';
+} from '@leyline/core';
 import { useCallback, useState } from 'react';
 
 /** Where the print picker stands, and how the user moves it. */

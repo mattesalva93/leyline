@@ -17,7 +17,7 @@ import {
   pageFormats,
   resolveDecklist,
   sheetImageUrls,
-} from '@mtg-suite/core';
+} from '@leyline/core';
 import { connect } from './catalog/db.ts';
 import { readerDatabaseUrl } from './env.ts';
 import { createPostgresCatalog } from './catalog/postgres-catalog.ts';

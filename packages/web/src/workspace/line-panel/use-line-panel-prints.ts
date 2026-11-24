@@ -1,4 +1,4 @@
-import type { Print, ResolvedLine } from '@mtg-suite/core';
+import type { Print, ResolvedLine } from '@leyline/core';
 import { useRef, useState } from 'react';
 import {
   contentWidthOf,

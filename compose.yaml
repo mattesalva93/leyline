@@ -63,7 +63,7 @@ services:
     deploy: { resources: { limits: { memory: 256m, cpus: '1' } } }
     pull_policy: build
     environment:
-      READER_DATABASE_URL: postgres://mtg_reader:${MTG_READER_PASSWORD:?set MTG_READER_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-mtg_suite}
+      READER_DATABASE_URL: postgres://leyline_reader:${LEYLINE_READER_PASSWORD:?set LEYLINE_READER_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-leyline}
       # Inside the container, listen on every interface so `web` can reach it.
       HOST: 0.0.0.0
       PORT: 3000
@@ -98,7 +98,7 @@ services:
     deploy: { resources: { limits: { memory: 512m, cpus: '1' } } }
     # It migrates the database before importing: the api only reads it (ADR 0016).
     environment:
-      OWNER_DATABASE_URL: postgres://mtg_owner:${MTG_OWNER_PASSWORD:?set MTG_OWNER_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-mtg_suite}
+      OWNER_DATABASE_URL: postgres://leyline_owner:${LEYLINE_OWNER_PASSWORD:?set LEYLINE_OWNER_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-leyline}
     # Scryfall's bulk files in, the database out.
     networks: [internet, database]
     restart: unless-stopped
@@ -118,11 +118,11 @@ services:
     # api and the importer connect as. Their passwords have no default (`:?` stops compose without
     # them), so a host never runs on a password everyone can read here.
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-mtg}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mtg}
-      POSTGRES_DB: ${POSTGRES_DB:-mtg_suite}
-      MTG_OWNER_PASSWORD: ${MTG_OWNER_PASSWORD:?set MTG_OWNER_PASSWORD in .env}
-      MTG_READER_PASSWORD: ${MTG_READER_PASSWORD:?set MTG_READER_PASSWORD in .env}
+      POSTGRES_USER: ${POSTGRES_USER:-leyline}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-leyline}
+      POSTGRES_DB: ${POSTGRES_DB:-leyline}
+      LEYLINE_OWNER_PASSWORD: ${LEYLINE_OWNER_PASSWORD:?set LEYLINE_OWNER_PASSWORD in .env}
+      LEYLINE_READER_PASSWORD: ${LEYLINE_READER_PASSWORD:?set LEYLINE_READER_PASSWORD in .env}
     # No port, not even on loopback: `pnpm db:up` runs a database of its own for `pnpm dev` and
     # the tests (compose.dev.yaml).
     networks: [database]

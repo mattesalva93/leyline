@@ -1,4 +1,4 @@
-import { withLineFeedBreaks } from '@mtg-suite/core';
+import { withLineFeedBreaks } from '@leyline/core';
 
 /**
  * The decklist text once `pasted` takes the place of everything from `pasteStart` on, with a

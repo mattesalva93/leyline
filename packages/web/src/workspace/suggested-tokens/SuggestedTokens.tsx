@@ -1,4 +1,4 @@
-import type { SuggestedToken } from '@mtg-suite/core';
+import type { SuggestedToken } from '@leyline/core';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SECONDARY_BUTTON } from '../../ui/board-styles.ts';

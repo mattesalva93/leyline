@@ -274,7 +274,7 @@ describe('the tile width slider', () => {
   });
 
   it('opens at its default when the device kept a zoom narrower than the least it allows', async () => {
-    localStorage.setItem('mtg-suite.tileWidth', '80');
+    localStorage.setItem('leyline.tileWidth', '80');
 
     await mountPageAndWrite('4 Sol Ring{Enter}');
     await screen.findByRole('button', { name: 'Modifica Sol Ring' });

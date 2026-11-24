@@ -14,23 +14,26 @@
   --color-raised: #262626;
   --color-border: #72716b;
   --color-muted-foreground: #aeaba2;
-  --color-accent: #c5f02c;
+  --color-accent: #4cc9f0;
   --color-accent-foreground: #101010;
   /* The accent under the pointer: a primary button darkens a little, keeping its text readable. */
-  --color-accent-hover: #b4dc22;
+  --color-accent-hover: #36b6de;
   /* The ring of the focused element, the text's colour: never the selection's accent. */
   --color-focus: #f1efe8;
   /* The outer edge of the selected tile's ring: the accent stands out of the dark board on its own, the edge only widens it. */
-  --color-selection-edge: #c5f02c;
+  --color-selection-edge: #4cc9f0;
   --color-chrome: #000000;
   --color-chrome-foreground: #f1efe8;
   --color-warning: #fbbf24;
   --color-danger: #fca5a5;
   --color-link: #ff7eb6;
-  /* The sibling palette: a colour per sibling group, so the eye sees where one group ends and the next starts. */
+  /*
+   * The sibling palette: a colour per sibling group, so the eye sees where one group ends and the next starts.
+   * None is a blue, so a sibling group's ring never reads as the selected tile's accent.
+   */
   --color-sibling-1: #ff7eb6;
-  --color-sibling-2: #7fb2ff;
-  --color-sibling-3: #4fd1c5;
+  --color-sibling-2: #ff9f5a;
+  --color-sibling-3: #c5f02c;
   --color-sibling-4: #c9a3ff;
   --color-dot: #f1efe826;
   --color-overlay: #00000080;

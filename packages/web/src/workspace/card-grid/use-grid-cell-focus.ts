@@ -6,7 +6,7 @@ import {
   type KeyboardEvent,
   type MouseEvent,
 } from 'react';
-import { cellAfterArrow, type Arrow, type CellGroup } from '@mtg-suite/core';
+import { cellAfterArrow, type Arrow, type CellGroup } from '@leyline/core';
 
 const CELL_ATTRIBUTE = 'data-grid-cell';
 const GROUP_ATTRIBUTE = 'data-grid-cell-group';

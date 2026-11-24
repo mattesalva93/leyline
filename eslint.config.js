@@ -39,7 +39,7 @@ const coreNoIo = {
             message: '`core` must not do I/O: no database, HTTP client or HTTP server libraries.',
           },
           {
-            regex: '^@mtg-suite/(api|web)(/|$)',
+            regex: '^@leyline/(api|web)(/|$)',
             message: '`core` must not depend on `api` or `web`.',
           },
         ],
@@ -57,7 +57,7 @@ const webNoApi = {
       {
         patterns: [
           {
-            regex: '^@mtg-suite/api(/|$)|^(\\.\\./)+(packages/)?api(/|$)',
+            regex: '^@leyline/api(/|$)|^(\\.\\./)+(packages/)?api(/|$)',
             message: '`web` must not import from `api`: share types through `core`.',
           },
         ],
@@ -74,7 +74,7 @@ const apiNoWeb = {
       {
         patterns: [
           {
-            regex: '^@mtg-suite/web(/|$)|^(\\.\\./)+(packages/)?web(/|$)',
+            regex: '^@leyline/web(/|$)|^(\\.\\./)+(packages/)?web(/|$)',
             message: '`api` must not import from `web`: share types through `core`.',
           },
         ],

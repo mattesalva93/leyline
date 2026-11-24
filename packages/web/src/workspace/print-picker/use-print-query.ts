@@ -1,4 +1,4 @@
-import { isBlankPrintQuery } from '@mtg-suite/core';
+import { isBlankPrintQuery } from '@leyline/core';
 import { useEffect, useState } from 'react';
 import { SEARCH_TYPING_WAIT_MS } from '../search-typing-wait.ts';
 

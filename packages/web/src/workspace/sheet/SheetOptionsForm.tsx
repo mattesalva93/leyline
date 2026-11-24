@@ -5,7 +5,7 @@ import {
   type ImageQuality,
   type PageFormat,
   type SheetOptions,
-} from '@mtg-suite/core';
+} from '@leyline/core';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FIELD } from '../../ui/board-styles.ts';

@@ -54,6 +54,12 @@ describe('the app shell', () => {
     expect(linkNames(screen.getByRole('navigation', { name: 'Aree' }))).toEqual(['Generatore']);
   });
 
+  it('names the app Leyline in the top bar', () => {
+    mountShellWithFourAreas();
+
+    expect(within(screen.getByRole('banner')).queryByText('Leyline')).not.toBeNull();
+  });
+
   it('lists four areas in the top bar, in order, and marks the current one', () => {
     mountShellWithFourAreas();
 
@@ -177,7 +183,7 @@ describe('the app shell', () => {
       ).toBeTruthy();
       expect(
         within(dialog).getByRole('link', { name: 'Segnala un problema' }).getAttribute('href'),
-      ).toBe('https://github.com/mattesalva93/mtg-suite/issues');
+      ).toBe('https://github.com/mattesalva93/leyline/issues');
     }
 
     it('shows the disclaimer and the link to report a problem, from the top bar', async () => {

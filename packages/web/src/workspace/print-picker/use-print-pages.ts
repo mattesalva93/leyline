@@ -1,4 +1,4 @@
-import type { Lang, Print } from '@mtg-suite/core';
+import type { Lang, Print } from '@leyline/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchPrintPage } from '../../api.ts';
 

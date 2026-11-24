@@ -1,4 +1,4 @@
-import type { Candidate, Lang } from '@mtg-suite/core';
+import type { Candidate, Lang } from '@leyline/core';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { powerToughnessAndKeywordsOf } from './power-toughness-and-keywords.ts';

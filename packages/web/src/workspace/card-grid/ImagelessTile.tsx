@@ -1,4 +1,4 @@
-import type { Lang } from '@mtg-suite/core';
+import type { Lang } from '@leyline/core';
 import { useTranslation } from 'react-i18next';
 import { SECONDARY_BUTTON } from '../../ui/board-styles.ts';
 import { Icon } from '../../ui/Icon.tsx';

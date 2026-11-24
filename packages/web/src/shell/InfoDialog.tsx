@@ -9,7 +9,7 @@ import {
 import { PRIMARY_BUTTON } from '../ui/board-styles.ts';
 import { PrivacyNoticeDialog } from './PrivacyNoticeDialog.tsx';
 
-const ISSUES_URL = 'https://github.com/mattesalva93/mtg-suite/issues';
+const ISSUES_URL = 'https://github.com/mattesalva93/leyline/issues';
 
 /**
  * "Informazioni": the disclaimer, the data credit, the link to report a problem and the privacy

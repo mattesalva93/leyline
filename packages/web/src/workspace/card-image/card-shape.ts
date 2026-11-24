@@ -1,4 +1,4 @@
-import { CARD_CORNER_RADIUS_MM, CARD_MM } from '@mtg-suite/core';
+import { CARD_CORNER_RADIUS_MM, CARD_MM } from '@leyline/core';
 import type { CSSProperties } from 'react';
 import { NORMAL_IMAGE } from './scryfall-image-sizes.ts';
 

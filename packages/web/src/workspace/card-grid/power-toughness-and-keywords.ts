@@ -1,4 +1,4 @@
-import type { Card, Lang } from '@mtg-suite/core';
+import type { Card, Lang } from '@leyline/core';
 import italianKeywordNames from '../../locales/keyword-names.it.json';
 
 const italianNames: Readonly<Record<string, string>> = italianKeywordNames;

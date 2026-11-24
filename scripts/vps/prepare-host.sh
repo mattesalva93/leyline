@@ -12,7 +12,7 @@ set -euo pipefail
 
 SWAP_FILE=/swapfile
 SWAP_SIZE=2G
-SSHD_DROP_IN=/etc/ssh/sshd_config.d/00-mtg-suite.conf
+SSHD_DROP_IN=/etc/ssh/sshd_config.d/00-leyline.conf
 
 admin_user='' deploy_user='' deploy_path=''
 deploy_keys=()

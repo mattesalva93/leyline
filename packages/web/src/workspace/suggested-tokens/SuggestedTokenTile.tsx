@@ -1,4 +1,4 @@
-import type { SuggestedToken } from '@mtg-suite/core';
+import type { SuggestedToken } from '@leyline/core';
 import { useTranslation } from 'react-i18next';
 import { CARD_SHAPE } from '../card-image/card-shape.ts';
 import { Icon } from '../../ui/Icon.tsx';

@@ -1,5 +1,5 @@
 {
-  "name": "@mtg-suite/api",
+  "name": "@leyline/api",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,8 +9,8 @@
   },
   "dependencies": {
     "@hono/node-server": "^2.1.11",
-    "@mtg-suite/core": "workspace:*",
-    "hono": "^4.13.20",
+    "@leyline/core": "workspace:*",
+    "hono": "^4.13.21",
     "postgres": "^4.1.1"
   },
   "scripts": {

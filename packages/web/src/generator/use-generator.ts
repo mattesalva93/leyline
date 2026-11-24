@@ -29,7 +29,7 @@ import {
   type SheetLayout,
   type SheetOptions,
   type SuggestedToken,
-} from '@mtg-suite/core';
+} from '@leyline/core';
 import { useEffect, useRef, useState } from 'react';
 import { fetchPrintPage, resolveDecklistText } from '../api.ts';
 import { loadDefaultLang, saveDefaultLang } from '../language/default-lang.ts';

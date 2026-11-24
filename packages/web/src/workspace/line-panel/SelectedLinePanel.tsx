@@ -1,4 +1,4 @@
-import type { Print, PrintWarning, ResolvedLine } from '@mtg-suite/core';
+import type { Print, PrintWarning, ResolvedLine } from '@leyline/core';
 import { LinePanel } from './LinePanel.tsx';
 import { PhoneLineSettings } from './PhoneLineSettings.tsx';
 import type { Generator } from '../../generator/use-generator.ts';

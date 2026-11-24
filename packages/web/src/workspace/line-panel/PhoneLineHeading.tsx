@@ -1,4 +1,4 @@
-import { previewPrint, type ResolvedLine } from '@mtg-suite/core';
+import { previewPrint, type ResolvedLine } from '@leyline/core';
 import { useTranslation } from 'react-i18next';
 import { CARD_SHAPE } from '../card-image/card-shape.ts';
 import { SMALL_IMAGE } from '../card-image/scryfall-image-sizes.ts';

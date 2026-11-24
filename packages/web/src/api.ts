@@ -8,7 +8,7 @@ import {
   type PrintCountsByLang,
   type PrintPage,
   type SuggestedToken,
-} from '@mtg-suite/core';
+} from '@leyline/core';
 
 export async function resolveDecklistText(text: string, lang: Lang): Promise<DecklistLine[]> {
   const response = await fetch('/api/decklists/resolve', {

@@ -227,7 +227,7 @@ if ! { command -v gh >/dev/null && gh auth status >/dev/null 2>&1; }; then
   exit 1
 fi
 
-banner "mtg-suite alpha on an OVHcloud VPS"
+banner "Leyline alpha on an OVHcloud VPS"
 
 stage "OVHcloud: order the VPS"
 say "Order a VPS-1 (2 vCore, 4 GB) running Ubuntu LTS, x86, in an EU data centre, or a VPS-2"
@@ -310,15 +310,15 @@ pause "Press Enter once it is on."
 stage "Harden the VPS"
 ask DEPLOY_USER "The deploy user to create (empty: deploy):"
 write_env DEPLOY_USER "${DEPLOY_USER:-deploy}"
-ask DEPLOY_PATH "Where the stack lives on the VPS (empty: /srv/mtg-suite):"
-write_env DEPLOY_PATH "${DEPLOY_PATH:-/srv/mtg-suite}"
+ask DEPLOY_PATH "Where the stack lives on the VPS (empty: /srv/leyline):"
+write_env DEPLOY_PATH "${DEPLOY_PATH:-/srv/leyline}"
 DEPLOYER="$DEPLOY_USER@$VPS_ADDRESS"
 # A fresh key pair for the workflow, in a folder only this run sees; the private half goes to
 # GitHub as soon as the VPS takes it, and is deleted when the wizard ends.
 DEPLOY_KEY_DIR=$(mktemp -d)
 trap 'rm -rf "$DEPLOY_KEY_DIR"' EXIT
 # -N '': no passphrase, the runner cannot type one.
-ssh-keygen -q -t ed25519 -N '' -C mtg-suite-deploy -f "$DEPLOY_KEY_DIR/deploy_key"
+ssh-keygen -q -t ed25519 -N '' -C leyline-deploy -f "$DEPLOY_KEY_DIR/deploy_key"
 say "scripts/vps/prepare-host.sh will, as root on the VPS: install Docker, create $DEPLOY_USER"
 say "(with the workflow's key and yours), turn off SSH passwords and root's login, open only"
 say "22, 80 and 443 in ufw, turn on unattended-upgrades and add 2 GB of swap."
@@ -352,11 +352,11 @@ set -e
 cd '$DEPLOY_PATH'
 umask 077
 cat > .env <<ENV
-POSTGRES_USER=mtg
+POSTGRES_USER=leyline
 POSTGRES_PASSWORD=\$(openssl rand -hex 32)
-POSTGRES_DB=mtg_suite
-MTG_OWNER_PASSWORD=\$(openssl rand -hex 32)
-MTG_READER_PASSWORD=\$(openssl rand -hex 32)
+POSTGRES_DB=leyline
+LEYLINE_OWNER_PASSWORD=\$(openssl rand -hex 32)
+LEYLINE_READER_PASSWORD=\$(openssl rand -hex 32)
 SITE_ADDRESS=$APP_DOMAIN
 PUBLISH_ADDRESS=0.0.0.0
 ENV
@@ -366,8 +366,8 @@ fi
 
 stage "The testers' credentials"
 say "Production's testers live in a file outside the repository, beside your passwords."
-ask TESTER_CREDENTIALS_FILE "Its path (empty: ~/mtg-suite-production/tester-credentials.caddy):"
-write_env TESTER_CREDENTIALS_FILE "${TESTER_CREDENTIALS_FILE:-$HOME/mtg-suite-production/tester-credentials.caddy}"
+ask TESTER_CREDENTIALS_FILE "Its path (empty: ~/leyline-production/tester-credentials.caddy):"
+write_env TESTER_CREDENTIALS_FILE "${TESTER_CREDENTIALS_FILE:-$HOME/leyline-production/tester-credentials.caddy}"
 mkdir -p "$(dirname "$TESTER_CREDENTIALS_FILE")"
 [[ -f "$TESTER_CREDENTIALS_FILE" ]] || cp docker/web/tester-credentials.example.caddy "$TESTER_CREDENTIALS_FILE"
 chmod 600 "$TESTER_CREDENTIALS_FILE"

@@ -1,4 +1,4 @@
-import { MAX_PRINT_QUERY_LENGTH } from '@mtg-suite/core';
+import { MAX_PRINT_QUERY_LENGTH } from '@leyline/core';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
