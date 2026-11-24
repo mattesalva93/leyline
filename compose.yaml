@@ -1,6 +1,3 @@
-# The Compose project takes the product's name, not the name of the folder the repo is cloned into.
-name: leyline
-
 # Every service's own log rotates, instead of growing without limit (ADR 0016). `local`, unlike
 # Docker's default `json-file`, rotates by itself; `pnpm check:staging` pins that every log does.
 x-rotated-logs: &rotated-logs

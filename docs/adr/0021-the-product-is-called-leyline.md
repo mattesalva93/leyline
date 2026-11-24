@@ -22,6 +22,6 @@ Older ADRs keep their words: where ADR 0005 says "mtg-suite" and ADR 0016 names 
 
 ## Consequences
 
-- A development or staging database created before this decision has the old roles: its volume is created again, as `docs/staging.md` says for role changes.
+- A development or staging volume created before this decision holds the old database and roles, which no script renames: the stack starts on a new volume and the catalog is imported again.
 - Names the project does not control yet, the GitHub repository, the security contact mailbox and the alpha's domain, change when the owner renames them.
 - Leyline is also a cycle of Wizards cards: the name is checked against trademarks and the Fan Content Policy before the public release.
