@@ -28,6 +28,8 @@ interface ZoomHandlers {
 export type ZoomOn = (face: PrintFace | undefined, besideClosest?: string) => ZoomHandlers;
 
 interface Zoom {
+  /** The element the pointer rested on, which the card stands beside. */
+  readonly hovered: Element;
   readonly face: PrintFace;
   readonly left: number;
   readonly top: number;
@@ -36,8 +38,8 @@ interface Zoom {
 /**
  * A card shown enlarged, at reading size, beside the element the pointer has rested on for
  * `waitMs`. Only a pointer zooms: a touch never does, nor a pointer carrying a drag. Leaving the
- * element, pressing on it, scrolling anything or starting a drag puts the card away, so it is never
- * in the way.
+ * element, pressing on it, scrolling anything, starting a drag or the element leaving the page
+ * (its card taken out of the decklist) puts the card away, so it is never in the way.
  */
 export function useZoomedCard(waitMs: number): {
   readonly zoomOn: ZoomOn;
@@ -77,12 +79,24 @@ export function useZoomedCard(waitMs: number): {
     };
   }, [hide]);
 
+  // An element taken off the page under the pointer never reports the pointer leaving it.
+  const zoomedElement = zoom?.hovered;
+  useEffect(() => {
+    if (!zoomedElement) return;
+    const hideOnceGone = new MutationObserver(() => {
+      if (!zoomedElement.isConnected) hide();
+    });
+    hideOnceGone.observe(document.body, { childList: true, subtree: true });
+    return () => hideOnceGone.disconnect();
+  }, [zoomedElement, hide]);
+
   const zoomOn: ZoomOn = (face, besideClosest) => ({
     onPointerEnter(event) {
       if (!face || event.pointerType === 'touch' || isDragging.current) return;
       const element = event.currentTarget;
       window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => {
+        if (!element.isConnected) return;
         const hovered = element.getBoundingClientRect();
         const placement = zoomedCardPlacement({
           hovered,
@@ -90,7 +104,7 @@ export function useZoomedCard(waitMs: number): {
             (besideClosest && element.closest(besideClosest)?.getBoundingClientRect()) || hovered,
           viewport: { width: window.innerWidth, height: window.innerHeight },
         });
-        setZoom({ face, ...placement });
+        setZoom({ hovered: element, face, ...placement });
       }, waitMs);
     },
     onPointerLeave: hide,
