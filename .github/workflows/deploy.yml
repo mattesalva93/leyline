@@ -80,11 +80,11 @@ jobs:
           if [ -n "$guard" ]; then
             # shellcheck disable=SC2029
             printf '%s\n' "$guard" | ssh deploy "umask 077 && cat > '$guard_file'"
-            echo 'The testers guard is on: only their credentials open the site.'
+            echo "The testers' guard is on: only their credentials open the site."
           else
             # shellcheck disable=SC2029
             ssh deploy "rm -f '$guard_file'"
-            echo 'The testers guard is off: the site is open.'
+            echo "The testers' guard is off: the site is open."
           fi
 
       # `up` keeps a container whose image did not change, so Caddy reloads its configuration

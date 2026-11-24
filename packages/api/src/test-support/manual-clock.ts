@@ -14,7 +14,7 @@ export function manualClock(start = new Date('2026-11-18T12:00:00Z')): ManualClo
   let now = start.getTime();
   const timers = new Set<{ elapsesAt: number; onElapsed: () => void }>();
   const waitingForTimers: { count: number; settle: () => void }[] = [];
-  const settleTheWaitsMet = () => {
+  const settleWaitsWithEnoughTimers = () => {
     for (const wait of [...waitingForTimers]) {
       if (timers.size < wait.count) continue;
       waitingForTimers.splice(waitingForTimers.indexOf(wait), 1);
@@ -26,13 +26,13 @@ export function manualClock(start = new Date('2026-11-18T12:00:00Z')): ManualClo
     startTimer(milliseconds, onElapsed) {
       const timer = { elapsesAt: now + milliseconds, onElapsed };
       timers.add(timer);
-      settleTheWaitsMet();
+      settleWaitsWithEnoughTimers();
       return () => timers.delete(timer);
     },
     timersRunning(count = 1) {
       return new Promise((settle) => {
         waitingForTimers.push({ count, settle });
-        settleTheWaitsMet();
+        settleWaitsWithEnoughTimers();
       });
     },
     advance(milliseconds) {
