@@ -101,8 +101,8 @@ export function sheetImageUrls(sheet: Sheet): string[] {
 }
 
 /**
- * The print whose face shows each of `imageUrls` on the sheet, in their order: names the card
- * an image belongs to. A URL the sheet does not print is left out.
+ * The prints whose faces show `imageUrls` on the sheet, each once, in the order of their first
+ * URL: names the cards the images belong to. A URL the sheet does not print is left out.
  */
 export function printsShowingImages(sheet: Sheet, imageUrls: readonly string[]): Print[] {
   const printByImageUrl = new Map(
@@ -110,7 +110,7 @@ export function printsShowingImages(sheet: Sheet, imageUrls: readonly string[]):
       .flat()
       .map(({ face, print }) => [imageUrlOf(face, sheet), print]),
   );
-  return imageUrls.flatMap((url) => printByImageUrl.get(url) ?? []);
+  return [...new Set(imageUrls.flatMap((url) => printByImageUrl.get(url) ?? []))];
 }
 
 /** How many cards of `cardMm` fit side by side in `availableMm`, `spacingMm` apart. */

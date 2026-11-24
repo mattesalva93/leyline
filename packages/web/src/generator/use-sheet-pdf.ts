@@ -17,7 +17,7 @@ export type PdfStatus =
   | { readonly step: 'fetchingImages'; readonly fetchedCount: number; readonly imageCount: number }
   | { readonly step: 'composingPages' }
   | { readonly step: 'readyToShare'; readonly file: File; readonly madeFrom: string }
-  /** `unfetchedPrints` shows one print per image that could not be fetched, if any. */
+  /** `unfetchedPrints` names, once each, the cards whose images could not be fetched, if any. */
   | { readonly step: 'failed'; readonly unfetchedPrints: readonly Print[] };
 
 /** The PDF of a `Sheet`: how far it has got, and how it reaches the user. */

@@ -98,9 +98,8 @@ function PdfFailure({ unfetchedPrints }: { readonly unfetchedPrints: readonly Pr
     <div role="alert" className="text-danger">
       <p>{t('pdf.unfetchedImages', { count: unfetchedPrints.length })}</p>
       <ul className="list-disc pl-5">
-        {unfetchedPrints.map((print, index) => (
-          // The same print shows twice when both faces of a double-faced card are missing.
-          <li key={`${index}-${print.id}`}>
+        {unfetchedPrints.map((print) => (
+          <li key={print.id}>
             {t('pdf.unfetchedCard', {
               name: print.printedName,
               setAndNumber: setAndNumberOf(print, t),

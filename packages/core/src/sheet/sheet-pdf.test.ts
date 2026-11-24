@@ -676,13 +676,12 @@ describe('printsShowingImages', () => {
   });
   const solRing = aPrint({ id: 'sol', faces: [face('sol')] });
 
-  it('names the print each image shows, one per image, either face of a double-faced card', () => {
+  it('names each print an image belongs to once, however many of its faces are asked for', () => {
     const sheet = sheetOf(resolvedLine(2, delver), resolvedLine(1, solRing));
 
     expect(printsShowingImages(sheet, ['l-back', 'l-sol', 'l-front']).map(({ id }) => id)).toEqual([
       'delver',
       'sol',
-      'delver',
     ]);
   });
 
