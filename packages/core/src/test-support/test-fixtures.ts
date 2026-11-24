@@ -19,6 +19,7 @@ export function aPrint(overrides: Partial<Print> = {}): Print {
     collectorNumber: '1',
     lang: 'en',
     printedName: 'Card Name',
+    flavorName: null,
     releasedAt: '2020-01-01',
     imageStatus: 'highres_scan',
     digital: false,

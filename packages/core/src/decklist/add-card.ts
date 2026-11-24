@@ -65,7 +65,7 @@ export function addCardToSection(
   const writtenLines = writtenLinesOf(text);
   const sections = sectionOfEachWrittenLine(writtenLines);
   const { defaultPrint } = candidate;
-  const cardNames = cardKeys(candidate.card.name, defaultPrint ? [defaultPrint.printedName] : []);
+  const cardNames = cardKeys(candidate.card.name, defaultPrint ? [defaultPrint] : []);
   /** Whether `parsed`, not resolved to a card yet or ambiguous, is a line of the card. */
   function namesTheCard(parsed: ParsedCardLine): boolean {
     if (!cardNames.includes(nameKey(parsed.name))) return false;

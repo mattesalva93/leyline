@@ -62,6 +62,8 @@ export interface Print {
   readonly lang: Lang;
   /** The name printed on the card, in `lang`; multi-face prints use "Front // Back". */
   readonly printedName: string;
+  /** Scryfall `flavor_name`; multi-face prints use "Front // Back". `null` when it has none. */
+  readonly flavorName: string | null;
   /** ISO date, `YYYY-MM-DD`. */
   readonly releasedAt: string;
   readonly imageStatus: ImageStatus;

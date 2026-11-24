@@ -62,6 +62,7 @@ export async function createCatalogTables(sql: Sql, suffix: '' | '_staging'): Pr
       set_type text not null,
       promo_types text[] not null,
       faces jsonb not null,
+      flavor_name text,
       constraint ${sql(`prints${suffix}_pkey`)} primary key (id)
     )
   `;
@@ -104,5 +105,7 @@ export async function migrate(sql: Sql): Promise<void> {
   await createCatalogTables(sql, '');
   // Catalogs imported before set names were: the next import fills them in.
   await sql`alter table prints add column if not exists set_name text not null default ''`;
+  // Catalogs imported before alternate names were: the next import fills them in.
+  await sql`alter table prints add column if not exists flavor_name text`;
   await sql`create table if not exists catalog_imports (started_at timestamptz not null)`;
 }

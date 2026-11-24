@@ -1,6 +1,6 @@
 # 0014: Every Scryfall print with a scan is printable
 
-**Status:** accepted (2026-11-17)
+**Status:** accepted (2026-11-17), superseded by ADR 0022 (2026-11-24)
 
 ## Decision
 

@@ -17,6 +17,7 @@ function toPrint(row: PrintRow): Print {
     collectorNumber: row.collectorNumber,
     lang: row.lang,
     printedName: row.printedName,
+    flavorName: row.flavorName,
     releasedAt: row.releasedAt,
     imageStatus: row.imageStatus,
     digital: row.digital,
@@ -127,7 +128,7 @@ async function entriesOf(sql: Sql, oracleIds: readonly string[]): Promise<Catalo
   const prints = await sql<PrintRow[]>`
     select
       id, oracle_id as "oracleId", set, set_name as "setName", collector_number as "collectorNumber", lang,
-      printed_name as "printedName",
+      printed_name as "printedName", flavor_name as "flavorName",
       released_at::text as "releasedAt", image_status as "imageStatus", digital, oversized,
       layout, set_type as "setType",
       promo_types as "promoTypes", faces

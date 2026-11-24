@@ -419,7 +419,7 @@ describe('generateSheetPdf', () => {
 
   it('prints a plane as Scryfall serves it, upright like any card', async () => {
     // Planes are played sideways, but Scryfall already serves them upright: turning them again
-    // would clip the copyright line away (ADR 0014).
+    // would clip the copyright line away (ADR 0022).
     const plane = aPrint({ layout: 'planar' });
     const scryfallImage = new Map([[largeUrl, jpegOfSize(672, 936)]]);
 

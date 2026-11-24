@@ -39,9 +39,13 @@ function isArrayOf<T>(value: unknown, isItem: (item: unknown) => item is T): val
 /** A face as saved: decklists saved before artists were kept have none. */
 type SavedFace = Omit<PrintFace, 'artist'> & { readonly artist?: string };
 
-/** A print as saved: decklists saved before set names and artists were kept have none. */
-type SavedPrint = Omit<Print, 'setName' | 'faces'> & {
+/**
+ * A print as saved: decklists saved before set names, artists and alternate names were kept
+ * have none.
+ */
+type SavedPrint = Omit<Print, 'setName' | 'flavorName' | 'faces'> & {
   readonly setName?: string;
+  readonly flavorName?: string | null;
   readonly faces: readonly SavedFace[];
 };
 
@@ -59,6 +63,7 @@ function isSavedPrint(value: unknown): value is SavedPrint {
   return (
     isRecord(value) &&
     isOptionalString(value.setName) &&
+    (value.flavorName === null || isOptionalString(value.flavorName)) &&
     [
       value.id,
       value.set,
@@ -78,11 +83,15 @@ function isSavedPrint(value: unknown): value is SavedPrint {
   );
 }
 
-/** `saved` with what it was saved without: an empty set name and artist, as the catalog has. */
+/**
+ * `saved` with what it was saved without: an empty set name and artist, and no alternate name,
+ * as the catalog has.
+ */
 function printOf(saved: SavedPrint): Print {
   return {
     ...saved,
     setName: saved.setName ?? '',
+    flavorName: saved.flavorName ?? null,
     faces: saved.faces.map((face) => ({ ...face, artist: face.artist ?? '' })),
   };
 }

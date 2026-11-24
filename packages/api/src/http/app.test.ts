@@ -440,6 +440,41 @@ describe('POST /api/decklists/resolve', () => {
     ]);
   });
 
+  it('keeps the alternate name of a print, joining those of the faces of a multi-face print', async () => {
+    await importBulk(
+      db.sql,
+      bulkStream([
+        scryfallCard({
+          id: 'cyclonic-rift-sld',
+          oracle_id: 'cyclonic-rift',
+          name: 'Cyclonic Rift',
+          flavor_name: "Hope's Aero Magic",
+        }),
+        doubleFacedCard({
+          id: 'kardur-sld',
+          oracle_id: 'kardur',
+          name: 'Kardur, Doomscourge // Kardur, Doomscourge',
+          card_faces: [
+            { name: 'Kardur, Doomscourge', flavor_name: 'Chucky', image_uris: imageUris('front') },
+            { name: 'Kardur, Doomscourge', image_uris: imageUris('back') },
+          ],
+        }),
+        scryfallCard({ id: 'sol-ring-c21' }),
+      ]),
+    );
+
+    const { body } = await resolve(
+      "1 Hope's Aero Magic\n1 Chucky // Kardur, Doomscourge\n1 Chucky\n1 Sol Ring",
+    );
+
+    expect(body.lines).toMatchObject([
+      { status: 'resolved', defaultPrint: { flavorName: "Hope's Aero Magic" } },
+      { status: 'resolved', defaultPrint: { flavorName: 'Chucky // Kardur, Doomscourge' } },
+      { status: 'resolved', defaultPrint: { flavorName: 'Chucky // Kardur, Doomscourge' } },
+      { status: 'resolved', defaultPrint: { flavorName: null } },
+    ]);
+  });
+
   it('defaults to a paper print over newer digital, art series, oversized and playtest ones, and to a token when that is all a card has', async () => {
     const newer = { released_at: '2025-06-01' };
     await importBulk(
@@ -1366,14 +1401,15 @@ describe('GET /api/cards/:oracleId/print-counts', () => {
   });
 });
 
-describe('a catalog imported before set names and artists', () => {
+describe('a catalog imported before set names, artists and alternate names', () => {
   let oldDb: TestDb;
 
   beforeAll(async () => {
     oldDb = await createTestDb();
     await migrate(oldDb.sql);
-    // The catalog as an older import left it: no set name column, faces without an artist.
-    await oldDb.sql`alter table prints drop column set_name`;
+    // The catalog as an older import left it: no set name nor alternate name column, faces
+    // without an artist.
+    await oldDb.sql`alter table prints drop column set_name, drop column flavor_name`;
     await oldDb.sql`insert into cards values ('forest', 'Forest', '[null]', '{}')`;
     await oldDb.sql`
       insert into prints values (
@@ -1388,13 +1424,20 @@ describe('a catalog imported before set names and artists', () => {
     await oldDb.drop();
   });
 
-  it('serves its prints with an empty set name and artist once migrated', async () => {
+  it('serves its prints with an empty set name and artist, and no alternate name, once migrated', async () => {
     await migrate(oldDb.sql);
 
     const response = await testApp(oldDb.sql).request('/api/cards/forest/prints');
 
     expect(await response.json()).toMatchObject({
-      prints: [{ id: 'forest-old', setName: '', faces: [{ name: 'Forest', artist: '' }] }],
+      prints: [
+        {
+          id: 'forest-old',
+          setName: '',
+          flavorName: null,
+          faces: [{ name: 'Forest', artist: '' }],
+        },
+      ],
     });
   });
 });

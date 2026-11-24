@@ -4,7 +4,15 @@ import { namedCandidate, withoutOutranked } from '../card-search/same-name-prefe
 import { deckLinkOf } from './deck-link.ts';
 import { SIDEBOARD_PREFIX, sectionOpenedBy } from './decklist-section.ts';
 import { LINE_BREAK } from './line-breaks.ts';
-import { MIN_SIMILARITY, cardKeys, nameKey, trigramSimilarity, trigrams } from '../name-match.ts';
+import {
+  MIN_SIMILARITY,
+  alternateNameKeys,
+  cardKeys,
+  nameKey,
+  ownNameKeys,
+  trigramSimilarity,
+  trigrams,
+} from '../name-match.ts';
 import type {
   AmbiguousLine,
   Candidate,
@@ -123,11 +131,9 @@ export async function resolveDecklist(
   const entries = await catalog.findByNames(names, { minSimilarity: MIN_SIMILARITY });
   // Keys and trigrams once per entry, not once per line: a decklist has a hundred lines.
   const named = entries.map((entry) => {
-    const keys = cardKeys(
-      entry.card.name,
-      entry.prints.map((print) => print.printedName),
-    );
-    return { entry, keys, trigrams: keys.map(trigrams) };
+    const keys = cardKeys(entry.card.name, entry.prints);
+    const ownKeys = ownNameKeys(entry.card.name, entry.prints);
+    return { entry, keys, ownKeys, trigrams: keys.map(trigrams) };
   });
 
   return parsed.map((line) =>
@@ -146,8 +152,25 @@ export async function resolveDecklist(
 /** A catalog entry with the name keys it answers to, ready to compare. */
 interface NamedEntry {
   readonly entry: CatalogEntry;
+  /** Every name key of the card (`cardKeys`). */
   readonly keys: readonly string[];
+  /** The keys of the card's own names, not its prints' alternate names (`ownNameKeys`). */
+  readonly ownKeys: readonly string[];
+  /** The trigrams of each of `keys`, in their order. */
   readonly trigrams: readonly ReadonlySet<string>[];
+}
+
+/** A card a written name matches, with the name key of the card it matches best. */
+interface NameMatch {
+  readonly named: NamedEntry;
+  readonly key: string;
+}
+
+/** A card a line asks for, with the prints its name asks for. */
+interface AskedCard {
+  readonly entry: CatalogEntry;
+  /** Whether the line names the card by an alternate name of some of its prints. */
+  readonly byAlternateName: boolean;
 }
 
 type LineBase = Pick<DecklistLine, 'text' | 'quantity' | 'lang'>;
@@ -162,19 +185,53 @@ function resolveLine(
   { today, lang }: ResolveOptions,
 ): DecklistLine {
   const base = { text: line.text, quantity: line.quantity, lang };
-  const closest = closestCards(nameKey(line.name), named);
-  const explicit = line.printRef && namedPrint(closest, line.printRef, base.lang);
+  const matches = closestCards(nameKey(line.name), named);
+  const explicit =
+    line.printRef &&
+    namedPrint(
+      matches.map((match) => match.named.entry),
+      line.printRef,
+      base.lang,
+    );
   if (explicit) {
     const { lang: explicitLang, ...candidate } = explicit;
     return resolvedLine({ ...base, lang: explicitLang }, candidate);
   }
+  const asked = matches.map(askedCard);
+  const askedLang = languageOfAskedCards(asked, lang);
   const candidates = withoutOutranked(
-    closest.map((entry) => namedCandidate(entry, { lang, today })),
+    asked.map(({ entry }) => namedCandidate(entry, { lang: askedLang, today })),
   );
   const [match] = candidates;
   if (!match) return { ...base, status: 'notFound' };
-  if (candidates.length > 1) return { ...base, status: 'ambiguous', candidates };
-  return resolvedLine(base, match);
+  const resolvedBase = { ...base, lang: askedLang };
+  if (candidates.length > 1) return { ...resolvedBase, status: 'ambiguous', candidates };
+  return resolvedLine(resolvedBase, match);
+}
+
+/**
+ * The card `match` names, with the prints its key asks for: those carrying the alternate name
+ * it is the key of, when it is no own name of the card; all of them otherwise.
+ */
+function askedCard({ named, key }: NameMatch): AskedCard {
+  if (named.ownKeys.includes(key)) return { entry: named.entry, byAlternateName: false };
+  const prints = named.entry.prints.filter((print) => alternateNameKeys(print).includes(key));
+  return { entry: { ...named.entry, prints }, byAlternateName: true };
+}
+
+/**
+ * The language a line in `lang` takes: `lang`, unless it names its cards by alternate names only
+ * and no print carrying them is in `lang`. It then takes the language of those prints, as a line
+ * naming a print by set and number does, with no warning: they are all English.
+ */
+function languageOfAskedCards(asked: readonly AskedCard[], lang: Lang): Lang {
+  const prints = asked.flatMap(({ entry }) => entry.prints);
+  const [firstPrint] = prints;
+  const byAlternateNamesOnly = asked.every(({ byAlternateName }) => byAlternateName);
+  if (!firstPrint || !byAlternateNamesOnly || prints.some((print) => print.lang === lang)) {
+    return lang;
+  }
+  return firstPrint.lang;
 }
 
 /**
@@ -232,23 +289,30 @@ export function previewPrint(line: DecklistLine): Print | null {
   return copiesByPrint(line)[0]?.print ?? null;
 }
 
-/** Cards named exactly `key`; failing that, the cards most similar to it. */
-function closestCards(key: string, named: readonly NamedEntry[]): CatalogEntry[] {
-  const exact = named.filter(({ keys }) => keys.includes(key)).map(({ entry }) => entry);
-  if (exact.length > 0) return exact;
+/**
+ * Cards named exactly `key`, by their own name when one is, before any card whose print carries
+ * it as an alternate name; failing that, the cards most similar to it.
+ */
+function closestCards(key: string, named: readonly NamedEntry[]): NameMatch[] {
+  const exact = named.filter(({ keys }) => keys.includes(key));
+  const byOwnName = exact.filter(({ ownKeys }) => ownKeys.includes(key));
+  const exactMatches = byOwnName.length > 0 ? byOwnName : exact;
+  if (exactMatches.length > 0) return exactMatches.map((entry) => ({ named: entry, key }));
   const keyTrigrams = trigrams(key);
   const scored = named
-    .map(({ entry, trigrams: entryTrigrams }) => ({
-      entry,
-      score: Math.max(...entryTrigrams.map((t) => trigramSimilarity(t, keyTrigrams))),
-    }))
-    .filter((match) => match.score >= MIN_SIMILARITY)
+    .map((entry) => {
+      const scores = entry.trigrams.map((t) => trigramSimilarity(t, keyTrigrams));
+      const score = Math.max(...scores);
+      const match: NameMatch = { named: entry, key: entry.keys[scores.indexOf(score)] ?? key };
+      return { match, score };
+    })
+    .filter(({ score }) => score >= MIN_SIMILARITY)
     .sort((a, b) => b.score - a.score);
   const [best] = scored;
   if (!best) return [];
   return scored
-    .filter((match) => match.score >= best.score - SUGGESTION_MARGIN)
-    .map((match) => match.entry);
+    .filter(({ score }) => score >= best.score - SUGGESTION_MARGIN)
+    .map(({ match }) => match);
 }
 
 /**
