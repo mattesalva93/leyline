@@ -352,7 +352,8 @@ ssh -t "$ADMIN" "sudo bash /tmp/prepare-host.sh $(printf '%q ' \
   --admin-user "$VPS_ADMIN_USER" --deploy-user "$DEPLOY_USER" --deploy-path "$DEPLOY_PATH" \
   --deploy-key "$(cat "$DEPLOY_KEY_DIR/deploy_key.pub")" \
   --deploy-key "$(cat "$OWNER_SSH_PUBLIC_KEY")") && rm /tmp/prepare-host.sh"
-ssh -o BatchMode=yes "$DEPLOYER" docker version --format 'Docker {{.Server.Version}}' ||
+# One string: ssh joins its arguments with spaces, so the format's own quotes must reach the VPS.
+ssh -o BatchMode=yes "$DEPLOYER" "docker version --format 'Docker {{.Server.Version}}'" ||
   { warn "$DEPLOY_USER cannot log in or drive Docker."; exit 1; }
 say "✓ $DEPLOY_USER logs in and drives Docker."
 # The workflow's key goes to GitHub now: the VPS just stopped taking any earlier one.
