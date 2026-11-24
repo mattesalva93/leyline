@@ -183,7 +183,7 @@ describe('the app shell', () => {
       ).toBeTruthy();
       expect(
         within(dialog).getByRole('link', { name: 'Segnala un problema' }).getAttribute('href'),
-      ).toBe('https://github.com/mattesalva93/mtg-suite/issues');
+      ).toBe('https://github.com/mattesalva93/leyline/issues');
     }
 
     it('shows the disclaimer and the link to report a problem, from the top bar', async () => {

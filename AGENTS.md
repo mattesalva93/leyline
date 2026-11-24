@@ -4,7 +4,7 @@
 
 ### Issue tracker
 
-Issues and specs live in GitHub Issues (mattesalva93/mtg-suite), via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+Issues and specs live in GitHub Issues (mattesalva93/leyline), via the `gh` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
