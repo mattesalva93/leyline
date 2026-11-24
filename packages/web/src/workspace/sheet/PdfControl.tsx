@@ -1,4 +1,6 @@
+import type { Print } from '@leyline/core';
 import { useTranslation } from 'react-i18next';
+import { setAndNumberOf } from '../card-image/print-label.ts';
 import { PRIMARY_BUTTON } from '../../ui/board-styles.ts';
 import { Icon } from '../../ui/Icon.tsx';
 import type { PdfStatus, SheetPdf } from '../../generator/use-sheet-pdf.ts';
@@ -77,12 +79,35 @@ export function PdfNotes({ pdf }: { readonly pdf: SheetPdf }) {
           {t('pdf.readyToShare')}
         </p>
       )}
-      {pdf.status.step === 'failed' && (
-        <p role="alert" className="text-danger">
-          {t('pdf.error')}
-        </p>
-      )}
+      {pdf.status.step === 'failed' && <PdfFailure unfetchedPrints={pdf.status.unfetchedPrints} />}
     </>
+  );
+}
+
+/** Why the PDF failed: the cards whose images could not be fetched, or a failure of its own. */
+function PdfFailure({ unfetchedPrints }: { readonly unfetchedPrints: readonly Print[] }) {
+  const { t } = useTranslation();
+  if (unfetchedPrints.length === 0) {
+    return (
+      <p role="alert" className="text-danger">
+        {t('pdf.error')}
+      </p>
+    );
+  }
+  return (
+    <div role="alert" className="text-danger">
+      <p>{t('pdf.unfetchedImages', { count: unfetchedPrints.length })}</p>
+      <ul className="list-disc pl-5">
+        {unfetchedPrints.map((print) => (
+          <li key={print.id}>
+            {t('pdf.unfetchedCard', {
+              name: print.printedName,
+              setAndNumber: setAndNumberOf(print, t),
+            })}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

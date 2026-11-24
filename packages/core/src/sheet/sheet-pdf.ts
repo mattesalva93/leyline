@@ -12,7 +12,7 @@ import {
   type PDFImage,
   type PDFOperator,
 } from 'pdf-lib';
-import { CARD_CORNER_RADIUS_MM, layoutSheet } from './sheet-layout.ts';
+import { CARD_CORNER_RADIUS_MM, imageUrlOf, layoutSheet } from './sheet-layout.ts';
 import type { BoxMm, Sheet } from '../types.ts';
 
 const PT_PER_MM = 72 / 25.4;
@@ -36,7 +36,7 @@ export async function generateSheetPdf(
   for (const slots of layout.pages) {
     const pdfPage = doc.addPage([pageMm.width * PT_PER_MM, pageMm.height * PT_PER_MM]);
     for (const slot of slots) {
-      const imageUrl = slot.face.imageUris[sheet.options.imageQuality];
+      const imageUrl = imageUrlOf(slot.face, sheet);
       let image = embedded.get(imageUrl);
       if (!image) {
         const bytes = images.get(imageUrl);

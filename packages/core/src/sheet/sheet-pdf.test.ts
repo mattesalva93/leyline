@@ -5,6 +5,7 @@ import {
   generateSheetPdf,
   hasPrintableCopies,
   layoutSheet,
+  printsShowingImages,
   sheetOptionLimits,
   sheetImageUrls,
   unprintedLines,
@@ -659,6 +660,36 @@ describe('sheetImageUrls', () => {
       'https://cards.scryfall.io/large/front/chosen.jpg',
       largeUrl,
     ]);
+  });
+});
+
+describe('printsShowingImages', () => {
+  const face = (side: string) => ({
+    name: side,
+    artist: '',
+    imageUris: { small: `s-${side}`, normal: `n-${side}`, large: `l-${side}`, png: `p-${side}` },
+  });
+  const delver = aPrint({
+    id: 'delver',
+    layout: 'transform',
+    faces: [face('front'), face('back')],
+  });
+  const solRing = aPrint({ id: 'sol', faces: [face('sol')] });
+
+  it('names each print an image belongs to once, however many of its faces are asked for', () => {
+    const sheet = sheetOf(resolvedLine(2, delver), resolvedLine(1, solRing));
+
+    expect(printsShowingImages(sheet, ['l-back', 'l-sol', 'l-front']).map(({ id }) => id)).toEqual([
+      'delver',
+      'sol',
+    ]);
+  });
+
+  it('reads the images of the image quality the sheet prints with', () => {
+    const sheet = sheetOf(resolvedLine(1, solRing));
+    const atPng = { ...sheet, options: { ...sheet.options, imageQuality: 'png' as const } };
+
+    expect(printsShowingImages(atPng, ['p-sol', 'l-sol']).map(({ id }) => id)).toEqual(['sol']);
   });
 });
 

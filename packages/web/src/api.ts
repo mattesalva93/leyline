@@ -34,35 +34,55 @@ export async function fetchSuggestedTokens(
   return ((await response.json()) as { tokens: SuggestedToken[] }).tokens;
 }
 
+/** The images `fetchImages` got, by URL, and the URLs it could not get. */
+export interface FetchedImages {
+  readonly images: Map<string, Uint8Array>;
+  readonly failedUrls: string[];
+}
+
+/** How long to wait before each try after the first: waiting longer each time lets a busy CDN recover. */
+const WAITS_BEFORE_RETRY_MS = [1000, 2000];
+
 /**
  * Fetches card images straight from cards.scryfall.io, which allows any origin (ADR 0001).
- * Browsers set their own User-Agent; the image CDN has no rate limit. `onImageFetched` is
- * called with how many images have arrived so far.
+ * Browsers set their own User-Agent; the image CDN has no rate limit. A failed image is tried
+ * again when it may yet arrive, and leaves the others to arrive. `onImageFetched` is called with
+ * how many images have arrived so far.
  */
 export async function fetchImages(
   urls: readonly string[],
   onImageFetched: (fetchedCount: number) => void = () => {},
-): Promise<Map<string, Uint8Array>> {
-  let fetchedCount = 0;
-  // One failed image fails them all: the others are cancelled, so none reports progress after.
-  const cancelOnFailure = new AbortController();
-  const { signal } = cancelOnFailure;
-  const entries = await Promise.all(
+): Promise<FetchedImages> {
+  const images = new Map<string, Uint8Array>();
+  await Promise.all(
     urls.map(async (url) => {
-      try {
-        const response = await fetch(url, { signal });
-        if (!response.ok) throw new Error(`Image ${url} failed with ${response.status}`);
-        const bytes = new Uint8Array(await response.arrayBuffer());
-        signal.throwIfAborted();
-        onImageFetched(++fetchedCount);
-        return [url, bytes] as const;
-      } catch (error) {
-        cancelOnFailure.abort();
-        throw error;
-      }
+      const bytes = await fetchImage(url);
+      if (!bytes) return;
+      images.set(url, bytes);
+      onImageFetched(images.size);
     }),
   );
-  return new Map(entries);
+  return { images, failedUrls: urls.filter((url) => !images.has(url)) };
+}
+
+/** The bytes of the image at `url`, or `null` once it has failed for good. */
+async function fetchImage(url: string): Promise<Uint8Array | null> {
+  for (const waitMs of [0, ...WAITS_BEFORE_RETRY_MS]) {
+    if (waitMs > 0) await new Promise((resolve) => setTimeout(resolve, waitMs));
+    try {
+      const response = await fetch(url);
+      if (response.ok) return new Uint8Array(await response.arrayBuffer());
+      if (!isWorthRetrying(response.status)) return null;
+    } catch {
+      // A network error: worth another try.
+    }
+  }
+  return null;
+}
+
+/** Whether a failed image may arrive on another try: the CDN was busy, not the image missing. */
+function isWorthRetrying(status: number): boolean {
+  return status >= 500 || status === 429;
 }
 
 /**

@@ -86,6 +86,7 @@ export {
   imageQualities,
   layoutSheet,
   pageFormats,
+  printsShowingImages,
   sheetImageUrls,
   sheetOptionLimits,
   unprintedLines,

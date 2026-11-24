@@ -7,6 +7,7 @@ import type {
   ImageQuality,
   PageFormat,
   PlacedSlot,
+  Print,
   PrintFace,
   Sheet,
   SheetLayout,
@@ -53,6 +54,8 @@ const FIT_TOLERANCE_MM = 1e-9;
 /** One card-sized cell of the sheet, holding one face image. */
 interface Slot {
   readonly face: PrintFace;
+  /** The print the face belongs to. */
+  readonly print: Print;
 }
 
 /** The slots of one printed copy: one per face, so two for a double-faced card. */
@@ -76,9 +79,14 @@ function copiesOf(sheet: Sheet): Copy[] {
 function lineCopies(line: DecklistLine): Copy[] {
   if (line.status !== 'resolved') return [];
   return copiesByPrint(line).flatMap(({ print, quantity }) => {
-    const copy = printedFaces(print).map((face) => ({ face }));
+    const copy = printedFaces(print).map((face) => ({ face, print }));
     return Array.from({ length: quantity }, () => copy);
   });
+}
+
+/** The URL of the image `sheet` prints `face` with, at its image quality. */
+export function imageUrlOf(face: PrintFace, sheet: Sheet): string {
+  return face.imageUris[sheet.options.imageQuality];
 }
 
 /** The distinct image URLs the sheet needs, in print order: fetch these for `generateSheetPdf`. */
@@ -87,9 +95,22 @@ export function sheetImageUrls(sheet: Sheet): string[] {
     ...new Set(
       copiesOf(sheet)
         .flat()
-        .map((slot) => slot.face.imageUris[sheet.options.imageQuality]),
+        .map(({ face }) => imageUrlOf(face, sheet)),
     ),
   ];
+}
+
+/**
+ * The prints whose faces show `imageUrls` on the sheet, each once, in the order of their first
+ * URL: names the cards the images belong to. A URL the sheet does not print is left out.
+ */
+export function printsShowingImages(sheet: Sheet, imageUrls: readonly string[]): Print[] {
+  const printByImageUrl = new Map(
+    copiesOf(sheet)
+      .flat()
+      .map(({ face, print }) => [imageUrlOf(face, sheet), print]),
+  );
+  return [...new Set(imageUrls.flatMap((url) => printByImageUrl.get(url) ?? []))];
 }
 
 /** How many cards of `cardMm` fit side by side in `availableMm`, `spacingMm` apart. */
