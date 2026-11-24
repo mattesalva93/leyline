@@ -23,14 +23,23 @@ const LISTEN_FOR_VIOLATIONS = `document.addEventListener('securitypolicyviolatio
   }),
 );`;
 
-/** The text of an interface label up to its first placeholder, to match every label it makes. */
+/**
+ * The text of an interface label up to its first placeholder, to match every label it makes. Its
+ * markup tags are left out: they style the text, the accessible name holds none.
+ */
 function labelStart(template) {
-  return new RegExp(`^${RegExp.escape(template.split('{{')[0])}`);
+  const text = template.replace(/<\/?[a-z]+>/gi, '');
+  return new RegExp(`^${RegExp.escape(text.split('{{')[0])}`);
 }
 
-/** Pastes the decklist, gives a copy to a print that had none, then downloads the sheet's PDF. */
+/** Switches the guide off, pastes the decklist, gives a copy to a print that had none, then downloads the sheet's PDF. */
 async function walkTheWholeJourney(page, appAddress) {
   await page.goto(`${appAddress}/proxy`);
+  // A first visit starts the guide, whose spotlight dims every control but the one it points to.
+  await page.getByRole('button', { name: labelStart(italian.shell.guideMenu) }).click();
+  await page.getByRole('menuitemcheckbox', { name: italian.shell.showGuidedSteps }).click();
+  // The menu stays open on a ticked item, hiding the page from the accessibility tree.
+  await page.keyboard.press('Escape');
   await page.getByLabel('Decklist').fill(`${DECKLIST_LINE}\n`);
   await page
     .getByRole('button', { name: italian.tile.open.replace('{{name}}', CARD_NAME) })
