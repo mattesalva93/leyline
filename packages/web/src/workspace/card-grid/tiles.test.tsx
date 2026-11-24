@@ -217,6 +217,21 @@ describe('the quantity on a tile', () => {
   });
 });
 
+describe('a print with an alternate name', () => {
+  it('tags the tile of a print with an alternate name, naming the card it stands for', async () => {
+    const user = await mountPageAndWrite('2 Cyclonic Rift{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Modifica Cyclonic Rift' }));
+    await moveOneCopy(user, 'Cyclonic Rift', 'RTR #35', 'SLD #1869');
+
+    const [regularTile, alternateNameTile] = gridTiles().map((tile) => within(tile));
+    const tag = alternateNameTile?.getByTitle(
+      "Hope's Aero Magic: nome alternativo di Cyclonic Rift",
+    );
+    expect(tag?.textContent).toBe('nome alt.');
+    expect(regularTile?.queryByText('nome alt.')).toBeNull();
+  });
+});
+
 describe('a double-faced card', () => {
   it('shows its front on the tile and turns to its back with the flip button', async () => {
     const user = await mountPageAndWrite('1 Delver of Secrets{Enter}');

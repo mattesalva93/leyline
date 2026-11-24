@@ -14,6 +14,11 @@
     "restartGuide": "Ricomincia dal primo passo",
     "scryfallCredit": "Dati e immagini da <scryfall>Scryfall</scryfall>"
   },
+  "alternateName": {
+    "tag": "nome alt.",
+    "tagWithName": "nome alt. «{{alternateName}}»",
+    "meaning": "{{alternateName}}: nome alternativo di {{name}}"
+  },
   "areas": {
     "generator": "Generatore"
   },
