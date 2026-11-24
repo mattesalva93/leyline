@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mountApp } from '../../test-support/mount-app.tsx';
 import { centreTab, printButtonOf } from '../../test-support/grid-queries.ts';
+import { animateRadixParts } from '../../test-support/exit-animations.ts';
 import { PHONE, stubScreen } from '../../test-support/test-screen.ts';
 import {
   answerApiCallsFromCatalog,
@@ -323,6 +324,16 @@ describe('the guide', () => {
       reload();
       expect(isGuidedStepShown()).toBe(false);
       expect(guideSwitch().getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('keeps the number of its own step on a bubble fading out as "Guida" goes off', async () => {
+      animateRadixParts();
+      const user = userEvent.setup();
+      mountApp('/proxy');
+
+      await user.click(guideSwitch());
+
+      expect(within(guidedStep()).getByText('Guida · 1')).toBeTruthy();
     });
 
     it('takes up again from the first step neither done nor skipped once "Guida" is back on', async () => {
