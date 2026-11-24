@@ -40,14 +40,14 @@ export interface FetchedImages {
   readonly failedUrls: string[];
 }
 
-/** How long to wait before each try after the first: one more try than waits in all. */
+/** How long to wait before each try after the first: waiting longer each time lets a busy CDN recover. */
 const WAITS_BEFORE_RETRY_MS = [1000, 2000];
 
 /**
  * Fetches card images straight from cards.scryfall.io, which allows any origin (ADR 0001).
- * Browsers set their own User-Agent; the image CDN has no rate limit. Each image is tried again,
- * waiting longer each time, after a network error, a 5xx or a 429; an image that fails leaves
- * the others to arrive. `onImageFetched` is called with how many images have arrived so far.
+ * Browsers set their own User-Agent; the image CDN has no rate limit. A failed image is tried
+ * again when it may yet arrive, and leaves the others to arrive. `onImageFetched` is called with
+ * how many images have arrived so far.
  */
 export async function fetchImages(
   urls: readonly string[],
