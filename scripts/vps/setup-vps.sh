@@ -410,7 +410,7 @@ add_tester() {
 if ! grep -q '^check-staging ' "$TESTER_CREDENTIALS_FILE"; then
   say "pnpm check:staging signs in with a credential of its own:"
   add_tester check-staging
-  step "Save it in your password manager: the last stage and every later check need it."
+  step "Save it in your password manager: \`check:staging --access closed\` needs it while the guard is on."
   pause
 fi
 while confirm "Add a tester, for when the guard is on?"; do
