@@ -230,19 +230,8 @@ fi
 banner "Leyline alpha on an OVHcloud VPS"
 
 stage "OVHcloud: the VPS"
-if confirm "Is the VPS already ordered?"; then
-  step "Control panel → Bare Metal Cloud → Virtual private servers → your VPS: check it is a VPS-1"
-  step "or VPS-2 in an EU location, on x86, running Ubuntu LTS (ADR 0016). Reinstall it if not."
-  step "Billing → My services: check it is billed monthly, with no minimum commitment."
-else
-  say "Order a VPS-1 (2 vCore, 4 GB) running Ubuntu LTS, x86, in an EU data centre, or a VPS-2"
-  say "if no EU location has a VPS-1: never a location outside the EU (ADR 0016)."
-  open_url "https://www.ovhcloud.com/it/vps/"
-  step "Pick the plan, an EU location (France, Germany, Poland...) and the latest Ubuntu LTS image."
-  step "Bill it monthly, and drop the automated backup: the catalog is rebuilt from Scryfall."
-  step "In the configurator, check the monthly price has no minimum commitment and no setup fee:"
-  note "  research/vps-alpha-hosting.md could not verify either. Stop if one shows up."
-fi
+say "The alpha needs a VPS-1 (2 vCore, 4 GB) running Ubuntu LTS, x86, in an EU data centre, or a"
+say "VPS-2 if no EU location has a VPS-1: never a location outside the EU (ADR 0016)."
 ask OWNER_SSH_PUBLIC_KEY "Your SSH public key file (empty: ~/.ssh/id_ed25519.pub):"
 OWNER_SSH_PUBLIC_KEY=${OWNER_SSH_PUBLIC_KEY:-$HOME/.ssh/id_ed25519.pub}
 if [[ ! -f "$OWNER_SSH_PUBLIC_KEY" ]]; then
@@ -251,9 +240,22 @@ if [[ ! -f "$OWNER_SSH_PUBLIC_KEY" ]]; then
   ssh-keygen -t ed25519 -f "${OWNER_SSH_PUBLIC_KEY%.pub}"
 fi
 write_env OWNER_SSH_PUBLIC_KEY "$OWNER_SSH_PUBLIC_KEY"
-step "If the order offers an SSH key, paste this one (else OVHcloud mails how to log in):"
-note "  $(cat "$OWNER_SSH_PUBLIC_KEY")"
-step "Wait for the e-mail saying the VPS is ready, if it has not come yet."
+if confirm "Is the VPS already ordered?"; then
+  step "Control panel → Bare Metal Cloud → Virtual private servers → your VPS: check its plan,"
+  step "location and architecture. Stop if one is wrong: only a new order changes them."
+  step "Check it runs Ubuntu LTS; if not, reinstall it with the latest Ubuntu LTS image."
+  step "Billing → My services: check it is billed monthly. Stop if a minimum commitment shows up."
+  note "  Its first e-mail says how to log in; the next stages add your key with ssh-copy-id."
+else
+  open_url "https://www.ovhcloud.com/it/vps/"
+  step "Pick the plan, an EU location (France, Germany, Poland...) and the latest Ubuntu LTS image."
+  step "Bill it monthly, and drop the automated backup: the catalog is rebuilt from Scryfall."
+  step "In the configurator, check the monthly price has no minimum commitment and no setup fee:"
+  note "  research/vps-alpha-hosting.md could not verify either. Stop if one shows up."
+  step "If the order offers an SSH key, paste this one (else OVHcloud mails how to log in):"
+  note "  $(cat "$OWNER_SSH_PUBLIC_KEY")"
+  step "Complete the order and wait for the e-mail saying the VPS is ready."
+fi
 ask VPS_ADDRESS "The VPS's IPv4 address (from the e-mail or the control panel):"
 write_env VPS_ADDRESS "$VPS_ADDRESS"
 ask VPS_ADMIN_USER "The user the e-mail names (ubuntu on Ubuntu images):"
@@ -295,10 +297,11 @@ note "  default one, which points at OVHcloud's parking page, rather than adding
 step "Delete its AAAA record, if there is one: the alpha is IPv4 only (ADR 0016)."
 note "  The zone's other default records (www, MX, TXT) can stay: the site answers on $APP_DOMAIN only."
 # `getent ahostsv4/ahostsv6` asks the system resolver for one address family.
-until [[ "$(getent ahostsv4 "$APP_DOMAIN" | awk 'NR == 1 { print $1 }')" == "$VPS_ADDRESS" ]] &&
+# Every A answer, deduplicated: a parking address left beside the VPS's must not pass.
+until [[ "$(getent ahostsv4 "$APP_DOMAIN" | awk '{ print $1 }' | sort -u)" == "$VPS_ADDRESS" ]] &&
   ! getent ahostsv6 "$APP_DOMAIN" | grep -qv '::ffff:'; do
   note "  $APP_DOMAIN does not resolve to $VPS_ADDRESS alone yet: a changed record can stay"
-  note "  cached for its old TTL, an hour on OVHcloud's default zone."
+  note "  cached until its old TTL runs out."
   pause "Press Enter to look again, or Ctrl-C to stop and re-run later."
 done
 say "✓ $APP_DOMAIN resolves to $VPS_ADDRESS, with no IPv6 address."
