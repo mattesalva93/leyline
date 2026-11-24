@@ -241,11 +241,11 @@ if [[ ! -f "$OWNER_SSH_PUBLIC_KEY" ]]; then
 fi
 write_env OWNER_SSH_PUBLIC_KEY "$OWNER_SSH_PUBLIC_KEY"
 if confirm "Is the VPS already ordered?"; then
-  step "Control panel → Bare Metal Cloud → Virtual private servers → your VPS: check its plan,"
+  step "Control panel → Bare Metal Cloud → VPS → your VPS: check its plan,"
   step "location and architecture. Stop if one is wrong: only a new order changes them."
   step "Check it runs Ubuntu LTS; if not, reinstall it with the latest Ubuntu LTS image."
   step "Billing → My services: check it is billed monthly. Stop if a minimum commitment shows up."
-  note "  Its first e-mail says how to log in; the next stages add your key with ssh-copy-id."
+  note "  Its delivery e-mail holds a secure link to the temporary password: the next stages use it."
 else
   open_url "https://www.ovhcloud.com/it/vps/"
   step "Pick the plan, an EU location (France, Germany, Poland...) and the latest Ubuntu LTS image."
@@ -282,7 +282,11 @@ confirm "Does the fingerprint match the console's?" || { warn 'Stop: something e
 ssh-keygen -F "$VPS_ADDRESS" >/dev/null || printf '%s\n' "$VPS_KNOWN_HOSTS" >> ~/.ssh/known_hosts
 # BatchMode: fail instead of asking for a password, to tell whether the key already works.
 if ! ssh -o BatchMode=yes "$ADMIN" true 2>/dev/null; then
-  say "Your key is not on the VPS yet: ssh-copy-id adds it, asking once for the e-mailed password."
+  say "Your key is not on the VPS yet. First, change the temporary password from the delivery"
+  say "e-mail's secure link: OVHcloud makes the first login do that, then closes the session."
+  step "In another terminal: ssh $ADMIN, type the temporary password, then a new one twice."
+  pause "Press Enter once the password is changed."
+  say "ssh-copy-id now adds your key, asking once for the new password."
   ssh-copy-id -i "$OWNER_SSH_PUBLIC_KEY" "$ADMIN"
 fi
 ssh -o BatchMode=yes "$ADMIN" true || { warn "$VPS_ADMIN_USER still cannot log in with your key."; exit 1; }
