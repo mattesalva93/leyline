@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import postgres from 'postgres';
 import { connect, type Sql } from '../catalog/db.ts';
 
-const DEFAULT_URL = 'postgres://mtg:mtg@localhost:5432/mtg_suite';
+const DEFAULT_URL = 'postgres://leyline:leyline@localhost:5432/leyline';
 
 export interface TestDb {
   readonly sql: Sql;

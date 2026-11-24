@@ -5,7 +5,7 @@ import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 import { createGunzip } from 'node:zlib';
 
 const HEADERS = {
-  'User-Agent': 'mtg-suite/0.0.0 (+https://github.com/mattesalva93/mtg-suite)',
+  'User-Agent': 'Leyline/0.0.0 (+https://github.com/mattesalva93/mtg-suite)',
   Accept: 'application/json',
 };
 

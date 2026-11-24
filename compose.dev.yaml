@@ -1,7 +1,7 @@
 # The database for `pnpm dev` and the tests (`pnpm db:up`): compose.yaml's PostgreSQL, as a
 # project of its own with its own volume, published on loopback. Staging's database stays
 # unpublished (ADR 0016), and `pnpm dev` runs next to staging without either recreating the other.
-name: mtg-suite-dev
+name: leyline-dev
 
 services:
   postgres:

@@ -15,9 +15,9 @@ const LANGS = new Set(['en', 'it']);
 const BATCH_SIZE = 1000;
 /**
  * Advisory lock key held for a whole import, since imports share the staging tables. Any
- * constant unique to this app works; this one spells "MTG1" in ASCII.
+ * constant unique to this app works; this one spells "LEY1" in ASCII.
  */
-const IMPORT_LOCK = 0x4d544731;
+const IMPORT_LOCK = 0x4c455931;
 
 interface ScryfallImageUris {
   readonly small: string;

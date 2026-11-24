@@ -1,6 +1,6 @@
 # One build for the whole workspace, two runtime targets: `api` and `web`.
 #   docker compose up --build            (see compose.yaml)
-#   docker build --target api -t mtg-suite-api .
+#   docker build --target api -t leyline-api .
 
 # Versions match mise.toml. Each base image is pinned by the digest of its multi-platform index
 # (ADR 0016): `docker buildx imagetools inspect <image:tag>` prints the current one.
