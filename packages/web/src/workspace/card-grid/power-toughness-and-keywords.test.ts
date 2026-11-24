@@ -1,4 +1,4 @@
-import { aCard } from '@mtg-suite/core/test-fixtures';
+import { aCard } from '@leyline/core/test-fixtures';
 import { describe, expect, it } from 'vitest';
 import { powerToughnessAndKeywordsOf } from './power-toughness-and-keywords.ts';
 

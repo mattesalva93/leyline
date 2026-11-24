@@ -1,4 +1,4 @@
-import type { LineDestination } from '@mtg-suite/core';
+import type { LineDestination } from '@leyline/core';
 import { useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TILE_ZOOM_WAIT_MS, useZoomedCard } from '../zoomed-card/use-zoomed-card.tsx';

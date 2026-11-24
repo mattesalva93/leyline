@@ -1,4 +1,4 @@
-import { defaultSheetOptions } from '@mtg-suite/core';
+import { defaultSheetOptions } from '@leyline/core';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';

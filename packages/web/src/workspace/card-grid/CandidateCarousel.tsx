@@ -1,4 +1,4 @@
-import { nameSharedByEvery, type Candidate, type Lang } from '@mtg-suite/core';
+import { nameSharedByEvery, type Candidate, type Lang } from '@leyline/core';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CARD_SHAPE } from '../card-image/card-shape.ts';

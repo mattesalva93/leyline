@@ -11,7 +11,7 @@ import {
   suggestTokens,
   type Lang,
   type TokenQueryLine,
-} from '@mtg-suite/core';
+} from '@leyline/core';
 import { Hono } from 'hono';
 import { hasCatalogTables, type Sql } from '../catalog/db.ts';
 import { createPostgresCatalog } from '../catalog/postgres-catalog.ts';

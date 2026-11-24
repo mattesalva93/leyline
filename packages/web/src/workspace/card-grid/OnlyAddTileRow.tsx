@@ -1,4 +1,4 @@
-import type { Candidate, DecklistSection, Lang } from '@mtg-suite/core';
+import type { Candidate, DecklistSection, Lang } from '@leyline/core';
 import { AddCardTile } from '../add-card/AddCardTile.tsx';
 import { ONLY_ADD_TILE_KEY } from './grid-sections.ts';
 import { TILE_GRID_CLASS, tileGridStyle } from './tile-grid.ts';

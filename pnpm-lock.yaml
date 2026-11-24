@@ -242,7 +242,7 @@ importers:
       '@hono/node-server':
         specifier: ^2.1.11
         version: 2.1.11(hono@4.13.20)
-      '@mtg-suite/core':
+      '@leyline/core':
         specifier: workspace:*
         version: link:../core
       hono:
@@ -264,7 +264,7 @@ importers:
 
   packages/web:
     dependencies:
-      '@mtg-suite/core':
+      '@leyline/core':
         specifier: workspace:*
         version: link:../core
       '@radix-ui/react-dialog':

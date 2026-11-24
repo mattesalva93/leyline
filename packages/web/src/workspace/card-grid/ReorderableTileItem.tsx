@@ -1,4 +1,4 @@
-import type { LineSide } from '@mtg-suite/core';
+import type { LineSide } from '@leyline/core';
 import { useState, type ComponentPropsWithRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { COPY_PILE_FOOTPRINT_PX } from './CopyPile.tsx';

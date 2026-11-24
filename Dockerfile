@@ -18,7 +18,7 @@ COPY tsconfig.base.json tsconfig.json ./
 COPY packages packages
 RUN pnpm build
 # A self-contained copy of `api` with production dependencies only.
-RUN pnpm --filter @mtg-suite/api deploy --prod --legacy /deploy/api
+RUN pnpm --filter @leyline/api deploy --prod --legacy /deploy/api
 
 FROM node:26.13.1-slim@sha256:e6bedef217677b276c591795e169840edd9096dbf13f29df8ef8d1856b8820bc AS api
 # The api runs `node` only: the bundled npm would ship its own dependencies, and their

@@ -1,4 +1,4 @@
-import type { PrintCountsByLang } from '@mtg-suite/core';
+import type { PrintCountsByLang } from '@leyline/core';
 import { useEffect, useState } from 'react';
 import { fetchPrintCounts } from '../../api.ts';
 

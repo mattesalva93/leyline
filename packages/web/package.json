@@ -1,11 +1,11 @@
 {
-  "name": "@mtg-suite/web",
+  "name": "@leyline/web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "license": "MIT",
   "dependencies": {
-    "@mtg-suite/core": "workspace:*",
+    "@leyline/core": "workspace:*",
     "@radix-ui/react-dialog": "^1.3.1",
     "@radix-ui/react-dropdown-menu": "^2.2.1",
     "@radix-ui/react-popper": "^1.4.0",

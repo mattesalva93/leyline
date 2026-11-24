@@ -1,4 +1,4 @@
-import { generateSheetPdf, sheetImageUrls, type Sheet, type SheetLayout } from '@mtg-suite/core';
+import { generateSheetPdf, sheetImageUrls, type Sheet, type SheetLayout } from '@leyline/core';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchImages } from '../api.ts';

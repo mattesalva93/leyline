@@ -1,4 +1,4 @@
-import { printedBackFace } from '@mtg-suite/core';
+import { printedBackFace } from '@leyline/core';
 import type { TFunction } from 'i18next';
 import type { KeyboardEvent } from 'react';
 import { setAndNumberOf } from '../card-image/print-label.ts';

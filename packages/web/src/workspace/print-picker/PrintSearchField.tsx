@@ -1,4 +1,4 @@
-import { MAX_PRINT_QUERY_LENGTH } from '@mtg-suite/core';
+import { MAX_PRINT_QUERY_LENGTH } from '@leyline/core';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ESCAPE_EMPTIES_FIELD } from '../../ui/Dialog.tsx';

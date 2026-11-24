@@ -1,4 +1,4 @@
-import { LANGS, type Lang, type PrintCountsByLang } from '@mtg-suite/core';
+import { LANGS, type Lang, type PrintCountsByLang } from '@leyline/core';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 

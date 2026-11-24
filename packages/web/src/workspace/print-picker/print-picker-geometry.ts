@@ -1,4 +1,4 @@
-import { CARD_MM } from '@mtg-suite/core';
+import { CARD_MM } from '@leyline/core';
 
 /** Narrowest a print shows in the print picker grid, in CSS px; the grid stretches it to fit. */
 const PRINT_TILE_MIN_WIDTH = 104;

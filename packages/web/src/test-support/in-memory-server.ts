@@ -9,7 +9,7 @@ import {
   suggestTokens,
   type CatalogEntry,
   type TokenLink,
-} from '@mtg-suite/core';
+} from '@leyline/core';
 import type * as api from '../api.ts';
 
 const TODAY = '2026-01-01';

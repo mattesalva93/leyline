@@ -1,4 +1,4 @@
-import type { PrintFace } from '@mtg-suite/core';
+import type { PrintFace } from '@leyline/core';
 import { useCallback, useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';

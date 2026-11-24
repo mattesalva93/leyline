@@ -1,4 +1,4 @@
-import { isLang, type Lang } from '@mtg-suite/core';
+import { isLang, type Lang } from '@leyline/core';
 
 const STORAGE_KEY = 'leyline.defaultLang';
 /** Italian players are who the app is for (spec #1): their cards start in Italian. */

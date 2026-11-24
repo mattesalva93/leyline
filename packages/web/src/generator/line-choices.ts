@@ -1,4 +1,4 @@
-import type { AllocationChoice } from '@mtg-suite/core';
+import type { AllocationChoice } from '@leyline/core';
 
 /**
  * What the user picked on one written line, kept apart from its resolution so the picks

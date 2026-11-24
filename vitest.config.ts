@@ -28,7 +28,7 @@ export default defineConfig({
           extends: true,
           root: `packages/${name}`,
           ...(resolve && { resolve }),
-          test: { name: `@mtg-suite/${name}`, ...test },
+          test: { name: `@leyline/${name}`, ...test },
         };
       }),
       // Repo tooling, such as the git hook checks.

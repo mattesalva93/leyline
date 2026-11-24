@@ -1,4 +1,4 @@
-import { CARD_CORNER_RADIUS_MM, type SheetLayout } from '@mtg-suite/core';
+import { CARD_CORNER_RADIUS_MM, type SheetLayout } from '@leyline/core';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SYMBOL_BUTTON } from '../../ui/board-styles.ts';

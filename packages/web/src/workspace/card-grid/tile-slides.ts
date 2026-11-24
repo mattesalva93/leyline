@@ -1,4 +1,4 @@
-import type { DecklistSection } from '@mtg-suite/core';
+import type { DecklistSection } from '@leyline/core';
 import { addTileKeyOf } from './grid-sections.ts';
 
 /** What of a grid tile names it as it slides: the card it shows. */

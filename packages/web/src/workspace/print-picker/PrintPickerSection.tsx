@@ -1,4 +1,4 @@
-import type { ResolvedLine } from '@mtg-suite/core';
+import type { ResolvedLine } from '@leyline/core';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GuidedStepBubble, type GuidedStepPlacement } from '../guide/GuidedStepBubble.tsx';

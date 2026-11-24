@@ -1,4 +1,4 @@
-import type { FoundCard, Lang } from '@mtg-suite/core';
+import type { FoundCard, Lang } from '@leyline/core';
 import { useEffect, useState } from 'react';
 import { searchCardsByName } from '../../api.ts';
 import { SEARCH_TYPING_WAIT_MS } from '../search-typing-wait.ts';

@@ -1,4 +1,4 @@
-import { MAX_PRINT_QUERY_LENGTH } from '@mtg-suite/core';
+import { MAX_PRINT_QUERY_LENGTH } from '@leyline/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { testApp } from '../test-support/test-app.ts';
 import { importBulk } from '../catalog-import/import-bulk.ts';

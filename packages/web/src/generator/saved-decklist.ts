@@ -9,7 +9,7 @@ import {
   type Print,
   type PrintFace,
   type SheetOptions,
-} from '@mtg-suite/core';
+} from '@leyline/core';
 import type { LineChoices } from './line-choices.ts';
 
 const STORAGE_KEY = 'leyline.decklist';

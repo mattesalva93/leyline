@@ -1,4 +1,4 @@
-import type { SheetOptions } from '@mtg-suite/core';
+import type { SheetOptions } from '@leyline/core';
 import { useEffect, useState } from 'react';
 import type { LineChoices } from './line-choices.ts';
 import { forgetSavedDecklist, saveDecklist } from './saved-decklist.ts';

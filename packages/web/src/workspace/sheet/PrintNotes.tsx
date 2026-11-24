@@ -1,4 +1,4 @@
-import { CARD_MM } from '@mtg-suite/core';
+import { CARD_MM } from '@leyline/core';
 import { useTranslation } from 'react-i18next';
 
 /** What to know before printing: print at actual size, and how many lines will be left out. */

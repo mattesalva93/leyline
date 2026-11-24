@@ -46,7 +46,7 @@ This only works for syntax that can be erased: `tsconfig.base.json` sets `erasab
 
 Runs the `api` server from its `.ts` sources with `node --conditions=source --env-file-if-exists=.env --watch`, like `pnpm dev:debug` (see below), on `http://127.0.0.1:3000`:
 
-- `--conditions=source` makes `@mtg-suite/core` resolve to `packages/core/src` (the `source` export in its `package.json`), so breakpoints in `core` hit the source too and no build is needed.
+- `--conditions=source` makes `@leyline/core` resolve to `packages/core/src` (the `source` export in its `package.json`), so breakpoints in `core` hit the source too and no build is needed.
 - `--watch` restarts the server when a file it imports changes. VS Code attaches to each new process by itself.
 
 Stop the Docker Compose `api` service first if it is running; it does not publish port 3000, so the two do not clash, but two servers on one database are confusing.

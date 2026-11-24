@@ -5,7 +5,7 @@ import {
   type DecklistLine,
   type Lang,
   type SuggestedToken,
-} from '@mtg-suite/core';
+} from '@leyline/core';
 import { useEffect, useState } from 'react';
 import { fetchSuggestedTokens } from '../api.ts';
 import { recentAnswers } from './recent-answers.ts';

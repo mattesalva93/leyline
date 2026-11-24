@@ -1,4 +1,4 @@
-import { LANGS } from '@mtg-suite/core';
+import { LANGS } from '@leyline/core';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { LanguagePickerProps } from './LanguagePicker.tsx';

@@ -1,4 +1,4 @@
-import { searchRowsOf, type Candidate, type Lang, type SearchRow } from '@mtg-suite/core';
+import { searchRowsOf, type Candidate, type Lang, type SearchRow } from '@leyline/core';
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LoadingSpinner } from '../../ui/LoadingSpinner.tsx';

@@ -1,4 +1,4 @@
-import type { DecklistSection, LineDestination, LineSide } from '@mtg-suite/core';
+import type { DecklistSection, LineDestination, LineSide } from '@leyline/core';
 import { useState } from 'react';
 import { landingSideOf, type GridTile } from './grid-tiles.ts';
 

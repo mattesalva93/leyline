@@ -4,7 +4,7 @@ import {
   type LineSide,
   type PrintTile,
   type ResolvedLine,
-} from '@mtg-suite/core';
+} from '@leyline/core';
 import type { WrittenCardLine } from '../../generator/use-generator.ts';
 
 /** Why a line shows an imageless tile instead of its prints. */

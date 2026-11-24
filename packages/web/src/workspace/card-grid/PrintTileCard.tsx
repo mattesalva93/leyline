@@ -1,4 +1,4 @@
-import { printedBackFace } from '@mtg-suite/core';
+import { printedBackFace } from '@leyline/core';
 import { useTranslation } from 'react-i18next';
 import { setAndNumberOf } from '../card-image/print-label.ts';
 import { NORMAL_IMAGE } from '../card-image/scryfall-image-sizes.ts';

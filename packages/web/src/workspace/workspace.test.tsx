@@ -1,4 +1,4 @@
-import { jpegOfSize } from '@mtg-suite/core/test-fixtures';
+import { jpegOfSize } from '@leyline/core/test-fixtures';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';

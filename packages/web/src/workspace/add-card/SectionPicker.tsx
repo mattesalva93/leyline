@@ -1,4 +1,4 @@
-import { DECKLIST_SECTIONS, type DecklistSection } from '@mtg-suite/core';
+import { DECKLIST_SECTIONS, type DecklistSection } from '@leyline/core';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 

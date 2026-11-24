@@ -1,4 +1,4 @@
-import type { PrintCountsByLang } from '@mtg-suite/core';
+import type { PrintCountsByLang } from '@leyline/core';
 import { useTranslation } from 'react-i18next';
 import { LanguagePicker } from '../../language/LanguagePicker.tsx';
 import { PrintCountHeading } from './PrintCountHeading.tsx';

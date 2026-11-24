@@ -1,4 +1,4 @@
-import { writtenLinesOf } from '@mtg-suite/core';
+import { writtenLinesOf } from '@leyline/core';
 import type { LineSplitOverPrints } from '../../generator/line-split.ts';
 
 /**

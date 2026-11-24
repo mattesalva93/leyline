@@ -5,7 +5,7 @@ import {
   type ImageUris,
   type PowerToughness,
   type PrintFace,
-} from '@mtg-suite/core';
+} from '@leyline/core';
 import type { Readable } from 'node:stream';
 import { createInterface } from 'node:readline';
 import { createCatalogTables, type Sql } from '../catalog/db.ts';

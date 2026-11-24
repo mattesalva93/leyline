@@ -1,4 +1,4 @@
-import type { PrintWarning, ResolvedLine } from '@mtg-suite/core';
+import type { PrintWarning, ResolvedLine } from '@leyline/core';
 import { useTranslation } from 'react-i18next';
 import { SECONDARY_BUTTON } from '../../ui/board-styles.ts';
 

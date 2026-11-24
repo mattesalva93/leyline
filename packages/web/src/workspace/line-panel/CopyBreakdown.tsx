@@ -1,4 +1,4 @@
-import { printTiles, type ResolvedLine } from '@mtg-suite/core';
+import { printTiles, type ResolvedLine } from '@leyline/core';
 import { useTranslation } from 'react-i18next';
 import { setAndNumberOf } from '../card-image/print-label.ts';
 

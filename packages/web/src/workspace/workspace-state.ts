@@ -1,4 +1,4 @@
-import type { LineDestination } from '@mtg-suite/core';
+import type { LineDestination } from '@leyline/core';
 import type { Generator } from '../generator/use-generator.ts';
 import type { GridSection } from './card-grid/grid-sections.ts';
 import type { GridTile, ImagelessGridTile, TileSelection } from './card-grid/grid-tiles.ts';
