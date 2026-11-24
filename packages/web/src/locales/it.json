@@ -104,6 +104,7 @@
     "fold": "Richiudi il pannello «{{title}}»",
     "unfold": "Riapri il pannello «{{title}}»"
   },
+  "proxyUse": "Le carte stampate sono proxy solo per il playtest privato: non sono ammesse nei tornei sanzionati e non vanno mai spacciate per carte vere né vendute.",
   "info": {
     "title": "Informazioni",
     "disclaimer": "Progetto non ufficiale, non affiliato a Wizards of the Coast.",

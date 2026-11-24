@@ -12,7 +12,7 @@ import { PrivacyNoticeDialog } from './PrivacyNoticeDialog.tsx';
 const ISSUES_URL = 'https://github.com/mattesalva93/leyline/issues';
 
 /**
- * "Informazioni": the disclaimer, the data credit, the link to report a problem and the privacy
+ * "Informazioni": the disclaimer, what the printed proxies are for, the data credit, the link to report a problem and the privacy
  * notice, out of the way of the work. It opens from its button in the top bar, or from wherever `onOpenChange`
  * is called (the phone menu).
  */
@@ -32,6 +32,7 @@ export function InfoDialog({
       <CenteredDialogContent>
         <DialogTitle className="mb-2 text-base font-bold">{t('info.title')}</DialogTitle>
         <p>{t('info.disclaimer')}</p>
+        <p className="mt-2">{t('proxyUse')}</p>
         <p className="mt-2">{t('info.scryfall')}</p>
         <p className="mt-2">
           <a className="text-link underline" href={ISSUES_URL} target="_blank" rel="noreferrer">
