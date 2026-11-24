@@ -70,7 +70,11 @@ export function LinePanel({
         )}
         <div className="flex flex-col gap-1">
           <h3 className="text-lg leading-tight font-bold">{line.card.name}</h3>
-          {tilePrint && <AlternateNameTag print={tilePrint} cardName={line.card.name} spellsName />}
+          <AlternateNameTag
+            alternateName={tilePrint?.flavorName ?? null}
+            cardName={line.card.name}
+            showsAlternateName
+          />
         </div>
       </div>
       <PrintWarningNote

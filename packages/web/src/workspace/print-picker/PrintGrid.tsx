@@ -172,7 +172,11 @@ export function PrintGrid({
                       />
                     )}
                     <span className="mt-1 font-mono">
-                      {setAndNumber} <AlternateNameTag print={print} cardName={line.card.name} />
+                      {setAndNumber}{' '}
+                      <AlternateNameTag
+                        alternateName={print.flavorName}
+                        cardName={line.card.name}
+                      />
                     </span>
                     <span className={print.imageStatus === 'lowres' ? 'text-warning' : ''}>
                       {t(`printPicker.quality.${print.imageStatus}`)}

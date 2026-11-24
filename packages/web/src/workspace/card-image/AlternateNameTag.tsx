@@ -1,29 +1,36 @@
-import type { Print } from '@leyline/core';
 import { useTranslation } from 'react-i18next';
 
-const TAG =
+const ALTERNATE_NAME_TAG_CLASSES =
   'inline-block w-fit shrink-0 rounded-sm border border-muted-foreground px-1 font-sans text-[10px] leading-4 font-normal text-muted-foreground';
 
 interface AlternateNameTagProps {
-  readonly print: Print;
+  /** The alternate name a print carries; `null` for a print without one. */
+  readonly alternateName: string | null;
   /** The name of the card the print is, which the alternate name stands for. */
   readonly cardName: string;
-  /** Whether the tag spells the alternate name out, where there is room for it. */
-  readonly spellsName?: boolean;
+  /** Whether the tag shows the alternate name itself, where there is room for it. */
+  readonly showsAlternateName?: boolean;
 }
 
 /**
  * Tags a print that carries an alternate name: plain information, never a `PrintWarning`, so it
- * keeps the muted colour and stays out of the warnings' marks and notes. Nothing for a print
- * without one.
+ * keeps the muted colour and stays out of the warnings' marks and notes.
  */
-export function AlternateNameTag({ print, cardName, spellsName = false }: AlternateNameTagProps) {
+export function AlternateNameTag({
+  alternateName,
+  cardName,
+  showsAlternateName = false,
+}: AlternateNameTagProps) {
   const { t } = useTranslation();
-  const alternateName = print.flavorName;
   if (alternateName === null) return null;
   return (
-    <span className={TAG} title={t('alternateName.meaning', { alternateName, name: cardName })}>
-      {spellsName ? t('alternateName.tagWithName', { alternateName }) : t('alternateName.tag')}
+    <span
+      className={ALTERNATE_NAME_TAG_CLASSES}
+      title={t('alternateName.meaning', { alternateName, name: cardName })}
+    >
+      {showsAlternateName
+        ? t('alternateName.tagWithName', { alternateName })
+        : t('alternateName.tag')}
     </span>
   );
 }

@@ -169,7 +169,7 @@ export function PrintTileCard({
         style={{ marginTop: BELOW_CARD_PX }}
       >
         <span className="truncate">{setAndNumberOf(tile.print, t)}</span>
-        <AlternateNameTag print={tile.print} cardName={line.card.name} />
+        <AlternateNameTag alternateName={tile.print.flavorName} cardName={line.card.name} />
         {hasSiblings && (
           <span className="ml-auto font-bold text-(--sibling-colour)">
             {t('tile.siblingMark', { index: siblingIndex + 1, count: siblingCount })}

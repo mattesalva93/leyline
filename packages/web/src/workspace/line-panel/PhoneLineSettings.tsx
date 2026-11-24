@@ -40,7 +40,11 @@ export function PhoneLineSettings({
     useLinePanelPrints(line, tilePrint, tileSelectionCount, PHONE_PRINT_GRID_COLUMNS);
   return (
     <div ref={panelRef} className="flex flex-col gap-3">
-      {tilePrint && <AlternateNameTag print={tilePrint} cardName={line.card.name} spellsName />}
+      <AlternateNameTag
+        alternateName={tilePrint?.flavorName ?? null}
+        cardName={line.card.name}
+        showsAlternateName
+      />
       <PrintWarningNote
         line={line}
         warning={printWarning}
