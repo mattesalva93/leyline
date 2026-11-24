@@ -17,7 +17,7 @@ import {
   type GuideBubbleAlign,
   type GuideBubbleSide,
 } from './GuideArrow.tsx';
-import { GUIDE_SPOTLIT, GuideSpotlight } from './GuideSpotlight.tsx';
+import { ABOVE_GUIDE_SPOTLIGHT, GUIDE_SPOTLIT, GuideSpotlight } from './GuideSpotlight.tsx';
 import type { GuidedStep } from './guided-steps.ts';
 import { useWorkspaceGuide } from './guide-context.ts';
 
@@ -106,7 +106,7 @@ export function GuidedStepBubble({
           alignOffset={-GUIDE_ARROW_INSET_PX}
           // A bubble moved off its side would leave its arrow pointing away from the control.
           avoidCollisions={false}
-          className={`relative z-50 flex max-w-72 items-start gap-3 rounded-2xl border-2 border-border bg-panel py-3 pr-2 pl-4 text-base text-foreground ${HARD_DROP_SHADOW} ${FADES_IN_AND_OUT}`}
+          className={`${ABOVE_GUIDE_SPOTLIGHT} flex max-w-72 items-start gap-3 rounded-2xl border-2 border-border bg-panel py-3 pr-2 pl-4 text-base text-foreground ${HARD_DROP_SHADOW} ${FADES_IN_AND_OUT}`}
         >
           <GuideArrow side={side} align={align} />
           <div className="flex flex-1 flex-col gap-1">

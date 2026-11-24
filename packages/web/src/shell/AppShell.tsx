@@ -35,7 +35,7 @@ export function AppShell({ areas }: { readonly areas: readonly ShellArea[] }) {
               <GuideControls
                 guideOnDevice={guideOnDevice}
                 controlClassName={MENU_ITEM}
-                onUse={closeMenu}
+                afterControlPressed={closeMenu}
               />
               <button
                 type="button"

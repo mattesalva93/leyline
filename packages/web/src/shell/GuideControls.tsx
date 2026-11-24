@@ -3,17 +3,17 @@ import type { GuideOnDevice } from '../workspace/guide/use-guide-on-device.ts';
 
 /**
  * The shell's controls of the guide: the "Guida" switch, which turns it off and on again, and
- * "Ricomincia la guida", which starts it over from its first step. `onUse` runs after either,
+ * "Ricomincia la guida", which starts it over from its first step. `afterControlPressed` runs after either,
  * such as closing the phone menu.
  */
 export function GuideControls({
   guideOnDevice,
   controlClassName,
-  onUse = () => {},
+  afterControlPressed = () => {},
 }: {
   readonly guideOnDevice: GuideOnDevice;
   readonly controlClassName: string;
-  readonly onUse?: () => void;
+  readonly afterControlPressed?: () => void;
 }) {
   const { t } = useTranslation();
   const { isGuideOn } = guideOnDevice.savedGuide;
@@ -26,7 +26,7 @@ export function GuideControls({
         className={controlClassName}
         onClick={() => {
           guideOnDevice.switchGuide(!isGuideOn);
-          onUse();
+          afterControlPressed();
         }}
       >
         <SwitchTrack isOn={isGuideOn} />
@@ -37,7 +37,7 @@ export function GuideControls({
         className={controlClassName}
         onClick={() => {
           guideOnDevice.restartGuide();
-          onUse();
+          afterControlPressed();
         }}
       >
         {t('shell.restartGuide')}

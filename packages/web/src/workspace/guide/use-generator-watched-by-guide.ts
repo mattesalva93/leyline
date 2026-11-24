@@ -27,16 +27,17 @@ export function useGeneratorWatchedByGuide(
   restartCount: number,
 ): { readonly generator: Generator; readonly seen: ActionsSeenByGuide } {
   const [seenSinceRestart, setSeenSinceRestart] = useState({ restartCount, seen: NONE_SEEN });
-  const seen = seenSinceRestart.restartCount === restartCount ? seenSinceRestart.seen : NONE_SEEN;
+  const seenInThisRun = (since: typeof seenSinceRestart) =>
+    since.restartCount === restartCount ? since.seen : NONE_SEEN;
   const see = (action: keyof ActionsSeenByGuide) =>
     setSeenSinceRestart((current) => {
-      const seenNow = current.restartCount === restartCount ? current.seen : NONE_SEEN;
+      const seenNow = seenInThisRun(current);
       return seenNow[action] ? current : { restartCount, seen: { ...seenNow, [action]: true } };
     });
   const isLineToFix = (writtenIndex: number) =>
     linesToFix.some((lineToFix) => lineToFix.writtenIndex === writtenIndex);
   return {
-    seen,
+    seen: seenInThisRun(seenSinceRestart),
     generator: {
       ...generator,
       chooseAllocations: (writtenIndex, allocations) => {

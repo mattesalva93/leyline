@@ -85,9 +85,12 @@ function spotlightClipPath(): string {
   return screenWithHoles(lights);
 }
 
+/** The layer of the dimming, under `ABOVE_GUIDE_SPOTLIGHT`. */
+const GUIDE_SPOTLIGHT_LAYER = 'z-40';
+
 /**
- * Stands an element above the dimming, lit and taking clicks: for the shell's way to switch the
- * guide off, which a guided step on screen must leave usable.
+ * Stands an element above the dimming, lit and taking clicks: the guided step's bubble, and the
+ * shell's way to switch the guide off, which a guided step on screen must leave usable.
  */
 export const ABOVE_GUIDE_SPOTLIGHT = 'relative z-50';
 
@@ -115,7 +118,7 @@ export function GuideSpotlight({ control }: { readonly control: RefObject<HTMLEl
   return createPortal(
     <div
       aria-hidden="true"
-      className="fixed inset-0 z-40 animate-fade-in bg-spotlight-dimming"
+      className={`fixed inset-0 ${GUIDE_SPOTLIGHT_LAYER} animate-fade-in bg-spotlight-dimming`}
       style={{ clipPath }}
     />,
     document.body,
