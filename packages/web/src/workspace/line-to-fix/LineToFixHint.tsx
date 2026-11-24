@@ -1,16 +1,17 @@
 import { useTranslation } from 'react-i18next';
 import { LoadingSpinner } from '../../ui/LoadingSpinner.tsx';
-import type { ImagelessReason } from '../card-grid/grid-tiles.ts';
+import { imagelessTextKey, type ImagelessGridTile } from '../card-grid/grid-tiles.ts';
 
-/** How to fix a line still to recognise or not found; nothing for any other reason. */
+/** How to fix a line still to recognise, not found or a deck link; nothing for any other reason. */
 export function LineToFixHint({
-  reason,
+  lineToFix,
   isResolving,
 }: {
-  readonly reason: ImagelessReason;
+  readonly lineToFix: ImagelessGridTile;
   readonly isResolving: boolean;
 }) {
   const { t } = useTranslation();
+  const { reason } = lineToFix;
   if (reason === 'pending') {
     return (
       <p className="text-muted-foreground">
@@ -18,6 +19,8 @@ export function LineToFixHint({
       </p>
     );
   }
-  if (reason === 'notFound') return <p className="text-muted-foreground">{t('line.notFound')}</p>;
+  if (reason === 'notFound' || reason === 'deckLink') {
+    return <p className="text-muted-foreground">{t(`line.${imagelessTextKey(lineToFix)}`)}</p>;
+  }
   return null;
 }

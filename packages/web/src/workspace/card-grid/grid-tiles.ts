@@ -8,7 +8,7 @@ import {
 import type { WrittenCardLine } from '../../generator/use-generator.ts';
 
 /** Why a line shows an imageless tile instead of its prints. */
-export type ImagelessReason = 'pending' | 'notFound' | 'ambiguous' | 'noPrint';
+type ImagelessReason = 'pending' | 'notFound' | 'ambiguous' | 'noPrint' | 'deckLink';
 
 interface GridTileBase {
   /** Names the tile among the grid's, and stays the same while its line and print do. */
@@ -45,6 +45,14 @@ export interface TileSelection {
 /** What names the line of an imageless tile: its card once resolved, otherwise the line as written. */
 export function lineNameOf({ line, writtenLine }: ImagelessGridTile): string {
   return line?.status === 'resolved' ? line.card.name : writtenLine.trim();
+}
+
+/**
+ * The key, under a group of texts by `ImagelessReason`, of what an imageless tile says is wrong:
+ * a deck link's texts are told apart by the site it links to.
+ */
+export function imagelessTextKey({ reason, line }: ImagelessGridTile): string {
+  return line?.status === 'deckLink' ? `deckLink.${line.site ?? 'otherSite'}` : reason;
 }
 
 export function isSelected(gridTile: GridTile, selection: TileSelection | null): boolean {

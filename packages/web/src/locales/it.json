@@ -176,6 +176,11 @@
   "line": {
     "quantity": "{{count}}×",
     "notFound": "Correggi la riga nella lista: non verrà stampata.",
+    "deckLink": {
+      "moxfield": "Leyline non importa i mazzi da un link. Su Moxfield apri il mazzo, poi Export (nel menu More o dal pulsante Download), premi Copy for Moxfield e incolla qui la lista.",
+      "archidekt": "Leyline non importa i mazzi da un link. Su Archidekt apri il mazzo, scegli Export deck, lascia Text, premi Copy e incolla qui la lista.",
+      "otherSite": "Leyline non importa i mazzi da un link. Esporta il mazzo dal sito come testo, una carta per riga (per esempio «4 Sol Ring»), e incolla qui la lista."
+    },
     "ambiguous": "Quale carta intendevi?",
     "whichNamed": "Quale {{name}}?",
     "carousel": "carosello",
@@ -212,7 +217,12 @@
       "pending": "Da riconoscere",
       "notFound": "Carta non trovata",
       "ambiguous": "Quale carta intendevi?",
-      "noPrint": "Nessuna stampa con immagine"
+      "noPrint": "Nessuna stampa con immagine",
+      "deckLink": {
+        "moxfield": "Link a un mazzo Moxfield",
+        "archidekt": "Link a un mazzo Archidekt",
+        "otherSite": "Link a un mazzo"
+      }
     },
     "printWarning": {
       "lowResolution": "Immagine a bassa risoluzione",
@@ -317,6 +327,7 @@
       "openLinePanel": "Apri una carta per vederne quantità e stampe.",
       "changePrint": "Tocca un’altra stampa: le copie della carta passano a quella.",
       "fixLine": "Questa riga va sistemata: scegli la carta giusta o toglila dalla lista.",
+      "fixDeckLink": "Questa riga è il link di un mazzo: incolla nella lista l’export testuale del mazzo, poi togli il link.",
       "goToSheet": "Guarda il foglio, come verrà stampato.",
       "makePdf": "Crea il PDF da stampare."
     },

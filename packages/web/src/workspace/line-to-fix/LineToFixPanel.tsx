@@ -11,8 +11,8 @@ import { LineToFixHint } from './LineToFixHint.tsx';
 import { RemoveLineButton } from './RemoveLineButton.tsx';
 
 /**
- * The selected tile when it stands for a line with no `LinePanel` (still to recognise, not found
- * or ambiguous); `null` otherwise.
+ * The selected tile when it stands for a line with no `LinePanel` (still to recognise, not found,
+ * ambiguous or a deck link); `null` otherwise.
  */
 export function lineToFixOf(
   gridTiles: readonly GridTile[],
@@ -34,7 +34,7 @@ export function LineToFixPanel({
   return (
     <div className="flex flex-col gap-3 text-sm">
       <p className="font-mono break-words">{writtenLine.trim()}</p>
-      <LineToFixHint reason={reason} isResolving={generator.isResolving} />
+      <LineToFixHint lineToFix={lineToFix} isResolving={generator.isResolving} />
       {line?.status === 'ambiguous' && (
         <CandidateCarousel
           candidates={line.candidates}

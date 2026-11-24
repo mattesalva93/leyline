@@ -199,8 +199,18 @@ export interface NotFoundLine extends DecklistLineBase {
   readonly status: 'notFound';
 }
 
+/** A site that hosts decks, whose deck links get instructions of their own. */
+export type DeckSite = 'moxfield' | 'archidekt';
+
+/** A deck link: never looked up in the catalog, never printed. */
+export interface DeckLinkLine extends DecklistLineBase {
+  readonly status: 'deckLink';
+  /** `null` when the link is to a site of no known `DeckSite`. */
+  readonly site: DeckSite | null;
+}
+
 /** One entry of a decklist. */
-export type DecklistLine = ResolvedLine | AmbiguousLine | NotFoundLine;
+export type DecklistLine = ResolvedLine | AmbiguousLine | NotFoundLine | DeckLinkLine;
 
 /** A resolved line as a token suggestion reads it: its card, and the print it shows. */
 export interface TokenQueryLine {

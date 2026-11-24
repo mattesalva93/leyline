@@ -4,7 +4,7 @@ import {
   sectionOfEachWrittenLine,
 } from './decklist-section.ts';
 import { writtenLinesOf } from './decklist-text.ts';
-import { parseLine, resolvedLine, writtenWithQuantity, type ParsedLine } from './decklist.ts';
+import { parseLine, resolvedLine, writtenWithQuantity, type ParsedCardLine } from './decklist.ts';
 import { cardKeys, nameKey } from '../name-match.ts';
 import { moveWrittenLine, type LineMove } from './move-written-line.ts';
 import { isTokenPrint, writtenNamingPrint } from '../tokens/token-line.ts';
@@ -67,7 +67,7 @@ export function addCardToSection(
   const { defaultPrint } = candidate;
   const cardNames = cardKeys(candidate.card.name, defaultPrint ? [defaultPrint.printedName] : []);
   /** Whether `parsed`, not resolved to a card yet or ambiguous, is a line of the card. */
-  function namesTheCard(parsed: ParsedLine): boolean {
+  function namesTheCard(parsed: ParsedCardLine): boolean {
     if (!cardNames.includes(nameKey(parsed.name))) return false;
     // Other tokens share a token's name: only its set and number tell its line apart.
     return !isTokenPrint(defaultPrint) || namesPrint(parsed, defaultPrint);
@@ -76,7 +76,7 @@ export function addCardToSection(
   function quantityOfCardAt(writtenIndex: number): number | null {
     const parsed = parseLine(writtenLines[writtenIndex] ?? '');
     const line = linesInText.find((inText) => inText.writtenIndex === writtenIndex)?.line;
-    if (!parsed || sections[writtenIndex] !== section) return null;
+    if (parsed?.kind !== 'card' || sections[writtenIndex] !== section) return null;
     // A line resolved to another card is not this card's, whatever it is written as.
     const isTheCard =
       line?.status === 'resolved'
@@ -148,7 +148,7 @@ export function writeLineAtSectionEnd(
 }
 
 /** Whether `parsed` names `print` by its set and collector number. */
-function namesPrint({ printRef }: ParsedLine, print: Print): boolean {
+function namesPrint({ printRef }: ParsedCardLine, print: Print): boolean {
   return (
     printRef?.set === print.set && printRef.collectorNumber === print.collectorNumber.toLowerCase()
   );

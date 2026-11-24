@@ -1,6 +1,7 @@
 import { copiesByPrint } from '../print/allocation.ts';
 import { hasRealImage, qualityWarning } from '../print/default-print.ts';
 import { namedCandidate, withoutOutranked } from '../card-search/same-name-preference.ts';
+import { deckLinkOf } from './deck-link.ts';
 import { SIDEBOARD_PREFIX, sectionOpenedBy } from './decklist-section.ts';
 import { LINE_BREAK } from './line-breaks.ts';
 import { MIN_SIMILARITY, cardKeys, nameKey, trigramSimilarity, trigrams } from '../name-match.ts';
@@ -9,6 +10,7 @@ import type {
   Candidate,
   Catalog,
   CatalogEntry,
+  DeckSite,
   DecklistLine,
   Lang,
   Print,
@@ -34,16 +36,34 @@ export interface PrintRef {
   readonly collectorNumber: string;
 }
 
-export interface ParsedLine {
+interface ParsedLineBase {
   readonly text: string;
   readonly quantity: number;
+}
+
+/** A line that asks for a card by its name, maybe naming its print too. */
+export interface ParsedCardLine extends ParsedLineBase {
+  readonly kind: 'card';
   readonly name: string;
   readonly printRef: PrintRef | null;
 }
 
+/** A line that is a deck link, maybe after a quantity. */
+interface ParsedDeckLink extends ParsedLineBase {
+  readonly kind: 'deckLink';
+  readonly site: DeckSite | null;
+}
+
+export type ParsedLine = ParsedCardLine | ParsedDeckLink;
+
 const QUANTITY_NAME = /^(\d+)x?\s+(.+)$/i;
 /** "Sol Ring (C21) 263", maybe with a finish marker such as "*F*" (foil) after the number. */
 const NAME_SET_NUMBER = /^(.+?)\s+\(([A-Za-z0-9]+)\)\s+(\S+)(?:\s+\*[A-Za-z]+\*)?$/;
+/**
+ * What an Archidekt Text export ends a line with: its categories (" [Ramp,Draw{top}]") and its
+ * color tag (" ^Buy,#0066ff^"). No card name holds "[", "]" or "^".
+ */
+const ARCHIDEKT_TAIL = /(?:\s+(?:\[[^\]]*\]|\^[^^]*\^))+$/;
 const COMMENT = /^(\/\/|#)/;
 
 function isIgnored(trimmed: string): boolean {
@@ -51,8 +71,9 @@ function isIgnored(trimmed: string): boolean {
 }
 
 /**
- * The card a line asks for, or `null` for blank lines, comments and section headers. The
- * sideboard prefix marks a card: a header is a line of its own, so a prefixed one is a card name.
+ * The card a line asks for, or the deck it links to; `null` for blank lines, comments and
+ * section headers. The sideboard prefix marks a card: a header is a line of its own, so a
+ * prefixed one is a card name.
  */
 export function parseLine(text: string): ParsedLine | null {
   const written = text.trim();
@@ -61,9 +82,15 @@ export function parseLine(text: string): ParsedLine | null {
   const quantityMatch = QUANTITY_NAME.exec(trimmed);
   const quantity = quantityMatch?.[1] ? Number(quantityMatch[1]) : 1;
   const rest = quantityMatch?.[2] ?? trimmed;
-  const [, name, set, collectorNumber] = NAME_SET_NUMBER.exec(rest) ?? [];
-  if (!name || !set || !collectorNumber) return { text, quantity, name: rest, printRef: null };
+  const deckLink = deckLinkOf(rest);
+  if (deckLink) return { kind: 'deckLink', text, quantity, site: deckLink.site };
+  const card = rest.replace(ARCHIDEKT_TAIL, '');
+  const [, name, set, collectorNumber] = NAME_SET_NUMBER.exec(card) ?? [];
+  if (!name || !set || !collectorNumber) {
+    return { kind: 'card', text, quantity, name: card, printRef: null };
+  }
   return {
+    kind: 'card',
     text,
     quantity,
     name,
@@ -71,8 +98,11 @@ export function parseLine(text: string): ParsedLine | null {
   };
 }
 
-/** Whether a written line names a card: it is no blank line, comment or section header. */
-export function namesACard(writtenLine: string): boolean {
+/**
+ * Whether a written line stands for a line of the decklist, a card or a deck link: it is no
+ * blank line, comment or section header.
+ */
+export function writesADecklistLine(writtenLine: string): boolean {
   return parseLine(writtenLine) !== null;
 }
 
@@ -88,7 +118,8 @@ export async function resolveDecklist(
   options: ResolveOptions,
 ): Promise<DecklistLine[]> {
   const parsed = text.split(LINE_BREAK).flatMap((raw) => parseLine(raw) ?? []);
-  const names = [...new Set(parsed.map((line) => nameKey(line.name)))];
+  const cardLines = parsed.filter((line) => line.kind === 'card');
+  const names = [...new Set(cardLines.map((line) => nameKey(line.name)))];
   const entries = await catalog.findByNames(names, { minSimilarity: MIN_SIMILARITY });
   // Keys and trigrams once per entry, not once per line: a decklist has a hundred lines.
   const named = entries.map((entry) => {
@@ -99,7 +130,17 @@ export async function resolveDecklist(
     return { entry, keys, trigrams: keys.map(trigrams) };
   });
 
-  return parsed.map((line) => resolveLine(line, named, options));
+  return parsed.map((line) =>
+    line.kind === 'deckLink'
+      ? {
+          text: line.text,
+          quantity: line.quantity,
+          lang: options.lang,
+          status: 'deckLink',
+          site: line.site,
+        }
+      : resolveLine(line, named, options),
+  );
 }
 
 /** A catalog entry with the name keys it answers to, ready to compare. */
@@ -116,7 +157,7 @@ export function resolvedLine(base: LineBase, candidate: Candidate): ResolvedLine
 }
 
 function resolveLine(
-  line: ParsedLine,
+  line: ParsedCardLine,
   named: readonly NamedEntry[],
   { today, lang }: ResolveOptions,
 ): DecklistLine {

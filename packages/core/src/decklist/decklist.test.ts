@@ -124,6 +124,31 @@ describe('resolveDecklist', () => {
     ]);
   });
 
+  it('ignores the categories and color tag an Archidekt Text export ends a line with', async () => {
+    const otherSolRing = aPrint({ id: 'sol-ring-cmr', set: 'cmr', collectorNumber: '472' });
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21, otherSolRing] }]);
+
+    const lines = await resolveDecklist(
+      [
+        '1x Sol Ring (cmr) 472 *F* [Ramp] ^Buy,#0066ff^',
+        '1x Sol Ring (cmr) 472 [Commander{top},Ramp{noDeck}{noPrice}]',
+        '2x Sol Ring [Ramp]',
+        '3x Sol Ring ^Have,#37d67a^',
+      ].join('\n'),
+      catalog,
+      { today, lang: 'en' },
+    );
+
+    expect(
+      lines.map((line) => [line.quantity, line.status === 'resolved' && line.defaultPrint?.id]),
+    ).toEqual([
+      [1, 'sol-ring-cmr'],
+      [1, 'sol-ring-cmr'],
+      [2, 'sol-ring-c21'],
+      [3, 'sol-ring-c21'],
+    ]);
+  });
+
   it('matches set and collector number whatever their case', async () => {
     const variant = aPrint({ id: 'sol-ring-variant', set: 'plst', collectorNumber: 'c21-263' });
     const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21, variant] }]);
@@ -448,6 +473,116 @@ describe('resolveDecklist', () => {
         { card: goblinB, defaultPrint: goblinBPrint, printWarning: null },
       ],
     });
+  });
+});
+
+describe('resolveDecklist with deck links', () => {
+  const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]);
+
+  it('reads the web address of a deck as a deck link, naming the site it knows', async () => {
+    const lines = await resolveDecklist(
+      [
+        'https://moxfield.com/decks/abc',
+        'www.archidekt.com/decks/123/x',
+        'moxfield.com/decks/abc',
+        '1 https://moxfield.com/decks/abc',
+        'https://www.mtggoldfish.com/deck/1',
+      ].join('\n'),
+      catalog,
+      { today, lang: 'en' },
+    );
+
+    expect(lines).toEqual([
+      {
+        text: 'https://moxfield.com/decks/abc',
+        status: 'deckLink',
+        site: 'moxfield',
+        quantity: 1,
+        lang: 'en',
+      },
+      {
+        text: 'www.archidekt.com/decks/123/x',
+        status: 'deckLink',
+        site: 'archidekt',
+        quantity: 1,
+        lang: 'en',
+      },
+      {
+        text: 'moxfield.com/decks/abc',
+        status: 'deckLink',
+        site: 'moxfield',
+        quantity: 1,
+        lang: 'en',
+      },
+      {
+        text: '1 https://moxfield.com/decks/abc',
+        status: 'deckLink',
+        site: 'moxfield',
+        quantity: 1,
+        lang: 'en',
+      },
+      {
+        text: 'https://www.mtggoldfish.com/deck/1',
+        status: 'deckLink',
+        site: null,
+        quantity: 1,
+        lang: 'en',
+      },
+    ]);
+  });
+
+  it('knows the site of an address that names its port', async () => {
+    const [line] = await resolveDecklist('https://www.moxfield.com:443/decks/abc', catalog, {
+      today,
+      lang: 'en',
+    });
+
+    expect(line).toMatchObject({ status: 'deckLink', site: 'moxfield' });
+  });
+});
+
+describe('resolveDecklist with deck links, looking cards up', () => {
+  /** A catalog that remembers every name it is asked for. */
+  function recordingCatalog() {
+    const catalog = createInMemoryCatalog([{ card: solRing, prints: [solRingC21] }]);
+    const askedNames: string[] = [];
+    return {
+      askedNames,
+      catalog: {
+        ...catalog,
+        findByNames: (names: readonly string[], options: { readonly minSimilarity: number }) => {
+          askedNames.push(...names);
+          return catalog.findByNames(names, options);
+        },
+      },
+    };
+  }
+
+  it('never looks a deck link up in the catalog', async () => {
+    const { catalog, askedNames } = recordingCatalog();
+
+    await resolveDecklist(
+      'https://moxfield.com/decks/abc\nmoxfield.com/decks/sol-ring\n1 Sol Ring',
+      catalog,
+      {
+        today,
+        lang: 'en',
+      },
+    );
+
+    expect(askedNames).toEqual(['sol ring']);
+  });
+
+  it('looks up an address with no scheme nor "www." of a site it does not know, as a card name', async () => {
+    const { catalog, askedNames } = recordingCatalog();
+
+    const [line] = await resolveDecklist('tappedout.net/mtg-decks/x', catalog, {
+      today,
+      lang: 'en',
+    });
+
+    expect(line?.status).toBe('notFound');
+    expect(askedNames).toEqual(['tappedout.net/mtg-decks/x']);
   });
 });
 

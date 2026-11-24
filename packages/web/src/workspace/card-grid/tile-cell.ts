@@ -2,7 +2,7 @@ import { printedBackFace } from '@leyline/core';
 import type { TFunction } from 'i18next';
 import type { KeyboardEvent } from 'react';
 import { setAndNumberOf } from '../card-image/print-label.ts';
-import type { GridTile } from './grid-tiles.ts';
+import { imagelessTextKey, type GridTile } from './grid-tiles.ts';
 import { isOnCell, isWithinCell, type GridCellProps } from './use-grid-cell-focus.ts';
 
 /** A tile as a cell of the card grid: what the keyboard focuses, and what a screen reader says of it. */
@@ -18,7 +18,9 @@ export type TileCellProps = GridCellProps & {
  */
 export function tileCellLabel(gridTile: GridTile, isFlipped: boolean, t: TFunction): string {
   if (gridTile.kind === 'imageless') {
-    return [gridTile.writtenLine.trim(), t(`tile.imageless.${gridTile.reason}`)].join(', ');
+    return [gridTile.writtenLine.trim(), t(`tile.imageless.${imagelessTextKey(gridTile)}`)].join(
+      ', ',
+    );
   }
   const { line, tile } = gridTile;
   const backFace = printedBackFace(tile.print);

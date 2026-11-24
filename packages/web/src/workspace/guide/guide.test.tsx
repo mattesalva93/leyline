@@ -231,6 +231,19 @@ describe('the guide', () => {
       expect(within(guidedStep()).getByText('Guida · 4')).toBeTruthy();
     });
 
+    it('tells the user to paste the deck in place of a deck link', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}https://moxfield.com/decks/abc{Enter}');
+      await screen.findByText('Link a un mazzo Moxfield');
+      await user.click(skipStepButton());
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+
+      await user.click(await waitFor(skipStepButton));
+
+      expect(await shownStepText()).toBe(
+        'Questa riga è il link di un mazzo: incolla nella lista l’export testuale del mazzo, poi togli il link.',
+      );
+    });
+
     it('closes the step of the line to fix once the line is fixed', async () => {
       const user = await mountWithTiles('4 Sol Ring{Enter}2 Nonexistent Card{Enter}');
       await screen.findByText('Carta non trovata');
