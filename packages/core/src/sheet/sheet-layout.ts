@@ -7,6 +7,7 @@ import type {
   ImageQuality,
   PageFormat,
   PlacedSlot,
+  Print,
   PrintFace,
   Sheet,
   SheetLayout,
@@ -53,6 +54,8 @@ const FIT_TOLERANCE_MM = 1e-9;
 /** One card-sized cell of the sheet, holding one face image. */
 interface Slot {
   readonly face: PrintFace;
+  /** The print the face belongs to. */
+  readonly print: Print;
 }
 
 /** The slots of one printed copy: one per face, so two for a double-faced card. */
@@ -76,7 +79,7 @@ function copiesOf(sheet: Sheet): Copy[] {
 function lineCopies(line: DecklistLine): Copy[] {
   if (line.status !== 'resolved') return [];
   return copiesByPrint(line).flatMap(({ print, quantity }) => {
-    const copy = printedFaces(print).map((face) => ({ face }));
+    const copy = printedFaces(print).map((face) => ({ face, print }));
     return Array.from({ length: quantity }, () => copy);
   });
 }
@@ -90,6 +93,19 @@ export function sheetImageUrls(sheet: Sheet): string[] {
         .map((slot) => slot.face.imageUris[sheet.options.imageQuality]),
     ),
   ];
+}
+
+/**
+ * The print whose face shows each of `imageUrls` on the sheet, in their order: names the card
+ * an image belongs to. A URL the sheet does not print is left out.
+ */
+export function printsShowingImages(sheet: Sheet, imageUrls: readonly string[]): Print[] {
+  const printByImageUrl = new Map(
+    copiesOf(sheet)
+      .flat()
+      .map(({ face, print }) => [face.imageUris[sheet.options.imageQuality], print]),
+  );
+  return imageUrls.flatMap((url) => printByImageUrl.get(url) ?? []);
 }
 
 /** How many cards of `cardMm` fit side by side in `availableMm`, `spacingMm` apart. */
