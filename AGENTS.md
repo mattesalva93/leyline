@@ -1,4 +1,4 @@
-# mtg-suite
+# Leyline
 
 ## Agent skills
 

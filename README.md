@@ -1,4 +1,4 @@
-# mtg-suite
+# Leyline
 
 Free, unofficial web app for Magic: The Gathering players. Not affiliated with Wizards of the Coast. Card data and images come from [Scryfall](https://scryfall.com).
 
