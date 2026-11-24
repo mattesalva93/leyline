@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { SECONDARY_BUTTON } from '../../ui/board-styles.ts';
 import { Icon } from '../../ui/Icon.tsx';
 import { CandidateCarousel } from './CandidateCarousel.tsx';
-import { lineNameOf, type ImagelessGridTile } from './grid-tiles.ts';
+import { imagelessTextKey, lineNameOf, type ImagelessGridTile } from './grid-tiles.ts';
 import { LineToFixHint } from '../line-to-fix/LineToFixHint.tsx';
 import { RemoveLineButton } from '../line-to-fix/RemoveLineButton.tsx';
 import { PileFreeTileFrame } from './PileFreeTileFrame.tsx';
@@ -64,11 +64,11 @@ export function ImagelessTile({
             {reason !== 'pending' && (
               <p className="flex items-center gap-1 font-semibold text-danger">
                 <Icon name="warning" className="size-3.5" />
-                {t(`tile.imageless.${reason}`)}
+                {t(`tile.imageless.${imagelessTextKey(gridTile)}`)}
               </p>
             )}
             <p className="font-mono break-words">{writtenLine.trim()}</p>
-            <LineToFixHint reason={reason} isResolving={isResolving} />
+            <LineToFixHint lineToFix={gridTile} isResolving={isResolving} />
           </>
         )}
         {reason === 'noPrint' && line?.status === 'resolved' && (
