@@ -38,10 +38,10 @@ function cardRingColoursOf(tile: HTMLElement) {
 }
 
 /** Answers `fetchImages` with a card image for each URL, but fails those `isFailing` picks. */
-function answerFetchImagesFailing(isFailing: (url: string) => boolean) {
+function answerFetchImages(isFailing: (url: string) => boolean = () => false) {
   vi.mocked(api.fetchImages).mockImplementation(async (urls) => ({
     images: new Map(
-      urls.filter((url) => !isFailing(url)).map((url) => [url, jpegOfSize(488, 680)]),
+      urls.filter((url) => !isFailing(url)).map((url) => [url, jpegOfSize(672, 936)]),
     ),
     failedUrls: urls.filter(isFailing),
   }));
@@ -438,7 +438,7 @@ describe('the workspace on a phone', () => {
   it('makes the PDF from the "Foglio" step and hands it to the share menu of a phone that can', async () => {
     const share = vi.fn(async () => {});
     vi.stubGlobal('navigator', { ...navigator, canShare: () => true, share });
-    answerFetchImagesFailing(() => false);
+    answerFetchImages();
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
 
     await user.click(stepBar().getByRole('button', { name: 'Foglio' }));
@@ -463,7 +463,7 @@ describe('the workspace on a phone', () => {
     });
 
     async function makePdfFailingSolRing() {
-      answerFetchImagesFailing(isSolRing);
+      answerFetchImages(isSolRing);
       const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
       await user.click(stepBar().getByRole('button', { name: 'Foglio' }));
       await user.click(screen.getByRole('button', { name: 'Crea il PDF' }));
@@ -485,7 +485,7 @@ describe('the workspace on a phone', () => {
 
     it('fetches only the missing images when the PDF is made again', async () => {
       const user = await makePdfFailingSolRing();
-      answerFetchImagesFailing(() => false);
+      answerFetchImages();
 
       await user.click(screen.getByRole('button', { name: 'Crea il PDF' }));
 
@@ -507,6 +507,36 @@ describe('the workspace on a phone', () => {
         'https://cards.scryfall.io/png/front/sol-ring-c21.png',
         'https://cards.scryfall.io/png/front/lightning-bolt-tst.png',
       ]);
+    });
+
+    it('fetches the image of a print chosen since, along with the missing one', async () => {
+      const user = await makePdfFailingSolRing();
+      await user.click(stepBar().getByRole('button', { name: 'Carte' }));
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+      await user.click(await screen.findByRole('button', { name: 'Una copia in più con LEA #1' }));
+      await user.click(screen.getByRole('button', { name: 'Chiudi' }));
+      await user.click(stepBar().getByRole('button', { name: 'Foglio' }));
+
+      await user.click(screen.getByRole('button', { name: 'Crea il PDF' }));
+      await screen.findByRole('alert');
+
+      expect(fetchedUrls(1)).toEqual([
+        'https://cards.scryfall.io/large/front/sol-ring-lea.jpg',
+        'https://cards.scryfall.io/large/front/sol-ring-c21.jpg',
+      ]);
+    });
+
+    it('keeps the images of a PDF made, for another one with the same images', async () => {
+      const user = await makePdfFailingSolRing();
+      answerFetchImages();
+      await user.click(screen.getByRole('button', { name: 'Crea il PDF' }));
+      await screen.findByRole('button', { name: 'Salva o condividi' });
+      await user.selectOptions(screen.getByLabelText('Formato della pagina'), 'Letter (USA)');
+
+      await user.click(screen.getByRole('button', { name: 'Crea il PDF' }));
+
+      expect(await screen.findByRole('button', { name: 'Salva o condividi' })).toBeTruthy();
+      expect(fetchedUrls(2)).toEqual([]);
     });
   });
 

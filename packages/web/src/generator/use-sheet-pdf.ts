@@ -48,7 +48,7 @@ export function useSheetPdf(
   const [sharesPdf] = useState(deviceSharesPdf);
   const [isSharing, setIsSharing] = useState(false);
   // The images already fetched, kept so that making the PDF again fetches only the missing ones.
-  const fetchedImages = useRef(new Map<string, Uint8Array>());
+  const imagesInMemory = useRef(new Map<string, Uint8Array>());
   const isGenerating = status.step === 'fetchingImages' || status.step === 'composingPages';
 
   /** Differs exactly when the PDF would: the options, and where each image goes on paper. */
@@ -61,15 +61,17 @@ export function useSheetPdf(
     const urls = sheetImageUrls(sheet);
     // Another image quality or another print needs other URLs: the images of the old ones go.
     const neededUrls = new Set(urls);
-    const images = new Map([...fetchedImages.current].filter(([url]) => neededUrls.has(url)));
-    fetchedImages.current = images;
+    const images = new Map([...imagesInMemory.current].filter(([url]) => neededUrls.has(url)));
+    imagesInMemory.current = images;
     const alreadyFetched = images.size;
     const missingUrls = urls.filter((url) => !images.has(url));
-    const progress = (fetchedCount: number) =>
+    const showFetchProgress = (fetchedCount: number) =>
       setStatus({ step: 'fetchingImages', fetchedCount, imageCount: urls.length });
-    progress(alreadyFetched);
+    showFetchProgress(alreadyFetched);
     try {
-      const fetched = await fetchImages(missingUrls, (count) => progress(alreadyFetched + count));
+      const fetched = await fetchImages(missingUrls, (count) =>
+        showFetchProgress(alreadyFetched + count),
+      );
       fetched.images.forEach((bytes, url) => images.set(url, bytes));
       if (fetched.failedUrls.length > 0) {
         setStatus({
@@ -80,7 +82,6 @@ export function useSheetPdf(
       }
       setStatus({ step: 'composingPages' });
       const file = toPdfFile(await generateSheetPdf(sheet, images), t('pdf.fileName'));
-      fetchedImages.current = new Map();
       // The browser opens the share menu only within a few seconds of a tap, and fetching the
       // images outlasts that: sharing waits for a tap of its own. The real file is checked again:
       // the browser may refuse one that the stand-in passed, such as a too large one.
