@@ -1,6 +1,8 @@
+import { Presence } from '@radix-ui/react-presence';
 import { useEffect, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { boardPanelBodyHolding } from '../../ui/BoardPanel.tsx';
+import { FADES_IN_AND_OUT } from '../../ui/open-close-motion.ts';
 
 const SPOTLIT_ATTRIBUTE = 'data-guide-spotlight';
 
@@ -85,33 +87,68 @@ function spotlightClipPath(): string {
   return screenWithHoles(lights);
 }
 
+/** The layer of the dimming, under `ABOVE_GUIDE_SPOTLIGHT`. */
+const GUIDE_SPOTLIGHT_LAYER = 'z-40';
+
 /**
- * The page dimmed and deaf to the pointer while the guided step's control `control` shows, but for
- * the elements marked `GUIDE_SPOTLIT` (see `lightOver`). A clip path cuts the holes, and a
- * cut-out part takes no click. The holes follow their elements as the page moves under them. Once
- * the control is out of sight (its panel folded), the bubble with its X goes with it, so the
- * dimming goes too: it never holds the page with no way out.
+ * Stands an element above the dimming, lit and taking clicks: the guided step's bubble, and the
+ * shell's way to switch the guide off, which a guided step on screen must leave usable.
  */
-export function GuideSpotlight({ control }: { readonly control: RefObject<HTMLElement | null> }) {
-  const [clipPath, setClipPath] = useState<string | null>(null);
+export const ABOVE_GUIDE_SPOTLIGHT = 'relative z-50';
+
+/** Where the dimming stands: its holes, and whether the step's control is in sight. */
+interface SpotlightCut {
+  readonly clipPath: string;
+  readonly isControlInSight: boolean;
+}
+
+/**
+ * The page dimmed and deaf to the pointer while `isShown`, the guided step's control `control` in
+ * sight, but for the elements marked `GUIDE_SPOTLIT` (see `lightOver`). A clip path cuts the
+ * holes, and a cut-out part takes no click. The holes follow their elements as the page moves
+ * under them. Once the control is out of sight (its panel folded), the bubble with its X goes with
+ * it, so the dimming goes too: it never holds the page with no way out. Going, it fades out with
+ * its holes where they last were, and lets the clicks through at once.
+ */
+export function GuideSpotlight({
+  control,
+  isShown,
+}: {
+  readonly control: RefObject<HTMLElement | null>;
+  readonly isShown: boolean;
+}) {
+  const [cut, setCut] = useState<SpotlightCut | null>(null);
   useEffect(() => {
+    if (!isShown) return;
     let frame = 0;
     const follow = () => {
       const controlBox = control.current?.getBoundingClientRect();
-      // An unchanged path is the same state, so a still page renders nothing each frame.
-      setClipPath(controlBox && isOnScreen(controlBox) ? spotlightClipPath() : null);
+      const isControlInSight = controlBox !== undefined && isOnScreen(controlBox);
+      setCut((current) => {
+        if (!isControlInSight) {
+          return current && current.isControlInSight ? { ...current, isControlInSight } : current;
+        }
+        const clipPath = spotlightClipPath();
+        // An unchanged cut is the same state, so a still page renders nothing each frame.
+        return current?.clipPath === clipPath && current.isControlInSight
+          ? current
+          : { clipPath, isControlInSight };
+      });
       frame = requestAnimationFrame(follow);
     };
     follow();
     return () => cancelAnimationFrame(frame);
-  }, [control]);
-  if (clipPath === null) return null;
+  }, [control, isShown]);
+  const isDimming = isShown && cut !== null && cut.isControlInSight;
   return createPortal(
-    <div
-      aria-hidden="true"
-      className="fixed inset-0 z-40 animate-fade-in bg-spotlight-dimming"
-      style={{ clipPath }}
-    />,
+    <Presence present={isDimming}>
+      <div
+        aria-hidden="true"
+        data-state={isDimming ? 'open' : 'closed'}
+        className={`fixed inset-0 ${GUIDE_SPOTLIGHT_LAYER} bg-spotlight-dimming data-[state=closed]:pointer-events-none ${FADES_IN_AND_OUT}`}
+        style={{ clipPath: cut?.clipPath }}
+      />
+    </Presence>,
     document.body,
   );
 }

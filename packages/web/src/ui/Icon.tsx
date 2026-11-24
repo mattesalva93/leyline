@@ -11,6 +11,8 @@ const ICON_PATHS = {
   chevronLeft: 'm15 18-6-6 6-6',
   chevronRight: 'm9 18 6-6-6-6',
   close: 'M6 6l12 12M18 6 6 18',
+  check: 'm5 12 5 5 9-11',
+  chevronDown: 'm6 9 6 6 6-6',
 } as const;
 
 type IconName = keyof typeof ICON_PATHS;

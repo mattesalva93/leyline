@@ -88,6 +88,78 @@ describe('the app shell', () => {
     expect(document.activeElement).toBe(menuButton);
   });
 
+  describe('"Guida"', () => {
+    const isGuidedStepShown = () =>
+      screen.queryByRole('status', { name: 'Passo guidato' }) !== null;
+
+    it('switches the guide off and starts it over from its menu in the top bar, by keyboard', async () => {
+      const user = userEvent.setup();
+      mountApp('/proxy');
+      const guideMenuButton = screen.getByRole('button', { name: 'Guida · sì' });
+      guideMenuButton.focus();
+
+      await user.keyboard('{Enter}');
+      const showGuidedSteps = screen.getByRole('menuitemcheckbox', {
+        name: 'Mostra i passi guidati',
+      });
+      expect(document.activeElement).toBe(showGuidedSteps);
+      await user.keyboard(' ');
+      expect(showGuidedSteps.getAttribute('aria-checked')).toBe('false');
+      expect(guideMenuButton.textContent).toBe('Guida · no');
+      await user.keyboard('{ArrowDown}');
+      expect(document.activeElement).toBe(
+        screen.getByRole('menuitem', { name: 'Ricomincia dal primo passo' }),
+      );
+      await user.keyboard('{Enter}');
+
+      expect(screen.queryByRole('menu')).toBeNull();
+      expect(document.activeElement).toBe(guideMenuButton);
+      expect(guideMenuButton.textContent).toBe('Guida · sì');
+      expect(isGuidedStepShown()).toBe(true);
+    });
+
+    it('closes its menu on Escape, giving the focus back to its button', async () => {
+      const user = userEvent.setup();
+      mountApp('/proxy');
+      const guideMenuButton = screen.getByRole('button', { name: 'Guida · sì' });
+      await user.click(guideMenuButton);
+
+      await user.keyboard('{Escape}');
+
+      expect(screen.queryByRole('menu')).toBeNull();
+      expect(document.activeElement).toBe(guideMenuButton);
+    });
+
+    it('switches the guide off and starts it over from the phone menu, closing it', async () => {
+      const user = userEvent.setup();
+      mountApp('/proxy');
+      const menuButton = screen.getByRole('button', { name: 'Menu' });
+      const guideItems = () =>
+        within(screen.getByRole('dialog', { name: 'Menu' })).getByRole('group', {
+          name: 'Guida',
+        });
+
+      await user.click(menuButton);
+      await user.click(
+        within(guideItems()).getByRole('checkbox', { name: 'Mostra i passi guidati' }),
+      );
+      expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull();
+      expect(isGuidedStepShown()).toBe(false);
+      await user.click(menuButton);
+      expect(
+        within(guideItems())
+          .getByRole('checkbox', { name: 'Mostra i passi guidati' })
+          .getAttribute('aria-checked'),
+      ).toBe('false');
+      await user.click(
+        within(guideItems()).getByRole('button', { name: 'Ricomincia dal primo passo' }),
+      );
+
+      expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull();
+      expect(isGuidedStepShown()).toBe(true);
+    });
+  });
+
   it('credits Scryfall on the generator screen, with no footer below it', async () => {
     mountApp('/proxy');
     await screen.findByRole('textbox', { name: 'Decklist' });
@@ -218,13 +290,15 @@ describe('the app shell', () => {
       expect(deviceSection?.textContent).not.toMatch(/\btema\b/);
     });
 
-    it('names the steps of the guide done or skipped among what the device keeps', async () => {
+    it('names the guide switched on or off and its steps done or skipped among what the device keeps', async () => {
       const { notice } = await openThePrivacyNotice();
 
       const deviceSection = within(notice).getByRole('heading', {
         name: 'Dati sul tuo dispositivo',
       }).parentElement;
-      expect(deviceSection?.textContent).toContain('i passi della guida già svolti o saltati');
+      expect(deviceSection?.textContent).toContain(
+        'la guida, se è accesa e quali passi sono già svolti o saltati',
+      );
     });
 
     it('styles its close button as the primary action', async () => {

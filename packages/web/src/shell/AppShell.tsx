@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet } from 'react-router';
 import { Icon } from '../ui/Icon.tsx';
+import { ABOVE_GUIDE_SPOTLIGHT } from '../workspace/guide/GuideSpotlight.tsx';
+import { useGuideOnDevice } from '../workspace/guide/use-guide-on-device.ts';
 import { AreaNav } from './AreaNav.tsx';
+import { GuideMenu } from './GuideMenu.tsx';
+import { PhoneGuideItems } from './PhoneGuideItems.tsx';
 import { InfoDialog } from './InfoDialog.tsx';
 import { PhoneMenu } from './PhoneMenu.tsx';
 import { ScryfallCredit } from './ScryfallCredit.tsx';
@@ -21,12 +25,18 @@ export function AppShell({ areas }: { readonly areas: readonly ShellArea[] }) {
   const { t } = useTranslation();
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [topBarSlot, setTopBarSlot] = useState<HTMLElement | null>(null);
+  const guideOnDevice = useGuideOnDevice();
   return (
     <div className="flex h-dvh flex-col font-sans">
       <header className="flex h-12 shrink-0 items-center gap-2 bg-chrome px-2 text-chrome-foreground lg:h-11 lg:gap-5 lg:px-4">
-        <PhoneMenu areas={areas} className="lg:hidden">
+        <PhoneMenu areas={areas} className={`lg:hidden ${ABOVE_GUIDE_SPOTLIGHT}`}>
           {(closeMenu) => (
             <>
+              <PhoneGuideItems
+                guideOnDevice={guideOnDevice}
+                itemClassName={MENU_ITEM}
+                afterControlPressed={closeMenu}
+              />
               <button
                 type="button"
                 className={MENU_ITEM}
@@ -56,9 +66,13 @@ export function AppShell({ areas }: { readonly areas: readonly ShellArea[] }) {
           onOpenChange={setIsInfoOpen}
           triggerClassName={`hidden rounded-md px-1.5 py-1 font-mono text-[11px] font-bold tracking-widest uppercase underline lg:block ${BUTTON_STATES}`}
         />
+        <GuideMenu
+          guideOnDevice={guideOnDevice}
+          className={`hidden lg:flex ${ABOVE_GUIDE_SPOTLIGHT}`}
+        />
       </header>
       <main className="dot-grid min-h-0 flex-1 overflow-y-auto">
-        <Outlet context={{ topBarSlot } satisfies ShellOutletContext} />
+        <Outlet context={{ topBarSlot, guideOnDevice } satisfies ShellOutletContext} />
       </main>
     </div>
   );

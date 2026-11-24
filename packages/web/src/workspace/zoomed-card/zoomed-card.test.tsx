@@ -163,6 +163,31 @@ describe('the zoomed card', () => {
       expect(zoomedCard()).toBeNull();
     });
 
+    it('when its tile leaves the grid, the line taken out of the decklist under the pointer', async () => {
+      const { user } = await zoomTheTile();
+
+      await user.clear(screen.getByLabelText('Decklist'));
+
+      await vi.waitFor(() =>
+        expect(screen.queryByRole('button', { name: 'Modifica Sol Ring' })).toBeNull(),
+      );
+      expect(zoomedCard()).toBeNull();
+    });
+
+    it('never shows for a tile that left the grid during the wait', async () => {
+      const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+      const tile = await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+      await user.hover(tile);
+
+      await user.clear(screen.getByLabelText('Decklist'));
+      await vi.waitFor(() =>
+        expect(screen.queryByRole('button', { name: 'Modifica Sol Ring' })).toBeNull(),
+      );
+      act(() => vi.advanceTimersByTime(TILE_ZOOM_WAIT_MS));
+
+      expect(zoomedCard()).toBeNull();
+    });
+
     it('before it shows, when the pointer leaves during the wait', async () => {
       const user = await mountPageAndWrite('4 Sol Ring{Enter}');
       const tile = await screen.findByRole('button', { name: 'Modifica Sol Ring' });

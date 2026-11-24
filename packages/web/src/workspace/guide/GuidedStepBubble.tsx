@@ -5,7 +5,7 @@
 import * as RadixPopper from '@radix-ui/react-popper';
 import { Presence } from '@radix-ui/react-presence';
 import { Slot } from '@radix-ui/react-slot';
-import { useEffect, useId, useMemo, useRef, type ReactElement } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BUTTON_STATES, HARD_DROP_SHADOW, LABEL } from '../../ui/board-styles.ts';
 import { Icon } from '../../ui/Icon.tsx';
@@ -17,7 +17,7 @@ import {
   type GuideBubbleAlign,
   type GuideBubbleSide,
 } from './GuideArrow.tsx';
-import { GUIDE_SPOTLIT, GuideSpotlight } from './GuideSpotlight.tsx';
+import { ABOVE_GUIDE_SPOTLIGHT, GUIDE_SPOTLIT, GuideSpotlight } from './GuideSpotlight.tsx';
 import type { GuidedStep } from './guided-steps.ts';
 import { useWorkspaceGuide } from './guide-context.ts';
 
@@ -62,6 +62,11 @@ export function GuidedStepBubble({
   const controlRef = useRef<HTMLElement>(null);
   const textId = useId();
   const isShown = guidedStep !== null && guide.shownGuidedStep === guidedStep;
+  // A bubble fading out still tells the number of its own step, not of the one after it.
+  const [shownStepNumber, setShownStepNumber] = useState(guide.shownGuidedStepNumber);
+  if (isShown && shownStepNumber !== guide.shownGuidedStepNumber) {
+    setShownStepNumber(guide.shownGuidedStepNumber);
+  }
   // A control out of sight, such as a line to fix far down the grid, comes to the middle of the
   // screen, leaving its bubble room on either side.
   useEffect(() => {
@@ -93,7 +98,7 @@ export function GuidedStepBubble({
       >
         {children}
       </Slot>
-      {isShown && <GuideSpotlight control={controlRef} />}
+      <GuideSpotlight control={controlRef} isShown={isShown} />
       <Presence present={isShown}>
         <RadixPopper.Content
           role="status"
@@ -106,12 +111,12 @@ export function GuidedStepBubble({
           alignOffset={-GUIDE_ARROW_INSET_PX}
           // A bubble moved off its side would leave its arrow pointing away from the control.
           avoidCollisions={false}
-          className={`relative z-50 flex max-w-72 items-start gap-3 rounded-2xl border-2 border-border bg-panel py-3 pr-2 pl-4 text-base text-foreground ${HARD_DROP_SHADOW} ${FADES_IN_AND_OUT}`}
+          className={`${ABOVE_GUIDE_SPOTLIGHT} flex max-w-72 items-start gap-3 rounded-2xl border-2 border-border bg-panel py-3 pr-2 pl-4 text-base text-foreground ${HARD_DROP_SHADOW} ${FADES_IN_AND_OUT}`}
         >
           <GuideArrow side={side} align={align} />
           <div className="flex flex-1 flex-col gap-1">
             <span className={`${LABEL} text-accent`}>
-              {t('guide.stepNumber', { number: guide.shownGuidedStepNumber })}
+              {t('guide.stepNumber', { number: shownStepNumber })}
             </span>
             <p id={textId} className="leading-snug">
               {guidedStep && t(`guide.steps.${guidedStep}`)}

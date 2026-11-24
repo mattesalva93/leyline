@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mountApp } from '../../test-support/mount-app.tsx';
 import { centreTab, printButtonOf } from '../../test-support/grid-queries.ts';
+import { animateRadixParts, endExitAnimation } from '../../test-support/exit-animations.ts';
 import { PHONE, stubScreen } from '../../test-support/test-screen.ts';
 import {
   answerApiCallsFromCatalog,
@@ -306,10 +307,156 @@ describe('the guide', () => {
     });
   });
 
+  describe('from the shell', () => {
+    /** The top bar's "Guida" button, which tells whether the guide is on and opens its menu. */
+    function guideMenuButton() {
+      return screen.getByRole('button', { name: /^Guida ·/ });
+    }
+
+    /** Turns the guide off or back on from the top bar's "Guida" menu, then closes the menu. */
+    async function switchGuide(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(guideMenuButton());
+      await user.click(screen.getByRole('menuitemcheckbox', { name: 'Mostra i passi guidati' }));
+      await user.keyboard('{Escape}');
+    }
+
+    async function restartGuide(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(guideMenuButton());
+      await user.click(screen.getByRole('menuitem', { name: 'Ricomincia dal primo passo' }));
+    }
+
+    it('shows no guided step once switched off, even after the app is opened again', async () => {
+      const user = userEvent.setup();
+      mountApp('/proxy');
+
+      await switchGuide(user);
+
+      expect(isGuidedStepShown()).toBe(false);
+      expect(guideMenuButton().textContent).toBe('Guida · no');
+      reload();
+      expect(isGuidedStepShown()).toBe(false);
+      expect(guideMenuButton().textContent).toBe('Guida · no');
+    });
+
+    it('keeps the number of its own step on a bubble fading out as the guide is switched off', async () => {
+      animateRadixParts();
+      const user = userEvent.setup();
+      mountApp('/proxy');
+
+      await switchGuide(user);
+      // The closing menu keeps the page hidden from screen readers until it has faded out.
+      endExitAnimation(screen.getByRole('menu', { hidden: true }));
+
+      expect(within(guidedStep()).getByText('Guida · 1')).toBeTruthy();
+    });
+
+    it('takes up again from the first step neither done nor skipped once switched back on', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}');
+      await user.click(skipStepButton());
+      await switchGuide(user);
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+      expect(isGuidedStepShown()).toBe(false);
+
+      await switchGuide(user);
+
+      expect(await shownStepText()).toBe(STEP_TEXT.changePrint);
+      expect(guideMenuButton().textContent).toBe('Guida · sì');
+    });
+
+    it('shows its first guided step again once started over from the "Guida" menu', async () => {
+      const user = userEvent.setup();
+      mountApp('/proxy');
+      await user.click(skipStepButton());
+
+      await restartGuide(user);
+
+      expect(await shownStepText()).toBe(FIRST_STEP_TEXT);
+    });
+
+    it('starts over from its first step , the decklist kept, from the sheet back to the cards', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}');
+      await user.click(centreTab('Foglio'));
+
+      await restartGuide(user);
+
+      expect(await shownStepText()).toBe(FIRST_STEP_TEXT);
+      expect(within(guidedStep()).getByText('Guida · 1')).toBeTruthy();
+      expect(centreTab('Carte').getAttribute('aria-selected')).toBe('true');
+      expect(screen.getByRole('button', { name: 'Modifica Sol Ring' })).toBeTruthy();
+    });
+
+    it('opens the folded decklist panel as it starts over, for its first step to point into', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}');
+      await user.click(screen.getByRole('button', { name: 'Richiudi il pannello «Lista»' }));
+
+      await restartGuide(user);
+
+      expect(await shownStepText()).toBe(FIRST_STEP_TEXT);
+    });
+
+    it('closes the open tile as it starts over, back to where the decklist goes', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}');
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+      expect(await shownStepText()).toBe(STEP_TEXT.changePrint);
+
+      await restartGuide(user);
+
+      expect(await shownStepText()).toBe(FIRST_STEP_TEXT);
+    });
+
+    it('closes its first step, once started over, as soon as the decklist is written to', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}');
+      await restartGuide(user);
+      expect(await shownStepText()).toBe(FIRST_STEP_TEXT);
+
+      await user.type(screen.getByLabelText('Decklist'), '1 Sol Ring{Enter}');
+
+      expect(await shownStepText()).toBe(STEP_TEXT.openLinePanel);
+    });
+
+    it('asks again, once started over, for a print tapped before', async () => {
+      const user = await mountWithTiles('4 Sol Ring{Enter}');
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+      await user.click(await waitFor(() => printButtonOf('LEA #1')));
+      await restartGuide(user);
+      await user.click(skipStepButton());
+
+      await user.click(screen.getByRole('button', { name: 'Modifica Sol Ring' }));
+
+      expect(await shownStepText()).toBe(STEP_TEXT.changePrint);
+    });
+
+    it('turns the guide back on as it starts over', async () => {
+      const user = userEvent.setup();
+      mountApp('/proxy');
+      await switchGuide(user);
+
+      await restartGuide(user);
+
+      expect(await shownStepText()).toBe(FIRST_STEP_TEXT);
+      expect(guideMenuButton().textContent).toBe('Guida · sì');
+    });
+  });
+
   describe('on a phone', () => {
     beforeEach(() => {
       stubScreen(PHONE);
       return () => vi.unstubAllGlobals();
+    });
+
+    it('starts over from the sheet step back to the decklist step, its first guided step beside the decklist', async () => {
+      const user = await mountPageAndWrite('4 Sol Ring{Enter}');
+      await user.click(stepBar().getByRole('button', { name: 'Foglio' }));
+      await user.click(screen.getByRole('button', { name: 'Menu' }));
+
+      await user.click(
+        within(screen.getByRole('dialog', { name: 'Menu' })).getByRole('button', {
+          name: 'Ricomincia dal primo passo',
+        }),
+      );
+
+      expect(await shownStepText()).toBe(FIRST_STEP_TEXT);
+      expect(screen.getByLabelText('Decklist')).toBeTruthy();
     });
 
     it('shows its first guided step on the first visit, beside the decklist of the decklist step', () => {

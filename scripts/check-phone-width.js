@@ -43,6 +43,22 @@ async function goToWorkspaceStep(page, step) {
   await workspaceStepBar(page).getByRole('button', { name: WORKSPACE_STEP_LABELS[step] }).click();
 }
 
+/**
+ * Switches the guide off from the phone menu: while a guided step shows, its dimming takes the
+ * clicks this check makes everywhere but on the step's control.
+ */
+async function switchGuideOff(page) {
+  const menu = page.getByRole('dialog', { name: italian.shell.menu });
+  await page.getByRole('button', { name: italian.shell.menu }).click();
+  await menu.getByRole('checkbox', { name: italian.shell.showGuidedSteps }).click();
+  await menu.waitFor({ state: 'hidden' });
+  await guidedStepBubble(page).waitFor({ state: 'hidden' });
+}
+
+function guidedStepBubble(page) {
+  return page.getByRole('status', { name: italian.guide.bubbleLabel });
+}
+
 async function noteOverflowInEveryWorkspaceStep(page, width, decklist) {
   for (const step of Object.keys(WORKSPACE_STEP_LABELS)) {
     await goToWorkspaceStep(page, step);
@@ -63,7 +79,9 @@ try {
     await page.goto(`${appAddress}/proxy`);
     const decklist = page.getByLabel('Decklist');
     await decklist.waitFor();
-    await noteOverflow(page, width, 'empty decklist, empty workspace');
+    await guidedStepBubble(page).waitFor();
+    await noteOverflow(page, width, 'empty decklist, empty workspace, first guided step');
+    await switchGuideOff(page);
 
     // The empty workspace gives way to the decklist under way once a line is recognised.
     await decklist.fill(`${ONE_LINE_DECKLIST}\n`);
