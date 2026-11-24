@@ -474,6 +474,115 @@ describe('resolveDecklist', () => {
     ]);
   });
 
+  describe('a line written with an alternate name', () => {
+    const cyclonicRift = aCard({ oracleId: 'cyclonic-rift', name: 'Cyclonic Rift' });
+    const regularRift = aPrint({ id: 'rift-mm3', set: 'mm3', releasedAt: '2017-03-17' });
+    const newestRegularRift = aPrint({ id: 'rift-cmm', set: 'cmm', releasedAt: '2025-01-01' });
+    const aeroMagicRift = aPrint({
+      id: 'rift-sld',
+      set: 'sld',
+      collectorNumber: '1869',
+      releasedAt: '2024-12-02',
+      flavorName: "Hope's Aero Magic",
+    });
+    // Close to "Hope's Aero Magic" by trigrams, as Scryfall's Secret Lair cards are.
+    const hexMagic = aCard({ oracleId: 'hex-magic', name: 'Hex Magic' });
+    const catalog = createInMemoryCatalog([
+      { card: cyclonicRift, prints: [regularRift, aeroMagicRift, newestRegularRift] },
+      { card: hexMagic, prints: [aPrint({ id: 'hex-magic' })] },
+    ]);
+
+    it('resolves to the card, with a print carrying that name, with or without set and number', async () => {
+      const lines = await resolveDecklist(
+        "1 Hope's Aero Magic\n1 Hope's Aero Magic (SLD) 1869\n1 Cyclonic Rift",
+        catalog,
+        { today, lang: 'en' },
+      );
+
+      expect(lines).toMatchObject([
+        { status: 'resolved', card: cyclonicRift, defaultPrint: { id: 'rift-sld' } },
+        { status: 'resolved', card: cyclonicRift, defaultPrint: { id: 'rift-sld' } },
+        { status: 'resolved', card: cyclonicRift, defaultPrint: { id: 'rift-cmm' } },
+      ]);
+    });
+
+    it('picks among the prints carrying that name by the order of preference', async () => {
+      const argonath = aCard({ oracleId: 'argonath', name: 'Arch of Orazca' });
+      const named = (id: string, overrides: Parameters<typeof aPrint>[0]) =>
+        aPrint({ id, flavorName: 'Argonath, Pillars of the Kings', ...overrides });
+      const ltcCatalog = createInMemoryCatalog([
+        {
+          card: argonath,
+          prints: [
+            aPrint({ id: 'regular', releasedAt: '2026-01-01' }),
+            named('ltc-351', { releasedAt: '2023-06-23' }),
+            named('ltc-381', { releasedAt: '2023-06-24', oversized: true }),
+            named('ltc-381z', { releasedAt: '2023-06-25', digital: true }),
+          ],
+        },
+      ]);
+
+      const [line] = await resolveDecklist('1 Argonath, Pillars of the Kings', ltcCatalog, {
+        today,
+        lang: 'en',
+      });
+
+      expect(line).toMatchObject({ status: 'resolved', defaultPrint: { id: 'ltc-351' } });
+    });
+
+    it('takes the language of the prints carrying that name, without a warning', async () => {
+      const italianRift = aPrint({ id: 'rift-it', lang: 'it', releasedAt: '2025-01-01' });
+      const italianCatalog = createInMemoryCatalog([
+        { card: cyclonicRift, prints: [italianRift, aeroMagicRift] },
+      ]);
+
+      const [line] = await resolveDecklist("1 Hope's Aero Magic", italianCatalog, {
+        today,
+        lang: 'it',
+      });
+
+      expect(line).toMatchObject({
+        status: 'resolved',
+        lang: 'en',
+        defaultPrint: { id: 'rift-sld' },
+        printWarning: null,
+      });
+    });
+
+    it('finds a multi-face print by its joined alternate names or by its front face', async () => {
+      const kardur = aCard({ oracleId: 'kardur', name: 'Kardur, Doomscourge' });
+      const chucky = aPrint({ id: 'chucky', flavorName: 'Chucky // Kardur, Doomscourge' });
+      const kardurCatalog = createInMemoryCatalog([
+        { card: kardur, prints: [aPrint({ id: 'regular', releasedAt: '2025-01-01' }), chucky] },
+      ]);
+
+      const lines = await resolveDecklist(
+        '1 Chucky // Kardur, Doomscourge\n1 Chucky',
+        kardurCatalog,
+        { today, lang: 'en' },
+      );
+
+      expect(lines).toMatchObject([
+        { status: 'resolved', card: kardur, defaultPrint: { id: 'chucky' } },
+        { status: 'resolved', card: kardur, defaultPrint: { id: 'chucky' } },
+      ]);
+    });
+
+    it('gives way to a card whose own name it is', async () => {
+      const fireball = aCard({ oracleId: 'fireball', name: 'Fireball' });
+      const shock = aCard({ oracleId: 'shock', name: 'Shock' });
+      const fireballCatalog = createInMemoryCatalog([
+        { card: shock, prints: [aPrint({ id: 'shock', flavorName: 'Fireball' })] },
+        // Digital only: by the order of preference alone, the alternate name would win.
+        { card: fireball, prints: [aPrint({ id: 'fireball', digital: true })] },
+      ]);
+
+      const [line] = await resolveDecklist('1 Fireball', fireballCatalog, { today, lang: 'en' });
+
+      expect(line).toMatchObject({ status: 'resolved', card: fireball });
+    });
+  });
+
   it('marks a name shared by several cards as ambiguous, listing them', async () => {
     const goblinA = aCard({ oracleId: 'goblin-a', name: 'Goblin' });
     const goblinB = aCard({ oracleId: 'goblin-b', name: 'Goblin' });
