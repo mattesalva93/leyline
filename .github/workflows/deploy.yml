@@ -69,8 +69,9 @@ jobs:
 
       # The emergency switch (ADR 0023): a secret holding credential lines turns the testers'
       # guard on, an empty or missing one turns it off and the site is open. The secret reaches
-      # the host through stdin only, never on a command line or in the log. `umask 077`:
-      # readable by its owner only.
+      # the host through stdin only, never on a command line or in the log. Readable by anyone
+      # on the host (`chmod 644`): Caddy reads it as its own user, not the deploy user, and the
+      # file holds only argon2id hashes, never a password.
       - name: Switch the testers' guard
         env:
           TESTER_CREDENTIALS: ${{ secrets.TESTER_CREDENTIALS }}
@@ -79,7 +80,7 @@ jobs:
           guard=$(printf '%s\n' "$TESTER_CREDENTIALS" | sh scripts/tester-guard.sh)
           if [ -n "$guard" ]; then
             # shellcheck disable=SC2029
-            printf '%s\n' "$guard" | ssh deploy "umask 077 && cat > '$guard_file'"
+            printf '%s\n' "$guard" | ssh deploy "cat > '$guard_file' && chmod 644 '$guard_file'"
             echo "The testers' guard is on: only their credentials open the site."
           else
             # shellcheck disable=SC2029
