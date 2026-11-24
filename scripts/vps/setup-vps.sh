@@ -299,7 +299,8 @@ step "OVHcloud control panel → Web Cloud → Domain names → $APP_DOMAIN → 
 step "Point the A record of $APP_DOMAIN itself (subdomain '@') at $VPS_ADDRESS: edit the"
 note "  default one, which points at OVHcloud's parking page, rather than adding a second."
 step "Delete its AAAA record, if there is one: the alpha is IPv4 only (ADR 0016)."
-note "  The zone's other default records (www, MX, TXT) can stay: the site answers on $APP_DOMAIN only."
+step "Point the A record of www.$APP_DOMAIN (subdomain 'www') at $VPS_ADDRESS too: Caddy sends it"
+note "  to $APP_DOMAIN. The zone's other default records (MX, TXT) can stay."
 # `getent ahostsv4/ahostsv6` asks the system resolver for one address family.
 # Every A answer, deduplicated: a parking address left beside the VPS's must not pass.
 until [[ "$(getent ahostsv4 "$APP_DOMAIN" | awk '{ print $1 }' | sort -u)" == "$VPS_ADDRESS" ]] &&
