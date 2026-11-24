@@ -1,7 +1,7 @@
 import { copiesByPrint } from '../print/allocation.ts';
 import { hasRealImage, qualityWarning } from '../print/default-print.ts';
 import { namedCandidate, withoutOutranked } from '../card-search/same-name-preference.ts';
-import { deckLinkSite } from './deck-link.ts';
+import { deckLinkOf } from './deck-link.ts';
 import { SIDEBOARD_PREFIX, sectionOpenedBy } from './decklist-section.ts';
 import { LINE_BREAK } from './line-breaks.ts';
 import { MIN_SIMILARITY, cardKeys, nameKey, trigramSimilarity, trigrams } from '../name-match.ts';
@@ -82,8 +82,8 @@ export function parseLine(text: string): ParsedLine | null {
   const quantityMatch = QUANTITY_NAME.exec(trimmed);
   const quantity = quantityMatch?.[1] ? Number(quantityMatch[1]) : 1;
   const rest = quantityMatch?.[2] ?? trimmed;
-  const site = deckLinkSite(rest);
-  if (site !== undefined) return { kind: 'deckLink', text, quantity, site };
+  const deckLink = deckLinkOf(rest);
+  if (deckLink) return { kind: 'deckLink', text, quantity, site: deckLink.site };
   const card = rest.replace(ARCHIDEKT_TAIL, '');
   const [, name, set, collectorNumber] = NAME_SET_NUMBER.exec(card) ?? [];
   if (!name || !set || !collectorNumber) {

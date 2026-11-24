@@ -530,6 +530,15 @@ describe('resolveDecklist with deck links', () => {
       },
     ]);
   });
+
+  it('knows the site of an address that names its port', async () => {
+    const [line] = await resolveDecklist('https://www.moxfield.com:443/decks/abc', catalog, {
+      today,
+      lang: 'en',
+    });
+
+    expect(line).toMatchObject({ status: 'deckLink', site: 'moxfield' });
+  });
 });
 
 describe('resolveDecklist with deck links, looking cards up', () => {
