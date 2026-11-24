@@ -28,7 +28,7 @@ export function inMemoryServer(
     fetchSuggestedTokens: (lines, lang) => suggestTokens(catalog, lines, { today: TODAY, lang }),
     fetchImages: async (urls, onImageFetched = () => {}) => {
       urls.forEach((_url, index) => onImageFetched(index + 1));
-      return new Map(urls.map((url) => [url, new Uint8Array()]));
+      return { images: new Map(urls.map((url) => [url, new Uint8Array()])), failedUrls: [] };
     },
     searchCardsByName: (query, lang) =>
       searchCards(catalog, { query, lang, today: TODAY, limit: CARD_SEARCH_LIMIT }),

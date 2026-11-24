@@ -37,6 +37,16 @@ function cardRingColoursOf(tile: HTMLElement) {
   return ringColoursOf(within(tile).getByRole('button', { name: /^Modifica / }));
 }
 
+/** Answers `fetchImages` with a card image for each URL, but fails those `isFailing` picks. */
+function answerFetchImagesFailing(isFailing: (url: string) => boolean) {
+  vi.mocked(api.fetchImages).mockImplementation(async (urls) => ({
+    images: new Map(
+      urls.filter((url) => !isFailing(url)).map((url) => [url, jpegOfSize(488, 680)]),
+    ),
+    failedUrls: urls.filter(isFailing),
+  }));
+}
+
 describe('the workspace', () => {
   it('shows the decklist as tiles in the order of the text, each with its image and quantity', async () => {
     await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
@@ -428,9 +438,7 @@ describe('the workspace on a phone', () => {
   it('makes the PDF from the "Foglio" step and hands it to the share menu of a phone that can', async () => {
     const share = vi.fn(async () => {});
     vi.stubGlobal('navigator', { ...navigator, canShare: () => true, share });
-    vi.mocked(api.fetchImages).mockImplementation(
-      async (urls) => new Map(urls.map((url) => [url, jpegOfSize(488, 680)])),
-    );
+    answerFetchImagesFailing(() => false);
     const user = await mountPageAndWrite('4 Sol Ring{Enter}');
 
     await user.click(stepBar().getByRole('button', { name: 'Foglio' }));
@@ -443,6 +451,62 @@ describe('the workspace on a phone', () => {
 
     expect(share).toHaveBeenCalledWith({
       files: [expect.objectContaining({ name: 'proxy-leyline.pdf', type: 'application/pdf' })],
+    });
+  });
+
+  describe('when an image of the PDF cannot be fetched', () => {
+    const isSolRing = (url: string) => url.includes('sol-ring');
+    const fetchedUrls = (call: number) => vi.mocked(api.fetchImages).mock.calls[call]?.[0];
+
+    beforeEach(() => {
+      vi.stubGlobal('navigator', { ...navigator, canShare: () => true, share: async () => {} });
+    });
+
+    async function makePdfFailingSolRing() {
+      answerFetchImagesFailing(isSolRing);
+      const user = await mountPageAndWrite('4 Sol Ring{Enter}1 Lightning Bolt{Enter}');
+      await user.click(stepBar().getByRole('button', { name: 'Foglio' }));
+      await user.click(screen.getByRole('button', { name: 'Crea il PDF' }));
+      await screen.findByRole('alert');
+      return user;
+    }
+
+    it('makes no PDF and names the card, with its set and collector number', async () => {
+      await makePdfFailingSolRing();
+
+      const alert = screen.getByRole('alert');
+      expect(
+        within(alert)
+          .getAllByRole('listitem')
+          .map((item) => item.textContent),
+      ).toEqual(['Sol Ring (C21 #1)']);
+      expect(screen.queryByRole('button', { name: 'Salva o condividi' })).toBeNull();
+    });
+
+    it('fetches only the missing images when the PDF is made again', async () => {
+      const user = await makePdfFailingSolRing();
+      answerFetchImagesFailing(() => false);
+
+      await user.click(screen.getByRole('button', { name: 'Crea il PDF' }));
+
+      expect(await screen.findByRole('button', { name: 'Salva o condividi' })).toBeTruthy();
+      expect(fetchedUrls(1)).toEqual(['https://cards.scryfall.io/large/front/sol-ring-c21.jpg']);
+    });
+
+    it('fetches every image again once the image quality has changed', async () => {
+      const user = await makePdfFailingSolRing();
+      await user.selectOptions(
+        screen.getByLabelText('Qualità delle immagini'),
+        'Qualità massima (PNG)',
+      );
+
+      await user.click(screen.getByRole('button', { name: 'Crea il PDF' }));
+      await screen.findByRole('alert');
+
+      expect(fetchedUrls(1)).toEqual([
+        'https://cards.scryfall.io/png/front/sol-ring-c21.png',
+        'https://cards.scryfall.io/png/front/lightning-bolt-tst.png',
+      ]);
     });
   });
 

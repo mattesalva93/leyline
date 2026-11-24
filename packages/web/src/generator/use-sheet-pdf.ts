@@ -1,5 +1,12 @@
-import { generateSheetPdf, sheetImageUrls, type Sheet, type SheetLayout } from '@leyline/core';
-import { useState } from 'react';
+import {
+  generateSheetPdf,
+  printsShowingImages,
+  sheetImageUrls,
+  type Print,
+  type Sheet,
+  type SheetLayout,
+} from '@leyline/core';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchImages } from '../api.ts';
 import { canShareFile, deviceSharesPdf, downloadPdf, sharePdf, toPdfFile } from './pdf-delivery.ts';
@@ -10,7 +17,8 @@ export type PdfStatus =
   | { readonly step: 'fetchingImages'; readonly fetchedCount: number; readonly imageCount: number }
   | { readonly step: 'composingPages' }
   | { readonly step: 'readyToShare'; readonly file: File; readonly madeFrom: string }
-  | { readonly step: 'failed' };
+  /** `unfetchedPrints` shows one print per image that could not be fetched, if any. */
+  | { readonly step: 'failed'; readonly unfetchedPrints: readonly Print[] };
 
 /** The PDF of a `Sheet`: how far it has got, and how it reaches the user. */
 export interface SheetPdf {
@@ -39,6 +47,8 @@ export function useSheetPdf(
   const [status, setStatus] = useState<PdfStatus>({ step: 'idle' });
   const [sharesPdf] = useState(deviceSharesPdf);
   const [isSharing, setIsSharing] = useState(false);
+  // The images already fetched, kept so that making the PDF again fetches only the missing ones.
+  const fetchedImages = useRef(new Map<string, Uint8Array>());
   const isGenerating = status.step === 'fetchingImages' || status.step === 'composingPages';
 
   /** Differs exactly when the PDF would: the options, and where each image goes on paper. */
@@ -49,13 +59,28 @@ export function useSheetPdf(
   async function createPdf() {
     const madeFrom = pdfIdentity();
     const urls = sheetImageUrls(sheet);
-    setStatus({ step: 'fetchingImages', fetchedCount: 0, imageCount: urls.length });
+    // Another image quality or another print needs other URLs: the images of the old ones go.
+    const neededUrls = new Set(urls);
+    const images = new Map([...fetchedImages.current].filter(([url]) => neededUrls.has(url)));
+    fetchedImages.current = images;
+    const alreadyFetched = images.size;
+    const missingUrls = urls.filter((url) => !images.has(url));
+    const progress = (fetchedCount: number) =>
+      setStatus({ step: 'fetchingImages', fetchedCount, imageCount: urls.length });
+    progress(alreadyFetched);
     try {
-      const images = await fetchImages(urls, (fetchedCount) =>
-        setStatus({ step: 'fetchingImages', fetchedCount, imageCount: urls.length }),
-      );
+      const fetched = await fetchImages(missingUrls, (count) => progress(alreadyFetched + count));
+      fetched.images.forEach((bytes, url) => images.set(url, bytes));
+      if (fetched.failedUrls.length > 0) {
+        setStatus({
+          step: 'failed',
+          unfetchedPrints: printsShowingImages(sheet, fetched.failedUrls),
+        });
+        return;
+      }
       setStatus({ step: 'composingPages' });
       const file = toPdfFile(await generateSheetPdf(sheet, images), t('pdf.fileName'));
+      fetchedImages.current = new Map();
       // The browser opens the share menu only within a few seconds of a tap, and fetching the
       // images outlasts that: sharing waits for a tap of its own. The real file is checked again:
       // the browser may refuse one that the stand-in passed, such as a too large one.
@@ -66,7 +91,7 @@ export function useSheetPdf(
         setStatus({ step: 'idle' });
       }
     } catch {
-      setStatus({ step: 'failed' });
+      setStatus({ step: 'failed', unfetchedPrints: [] });
     }
   }
 
