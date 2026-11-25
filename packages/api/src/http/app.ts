@@ -14,6 +14,7 @@ import {
 } from '@leyline/core';
 import { Hono } from 'hono';
 import { except } from 'hono/combine';
+import type { ErrorReporter } from '../error-reporting/error-reporter.ts';
 import { DATABASE_POOL_SIZE, hasCatalogTables, type Sql } from '../catalog/db.ts';
 import { createPostgresCatalog } from '../catalog/postgres-catalog.ts';
 import { clientAddress } from './client-address.ts';
@@ -29,6 +30,7 @@ interface AppDeps {
   readonly sql: Sql;
   readonly clock: Clock;
   readonly securityLog: SecurityLog;
+  readonly errorReporter: ErrorReporter;
   /** The reverse proxy whose `X-Forwarded-For` is believed (Caddy), or `null` to believe none. */
   readonly trustedProxyHost: string | null;
 }
@@ -123,7 +125,7 @@ export function createApp(deps: AppDeps): Hono {
   /** The UTC date, like Scryfall's release dates. */
   const today = () => deps.clock.now().toISOString().slice(0, 10);
 
-  app.onError(serverErrorHandler(deps.securityLog));
+  app.onError(serverErrorHandler(deps.securityLog, deps.errorReporter));
   app.use('/api/*', clientAddress(deps.trustedProxyHost, deps.clock));
   // The healthcheck tells a serving API apart from a stuck one, even while it is full.
   app.use(

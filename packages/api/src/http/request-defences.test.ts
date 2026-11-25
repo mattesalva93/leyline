@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from './app.ts';
+import { silentErrorReporter } from '../error-reporting/error-reporter.ts';
 import { importBulk } from '../catalog-import/import-bulk.ts';
 import { migrate } from '../catalog/db.ts';
 import { bulkStream, scryfallCard } from '../test-support/scryfall-fixtures.ts';
@@ -38,7 +39,9 @@ async function serveApp({
 }: { sql?: TestDb['sql']; trustedProxyHost?: string | null } = {}) {
   const clock = manualClock();
   const securityLog = recordedSecurityLog();
-  server = await listen(createApp({ sql, clock, securityLog, trustedProxyHost }));
+  server = await listen(
+    createApp({ sql, clock, securityLog, errorReporter: silentErrorReporter, trustedProxyHost }),
+  );
   return { origin: server.origin, clock, securityLog };
 }
 

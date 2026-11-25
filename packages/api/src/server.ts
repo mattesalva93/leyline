@@ -3,6 +3,7 @@ import { createApp } from './http/app.ts';
 import { systemClock } from './http/clock.ts';
 import { stdoutSecurityLog } from './http/security-log.ts';
 import { connect } from './catalog/db.ts';
+import { errorReporterFromEnv } from './error-reporting/report-api-errors.ts';
 import { readerDatabaseUrl } from './env.ts';
 
 // The importer migrates the database; the API only reads it (ADR 0016).
@@ -19,6 +20,8 @@ const server = serve(
       sql,
       clock: systemClock,
       securityLog: stdoutSecurityLog(systemClock),
+      // Off while the environment leaves error reporting unset, as `pnpm dev` does (ADR 0027).
+      errorReporter: await errorReporterFromEnv(),
       trustedProxyHost,
     }).fetch,
     hostname,
