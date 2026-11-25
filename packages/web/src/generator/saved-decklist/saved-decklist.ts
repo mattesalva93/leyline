@@ -35,18 +35,37 @@ function setAside(stored: string) {
 }
 
 /**
+ * The copy set aside, when this release reads it, put back as the saved decklist. An older
+ * release sets aside what a newer one saved, and drops its own key, when the user goes back.
+ */
+function broughtBackFromSetAside(): SavedDecklist | null {
+  const setAsideCopy = localStorage.getItem(SET_ASIDE_KEY);
+  const saved = setAsideCopy === null ? null : savedDecklistOf(setAsideCopy);
+  if (setAsideCopy === null || !saved) return null;
+  try {
+    // Moved, not copied: starting over later must not bring it back a second time.
+    localStorage.setItem(STORAGE_KEY, setAsideCopy);
+    localStorage.removeItem(SET_ASIDE_KEY);
+  } catch {
+    // Full storage keeps the copy where it is; the generator still opens on it.
+  }
+  return saved;
+}
+
+/**
  * The decklist the user left on this device, or `null` when there is none to read. One that is
- * there but unreadable is set aside first.
+ * there but unreadable is set aside first; with none there, the copy set aside comes back if
+ * this release reads it.
  */
 export function loadSavedDecklist(): SavedDecklist | null {
   let stored: string | null;
   try {
     stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === null) return broughtBackFromSetAside();
   } catch {
     // Storage can be blocked (private windows, site data off): the generator starts empty.
     return null;
   }
-  if (stored === null) return null;
   const saved = savedDecklistOf(stored);
   if (!saved) setAside(stored);
   return saved;

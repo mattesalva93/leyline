@@ -10,6 +10,7 @@ import {
   pickCandidate,
   moveOneCopy,
   decklistValue,
+  startNewDecklist,
   answerApiCallsFromCatalog,
 } from '../../test-support/workspace-page.ts';
 import { centreTab, cardGrid, gridTiles, tileSummary } from '../../test-support/grid-queries.ts';
@@ -229,6 +230,35 @@ describe('the decklist saved on the device', () => {
     mountApp('/proxy');
 
     expect(localStorage.getItem(SET_ASIDE_KEY)).toBe('the second unreadable decklist');
+  });
+
+  it('brings back a decklist an older release set aside, once this release reads it', async () => {
+    localStorage.setItem(SET_ASIDE_KEY, savedByVersion1WithSetNames);
+
+    const user = await mountSavedDecklist();
+
+    await expectTheSavedDecklist(user);
+    expect(localStorage.getItem(SET_ASIDE_KEY)).toBeNull();
+    expect(JSON.parse(localStorage.getItem(SAVED_KEY) ?? '')).toMatchObject({ version: 2 });
+  });
+
+  it('keeps the copy set aside, starting empty, while this release cannot read it either', () => {
+    localStorage.setItem(SET_ASIDE_KEY, 'not a decklist');
+
+    mountApp('/proxy');
+
+    expect(decklistValue()).toBe('');
+    expect(localStorage.getItem(SET_ASIDE_KEY)).toBe('not a decklist');
+  });
+
+  it('never brings back a decklist set aside once it came back and the user started over', async () => {
+    localStorage.setItem(SET_ASIDE_KEY, savedByVersion1WithSetNames);
+    const user = await mountSavedDecklist();
+
+    await startNewDecklist(user);
+    reload();
+
+    expect(decklistValue()).toBe('');
   });
 
   it('works for the visit, keeping nothing, when the device keeps nothing', async () => {
