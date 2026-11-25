@@ -19,6 +19,8 @@ COPY tsconfig.base.json tsconfig.json CHANGELOG.md ./
 COPY packages packages
 # The Bugsink DSN the web bundle reports errors with (ADR 0027); empty, the bundle has no SDK.
 ARG VITE_BUGSINK_DSN=
+# The Umami website id the web bundle records product events with (ADR 0027); empty, it records none.
+ARG VITE_UMAMI_WEBSITE_ID=
 RUN pnpm build
 # A self-contained copy of `api` with production dependencies only.
 RUN pnpm --filter @leyline/api deploy --prod --legacy /deploy/api

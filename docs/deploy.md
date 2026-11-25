@@ -126,6 +126,8 @@ ssh -N -L 3001:"$umami":3000 <user>@<host>   # -N: no remote command, only the t
 
 While the tunnel is open, `http://localhost:3001` on this machine is Umami's dashboard. The address changes when the container is created again, so look it up each time. On the first sign-in, as `admin` with the password `umami` that Umami starts with, change that password at once, under _Settings → Security_: the site never exposes the login, but anyone on the host does reach it.
 
+The browser records product events only once the host's `.env` sets `VITE_UMAMI_WEBSITE_ID`, the id of the site that Umami's dashboard gives under _Settings → Websites_ once the site is added there with the public domain. The id reaches the browser only through a new build of the `web` image, and the privacy notice describes Umami from that build on; emptying the line and deploying turns it off again. After turning it on, paste a decklist and make its PDF, then check that the dashboard shows a `decklist_resolved` and a `pdf_generated` event, with their counts and nothing the decklist says.
+
 `umami-retention` deletes, once a day and as Umami's own role, what Umami keeps past its retention (`docker/umami-retention/retention.sql`).
 
 ## GitHub security settings once the repository is public
