@@ -22,16 +22,16 @@ const ABOVE_PHONE_STEP_BAR = { '--phone-step-bar-height': PHONE_STEP_BAR_HEIGHT 
  */
 export function ReloadInvite() {
   const { t } = useTranslation();
-  const newer = useNewerOnlineRelease();
+  const newerRelease = useNewerOnlineRelease();
   const [closedFor, setClosedFor] = useState<string | null>(null);
   const labelId = useId();
-  if (!newer || newer.version === closedFor) return null;
+  if (!newerRelease || newerRelease.version === closedFor) return null;
 
-  const close = () => setClosedFor(newer.version);
+  const close = () => setClosedFor(newerRelease.version);
   const changes =
-    newer.news.length > 0
-      ? { title: t('reloadInvite.news'), items: newer.news }
-      : { title: t('reloadInvite.fixes'), items: newer.fixes };
+    newerRelease.news.length > 0
+      ? { title: t('reloadInvite.news'), items: newerRelease.news }
+      : { title: t('reloadInvite.fixes'), items: newerRelease.fixes };
   return (
     <div
       role="status"
@@ -41,7 +41,7 @@ export function ReloadInvite() {
     >
       <div className="mb-2 flex items-start gap-2">
         <p id={labelId} className={`${LABEL} flex-1 text-accent`}>
-          {t('reloadInvite.label', { version: newer.version })}
+          {t('reloadInvite.label', { version: newerRelease.version })}
         </p>
         <button
           type="button"
