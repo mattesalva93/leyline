@@ -47,9 +47,9 @@
 	# The browser's error reports (ADR 0027), at the path `web`'s error reporting module sends
 	# them to, forwarded to the Bugsink project's envelope endpoint without anything that names
 	# the client: its address, its cookies, its credential, its browser. Off while the host's
-	# `.env` names no Bugsink. `pnpm check:staging` pins all of it.
+	# `.env` names no Bugsink, or no project of it. `pnpm check:staging` pins all of it.
 	handle /error-reports {
-		@errorReportingOff expression `"{$BUGSINK_ORIGIN}" == ""`
+		@errorReportingOff expression `"{$BUGSINK_ORIGIN}" == "" || "{$BUGSINK_PROJECT_ID}" == ""`
 		respond @errorReportingOff 404
 		request_body {
 			max_size 1MB

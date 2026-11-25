@@ -2,8 +2,8 @@
 // way everything that names the client (ADR 0027): its address, cookies, credential and browser.
 // Local staging proves the stripping against a stub of Bugsink, which answers with what it
 // received: set BUGSINK_ORIGIN to STUB_ORIGIN in `.env` (docs/staging.md). Against the real
-// Bugsink the check only sees that the path forwards; while BUGSINK_ORIGIN is empty, that the
-// path is off.
+// Bugsink the check only sees that the path forwards; while BUGSINK_ORIGIN or BUGSINK_PROJECT_ID
+// is empty, that the path is off.
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { ERROR_REPORTS_PATH } from '../../packages/web/src/error-reporting/error-reports-path.ts';
@@ -125,7 +125,7 @@ function strippingFailures(received, projectId) {
  */
 export async function errorReportFailures({ visitorRequest, appAddress, testerCredential }) {
   const { variables, network } = await webEnvironment();
-  const origin = variables.BUGSINK_ORIGIN ?? '';
+  const origin = variables.BUGSINK_PROJECT_ID ? (variables.BUGSINK_ORIGIN ?? '') : '';
   const post = () =>
     visitorRequest.post(`${appAddress}${ERROR_REPORTS_PATH}`, {
       headers: {
