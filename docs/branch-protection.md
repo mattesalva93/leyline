@@ -9,7 +9,7 @@ The protection is two repository rulesets, each kept in the repository as the JS
 - `.github/rulesets/protect-main.json`: the rules `main` and `spec/**` share.
 - `.github/rulesets/block-main-deletion.json`: the rule only `main` has.
 
-`scripts/rulesets.test.js` fails when a workflow that runs on pull requests gains a job the ruleset does not require, so a new CI job is a required check from the start. Each required check names `integration_id` 15368, the GitHub Actions app: a status that anyone else posts under the same name does not count.
+`scripts/rulesets.test.js` fails when a workflow that runs on pull requests gains a job the ruleset does not require, so a new CI job is a required check from the start. Each required check is tied to the GitHub Actions app by its `integration_id`: a status that anyone else posts under the same name does not count.
 
 ## How to read it
 

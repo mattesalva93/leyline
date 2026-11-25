@@ -1,6 +1,6 @@
 # 0024: A multi-ticket spec lands on main through a spec branch, and GitHub enforces the protection
 
-**Status:** accepted (2026-11-25); supersedes in part ADR 0006: enforcement; superseded in part by ADR 0029 (2026-11-25): deletion of spec branches
+**Status:** accepted (2026-11-25); supersedes in part ADR 0006: enforcement; superseded in part by ADR 0029 (2026-11-25): deletion of spec branches, and two rulesets in place of one
 
 ## Decision
 
