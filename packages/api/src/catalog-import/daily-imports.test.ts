@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { runDailyImports } from './daily-imports.ts';
 import type { ImportOutcome } from './import-check-in.ts';
 
-interface FakeHost {
+interface FakeImporterWorld {
   /** Throws instead of importing while true. */
   scryfallDown?: boolean;
   /** Rejects every check-in while true. */
@@ -17,12 +17,12 @@ interface FakeHost {
  * The importer's world in memory: a catalog that remembers when its last import started, a
  * clock that a wait moves forward, and the check-ins the loop sent.
  */
-function fakeHost({
+function fakeImporter({
   scryfallDown = false,
   healthchecksDown = false,
   stopAfterImports = 1,
   shutdownDuringImport = false,
-}: FakeHost) {
+}: FakeImporterWorld) {
   let now = new Date('2026-11-25T03:00:00Z').getTime();
   let lastImportStartedAt: Date | null = null;
   const stop = new AbortController();
@@ -65,27 +65,27 @@ function fakeHost({
 
 describe('the daily catalog import', () => {
   it('checks in a success after an import that succeeds', async () => {
-    const host = fakeHost({});
+    const importer = fakeImporter({});
 
-    await host.run();
+    await importer.run();
 
-    expect(host.checkIns).toEqual(['succeeded']);
+    expect(importer.checkIns).toEqual(['succeeded']);
   });
 
   it('checks in a failure after an import that fails', async () => {
-    const host = fakeHost({ scryfallDown: true });
+    const importer = fakeImporter({ scryfallDown: true });
 
-    await host.run();
+    await importer.run();
 
-    expect(host.checkIns).toEqual(['failed']);
+    expect(importer.checkIns).toEqual(['failed']);
   });
 
   it('checks in nothing for an import that a shutdown cuts short', async () => {
-    const host = fakeHost({ shutdownDuringImport: true });
+    const importer = fakeImporter({ shutdownDuringImport: true });
 
-    await host.run();
+    await importer.run();
 
-    expect(host.checkIns).toEqual([]);
+    expect(importer.checkIns).toEqual([]);
   });
 
   it.each([
@@ -94,15 +94,15 @@ describe('the daily catalog import', () => {
   ])(
     'goes on importing when the check-in after an import that %s fails, and logs it',
     async (_, scryfallDown, nextImportStartsAt) => {
-      const host = fakeHost({ scryfallDown, healthchecksDown: true, stopAfterImports: 2 });
+      const importer = fakeImporter({ scryfallDown, healthchecksDown: true, stopAfterImports: 2 });
 
-      await host.run();
+      await importer.run();
 
-      expect(host.importsTried.map((startedAt) => startedAt.toISOString())).toEqual([
+      expect(importer.importsTried.map((startedAt) => startedAt.toISOString())).toEqual([
         '2026-11-25T03:00:00.000Z',
         nextImportStartsAt,
       ]);
-      expect(host.errorsLogged.flat()).toContainEqual(new Error('Healthchecks.io timed out'));
+      expect(importer.errorsLogged.flat()).toContainEqual(new Error('Healthchecks.io timed out'));
     },
   );
 });
