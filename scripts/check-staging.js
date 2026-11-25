@@ -33,6 +33,7 @@ import { publicReachFailures } from './staging-checks/public-reach.js';
 import { searchIndexingFailures } from './staging-checks/search-indexing.js';
 import { securityHeaderFailures } from './staging-checks/security-headers.js';
 import { sshLoginFailures } from './staging-checks/ssh-login.js';
+import { umamiRetentionFailures } from './staging-checks/umami-retention.js';
 import { testerAccessFailures } from './staging-checks/tester-access.js';
 import { openVpsConnection, vpsFromDockerHost } from './staging-checks/vps-connection.js';
 import { wwwRedirectFailures } from './staging-checks/www-redirect.js';
@@ -56,6 +57,7 @@ const CHECKS = {
   'base images': baseImageFailures,
   'database roles': databaseRoleFailures,
   'database network': databaseNetworkFailures,
+  'umami retention': umamiRetentionFailures,
 };
 
 /** The checks of the host itself, run only against the VPS (ADR 0019, scripts/vps/). */

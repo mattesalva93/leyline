@@ -152,8 +152,8 @@ services:
 
   postgres:
     <<: [*rotated-logs, *least-privilege]
-    # Pinned by digest, like the Dockerfile's base images.
-    image: postgres:18-alpine@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71
+    # Pinned by digest, like the Dockerfile's base images; `umami-retention` runs its `psql`.
+    image: &postgres-image postgres:18-alpine@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71
     # The image's own `postgres` user from the start, instead of root switching to it.
     user: postgres
     # Its shared buffers count towards the limit too.
@@ -183,6 +183,28 @@ services:
       timeout: 5s
       retries: 10
 
+  # Deletes Umami's data past its retention once a day (ADR 0027), as Umami's role.
+  umami-retention:
+    <<: [*rotated-logs, *least-privilege]
+    image: *postgres-image
+    user: postgres
+    command: ['sh', '/etc/umami-retention/daily-retention.sh']
+    deploy: { resources: { limits: { memory: 32m, cpus: '0.5' } } }
+    # libpq's own variables: `psql` signs in with them, and needs no argument for it.
+    environment:
+      PGHOST: postgres
+      PGDATABASE: umami
+      PGUSER: umami
+      PGPASSWORD: ${UMAMI_DATABASE_PASSWORD:?set UMAMI_DATABASE_PASSWORD in .env}
+    networks: [database]
+    restart: unless-stopped
+    volumes:
+      - ./docker/umami-retention:/etc/umami-retention:ro
+    # Umami creates its tables when it starts.
+    depends_on:
+      umami:
+        condition: service_healthy
+
 # `internal` networks have no route out of Docker: only the services on them reach each other.
 networks:
   # Published ports and outgoing traffic: visitors reach Caddy, Caddy reaches Bugsink, the
@@ -194,7 +216,7 @@ networks:
   # Caddy forwarding the product events to Umami.
   analytics:
     internal: true
-  # PostgreSQL and its clients: the api, the importer and Umami.
+  # PostgreSQL and its clients: the api, the importer, Umami and its retention job.
   database:
     internal: true
 

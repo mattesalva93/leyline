@@ -1,6 +1,6 @@
 // The api signs in as `leyline_reader`, which reads the catalog but can neither write to it nor
 // create anything, and has a statement timeout; the importer signs in as `leyline_owner` (ADR 0016).
-// Umami signs in as `umami`, to a database of its own that the catalog's roles
+// Umami and its retention job sign in as `umami`, to a database of its own that the catalog's roles
 // cannot open, as `umami` cannot open the catalog's (ADR 0027).
 import { execInService } from './compose-stack.js';
 import { serviceVariables } from './error-reports.js';
@@ -113,7 +113,8 @@ async function connectionRefused(role, database) {
 }
 
 /**
- * Umami's image has no Postgres client for Node, so its URL names the role.
+ * Umami's image has no Postgres client for Node, so its URL names the role; its retention job
+ * signs in for real with the same password, through `psql` and libpq's PG* variables.
  */
 async function umamiRoleFailures() {
   const failures = [];
@@ -121,6 +122,17 @@ async function umamiRoleFailures() {
   const umamiSignsInAs = `${umamiUrl.username} to ${umamiUrl.pathname.slice(1)}`;
   if (umamiSignsInAs !== `umami to ${UMAMI_DATABASE}`)
     failures.push(`umami signs in as ${umamiSignsInAs}, expected umami to ${UMAMI_DATABASE}`);
+  const retentionRole = await execInService(
+    'umami-retention',
+    ...['psql', '-tA', '-c', "select current_user || ' to ' || current_database()"],
+  ).then(
+    (stdout) => stdout.trim(),
+    (error) => `nobody (${error.stderr.trim()})`,
+  );
+  if (retentionRole !== `umami to ${UMAMI_DATABASE}`)
+    failures.push(
+      `umami-retention signs in as ${retentionRole}, expected umami to ${UMAMI_DATABASE}`,
+    );
   if (!(await connectionRefused('umami', '"$POSTGRES_DB"')))
     failures.push("umami opens the catalog's database");
   for (const catalogRole of ['leyline_owner', 'leyline_reader']) {
