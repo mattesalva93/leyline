@@ -5,8 +5,8 @@ import type { Plugin } from 'vite';
 /** The file a page left open fetches to learn the release online now (ADR 0025). */
 const VERSION_FILE = 'version.json';
 
-/** The product's one version, which lives in the root package.json only. */
-function rootVersion(): string {
+/** The app version, which lives in the root package.json only. */
+function rootAppVersion(): string {
   const packageJson = readFileSync(join(import.meta.dirname, '../../package.json'), 'utf8');
   const { version } = JSON.parse(packageJson) as { version?: unknown };
   if (typeof version !== 'string') throw new Error('The root package.json has no version.');
@@ -18,7 +18,7 @@ function rootVersion(): string {
  * `/version.json` from the dev server and from the built `dist`.
  */
 export function appVersion(): Plugin {
-  const version = rootVersion();
+  const version = rootAppVersion();
   const source = `${JSON.stringify({ version })}\n`;
   return {
     name: 'leyline-app-version',
