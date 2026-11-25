@@ -51,32 +51,34 @@ function isAbove(a, b) {
 
 /**
  * What keeps a pull request to `main` from being a release (ADR 0025): the top entry of
- * `changelog`, the pull request's `version` in package.json and `main`'s, which counts as
+ * `changelog`, the pull request's `appVersion` in package.json and `main`'s, which counts as
  * 0.0.0 when it has none. Empty when the pull request is ready.
  */
-export function releaseErrors({ changelog, version, mainVersion = '0.0.0' }) {
+export function releaseErrors({ changelog, appVersion, mainAppVersion = '0.0.0' }) {
   const entry = topEntry(changelog);
-  const hasVersion = SEMVER.test(version ?? '');
-  const example = hasVersion ? version : 'X.Y.Z';
-  if (!entry)
+  const hasVersion = SEMVER.test(appVersion ?? '');
+  if (!entry) {
+    const example = hasVersion ? appVersion : 'X.Y.Z';
     return [`CHANGELOG.md has no entry. Add one at the top: "## ${example} — YYYY-MM-DD".`];
+  }
 
   const errors = [];
+  const entryHasVersion = SEMVER.test(entry.version);
   if (!hasVersion)
     errors.push(
-      `package.json's version "${version ?? ''}" is not MAJOR.MINOR.PATCH: write "version": "${SEMVER.test(entry.version) ? entry.version : 'X.Y.Z'}".`,
+      `package.json's version "${appVersion ?? ''}" is not MAJOR.MINOR.PATCH: write "version": "${entryHasVersion ? entry.version : 'X.Y.Z'}".`,
     );
-  if (!SEMVER.test(entry.version))
+  if (!entryHasVersion)
     errors.push(
-      `The top entry's version "${entry.version}" is not MAJOR.MINOR.PATCH, like "${example}".`,
+      `The top entry's version "${entry.version}" is not MAJOR.MINOR.PATCH, like "${hasVersion ? appVersion : 'X.Y.Z'}".`,
     );
-  else if (hasVersion && entry.version !== version)
+  else if (hasVersion && entry.version !== appVersion)
     errors.push(
-      `The top entry is ${entry.version} but package.json says ${version}: write the same version in both.`,
+      `The top entry is ${entry.version} but package.json says ${appVersion}: write the same version in both.`,
     );
-  if (hasVersion && !isAbove(version, mainVersion))
+  if (hasVersion && !isAbove(appVersion, mainAppVersion))
     errors.push(
-      `Version ${version} is not above main's: main is at ${mainVersion}. Raise the minor for a feat, the patch otherwise.`,
+      `Version ${appVersion} is not above main's: main is at ${mainAppVersion}. Raise the minor for a feat, the patch otherwise.`,
     );
   if (!isRealDay(entry.date))
     errors.push(
@@ -89,8 +91,8 @@ export function releaseErrors({ changelog, version, mainVersion = '0.0.0' }) {
   return errors;
 }
 
-/** `main`'s version: the first parent of the merge commit is the base branch. */
-function mainVersion() {
+/** `main`'s app version: the first parent of the merge commit is the base branch. */
+function mainAppVersion() {
   const packageJson = execFileSync('git', ['show', 'HEAD^1:package.json'], { encoding: 'utf8' });
   return JSON.parse(packageJson).version;
 }
@@ -101,8 +103,8 @@ if (
 ) {
   const errors = releaseErrors({
     changelog: existsSync('CHANGELOG.md') ? readFileSync('CHANGELOG.md', 'utf8') : '',
-    version: JSON.parse(readFileSync('package.json', 'utf8')).version,
-    mainVersion: mainVersion(),
+    appVersion: JSON.parse(readFileSync('package.json', 'utf8')).version,
+    mainAppVersion: mainAppVersion(),
   });
   if (errors.length > 0) {
     console.error(

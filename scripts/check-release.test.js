@@ -8,14 +8,14 @@ describe('releaseErrors', () => {
   it('passes a pull request whose top entry names its version above main', () => {
     const changelog = entry('## 0.2.0 — 2026-12-01');
 
-    expect(releaseErrors({ changelog, version: '0.2.0', mainVersion: '0.1.0' })).toEqual([]);
+    expect(releaseErrors({ changelog, appVersion: '0.2.0', mainAppVersion: '0.1.0' })).toEqual([]);
   });
 
   it('fails a changelog with no entry and says how to write one', () => {
     const errors = releaseErrors({
       changelog: '# Changelog\n',
-      version: '0.2.0',
-      mainVersion: '0.1.0',
+      appVersion: '0.2.0',
+      mainAppVersion: '0.1.0',
     });
 
     expect(errors).toHaveLength(1);
@@ -27,8 +27,8 @@ describe('releaseErrors', () => {
     (written) => {
       const errors = releaseErrors({
         changelog: entry(`## ${written} — 2026-12-01`),
-        version: '0.2.0',
-        mainVersion: '0.1.0',
+        appVersion: '0.2.0',
+        mainAppVersion: '0.1.0',
       });
 
       expect(errors.some((error) => error.includes(`"${written}"`))).toBe(true);
@@ -38,8 +38,8 @@ describe('releaseErrors', () => {
   it('fails a top entry whose version differs from package.json', () => {
     const errors = releaseErrors({
       changelog: entry('## 0.3.0 — 2026-12-01'),
-      version: '0.2.0',
-      mainVersion: '0.1.0',
+      appVersion: '0.2.0',
+      mainAppVersion: '0.1.0',
     });
 
     expect(errors).toHaveLength(1);
@@ -50,8 +50,8 @@ describe('releaseErrors', () => {
   it('fails a package.json without a MAJOR.MINOR.PATCH version', () => {
     const errors = releaseErrors({
       changelog: entry('## 0.2.0 — 2026-12-01'),
-      version: undefined,
-      mainVersion: '0.1.0',
+      appVersion: undefined,
+      mainAppVersion: '0.1.0',
     });
 
     expect(errors).toEqual([expect.stringContaining('"version": "0.2.0"')]);
@@ -60,24 +60,26 @@ describe('releaseErrors', () => {
   it.each([
     ['equal to', '0.2.0'],
     ['below', '0.10.0'],
-  ])('fails a pull request whose version is %s main', (_, mainVersion) => {
+  ])('fails a pull request whose version is %s main', (_, mainAppVersion) => {
     const errors = releaseErrors({
       changelog: entry('## 0.2.0 — 2026-12-01'),
-      version: '0.2.0',
-      mainVersion,
+      appVersion: '0.2.0',
+      mainAppVersion,
     });
 
     expect(errors).toHaveLength(1);
-    expect(errors[0]).toContain(`main is at ${mainVersion}`);
+    expect(errors[0]).toContain(`main is at ${mainAppVersion}`);
   });
 
   it('counts a main without a version as 0.0.0', () => {
     const changelog = entry('## 0.1.0 — 2026-11-24');
 
-    expect(releaseErrors({ changelog, version: '0.1.0', mainVersion: undefined })).toEqual([]);
-    expect(releaseErrors({ changelog: entry('## 0.0.0 — 2026-11-24'), version: '0.0.0' })).toEqual([
-      expect.stringContaining('main is at 0.0.0'),
-    ]);
+    expect(releaseErrors({ changelog, appVersion: '0.1.0', mainAppVersion: undefined })).toEqual(
+      [],
+    );
+    expect(
+      releaseErrors({ changelog: entry('## 0.0.0 — 2026-11-24'), appVersion: '0.0.0' }),
+    ).toEqual([expect.stringContaining('main is at 0.0.0')]);
   });
 
   it('passes a top entry with only "Correzioni"', () => {
@@ -86,7 +88,7 @@ describe('releaseErrors', () => {
       '### Correzioni\n\n- La stampa non taglia più il bordo.\n',
     );
 
-    expect(releaseErrors({ changelog, version: '0.1.1', mainVersion: '0.1.0' })).toEqual([]);
+    expect(releaseErrors({ changelog, appVersion: '0.1.1', mainAppVersion: '0.1.0' })).toEqual([]);
   });
 
   it.each([
@@ -96,8 +98,8 @@ describe('releaseErrors', () => {
   ])('fails a top entry with %s', (_, body) => {
     const errors = releaseErrors({
       changelog: entry('## 0.2.0 — 2026-12-01', body),
-      version: '0.2.0',
-      mainVersion: '0.1.0',
+      appVersion: '0.2.0',
+      mainAppVersion: '0.1.0',
     });
 
     expect(errors).toHaveLength(1);
@@ -114,7 +116,9 @@ describe('releaseErrors', () => {
       '- La prima alpha.',
     ].join('\n\n');
 
-    expect(releaseErrors({ changelog, version: '0.2.0', mainVersion: '0.1.0' })).toHaveLength(1);
+    expect(releaseErrors({ changelog, appVersion: '0.2.0', mainAppVersion: '0.1.0' })).toHaveLength(
+      1,
+    );
   });
 
   it.each(['2026-12-1', '01-12-2026', '2026-13-01', '2026-02-30', ''])(
@@ -122,8 +126,8 @@ describe('releaseErrors', () => {
     (date) => {
       const errors = releaseErrors({
         changelog: entry(`## 0.2.0 — ${date}`),
-        version: '0.2.0',
-        mainVersion: '0.1.0',
+        appVersion: '0.2.0',
+        mainAppVersion: '0.1.0',
       });
 
       expect(errors).toHaveLength(1);
