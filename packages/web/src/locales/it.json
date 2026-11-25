@@ -153,7 +153,7 @@
     },
     "device": {
       "heading": "Dati sul tuo dispositivo",
-      "localStorage": "L’app salva nel browser (localStorage) solo ciò che serve alle sue funzioni: la lingua delle carte, la decklist in corso con le stampe scelte e le opzioni del foglio, le dimensioni dei pannelli e delle carte, e la guida, se è accesa e quali passi sono già svolti o saltati. Questa copia resta sul tuo dispositivo. Al server arrivano solo il testo della decklist, le ricerche e la lingua, per riconoscere e cercare le carte: il server risponde e non li conserva. Nessun cookie."
+      "localStorage": "L’app salva nel browser (localStorage) solo ciò che serve alle sue funzioni: la lingua delle carte, la decklist in corso con le stampe scelte e le opzioni del foglio, le dimensioni dei pannelli e delle carte, e la guida, se è accesa e quali passi sono già svolti o saltati. Questa copia resta sul tuo dispositivo. Una decklist salvata che l’app non riesce più a leggere non viene cancellata: ne resta da parte una copia, sempre sul tuo dispositivo, che sostituisce quella messa da parte prima. Al server arrivano solo il testo della decklist, le ricerche e la lingua, per riconoscere e cercare le carte: il server risponde e non li conserva. Nessun cookie."
     },
     "absent": {
       "heading": "Cosa non c’è",

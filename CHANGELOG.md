@@ -2,6 +2,13 @@
 
 Cosa cambia in Leyline a ogni rilascio. La voce più recente sta in cima.
 
+## 0.2.2 — 2026-11-25
+
+### Correzioni
+
+- La decklist salvata nel browser, con le stampe scelte e le opzioni del foglio, resta intera anche quando un rilascio cambia il modo in cui viene salvata.
+- Una decklist salvata che l'app non riesce a leggere non viene più cancellata: ne resta una copia a parte sul tuo dispositivo e il generatore si apre vuoto, senza errori. Se torni a un rilascio che sa leggerla, la decklist ricompare da sola.
+
 ## 0.2.1 — 2026-11-25
 
 ### Correzioni

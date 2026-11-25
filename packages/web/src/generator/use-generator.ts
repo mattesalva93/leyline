@@ -35,7 +35,7 @@ import { fetchPrintPage, resolveDecklistText } from '../api.ts';
 import { loadDefaultLang, saveDefaultLang } from '../language/default-lang.ts';
 import { choicesKeysOf, type LineChoices } from './line-choices.ts';
 import { allocationsSplitOverPrints, type LineSplitOverPrints } from './line-split.ts';
-import { loadSavedDecklist } from './saved-decklist.ts';
+import { loadSavedDecklist } from './saved-decklist/saved-decklist.ts';
 import { useDecklistUnderWay } from './use-decklist-under-way.ts';
 import { useSheetPdf, type SheetPdf } from './use-sheet-pdf.ts';
 import { useSuggestedTokens } from './use-suggested-tokens.ts';
