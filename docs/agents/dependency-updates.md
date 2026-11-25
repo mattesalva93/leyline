@@ -2,7 +2,7 @@
 
 Dependencies are updated on the work item's branch, before its PR is opened, never in a PR of their own against `main` (ADR 0018).
 
-1. Run `pnpm deps:outdated`. It lists npm packages, mise tools, the workflows' actions and the Dockerfile's base images that have a newer release or whose tag was rebuilt under a new digest.
+1. Run `pnpm deps:outdated`. It lists npm packages, mise tools, the workflows' actions and the stack's base images that have a newer release or whose tag was rebuilt under a new digest.
 2. Take every minor and patch update in:
    - npm: `pnpm update --recursive`.
    - mise: `mise upgrade --bump`. pnpm sits in `mise.toml` and in `package.json`'s `packageManager`: move both, and the `Dockerfile`'s `npm install --global pnpm@`, to the same version.

@@ -1,15 +1,17 @@
 // Lists every dependency with a newer release: npm packages, mise tools, the workflows' actions
-// and the Dockerfile's base images, whose tags are also checked for a rebuild under a new digest.
+// and the stack's base images, whose tags are also checked for a rebuild under a new digest.
 // Run on a work item's branch before its PR, which takes the updates in
 // (docs/agents/dependency-updates.md).
 //   pnpm deps:outdated
 // Needs `gh` logged in, to read the actions' and Caddy's latest releases, and Docker Hub's
-// registry, to read the base images' current digests.
+// registry, to read the base images' current digests; `docker compose`, to read the stack.
 import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dockerHubDigest } from './deps-outdated/docker-hub-digest.js';
 import { outdatedImageDigests } from './deps-outdated/image-digests.js';
+import { stackBaseImages } from './docker/base-images.js';
+import { composeModel } from './docker/compose-model.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const WORKFLOWS_DIR = `${ROOT}.github/workflows/`;
@@ -62,11 +64,9 @@ function outdatedActions() {
  * `node` and the pnpm installed in it follow mise's, and `caddy` its latest minor. `postgres` stays on its major: a new
  * one needs its data migrated, which is a work item of its own.
  */
-function outdatedBaseImages() {
+function outdatedBaseImages(images) {
+  const imageTags = Object.fromEntries(images.map(({ name, tag }) => [name, tag]));
   const dockerfile = readFileSync(`${ROOT}Dockerfile`, 'utf8');
-  const imageTags = Object.fromEntries(
-    [...dockerfile.matchAll(/^FROM ([\w.-]+):([\w.-]+)/gm)].map(([, image, tag]) => [image, tag]),
-  );
   const outdated = [];
   const miseToml = readFileSync(`${ROOT}mise.toml`, 'utf8');
   const miseNode = miseToml.match(/^node = "(.+)"/m)[1];
@@ -85,17 +85,16 @@ function outdatedBaseImages() {
   return outdated;
 }
 
+const baseImages = await stackBaseImages(await composeModel());
 const outdated = [
   ...outdatedNpmPackages(),
   ...outdatedMiseTools(),
   ...outdatedActions(),
-  ...outdatedBaseImages(),
+  ...outdatedBaseImages(baseImages),
 ];
 let digestCheckError;
 try {
-  outdated.push(
-    ...(await outdatedImageDigests(readFileSync(`${ROOT}Dockerfile`, 'utf8'), dockerHubDigest)),
-  );
+  outdated.push(...(await outdatedImageDigests(baseImages, dockerHubDigest)));
 } catch (error) {
   digestCheckError = error;
 }
