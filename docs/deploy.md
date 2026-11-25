@@ -98,4 +98,4 @@ gh api --method PUT repos/{owner}/{repo}/vulnerability-alerts   # Dependabot ale
 gh api repos/{owner}/{repo} --jq .security_and_analysis         # check: both "enabled"
 ```
 
-ADR 0006 lists the branch ruleset that also becomes available then.
+The branch rulesets that also became available then are in [Branch protection](branch-protection.md).
