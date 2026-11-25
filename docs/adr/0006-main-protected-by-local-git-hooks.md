@@ -1,6 +1,6 @@
 # 0006: main is protected by local git hooks
 
-**Status:** accepted (2026-11-07)
+**Status:** accepted (2026-11-07), superseded in part by ADR 0024 (2026-11-25): enforcement
 
 ## Decision
 
