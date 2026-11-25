@@ -119,7 +119,9 @@ http://127.0.0.1:8081 {
 # The api's error reports (ADR 0027). The api has no route out of Docker (ADR 0016): it sends them
 # here, over the `proxy` network, and Caddy forwards them as it does the browser's. Never
 # published, as Compose publishes 80 and 443 alone, and `pnpm check:staging` pins that the
-# public site does not reach it. Outside the testers' guard: the api has no credential.
+# public site does not reach it. Every service on the `internet` network reaches it too, the
+# importer among them: that gains it nothing, as it can reach Bugsink straight, and the DSN is
+# public in the web bundle. Outside the testers' guard: the api has no credential.
 http://:8082 {
 	handle /error-reports {
 		import forward-error-reports
