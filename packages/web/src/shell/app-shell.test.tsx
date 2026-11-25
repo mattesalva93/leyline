@@ -344,6 +344,9 @@ describe('the app shell', () => {
           'non contiene il testo della decklist, le ricerche',
         );
         expect(section('Dati trattati')).toContain('i più vecchi vengono cancellati');
+        expect(section('Dati trattati')).toContain(
+          'Allo stesso modo il server, quando una richiesta fallisce per un suo errore',
+        );
         expect(section('Destinatari')).toContain('Bugsink B.V.');
         expect(section('Finalità e base giuridica')).toContain('correggere gli errori dell’app');
         expect(section('Finalità e base giuridica')).not.toContain('servono solo alla sicurezza');

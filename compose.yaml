@@ -76,6 +76,10 @@ services:
       PORT: 3000
       # The only proxy whose X-Forwarded-For the api believes: Caddy, in the `web` service.
       TRUSTED_PROXY_HOST: web
+      # Its server errors go to Bugsink through Caddy's internal listener, never out (ADR 0027):
+      # the same DSN as the browser's, and empty, it reports none.
+      BUGSINK_DSN: ${VITE_BUGSINK_DSN:-}
+      ERROR_REPORTS_URL: http://web:8082/error-reports
     # Caddy's requests in, the database out, and nothing else: the api calls no outside service.
     networks: [proxy, database]
     restart: unless-stopped
@@ -150,7 +154,7 @@ networks:
   # Published ports and outgoing traffic: visitors reach Caddy, Caddy reaches Bugsink, the
   # importer reaches Scryfall.
   internet:
-  # Caddy forwarding /api to the api.
+  # Caddy forwarding /api to the api, and the api's error reports to Caddy.
   proxy:
     internal: true
   # PostgreSQL and its two clients, the api and the importer.

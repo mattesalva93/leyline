@@ -245,6 +245,9 @@ importers:
       '@leyline/core':
         specifier: workspace:*
         version: link:../core
+      '@sentry/core':
+        specifier: ^11.17.0
+        version: 11.17.0
       hono:
         specifier: ^4.13.21
         version: 4.13.21

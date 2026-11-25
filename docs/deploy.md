@@ -84,13 +84,19 @@ DOCKER_HOST=ssh://<user>@<host> COMPOSE_PROJECT_NAME=<last folder of DEPLOY_PATH
 
 ## Error reporting
 
-The browser reports its uncaught errors to Bugsink's managed service through the site's own `/error-reports` path, which Caddy forwards without the client's address, cookies or credential (ADR 0027). It is off while the host's `.env` leaves its three lines empty. To turn it on, fill them in from the Bugsink project's DSN, `https://<key>@<host>/<project>`:
+The browser reports its uncaught errors to Bugsink's managed service through the site's own `/error-reports` path, which Caddy forwards without the client's address, cookies or credential (ADR 0027). The api reports every error that becomes a 500 the same way, through an internal listener of Caddy on the `proxy` network that is never published: the api keeps no route out (ADR 0016). It is off while the host's `.env` leaves its three lines empty. To turn it on, fill them in from the Bugsink project's DSN, `https://<key>@<host>/<project>`:
 
-- `VITE_BUGSINK_DSN`: the DSN whole, built into the web bundle;
+- `VITE_BUGSINK_DSN`: the DSN whole, built into the web bundle and handed to the api;
 - `BUGSINK_ORIGIN`: `https://<host>`, where Caddy forwards the reports;
 - `BUGSINK_PROJECT_ID`: `<project>`, the number at the end of the DSN.
 
-Then deploy: the DSN reaches the browser only through a new build of the `web` image, and the privacy notice describes Bugsink from that build on. Emptying the three lines and deploying turns it off again. `pnpm check:staging` checks that the path forwards to Bugsink, or that it answers 404 while off. After turning it on, throw an error in the browser's console (`setTimeout(() => { throw new Error('test') })`) and check that Bugsink shows it under the release the site serves, with no IP address.
+Then deploy: the DSN reaches the browser only through a new build of the `web` image, and the privacy notice describes Bugsink from that build on. Emptying the three lines and deploying turns it off again. `pnpm check:staging` checks that the path and the internal listener forward to Bugsink, or that they answer 404 while off, and that the listener does not answer from outside. After turning it on, throw an error in the browser's console (`setTimeout(() => { throw new Error('test') })`) and check that Bugsink shows it under the release the site serves, with no IP address.
+
+To test the api's, send it an error from inside its container through the same reporter the server uses, and check that Bugsink shows it under the same release:
+
+```sh
+docker compose exec api node -e "import('./dist/error-reporting/error-reporter-from-env.js').then(async ({ errorReporterFromEnv }) => { (await errorReporterFromEnv()).report(new Error('api test')); setTimeout(() => {}, 2000); })"
+```
 
 ## GitHub security settings once the repository is public
 
