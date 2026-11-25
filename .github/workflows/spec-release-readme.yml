@@ -1,0 +1,38 @@
+name: Spec release README
+
+# Runs on every pull request, whatever its branches: it is a required check of the ruleset
+# (ADR 0024), and a required check that never starts would leave the pull request waiting.
+# Apart from ci.yml so that editing a pull request's description reruns only this check.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+# No token permission by default: each job asks for what it needs.
+permissions: {}
+
+# Each edit of the description starts a run; only the latest one matters.
+concurrency:
+  group: spec-release-readme-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  spec-release-readme:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          # The pull request's merge commit and its first parent, the base branch.
+          fetch-depth: 2
+      # Only node: the check needs none of the other tools pinned in mise.toml.
+      - uses: jdx/mise-action@v5.3.0
+        with:
+          install_args: node
+      # The description is the author's text: it reaches the script as data, never as shell code.
+      - run: node scripts/check-spec-release-readme.js
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+          PR_BODY: ${{ github.event.pull_request.body }}
