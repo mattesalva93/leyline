@@ -37,7 +37,7 @@ services:
       # Where Caddy forwards the browser's error reports (ADR 0027): empty, it forwards none.
       BUGSINK_ORIGIN: ${BUGSINK_ORIGIN:-}
       BUGSINK_PROJECT_ID: ${BUGSINK_PROJECT_ID:-}
-    networks: [internet, proxy]
+    networks: [internet, proxy, analytics]
     volumes:
       # Certificates and the local CA: losing them means new certificates on every start.
       - caddy-data:/data
@@ -119,10 +119,41 @@ services:
       postgres:
         condition: service_healthy
 
+  # Product analytics (ADR 0027): Caddy forwards it only the path that receives events, and the
+  # owner opens its dashboard through an SSH tunnel (docs/deploy.md). No route out of Docker.
+  umami:
+    <<: [*rotated-logs, *least-privilege]
+    # Pinned by digest, like the Dockerfile's base images; `pnpm deps:outdated` checks both.
+    image: umamisoftware/umami:3.5.0@sha256:0e7895d368e94b1b1dbd45eae4e2fb093ffbabfe498473579da4d7c7f3fe6c6c
+    # Its peak on staging, 234 MiB, came from starting and taking 500 events at once.
+    deploy: { resources: { limits: { memory: 384m, cpus: '1' } } }
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DATABASE_PASSWORD:?set UMAMI_DATABASE_PASSWORD in .env}@postgres:5432/umami
+      # Signs its login sessions and enters every session's hash.
+      APP_SECRET: ${UMAMI_APP_SECRET:?set UMAMI_APP_SECRET in .env}
+      # A visitor's session hash changes every day (ADR 0027); Caddy passes it no address to hash.
+      SALT_ROTATION: daily
+      # No telemetry and no update check, from the server or from the dashboard's page.
+      DISABLE_TELEMETRY: '1'
+      DISABLE_UPDATES: '1'
+    networks: [analytics, database]
+    restart: unless-stopped
+    # Next.js caches what it serves there, and an unhandled error ends any request it cannot.
+    tmpfs: [/app/.next/cache]
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', '-o', '/dev/null', 'http://127.0.0.1:3000/api/heartbeat']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     <<: [*rotated-logs, *least-privilege]
-    # Pinned by digest, like the Dockerfile's base images.
-    image: postgres:18-alpine@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71
+    # Pinned by digest, like the Dockerfile's base images; `umami-retention` runs its `psql`.
+    image: &postgres-image postgres:18-alpine@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71
     # The image's own `postgres` user from the start, instead of root switching to it.
     user: postgres
     # Its shared buffers count towards the limit too.
@@ -136,6 +167,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-leyline}
       LEYLINE_OWNER_PASSWORD: ${LEYLINE_OWNER_PASSWORD:?set LEYLINE_OWNER_PASSWORD in .env}
       LEYLINE_READER_PASSWORD: ${LEYLINE_READER_PASSWORD:?set LEYLINE_READER_PASSWORD in .env}
+      UMAMI_DATABASE_PASSWORD: ${UMAMI_DATABASE_PASSWORD:?set UMAMI_DATABASE_PASSWORD in .env}
     # No port, not even on loopback: `pnpm db:up` runs a database of its own for `pnpm dev` and
     # the tests (compose.dev.yaml).
     networks: [database]
@@ -151,6 +183,28 @@ services:
       timeout: 5s
       retries: 10
 
+  # Deletes Umami's data past its retention once a day (ADR 0027), as Umami's role.
+  umami-retention:
+    <<: [*rotated-logs, *least-privilege]
+    image: *postgres-image
+    user: postgres
+    command: ['sh', '/etc/umami-retention/daily-retention.sh']
+    deploy: { resources: { limits: { memory: 32m, cpus: '0.5' } } }
+    # libpq's own variables: `psql` signs in with them, and needs no argument for it.
+    environment:
+      PGHOST: postgres
+      PGDATABASE: umami
+      PGUSER: umami
+      PGPASSWORD: ${UMAMI_DATABASE_PASSWORD:?set UMAMI_DATABASE_PASSWORD in .env}
+    networks: [database]
+    restart: unless-stopped
+    volumes:
+      - ./docker/umami-retention:/etc/umami-retention:ro
+    # Umami creates its tables when it starts.
+    depends_on:
+      umami:
+        condition: service_healthy
+
 # `internal` networks have no route out of Docker: only the services on them reach each other.
 networks:
   # Published ports and outgoing traffic: visitors reach Caddy, Caddy reaches Bugsink, the
@@ -159,7 +213,10 @@ networks:
   # Caddy forwarding /api to the api, and the api's error reports to Caddy.
   proxy:
     internal: true
-  # PostgreSQL and its two clients, the api and the importer.
+  # Caddy forwarding the product events to Umami.
+  analytics:
+    internal: true
+  # PostgreSQL and its clients: the api, the importer, Umami and its retention job.
   database:
     internal: true
 

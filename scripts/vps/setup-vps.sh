@@ -385,6 +385,17 @@ ENV
 EOF
   say "✓ wrote $DEPLOY_PATH/.env on the VPS."
 fi
+# Umami's password and secret (ADR 0027), added to an older `.env` too: each line only when
+# missing, so a password PostgreSQL already holds never changes. `grep -q`: tests, prints nothing.
+# shellcheck disable=SC2087 # $DEPLOY_PATH expands here on purpose.
+ssh "$DEPLOYER" bash -s <<EOF
+set -e
+cd '$DEPLOY_PATH'
+for name in UMAMI_DATABASE_PASSWORD UMAMI_APP_SECRET; do
+  grep -q "^\$name=" .env || echo "\$name=\$(openssl rand -hex 32)" >> .env
+done
+EOF
+say "✓ $DEPLOY_PATH/.env holds Umami's password and secret."
 
 stage "The testers' credentials"
 say "The alpha is open (ADR 0023). The testers' guard is its emergency switch: its credentials"

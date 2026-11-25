@@ -8,12 +8,12 @@ The alpha runs on an OVHcloud VPS-1 (ADR 0016). `scripts/vps/setup-vps.sh` walks
 
 ### Building on the host
 
-The VPS builds the images itself on every deploy (ADR 0012). Measured on staging on 2026-11-22: a build without cache followed by `up --wait`, beside the running stack, peaked at **1346 MiB** of memory the kernel cannot drop (anonymous, kernel and shared memory, summed over Docker's whole `system.slice` cgroup and sampled every 100 ms), against 542 MiB before the build. That fits in the VPS-1's 4 GB with its 2 GB of swap untouched, so ADR 0012 holds. Counting the page cache, which the kernel drops when memory runs short, the peak was 6.1 GiB. Measure again when the build gains a heavy step.
+The VPS builds the images itself on every deploy (ADR 0012). Measured on staging on 2026-11-22: a build without cache followed by `up --wait`, beside the running stack, peaked at **1346 MiB** of memory the kernel cannot drop (anonymous, kernel and shared memory, summed over Docker's whole `system.slice` cgroup and sampled every 100 ms), against 542 MiB before the build. That fits in the VPS-1's 4 GB with its 2 GB of swap untouched, so ADR 0012 holds. Umami, added on 2026-11-25, was not in that stack: it keeps about 200 MiB more resident beside it. Counting the page cache, which the kernel drops when memory runs short, the peak was 6.1 GiB. Measure again when the build gains a heavy step.
 
 ## Turn it on
 
 1. **Prepare the host.** Install Docker Engine, create a deploy user in the `docker` group, open ports 80 and 443, and point the domain's DNS at the host, its `www.` name too: Caddy redirects it to the domain.
-2. **Write the host's `.env`** in the deploy path, from `.env.example`, before the first deploy, with a strong password of its own in each of `POSTGRES_PASSWORD`, `LEYLINE_OWNER_PASSWORD` and `LEYLINE_READER_PASSWORD`, the database's roles that `docs/staging.md` explains. `openssl rand -hex 32` prints one (32 random bytes as hex, safe in a URL). PostgreSQL reads them only when it creates its volume: a changed `POSTGRES_PASSWORD` needs `ALTER USER` by hand, a changed role password needs the roles script run again as `docs/staging.md` shows. The `*_DATABASE_URL` lines are for `pnpm` on a development machine and can be left out. If the domain has an IPv6 (AAAA) record, `PUBLISH_ADDRESS=0.0.0.0` publishes on IPv4 only: drop the record, or Let's Encrypt may fail to reach the host.
+2. **Write the host's `.env`** in the deploy path, from `.env.example`, before the first deploy, with a strong password of its own in each of `POSTGRES_PASSWORD`, `LEYLINE_OWNER_PASSWORD`, `LEYLINE_READER_PASSWORD` and `UMAMI_DATABASE_PASSWORD`, the database's roles that `docs/staging.md` explains, and a strong secret in `UMAMI_APP_SECRET`. `openssl rand -hex 32` prints one (32 random bytes as hex, safe in a URL). PostgreSQL reads them only when it creates its volume: a changed `POSTGRES_PASSWORD` needs `ALTER USER` by hand, a changed role password needs the roles script run again as `docs/staging.md` shows. The `*_DATABASE_URL` lines are for `pnpm` on a development machine and can be left out. If the domain has an IPv6 (AAAA) record, `PUBLISH_ADDRESS=0.0.0.0` publishes on IPv4 only: drop the record, or Let's Encrypt may fail to reach the host.
 3. **Make a key pair** for the workflow, and add its public half to the deploy user's `~/.ssh/authorized_keys`:
 
    ```sh
@@ -113,6 +113,20 @@ Put the check's ping URL, `https://hc-ping.com/<uuid>`, in `HEALTHCHECKS_PING_UR
 docker compose exec importer node -e "import('./dist/catalog-import/import-check-in-from-env.js').then(({ importCheckInFromEnv }) => importCheckInFromEnv()('failed'))"
 docker compose exec importer node -e "import('./dist/catalog-import/import-check-in-from-env.js').then(({ importCheckInFromEnv }) => importCheckInFromEnv()('succeeded'))"
 ```
+
+## Product analytics
+
+Umami runs on the host beside the app, with a database of its own (ADR 0027). The public site reaches only the path that receives product events, `/product-events`, which Caddy forwards with no address of the client: Umami hashes none into a visitor's session, whose salt it changes every day. Its dashboard is never on the site, and opens only through an SSH tunnel to the container. Umami's container sits on internal networks only, with no route out of Docker, and the host reaches it at its address on them:
+
+```sh
+# The container's address on its first network: the host routes to Docker's networks itself.
+umami=$(ssh <user>@<host> "cd <DEPLOY_PATH> && docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' \$(docker compose ps -q umami)" | cut -d' ' -f1)
+ssh -N -L 3001:"$umami":3000 <user>@<host>   # -N: no remote command, only the tunnel
+```
+
+While the tunnel is open, `http://localhost:3001` on this machine is Umami's dashboard. The address changes when the container is created again, so look it up each time. On the first sign-in, as `admin` with the password `umami` that Umami starts with, change that password at once, under _Settings → Security_: the site never exposes the login, but anyone on the host does reach it.
+
+`umami-retention` deletes, once a day and as Umami's own role, what Umami keeps past its retention (`docker/umami-retention/retention.sql`).
 
 ## GitHub security settings once the repository is public
 

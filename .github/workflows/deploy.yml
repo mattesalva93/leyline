@@ -88,6 +88,15 @@ jobs:
             echo "The testers' guard is off: the site is open."
           fi
 
+      # Umami's database and role (ADR 0027): PostgreSQL creates them only with a new volume, so on
+      # one that exists, such as production's, the superuser creates them here, before Umami starts.
+      # Run again, the script creates nothing.
+      - name: Create Umami's database
+        run: |
+          # shellcheck disable=SC2029
+          ssh deploy "cd '$DEPLOY_PATH' && docker compose up -d --wait postgres &&
+            docker compose exec -T postgres sh /docker-entrypoint-initdb.d/03-umami-database.sh"
+
       # `up` keeps a container whose image did not change, so Caddy reloads its configuration
       # too: the guard switched, or a revoked tester, takes effect with this deploy, not with the
       # next new image.
