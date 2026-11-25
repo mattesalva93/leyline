@@ -41,6 +41,10 @@ describe('the protect-main ruleset', () => {
     expect(pullRequestJobIds).toContain('spec-release-readme');
   });
 
+  it('merges a pull request with a merge commit, so each topic keeps its own commit', () => {
+    expect(ruleOf(protectMain, 'pull_request').parameters.allowed_merge_methods).toEqual(['merge']);
+  });
+
   it('lets a spec branch be deleted after its release', () => {
     expect(ruleOf(protectMain, 'deletion')).toBeUndefined();
   });
