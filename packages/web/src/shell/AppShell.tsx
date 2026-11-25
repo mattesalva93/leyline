@@ -9,6 +9,7 @@ import { GuideMenu } from './GuideMenu.tsx';
 import { PhoneGuideItems } from './PhoneGuideItems.tsx';
 import { InfoDialog } from './InfoDialog.tsx';
 import { PhoneMenu } from './PhoneMenu.tsx';
+import { ReloadInvite } from './reload-invite/ReloadInvite.tsx';
 import { ScryfallCredit } from './ScryfallCredit.tsx';
 import type { ShellArea } from './shell-area.ts';
 import type { ShellOutletContext } from './shell-outlet-context.ts';
@@ -74,6 +75,7 @@ export function AppShell({ areas }: { readonly areas: readonly ShellArea[] }) {
       <main className="dot-grid min-h-0 flex-1 overflow-y-auto">
         <Outlet context={{ topBarSlot, guideOnDevice } satisfies ShellOutletContext} />
       </main>
+      <ReloadInvite />
     </div>
   );
 }

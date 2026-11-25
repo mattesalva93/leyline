@@ -1,9 +1,10 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defaultClientConditions, defineConfig } from 'vite';
+import { appVersion } from './app-version-plugin.ts';
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), appVersion()],
   // Bundle `@leyline/core` from its sources (`source` export condition), so changes to `core`
   // show up in the dev server without rebuilding it.
   resolve: { conditions: ['source', ...defaultClientConditions] },

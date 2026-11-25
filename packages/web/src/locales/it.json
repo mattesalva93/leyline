@@ -14,6 +14,15 @@
     "restartGuide": "Ricomincia dal primo passo",
     "scryfallCredit": "Dati e immagini da <scryfall>Scryfall</scryfall>"
   },
+  "reloadInvite": {
+    "label": "Nuova versione · {{version}}",
+    "close": "Chiudi",
+    "news": "Novità",
+    "fixes": "Correzioni",
+    "workStays": "Ricaricando la pagina la decklist e le stampe scelte restano.",
+    "later": "Più tardi",
+    "reload": "Ricarica"
+  },
   "alternateName": {
     "tag": "nome alt.",
     "tagWithName": "nome alt. «{{alternateName}}»",

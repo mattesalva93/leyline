@@ -14,7 +14,8 @@ COPY packages/api/package.json packages/api/
 COPY packages/web/package.json packages/web/
 # `--ignore-scripts` skips `prepare` (husky): no git hooks inside an image.
 RUN pnpm install --frozen-lockfile --ignore-scripts
-COPY tsconfig.base.json tsconfig.json ./
+# The web build serves the top changelog entry's changes in version.json.
+COPY tsconfig.base.json tsconfig.json CHANGELOG.md ./
 COPY packages packages
 RUN pnpm build
 # A self-contained copy of `api` with production dependencies only.
