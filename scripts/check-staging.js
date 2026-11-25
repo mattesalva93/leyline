@@ -18,6 +18,7 @@ import { chromium, request as playwrightRequest } from 'playwright';
 import { accessLogFailures } from './staging-checks/access-log.js';
 import { accessLogRotationFailures } from './staging-checks/access-log-rotation.js';
 import { baseImageFailures } from './staging-checks/base-images.js';
+import { cacheHeaderFailures } from './staging-checks/cache-headers.js';
 import { containerLimitFailures } from './staging-checks/container-limits.js';
 import { containerLogRotationFailures } from './staging-checks/container-log-rotation.js';
 import { containerPrivilegeFailures } from './staging-checks/container-privileges.js';
@@ -37,6 +38,7 @@ import { wwwRedirectFailures } from './staging-checks/www-redirect.js';
 const CHECKS = {
   'tester access': testerAccessFailures,
   'security headers': securityHeaderFailures,
+  'cache headers': cacheHeaderFailures,
   'search indexing': searchIndexingFailures,
   'www redirect': wwwRedirectFailures,
   'CSP in the browser': cspInBrowserFailures,
