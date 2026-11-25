@@ -14,8 +14,9 @@ export function useNewerOnlineRelease(): OnlineRelease | null {
     const askOnComingBack = async () => {
       if (document.visibilityState !== 'visible') return;
       const online = await fetchOnlineRelease();
-      if (isMounted && online && isAbove(online.version, import.meta.env.APP_VERSION))
-        setNewer(online);
+      if (!isMounted || !online || !isAbove(online.version, import.meta.env.APP_VERSION)) return;
+      // Answers may land out of order: a slower, older one never replaces a higher release.
+      setNewer((shown) => (shown && !isAbove(online.version, shown.version) ? shown : online));
     };
     document.addEventListener('visibilitychange', askOnComingBack);
     return () => {
