@@ -16,7 +16,7 @@ const execFileAsync = promisify(execFile);
 const STUB_HOST = 'bugsink-stub';
 const STUB_PORT = 8080;
 /** The BUGSINK_ORIGIN that has the check start the stub instead of reaching Bugsink. */
-export const STUB_ORIGIN = `http://${STUB_HOST}:${STUB_PORT}`;
+const STUB_ORIGIN = `http://${STUB_HOST}:${STUB_PORT}`;
 
 /** An address no client of the check has: one a request writes in its own headers. */
 const FORGED_ADDRESS = '203.0.113.7';
@@ -57,27 +57,27 @@ export const ENVELOPE = [
   JSON.stringify({ message: 'pnpm check:staging' }),
 ].join('\n');
 
-/** The service's environment variables, and the stack's `internet` network Caddy is on. */
-export async function serviceEnvironment(service) {
-  const containers = await inspectContainers();
-  const container = containers.find((candidate) => serviceOf(candidate) === service);
-  const web = containers.find((candidate) => serviceOf(candidate) === 'web');
-  if (!container || !web)
-    throw new Error(`the stack has no ${container ? 'web' : service} container`);
-  const variables = Object.fromEntries(
+/** The service's environment variables, as its container sees them. */
+export async function serviceVariables(service) {
+  const container = (await inspectContainers()).find((each) => serviceOf(each) === service);
+  if (!container) throw new Error(`the stack has no ${service} container`);
+  return Object.fromEntries(
     container.Config.Env.map((entry) => {
       const separator = entry.indexOf('=');
       return [entry.slice(0, separator), entry.slice(separator + 1)];
     }),
   );
-  const network = Object.keys(web.NetworkSettings.Networks).find((name) =>
-    name.endsWith('_internet'),
-  );
-  return { variables, network };
+}
+
+/** The stack's `internet` network, by which Caddy reaches Bugsink. */
+async function caddyInternetNetwork() {
+  const web = (await inspectContainers()).find((container) => serviceOf(container) === 'web');
+  if (!web) throw new Error('the stack has no web container');
+  return Object.keys(web.NetworkSettings.Networks).find((name) => name.endsWith('_internet'));
 }
 
 /** Runs the stub on the network Caddy reaches Bugsink by, for as long as `use` takes. */
-export async function withStub(network, use) {
+async function withStub(network, use) {
   const node = (await stackBaseImages(await composeModel())).find(({ reference }) =>
     reference.startsWith('node:'),
   );
@@ -95,11 +95,8 @@ export async function withStub(network, use) {
   }
 }
 
-/**
- * Posts the envelope until the stub answers, which takes it a moment to start listening. `post`
- * resolves to the answer's status, and anything else it carries.
- */
-export async function postToStub(post) {
+/** Posts the envelope until the stub answers, which takes it a moment to start listening. */
+async function postToStub(post) {
   for (let attempt = 0; ; attempt += 1) {
     const response = await post();
     if (response.status !== 502 || attempt === 20) return response;
@@ -107,7 +104,7 @@ export async function postToStub(post) {
   }
 }
 
-export function strippingFailures(received, projectId) {
+function strippingFailures(received, projectId) {
   const failures = [];
   const expectedPath = `/api/${projectId}/envelope/`;
   if (received.path !== expectedPath)
@@ -124,17 +121,45 @@ export function strippingFailures(received, projectId) {
 }
 
 /**
+ * What fails at `where`, the error reports path that `post` sends the envelope to: it must answer
+ * 404 while off, leave the answer to Bugsink while on, and, against the stub, forward nothing that
+ * names the sender. `post` resolves to the answer's status, and `received()` reads the stub's
+ * account of what reached it.
+ *
+ * @param {string} where
+ * @param {() => Promise<{ status: number, received: () => Promise<any> }>} post
+ */
+export async function forwardingFailures(where, post) {
+  const web = await serviceVariables('web');
+  const origin = web.BUGSINK_PROJECT_ID ? (web.BUGSINK_ORIGIN ?? '') : '';
+  if (origin === '') {
+    const { status } = await post();
+    return status === 404 ? [] : [`${where} answers ${status} while off, expected 404`];
+  }
+  if (origin !== STUB_ORIGIN) {
+    // Bugsink rejects the made-up envelope, but it is Bugsink that answers, not Caddy.
+    const { status } = await post();
+    return status === 404 || status >= 500
+      ? [`${where} answers ${status}, expected Bugsink's answer`]
+      : [];
+  }
+  return withStub(await caddyInternetNetwork(), async () => {
+    const response = await postToStub(post);
+    if (response.status !== 200) return [`${where} answers ${response.status}`];
+    return strippingFailures(await response.received(), web.BUGSINK_PROJECT_ID);
+  });
+}
+
+/**
  * @param {{
  *   visitorRequest: import('playwright').APIRequestContext,
  *   appAddress: string,
  *   testerCredential: { username: string, password: string } | null,
  * }} staging
  */
-export async function errorReportFailures({ visitorRequest, appAddress, testerCredential }) {
-  const { variables, network } = await serviceEnvironment('web');
-  const origin = variables.BUGSINK_PROJECT_ID ? (variables.BUGSINK_ORIGIN ?? '') : '';
-  const post = () =>
-    visitorRequest.post(`${appAddress}${ERROR_REPORTS_PATH}`, {
+export function errorReportFailures({ visitorRequest, appAddress, testerCredential }) {
+  return forwardingFailures(ERROR_REPORTS_PATH, async () => {
+    const answer = await visitorRequest.post(`${appAddress}${ERROR_REPORTS_PATH}`, {
       headers: {
         ...CLIENT_HEADERS,
         // With the guard on, the visitor's own credential is the one to strip.
@@ -144,27 +169,6 @@ export async function errorReportFailures({ visitorRequest, appAddress, testerCr
       data: ENVELOPE,
       maxRedirects: 0,
     });
-
-  if (origin === '') {
-    const response = await post();
-    return response.status() === 404
-      ? []
-      : [`${ERROR_REPORTS_PATH} answers ${response.status()} while off, expected 404`];
-  }
-  if (origin !== STUB_ORIGIN) {
-    // Bugsink rejects the made-up envelope, but it is Bugsink that answers, not the site.
-    const response = await post();
-    const fromTheSite = response.status() === 404 || response.status() >= 500;
-    return fromTheSite
-      ? [`${ERROR_REPORTS_PATH} answers ${response.status()}, expected Bugsink's answer`]
-      : [];
-  }
-  return withStub(network, async () => {
-    const response = await postToStub(async () => {
-      const answer = await post();
-      return { status: answer.status(), answer };
-    });
-    if (!response.answer.ok()) return [`${ERROR_REPORTS_PATH} answers ${response.status}`];
-    return strippingFailures(await response.answer.json(), variables.BUGSINK_PROJECT_ID);
+    return { status: answer.status(), received: () => answer.json() };
   });
 }

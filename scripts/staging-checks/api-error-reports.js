@@ -5,15 +5,7 @@
 // otherwise only that the listener forwards, or that it is off.
 import { connect } from 'node:net';
 import { execInService, inspectContainers, inspectNetworks, serviceOf } from './compose-stack.js';
-import {
-  CLIENT_HEADERS,
-  ENVELOPE,
-  postToStub,
-  serviceEnvironment,
-  strippingFailures,
-  STUB_ORIGIN,
-  withStub,
-} from './error-reports.js';
+import { CLIENT_HEADERS, ENVELOPE, forwardingFailures, serviceVariables } from './error-reports.js';
 
 /** The networks the api may be on: Caddy's requests in, the database out. */
 const API_NETWORKS = ['proxy', 'database'];
@@ -68,41 +60,19 @@ function postFromApiScript(url) {
 }
 
 async function postFromApi(url) {
-  return JSON.parse(await execInService('api', 'node', '-e', postFromApiScript(url)));
-}
-
-async function forwardingFailures() {
-  const { variables: api } = await serviceEnvironment('api');
-  const { variables: web, network } = await serviceEnvironment('web');
-  const url = api.ERROR_REPORTS_URL;
-  if (!url) return ['api has no ERROR_REPORTS_URL'];
-  const origin = web.BUGSINK_PROJECT_ID ? (web.BUGSINK_ORIGIN ?? '') : '';
-
-  if (origin === '') {
-    const { status } = await postFromApi(url);
-    return status === 404 ? [] : [`${url} answers ${status} while off, expected 404`];
-  }
-  if (origin !== STUB_ORIGIN) {
-    // Bugsink rejects the made-up envelope, but it is Bugsink that answers, not Caddy.
-    const { status } = await postFromApi(url);
-    return status === 404 || status >= 500
-      ? [`${url} answers ${status}, expected Bugsink's answer`]
-      : [];
-  }
-  return withStub(network, async () => {
-    const { status, body } = await postToStub(() => postFromApi(url));
-    if (status !== 200) return [`${url} answers ${status}`];
-    return strippingFailures(JSON.parse(body), web.BUGSINK_PROJECT_ID);
-  });
+  const { status, body } = JSON.parse(
+    await execInService('api', 'node', '-e', postFromApiScript(url)),
+  );
+  return { status, received: async () => JSON.parse(body) };
 }
 
 /** @param {{ appAddress: string }} staging */
 export async function apiErrorReportFailures({ appAddress }) {
-  const { variables } = await serviceEnvironment('api');
-  const listener = variables.ERROR_REPORTS_URL ? new URL(variables.ERROR_REPORTS_URL) : null;
+  const url = (await serviceVariables('api')).ERROR_REPORTS_URL;
+  if (!url) return ['api has no ERROR_REPORTS_URL'];
   return [
     ...(await apiNetworkFailures()),
-    ...(listener ? await outsideReachFailures(appAddress, listener) : []),
-    ...(await forwardingFailures()),
+    ...(await outsideReachFailures(appAddress, new URL(url))),
+    ...(await forwardingFailures(url, () => postFromApi(url))),
   ];
 }
