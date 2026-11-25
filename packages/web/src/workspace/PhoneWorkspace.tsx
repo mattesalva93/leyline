@@ -17,6 +17,7 @@ import { panelLineOf, SelectedLinePanel } from './line-panel/SelectedLinePanel.t
 import { SheetSettings } from './sheet/SheetSettings.tsx';
 import { SheetView } from './sheet/SheetView.tsx';
 import { TILE_WIDTH_PX } from './card-grid/tile-width.ts';
+import { PHONE_STEP_BAR_HEIGHT } from './phone-step-bar.ts';
 import { GuidedStepBubble, type GuidedStepPlacement } from './guide/GuidedStepBubble.tsx';
 import { focusCurrentGridCell } from './card-grid/use-grid-cell-focus.ts';
 import type { WorkspaceState, WorkspaceStep } from './workspace-state.ts';
@@ -120,8 +121,11 @@ export function PhoneWorkspace({ state }: { readonly state: WorkspaceState }) {
       {step === 'sheet' && <PhonePdfStrip pdf={generator.pdf} />}
       <nav
         aria-label={t('workspace.steps')}
-        className="grid h-14 shrink-0 border-t-2 border-border bg-panel"
-        style={{ gridTemplateColumns: `repeat(${STEPS.length}, 1fr)` }}
+        className="grid shrink-0 border-t-2 border-border bg-panel"
+        style={{
+          height: PHONE_STEP_BAR_HEIGHT,
+          gridTemplateColumns: `repeat(${STEPS.length}, 1fr)`,
+        }}
       >
         {STEPS.map((name) => (
           <GuidedStepBubble

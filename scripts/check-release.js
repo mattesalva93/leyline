@@ -4,37 +4,21 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import {
+  changelogEntries,
+  changesOf,
+  SECTION_HEADINGS,
+} from '../packages/web/src/online-release/changelog.ts';
+import { isAbove, isSemVer } from '../packages/web/src/online-release/online-release.ts';
 
-const ENTRY_HEADING = /^## (.+)$/m;
-const SECTIONS = ['Novità', 'Correzioni'];
-const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
-const NO_CHANGE =
-  'The top entry lists no change: add "### Novità" or "### Correzioni" with at least one "- " item.';
+const { news, fixes } = SECTION_HEADINGS;
+const NO_CHANGE = `The top entry lists no change: add "### ${news}" or "### ${fixes}" with at least one "- " item.`;
 
-/**
- * The top entry of the changelog: its heading split at the dash, and its lines up to the next
- * entry. Undefined when there is none.
- */
-function topEntry(changelog) {
-  const heading = changelog.match(ENTRY_HEADING);
-  if (!heading) return undefined;
-  const title = heading[1];
-  const [version = '', date = ''] = title.split('—').map((part) => part.trim());
-  const rest = changelog.slice(heading.index + heading[0].length);
-  const nextEntry = rest.search(ENTRY_HEADING);
-  const lines = (nextEntry === -1 ? rest : rest.slice(0, nextEntry)).split(/\r?\n/);
-  return { title, version, date, lines };
-}
-
-/** Whether the entry has a "### Novità" or "### Correzioni" with at least one bullet. */
-function hasFilledSection(lines) {
-  let section;
-  for (const line of lines) {
-    if (line.startsWith('### ')) section = line.slice(4).trim();
-    else if (SECTIONS.includes(section) && /^- \S/.test(line)) return true;
-  }
-  return false;
+/** Whether the entry lists at least one change. */
+function hasChange(entry) {
+  const changes = changesOf(entry);
+  return changes.news.length + changes.fixes.length > 0;
 }
 
 function isRealDay(date) {
@@ -45,21 +29,14 @@ function isRealDay(date) {
   return parsed.getUTCMonth() === month - 1 && parsed.getUTCDate() === day;
 }
 
-/** Whether SemVer `a` is above `b`; both are MAJOR.MINOR.PATCH. */
-function isAbove(a, b) {
-  const [left, right] = [a, b].map((v) => v.split('.').map(Number));
-  const differing = left.findIndex((part, index) => part !== right[index]);
-  return differing !== -1 && left[differing] > right[differing];
-}
-
 /**
  * What keeps a pull request to `main` from being a release (ADR 0025): the top entry of
  * `changelog`, the pull request's `appVersion` in package.json and `main`'s, which counts as
  * 0.0.0 when it has none. Empty when the pull request is ready.
  */
 export function releaseErrors({ changelog, appVersion, mainAppVersion = '0.0.0' }) {
-  const entry = topEntry(changelog);
-  const hasVersion = SEMVER.test(appVersion ?? '');
+  const [entry] = changelogEntries(changelog);
+  const hasVersion = isSemVer(appVersion ?? '');
   if (!entry) {
     const example = hasVersion ? appVersion : 'X.Y.Z';
     return [`CHANGELOG.md has no entry. Add one at the top: "## ${example} — YYYY-MM-DD".`];
@@ -72,10 +49,10 @@ export function releaseErrors({ changelog, appVersion, mainAppVersion = '0.0.0' 
     errors.push(
       `The top entry's heading splits its version and date with an em dash: "## ${fixed}".`,
     );
-    if (!hasFilledSection(entry.lines)) errors.push(NO_CHANGE);
+    if (!hasChange(entry)) errors.push(NO_CHANGE);
     return errors;
   }
-  const entryHasVersion = SEMVER.test(entry.version);
+  const entryHasVersion = isSemVer(entry.version);
   if (!hasVersion)
     errors.push(
       `package.json's version "${appVersion ?? ''}" is not MAJOR.MINOR.PATCH: write "version": "${entryHasVersion ? entry.version : 'X.Y.Z'}".`,
@@ -96,7 +73,7 @@ export function releaseErrors({ changelog, appVersion, mainAppVersion = '0.0.0' 
     errors.push(
       `The top entry's date "${entry.date}" is not a real day written YYYY-MM-DD, like "2026-12-01".`,
     );
-  if (!hasFilledSection(entry.lines)) errors.push(NO_CHANGE);
+  if (!hasChange(entry)) errors.push(NO_CHANGE);
   return errors;
 }
 
