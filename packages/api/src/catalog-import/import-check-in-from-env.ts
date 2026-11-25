@@ -14,11 +14,11 @@ export function importCheckInFromEnv(
   env: NodeJS.ProcessEnv = process.env,
   stop?: AbortSignal,
 ): ImportCheckIn {
-  const pingUrl = env.HEALTHCHECKS_PING_URL;
+  const pingUrl = env.HEALTHCHECKS_PING_URL?.trim().replace(/\/$/, '');
   if (!pingUrl) return silentImportCheckIn;
   return async (outcome) => {
     // A bare GET: Healthchecks.io keeps a ping's body, and the check-in is the outcome alone.
-    const url = outcome === 'succeeded' ? pingUrl : `${pingUrl.replace(/\/$/, '')}/fail`;
+    const url = outcome === 'succeeded' ? pingUrl : `${pingUrl}/fail`;
     const gaveUp = new AbortController();
     const timer = setTimeout(
       () => gaveUp.abort(new Error(`No answer to the check-in within ${PING_TIMEOUT} ms`)),

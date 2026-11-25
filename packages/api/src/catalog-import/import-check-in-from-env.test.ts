@@ -56,6 +56,21 @@ describe('the import’s check-in to Healthchecks.io', () => {
     },
   );
 
+  it.each([
+    ['succeeded', PING_URL],
+    ['failed', `${PING_URL}/fail`],
+  ] as const)(
+    'pings the same URL after an import that %s when the ping URL ends in a slash',
+    async (outcome, pingedUrl) => {
+      const fetchMock = stubFetch();
+
+      await importCheckInFromEnv({ HEALTHCHECKS_PING_URL: `${PING_URL}/` })(outcome);
+
+      const [[url]] = fetchMock.mock.calls as [[string, RequestInit]];
+      expect(url).toBe(pingedUrl);
+    },
+  );
+
   it('fails when Healthchecks.io does not take the ping', async () => {
     stubFetch(async () => new Response('not found', { status: 404 }));
 
