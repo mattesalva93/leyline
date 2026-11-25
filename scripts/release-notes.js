@@ -23,7 +23,8 @@ const HEADINGS = new Map([
 /** The heading of a subject that is not Conventional Commits, or whose type has no heading. */
 const OTHER = 'Other';
 
-function item(subject) {
+/** The heading a commit subject goes under, and its line there. */
+function headingAndLine(subject) {
   const commit = subject.match(CONVENTIONAL)?.groups;
   const heading = commit && HEADINGS.get(commit.type);
   if (!heading) return [OTHER, `- ${subject}`];
@@ -43,7 +44,7 @@ export function releaseNotes({ previousTag, subjects }) {
 
   const groups = new Map([...HEADINGS.values(), OTHER].map((heading) => [heading, []]));
   for (const subject of subjects.filter((subject) => !MERGE.test(subject))) {
-    const [heading, line] = item(subject);
+    const [heading, line] = headingAndLine(subject);
     groups.get(heading).push(line);
   }
   const listed = [...groups].filter(([, lines]) => lines.length > 0);
