@@ -1,4 +1,4 @@
-name: README review
+name: Spec release README
 
 # Runs on every pull request, whatever its branches: it is a required check of the ruleset
 # (ADR 0024), and a required check that never starts would leave the pull request waiting.
@@ -12,11 +12,11 @@ permissions: {}
 
 # Each edit of the description starts a run; only the latest one matters.
 concurrency:
-  group: readme-review-${{ github.event.pull_request.number }}
+  group: spec-release-readme-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  readme:
+  spec-release-readme:
     runs-on: ubuntu-latest
     permissions:
       contents: read

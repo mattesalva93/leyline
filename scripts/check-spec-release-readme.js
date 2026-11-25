@@ -18,21 +18,18 @@ function changedFiles() {
 // A line of its own, so a sentence that only mentions it does not count.
 const saysNoChangeNeeded = PR_BODY.split(/\r?\n/).some((line) => line.trim() === NO_CHANGE_LINE);
 
-const failures = [];
 if (
   HEAD_REF.startsWith('spec/') &&
   BASE_REF === 'main' &&
   !saysNoChangeNeeded &&
   !changedFiles().includes(README)
 ) {
-  failures.push(
-    `${HEAD_REF} releases a spec to main without changing ${README}.`,
-    `Update ${README} (the app's description, its screenshots, its Roadmap), or, if it is still`,
-    `current, add this line to the pull request's description: ${NO_CHANGE_LINE}`,
+  console.error(
+    [
+      `${HEAD_REF} releases a spec to main without changing ${README}.`,
+      `Update ${README} (the app's description, its screenshots, its Roadmap), or, if it is still`,
+      `current, add this line to the pull request's description: ${NO_CHANGE_LINE}`,
+    ].join('\n'),
   );
-}
-
-if (failures.length > 0) {
-  console.error(failures.join('\n'));
   process.exit(1);
 }
