@@ -55,9 +55,9 @@ Caddy's access log is a file of its own, apart from `docker compose logs`: `dock
 
 ## Error reports
 
-`pnpm check:staging` proves that Caddy strips the client's address, cookies and credential from an error report on its way to Bugsink (ADR 0027) against a stub of Bugsink that answers with what it received. Point local staging at the stub in `.env`, and rebuild with `docker compose up -d --wait`: `BUGSINK_ORIGIN` set to `STUB_ORIGIN` in `scripts/staging-checks/error-reports.js`, any number in `BUGSINK_PROJECT_ID`, and in `VITE_BUGSINK_DSN` any DSN with a hexadecimal key, as Bugsink's are (the SDK ignores any other), so that the page runs the SDK too.
+`pnpm check:staging` proves that Caddy strips the client's address, cookies and credential from an error report on its way to Bugsink (ADR 0027), from the browser's path and from the api's internal listener alike, against a stub of Bugsink that answers with what it received. Point local staging at the stub in `.env`, and rebuild with `docker compose up -d --wait`: `BUGSINK_ORIGIN` set to `STUB_ORIGIN` in `scripts/staging-checks/error-reports.js`, any number in `BUGSINK_PROJECT_ID`, and in `VITE_BUGSINK_DSN` any DSN with a hexadecimal key, as Bugsink's are (the SDK ignores any other), so that the page runs the SDK too.
 
-The check starts the stub on the stack's `internet` network for the length of its own run, and stops it after. Left empty, the three lines turn error reporting off, and the check only sees that `/error-reports` answers 404.
+The check starts the stub on the stack's `internet` network for the length of its own run, and stops it after. Left empty, the three lines turn error reporting off, and the check only sees that `/error-reports` and the internal listener answer 404.
 
 ## Caddy's volumes from before its own user
 

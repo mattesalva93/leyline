@@ -16,6 +16,7 @@
 import { parseArgs } from 'node:util';
 import { chromium, request as playwrightRequest } from 'playwright';
 import { accessLogFailures } from './staging-checks/access-log.js';
+import { apiErrorReportFailures } from './staging-checks/api-error-reports.js';
 import { accessLogRotationFailures } from './staging-checks/access-log-rotation.js';
 import { baseImageFailures } from './staging-checks/base-images.js';
 import { cacheHeaderFailures } from './staging-checks/cache-headers.js';
@@ -44,6 +45,7 @@ const CHECKS = {
   'www redirect': wwwRedirectFailures,
   'CSP in the browser': cspInBrowserFailures,
   'error reports': errorReportFailures,
+  'api error reports': apiErrorReportFailures,
   'access log': accessLogFailures,
   'access log rotation': accessLogRotationFailures,
   'container log rotation': containerLogRotationFailures,
