@@ -22,8 +22,11 @@ services:
     build:
       context: .
       target: web
-      # Built into the bundle: the browser reports its errors only with it (ADR 0027).
-      args: { VITE_BUGSINK_DSN: '${VITE_BUGSINK_DSN:-}' }
+      # Built into the bundle: the browser reports its errors and records product events only
+      # with them (ADR 0027).
+      args:
+        VITE_BUGSINK_DSN: '${VITE_BUGSINK_DSN:-}'
+        VITE_UMAMI_WEBSITE_ID: '${VITE_UMAMI_WEBSITE_ID:-}'
     deploy: { resources: { limits: { memory: 256m, cpus: '1' } } }
     # Rebuild on every `up`, so a manual test never runs a stale image (layer cache keeps it fast).
     pull_policy: build

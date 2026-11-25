@@ -361,6 +361,55 @@ describe('the app shell', () => {
       });
     });
 
+    describe('product analytics (ADR 0027)', () => {
+      afterEach(() => vi.unstubAllEnvs());
+
+      it('names Umami, the two events and their fields, where they stay and for how long, once the build has its website id', async () => {
+        vi.stubEnv('VITE_UMAMI_WEBSITE_ID', '5f0d1c2e-7a3b-4c4d-9e8f-0a1b2c3d4e5f');
+        const { notice } = await openThePrivacyNotice();
+
+        const section = (heading: string) =>
+          within(notice).getByRole('heading', { name: heading }).parentElement?.textContent;
+        expect(section('Dati trattati')).toContain('Statistiche d’uso');
+        expect(section('Dati trattati')).toContain(
+          'quante righe ha, quante non sono state riconosciute e la lingua delle carte',
+        );
+        expect(section('Dati trattati')).toContain(
+          'il formato della pagina, il numero di pagine e il numero di carte',
+        );
+        expect(section('Dati trattati')).toContain(
+          'non contengono il testo della decklist né i nomi delle carte',
+        );
+        expect(section('Dati trattati')).toContain('sullo stesso server del sito, senza terzi');
+        expect(section('Dati trattati')).toContain('un salt che cambia ogni giorno');
+        expect(section('Dati trattati')).toContain('al massimo 25 mesi');
+        expect(section('Finalità e base giuridica')).toContain('capire se l’app funziona');
+        expect(section('Finalità e base giuridica')).not.toContain('servono solo alla sicurezza');
+        expect(section('Cosa non c’è')).not.toContain('statistiche');
+      });
+
+      it('names Umami beside Bugsink when both are on, each purpose once', async () => {
+        vi.stubEnv('VITE_UMAMI_WEBSITE_ID', '5f0d1c2e-7a3b-4c4d-9e8f-0a1b2c3d4e5f');
+        vi.stubEnv('VITE_BUGSINK_DSN', 'https://0123456789abcdef@bugsink.example/42');
+        const { notice } = await openThePrivacyNotice();
+
+        const purpose = within(notice).getByRole('heading', { name: 'Finalità e base giuridica' })
+          .parentElement?.textContent;
+        expect(purpose).toContain('correggere gli errori dell’app');
+        expect(purpose).toContain('capire se l’app funziona');
+        expect(purpose?.match(/I dati servono/g)).toHaveLength(1);
+        expect(purpose?.match(/La base giuridica/g)).toHaveLength(1);
+      });
+
+      it('leaves Umami out while the build has no website id: the notice says only what is on', async () => {
+        vi.stubEnv('VITE_UMAMI_WEBSITE_ID', '');
+        const { notice } = await openThePrivacyNotice();
+
+        expect(notice.textContent).not.toMatch(/Umami|Statistiche d’uso/);
+        expect(notice.textContent).toContain('Nessuno strumento di statistiche (analytics)');
+      });
+    });
+
     it('styles its close button as the primary action', async () => {
       const { notice } = await openThePrivacyNotice();
 

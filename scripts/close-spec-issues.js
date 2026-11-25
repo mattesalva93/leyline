@@ -14,16 +14,12 @@ export function closedIssueNumbers(body) {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const { PR_BODY = '', PR_NUMBER, BASE_REF } = process.env;
+  const { PR_BODY = '' } = process.env;
   for (const issue of closedIssueNumbers(PR_BODY)) {
-    // `gh` takes the repository and the token from the workflow's environment.
-    execFileSync(
-      'gh',
-      [
-        ...['issue', 'close', String(issue), '--reason', 'completed'],
-        ...['--comment', `Chiuso con #${PR_NUMBER}, unita in \`${BASE_REF}\`.`],
-      ],
-      { stdio: 'inherit' },
-    );
+    // No comment: each would email every subscriber, and the merged pull request already links
+    // the issue. `gh` takes the repository and the token from the workflow's environment.
+    execFileSync('gh', ['issue', 'close', String(issue), '--reason', 'completed'], {
+      stdio: 'inherit',
+    });
   }
 }
