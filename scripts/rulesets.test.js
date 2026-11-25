@@ -12,13 +12,18 @@ function jobIds(workflow) {
   return [...jobs.matchAll(/^ {2}([\w-]+):$/gm)].map(([, id]) => id);
 }
 
-/** Whether a workflow starts on a pull request, so its checks can be required to merge one. */
-const runsOnPullRequests = (workflow) => /^on:\n(?: .*\n)*? {2}pull_request:/m.test(workflow);
+/**
+ * Whether a workflow starts on an open pull request, so its checks can be required to merge one.
+ * One that starts only once the pull request closes runs after the merge, and cannot gate it.
+ */
+const runsOnOpenPullRequests = (workflow) =>
+  /^on:\n(?: .*\n)*? {2}pull_request:/m.test(workflow) &&
+  !/^ {2}pull_request:\n {4}types: \[closed\]$/m.test(workflow);
 
 const pullRequestJobIds = readdirSync(new URL(`../${WORKFLOWS}`, import.meta.url))
   .filter((file) => file.endsWith('.yml'))
   .map((file) => read(WORKFLOWS + file))
-  .filter(runsOnPullRequests)
+  .filter(runsOnOpenPullRequests)
   .flatMap(jobIds);
 
 describe('the protect-main ruleset', () => {

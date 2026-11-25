@@ -1,0 +1,35 @@
+name: Close spec issues
+
+# A pull request merged into a spec branch closes the issues its body names with `Closes #N`,
+# as GitHub does by itself only for main (ADR 0024). It runs from the base branch once merged.
+on:
+  pull_request:
+    types: [closed]
+    branches: ['spec/**']
+
+# No token permission by default: each job asks for what it needs.
+permissions: {}
+
+jobs:
+  close-issues:
+    if: github.event.pull_request.merged
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      # Only node: the script needs none of the other tools pinned in mise.toml.
+      - uses: jdx/mise-action@v5.3.0
+        with:
+          install_args: node
+      # The body reaches the script through the environment, never the shell's text.
+      - run: node scripts/close-spec-issues.js
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.base_ref }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
