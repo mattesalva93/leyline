@@ -2,6 +2,16 @@
 
 Cosa cambia in Leyline a ogni rilascio. La voce più recente sta in cima.
 
+## 0.2.0 — 2026-11-25
+
+### Novità
+
+- Quando esce una versione nuova, Leyline ti invita a ricaricare la pagina e ti mostra cosa cambia. La pagina non si ricarica mai da sola: puoi chiudere l'invito e ricaricare quando vuoi.
+
+### Correzioni
+
+- Ricaricare la pagina porta sempre all'ultima versione, non a una copia rimasta nella cache del browser.
+
 ## 0.1.0 — 2026-11-24
 
 ### Novità
