@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import type { Plugin } from 'vite';
 import type { OnlineRelease } from './src/online-release/online-release.ts';
 import { VERSION_FILE } from './src/online-release/online-release.ts';
-import { releaseChangesOf } from './src/online-release/release-changes.ts';
+import { releaseChangesOf } from './src/online-release/changelog.ts';
 
 const REPOSITORY_ROOT = join(import.meta.dirname, '../..');
 

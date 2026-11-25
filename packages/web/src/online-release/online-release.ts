@@ -1,4 +1,4 @@
-import type { ReleaseChanges } from './release-changes.ts';
+import type { ReleaseChanges } from './changelog.ts';
 
 /** The file a page left open fetches to learn the release online now (ADR 0025). */
 export const VERSION_FILE = 'version.json';
@@ -10,6 +10,9 @@ export interface OnlineRelease extends ReleaseChanges {
 
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
+/** Whether `text` is a version written MAJOR.MINOR.PATCH, with no prefix or suffix. */
+export const isSemVer = (text: string): boolean => SEMVER.test(text);
+
 const isTextList = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((item) => typeof item === 'string');
 
@@ -17,7 +20,7 @@ const isTextList = (value: unknown): value is string[] =>
 export function readOnlineRelease(body: unknown): OnlineRelease | null {
   if (typeof body !== 'object' || body === null) return null;
   const { version, news, fixes } = body as Record<string, unknown>;
-  if (typeof version !== 'string' || !SEMVER.test(version)) return null;
+  if (typeof version !== 'string' || !isSemVer(version)) return null;
   if (!isTextList(news) || !isTextList(fixes)) return null;
   return { version, news, fixes };
 }

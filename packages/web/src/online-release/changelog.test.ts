@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { releaseChangesOf } from './release-changes.ts';
+import { releaseChangesOf } from './changelog.ts';
 
 const CHANGELOG = `# Changelog
 
