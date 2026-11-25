@@ -68,6 +68,7 @@ Inside each package, code is grouped in folders by feature: see "Folders by feat
 ## Documentation
 
 - [`GLOSSARY.md`](GLOSSARY.md): what each domain word means.
+- [`CHANGELOG.md`](CHANGELOG.md): what each release changes, in Italian, for the people trying the app.
 - [`docs/adr/`](docs/adr/): the decisions and why they were taken.
 - [`CODING_STANDARDS.md`](CODING_STANDARDS.md): the rules a review checks.
 - [`docs/staging.md`](docs/staging.md), [`docs/deploy.md`](docs/deploy.md), [`docs/debugging.md`](docs/debugging.md): running, deploying and debugging.
