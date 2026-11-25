@@ -2,10 +2,13 @@
 // and the Dockerfile's base images. Run on a work item's branch before its PR, which takes the
 // updates in (docs/agents/dependency-updates.md).
 //   pnpm deps:outdated
-// Needs `gh` logged in, to read the actions' and Caddy's latest releases.
+// Needs `gh` logged in, to read the actions' and Caddy's latest releases, and Docker Hub's
+// registry, to read the base images' current digests.
 import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { dockerHubDigest } from './deps-outdated/docker-hub-digest.js';
+import { outdatedImageDigests } from './deps-outdated/image-digests.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const WORKFLOWS_DIR = `${ROOT}.github/workflows/`;
@@ -87,4 +90,18 @@ const outdated = [
   ...outdatedActions(),
   ...outdatedBaseImages(),
 ];
-console.log(outdated.length === 0 ? 'Every dependency is up to date.' : outdated.join('\n'));
+let digestsUnchecked;
+try {
+  outdated.push(
+    ...(await outdatedImageDigests(readFileSync(`${ROOT}Dockerfile`, 'utf8'), dockerHubDigest)),
+  );
+} catch (error) {
+  digestsUnchecked = error;
+}
+if (outdated.length > 0) console.log(outdated.join('\n'));
+if (digestsUnchecked) {
+  console.error(`Base image digests not checked, ${digestsUnchecked.message}.`);
+  process.exitCode = 1;
+} else if (outdated.length === 0) {
+  console.log('Every dependency is up to date.');
+}
