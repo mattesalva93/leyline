@@ -35,6 +35,16 @@ describe('releaseErrors', () => {
     },
   );
 
+  it('fails a heading written with a hyphen and asks for the em dash', () => {
+    const errors = releaseErrors({
+      changelog: entry('## 0.2.0 - 2026-12-01'),
+      appVersion: '0.2.0',
+      mainAppVersion: '0.1.0',
+    });
+
+    expect(errors).toEqual([expect.stringContaining('"## 0.2.0 — 2026-12-01"')]);
+  });
+
   it('fails a top entry whose version differs from package.json', () => {
     const errors = releaseErrors({
       changelog: entry('## 0.3.0 — 2026-12-01'),

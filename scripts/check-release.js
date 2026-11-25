@@ -9,6 +9,8 @@ const ENTRY_HEADING = /^## (.+)$/m;
 const SECTIONS = ['Novità', 'Correzioni'];
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const NO_CHANGE =
+  'The top entry lists no change: add "### Novità" or "### Correzioni" with at least one "- " item.';
 
 /**
  * The top entry of the changelog: its heading split at the dash, and its lines up to the next
@@ -17,11 +19,12 @@ const DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 function topEntry(changelog) {
   const heading = changelog.match(ENTRY_HEADING);
   if (!heading) return undefined;
-  const [version = '', date = ''] = heading[1].split('—').map((part) => part.trim());
+  const title = heading[1];
+  const [version = '', date = ''] = title.split('—').map((part) => part.trim());
   const rest = changelog.slice(heading.index + heading[0].length);
   const nextEntry = rest.search(ENTRY_HEADING);
   const lines = (nextEntry === -1 ? rest : rest.slice(0, nextEntry)).split(/\r?\n/);
-  return { version, date, lines };
+  return { title, version, date, lines };
 }
 
 /** Whether the entry has a "### Novità" or "### Correzioni" with at least one bullet. */
@@ -63,6 +66,15 @@ export function releaseErrors({ changelog, appVersion, mainAppVersion = '0.0.0' 
   }
 
   const errors = [];
+  if (!entry.title.includes('—')) {
+    // A hyphen or an en dash in its place would only read as a wrong version.
+    const fixed = entry.title.replace(/\s+[-–]+\s+/, ' — ');
+    errors.push(
+      `The top entry's heading splits its version and date with an em dash: "## ${fixed}".`,
+    );
+    if (!hasFilledSection(entry.lines)) errors.push(NO_CHANGE);
+    return errors;
+  }
   const entryHasVersion = SEMVER.test(entry.version);
   if (!hasVersion)
     errors.push(
@@ -84,10 +96,7 @@ export function releaseErrors({ changelog, appVersion, mainAppVersion = '0.0.0' 
     errors.push(
       `The top entry's date "${entry.date}" is not a real day written YYYY-MM-DD, like "2026-12-01".`,
     );
-  if (!hasFilledSection(entry.lines))
-    errors.push(
-      `The top entry lists no change: add "### Novità" or "### Correzioni" with at least one "- " item.`,
-    );
+  if (!hasFilledSection(entry.lines)) errors.push(NO_CHANGE);
   return errors;
 }
 
