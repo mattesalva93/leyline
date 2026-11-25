@@ -3,7 +3,7 @@ import { createApp } from './http/app.ts';
 import { systemClock } from './http/clock.ts';
 import { stdoutSecurityLog } from './http/security-log.ts';
 import { connect } from './catalog/db.ts';
-import { errorReporterFromEnv } from './error-reporting/report-api-errors.ts';
+import { errorReporterFromEnv } from './error-reporting/error-reporter-from-env.ts';
 import { readerDatabaseUrl } from './env.ts';
 
 // The importer migrates the database; the API only reads it (ADR 0016).

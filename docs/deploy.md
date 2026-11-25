@@ -95,7 +95,7 @@ Then deploy: the DSN reaches the browser only through a new build of the `web` i
 To test the api's, send it an error from inside its container through the same reporter the server uses, and check that Bugsink shows it under the same release:
 
 ```sh
-docker compose exec api node -e "import('./dist/error-reporting/report-api-errors.js').then(async ({ errorReporterFromEnv }) => { (await errorReporterFromEnv()).report(new Error('api test')); setTimeout(() => {}, 2000); })"
+docker compose exec api node -e "import('./dist/error-reporting/error-reporter-from-env.js').then(async ({ errorReporterFromEnv }) => { (await errorReporterFromEnv()).report(new Error('api test')); setTimeout(() => {}, 2000); })"
 ```
 
 ## GitHub security settings once the repository is public

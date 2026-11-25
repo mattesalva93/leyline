@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { errorReporterFromEnv } from './report-api-errors.ts';
+import { errorReporterFromEnv } from './error-reporter-from-env.ts';
 
 /** A DSN shaped like Bugsink's. */
 const DSN = 'https://0123456789abcdef0123456789abcdef@bugsink.example/42';

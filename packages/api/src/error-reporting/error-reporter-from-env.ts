@@ -1,4 +1,4 @@
-import { appVersion } from '../app-version.ts';
+import { appVersion } from './app-version.ts';
 import { silentErrorReporter, type ErrorReporter } from './error-reporter.ts';
 
 /**
