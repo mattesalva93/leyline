@@ -1,9 +1,14 @@
 import { readdirSync } from 'node:fs';
 import { configDefaults, defineConfig } from 'vitest/config';
+import { appVersion } from './packages/web/app-version-plugin.ts';
 
-/** Packages whose tests mount React components: they need a DOM and the browser's entry of `core`. */
+/**
+ * Packages whose tests mount React components: they need a DOM and the browser's entry of
+ * `core`, and the build-time constants their bundle has.
+ */
 const browserPackages: Record<string, object> = {
   web: {
+    plugins: [appVersion()],
     resolve: { conditions: ['source', 'module', 'browser', 'development|production'] },
     test: { environment: 'jsdom', setupFiles: ['src/test-support/test-setup.ts'] },
   },
@@ -23,10 +28,11 @@ export default defineConfig({
     // projects found by a glob would not.
     projects: [
       ...packages.map((name) => {
-        const { resolve, test } = browserPackages[name] ?? {};
+        const { plugins, resolve, test } = browserPackages[name] ?? {};
         return {
           extends: true,
           root: `packages/${name}`,
+          ...(plugins && { plugins }),
           ...(resolve && { resolve }),
           test: { name: `@leyline/${name}`, ...test },
         };
