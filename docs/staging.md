@@ -53,6 +53,12 @@ The `api` reports itself healthy only once the `importer` has created the databa
 
 Caddy's access log is a file of its own, apart from `docker compose logs`: `docker compose exec web tail -f /var/log/caddy/access.log` follows it.
 
+## Error reports
+
+`pnpm check:staging` proves that Caddy strips the client's address, cookies and credential from an error report on its way to Bugsink (ADR 0027) against a stub of Bugsink that answers with what it received. Point local staging at the stub in `.env`, and rebuild with `docker compose up -d --wait`: `BUGSINK_ORIGIN` set to `STUB_ORIGIN` in `scripts/staging-checks/error-reports.js`, any number in `BUGSINK_PROJECT_ID`, and in `VITE_BUGSINK_DSN` any DSN with a hexadecimal key, as Bugsink's are (the SDK ignores any other), so that the page runs the SDK too.
+
+The check starts the stub on the stack's `internet` network for the length of its own run, and stops it after. Left empty, the three lines turn error reporting off, and the check only sees that `/error-reports` answers 404.
+
 ## Caddy's volumes from before its own user
 
 Caddy runs as the `caddy` user of the `web` image (ADR 0016). Volumes it created earlier, as root, hold files that user cannot read, so Caddy fails to start on them. Hand them over once:

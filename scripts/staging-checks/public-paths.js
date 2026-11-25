@@ -3,6 +3,7 @@ export const PUBLIC_PATHS = [
   '/',
   '/proxy',
   '/version.json',
+  '/error-reports',
   '/api/health',
   '/api/no-such-endpoint',
 ];

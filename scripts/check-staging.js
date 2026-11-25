@@ -25,6 +25,7 @@ import { containerPrivilegeFailures } from './staging-checks/container-privilege
 import { cspInBrowserFailures } from './staging-checks/csp-in-browser.js';
 import { databaseNetworkFailures } from './staging-checks/database-network.js';
 import { databaseRoleFailures } from './staging-checks/database-roles.js';
+import { errorReportFailures } from './staging-checks/error-reports.js';
 import { hostMaintenanceFailures } from './staging-checks/host-maintenance.js';
 import { publicReachFailures } from './staging-checks/public-reach.js';
 import { searchIndexingFailures } from './staging-checks/search-indexing.js';
@@ -42,6 +43,7 @@ const CHECKS = {
   'search indexing': searchIndexingFailures,
   'www redirect': wwwRedirectFailures,
   'CSP in the browser': cspInBrowserFailures,
+  'error reports': errorReportFailures,
   'access log': accessLogFailures,
   'access log rotation': accessLogRotationFailures,
   'container log rotation': containerLogRotationFailures,

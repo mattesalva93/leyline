@@ -19,7 +19,11 @@ x-least-privilege: &least-privilege
 services:
   web:
     <<: [*rotated-logs, *least-privilege]
-    build: { context: ., target: web }
+    build:
+      context: .
+      target: web
+      # Built into the bundle: the browser reports its errors only with it (ADR 0027).
+      args: { VITE_BUGSINK_DSN: '${VITE_BUGSINK_DSN:-}' }
     deploy: { resources: { limits: { memory: 256m, cpus: '1' } } }
     # Rebuild on every `up`, so a manual test never runs a stale image (layer cache keeps it fast).
     pull_policy: build
@@ -30,6 +34,9 @@ services:
       - '${PUBLISH_ADDRESS:-127.0.0.1}:443:443/udp' # HTTP/3
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+      # Where Caddy forwards the browser's error reports (ADR 0027): empty, it forwards none.
+      BUGSINK_ORIGIN: ${BUGSINK_ORIGIN:-}
+      BUGSINK_PROJECT_ID: ${BUGSINK_PROJECT_ID:-}
     networks: [internet, proxy]
     volumes:
       # Certificates and the local CA: losing them means new certificates on every start.
@@ -140,7 +147,8 @@ services:
 
 # `internal` networks have no route out of Docker: only the services on them reach each other.
 networks:
-  # Published ports and outgoing traffic: visitors reach Caddy, the importer reaches Scryfall.
+  # Published ports and outgoing traffic: visitors reach Caddy, Caddy reaches Bugsink, the
+  # importer reaches Scryfall.
   internet:
   # Caddy forwarding /api to the api.
   proxy:
