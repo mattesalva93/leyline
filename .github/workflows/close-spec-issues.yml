@@ -29,7 +29,5 @@ jobs:
       - run: node scripts/close-spec-issues.js
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_REF: ${{ github.base_ref }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
