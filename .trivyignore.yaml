@@ -6,6 +6,11 @@ vulnerabilities:
       zlib1g of the api's node base image, fixed in Debian but not yet in the image.
       Node links its own copy of zlib, not the system library (ldd /usr/local/bin/node).
     expired_at: 2027-01-18
+  - id: CVE-2026-124851
+    statement: >-
+      libzstd1 of the api's node base image, fixed in Debian but not yet in the image. Node
+      links no system zstd or OpenSSL (ldd /usr/local/bin/node); only dpkg and apt use it.
+    expired_at: 2027-01-25
   - id: CVE-2026-78661
     statement: >-
       golang.org/x/net/html inside the Caddy binary of the web's base image, fixed in Caddy's
