@@ -1,10 +1,5 @@
-import type { ImportCheckIn } from './import-check-in.ts';
-
-/** Short, so that a monitor out of reach never holds up the next import. */
-const PING_TIMEOUT = 10_000;
-
-/** The check-in while monitoring is off: it sends nothing. */
-const silentImportCheckIn: ImportCheckIn = async () => {};
+import { healthchecksCheckIn } from './healthchecks-check-in.ts';
+import { silentImportCheckIn, type ImportCheckIn } from './import-check-in.ts';
 
 /**
  * The importer's check-in (ADR 0027): a ping to the Healthchecks.io check that
@@ -16,23 +11,5 @@ export function importCheckInFromEnv(
 ): ImportCheckIn {
   const pingUrl = env.HEALTHCHECKS_PING_URL?.trim().replace(/\/$/, '');
   if (!pingUrl) return silentImportCheckIn;
-  return async (outcome) => {
-    // A bare GET: Healthchecks.io keeps a ping's body, and the check-in is the outcome alone.
-    const url = outcome === 'succeeded' ? pingUrl : `${pingUrl}/fail`;
-    const gaveUp = new AbortController();
-    const timer = setTimeout(
-      () => gaveUp.abort(new Error(`No answer to the check-in within ${PING_TIMEOUT} ms`)),
-      PING_TIMEOUT,
-    );
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        signal: stop ? AbortSignal.any([stop, gaveUp.signal]) : gaveUp.signal,
-      });
-      if (!response.ok)
-        throw new Error(`Healthchecks.io answered the check-in with ${response.status}`);
-    } finally {
-      clearTimeout(timer);
-    }
-  };
+  return healthchecksCheckIn(pingUrl, stop);
 }
