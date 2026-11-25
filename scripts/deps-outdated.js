@@ -61,8 +61,9 @@ function outdatedActions() {
 }
 
 /**
- * `node` and the pnpm installed in it follow mise's, and `caddy` its latest minor. `postgres` stays on its major: a new
- * one needs its data migrated, which is a work item of its own.
+ * `node` and the pnpm installed in it follow mise's, `caddy` its latest minor and Umami its latest
+ * release. `postgres` stays on its major: a new one needs its data migrated, which is a work item
+ * of its own.
  */
 function outdatedBaseImages(images) {
   const imageTags = Object.fromEntries(images.map(({ name, tag }) => [name, tag]));
@@ -81,6 +82,12 @@ function outdatedBaseImages(images) {
   const caddyMinor = latestReleaseTag('caddyserver/caddy').replace(/^v(\d+\.\d+).*/, '$1');
   if (!imageTags.caddy.startsWith(`${caddyMinor}-`)) {
     outdated.push(`image caddy: ${imageTags.caddy} → ${caddyMinor}-alpine`);
+  }
+  const umamiRelease = latestReleaseTag('umami-software/umami').replace(/^v/, '');
+  if (imageTags['umamisoftware/umami'] !== umamiRelease) {
+    outdated.push(
+      `image umamisoftware/umami: ${imageTags['umamisoftware/umami']} → ${umamiRelease}`,
+    );
   }
   return outdated;
 }

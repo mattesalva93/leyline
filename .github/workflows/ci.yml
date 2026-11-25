@@ -98,13 +98,16 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@v5.3.0
       - run: docker compose build
-      # Every image compose.yaml builds, under the `<project>-<service>` name compose tags it with.
+      # Every image compose.yaml builds, under the `<project>-<service>` name compose tags it with,
+      # and Umami's, the one application the stack runs from an image of someone else's (ADR 0027):
+      # trivy pulls it by its pinned reference.
       # `--ignore-unfixed`: a vulnerability with no fixed version yet gives nothing to update.
       # `.trivyignore.yaml`: the ones fixed upstream that our base images do not ship yet.
       # bash rather than the default shell: it adds `-o pipefail`, so a broken compose or jq fails the step.
       - shell: bash
         run: |
           docker compose config --format json \
-            | jq -r '.name as $project | .services | to_entries[] | select(.value.build) | "\($project)-\(.key)"' \
+            | jq -r '.name as $project | .services | to_entries[]
+                | if .value.build then "\($project)-\(.key)" elif .key == "umami" then .value.image else empty end' \
             | sort -u \
             | xargs -n 1 trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --ignorefile .trivyignore.yaml --no-progress

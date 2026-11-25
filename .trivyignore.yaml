@@ -12,3 +12,27 @@ vulnerabilities:
       go.mod but not yet in a Caddy release. Our Caddyfile uses no handler that parses HTML
       (templates, markdown).
     expired_at: 2027-01-18
+  - id: CVE-2026-121707
+    statement: >-
+      effect, a dependency of Prisma's CLI in Umami's image, fixed upstream but not yet in an
+      Umami release. Only `prisma migrate deploy` loads it, once at start, on Umami's own
+      prisma.config.ts; no request reaches it.
+    expired_at: 2027-01-25
+  - id: CVE-2026-109383
+    statement: >-
+      undici inside the pnpm CLI of Umami's image, fixed upstream but not yet in an Umami release.
+      The container never runs pnpm (Umami's scripts/start-docker.sh starts node), and has no route
+      out of Docker to fetch from.
+    expired_at: 2027-01-25
+  - id: CVE-2026-109869
+    statement: >-
+      undici inside the pnpm CLI of Umami's image, as CVE-2026-109383: never run, no route out.
+    expired_at: 2027-01-25
+  - id: CVE-2026-19534
+    statement: >-
+      undici inside the pnpm CLI of Umami's image, as CVE-2026-109383: never run, no route out.
+    expired_at: 2027-01-25
+  - id: CVE-2026-87018
+    statement: >-
+      undici inside the pnpm CLI of Umami's image, as CVE-2026-109383: never run, no route out.
+    expired_at: 2027-01-25
