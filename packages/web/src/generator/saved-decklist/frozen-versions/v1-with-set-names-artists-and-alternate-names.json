@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "decklistText": "1 Lightning\n4 Brainstorm\n",
+  "choicesByLine": [
+    [
+      "0:1 Lightning",
+      {
+        "oracleId": "lightning-bolt"
+      }
+    ],
+    [
+      "0:4 Brainstorm",
+      {
+        "allocations": {
+          "oracleId": "brainstorm",
+          "allocations": [
+            {
+              "print": {
+                "id": "brainstorm-it-mmq",
+                "set": "mmq",
+                "setName": "Test Set",
+                "collectorNumber": "1",
+                "lang": "it",
+                "printedName": "Brainstorm",
+                "flavorName": null,
+                "releasedAt": "2019-01-01",
+                "imageStatus": "highres_scan",
+                "digital": false,
+                "oversized": false,
+                "layout": "normal",
+                "setType": "expansion",
+                "promoTypes": [],
+                "faces": [
+                  {
+                    "name": "Brainstorm",
+                    "artist": "Test Artist",
+                    "imageUris": {
+                      "small": "https://cards.scryfall.io/small/front/brainstorm-it-mmq.jpg",
+                      "normal": "https://cards.scryfall.io/normal/front/brainstorm-it-mmq.jpg",
+                      "large": "https://cards.scryfall.io/large/front/brainstorm-it-mmq.jpg",
+                      "png": "https://cards.scryfall.io/png/front/brainstorm-it-mmq.png"
+                    }
+                  }
+                ]
+              },
+              "quantity": 1
+            },
+            {
+              "print": {
+                "id": "brainstorm-c21",
+                "set": "c21",
+                "setName": "Test Set",
+                "collectorNumber": "1",
+                "lang": "en",
+                "printedName": "Brainstorm",
+                "flavorName": null,
+                "releasedAt": "2021-01-01",
+                "imageStatus": "highres_scan",
+                "digital": false,
+                "oversized": false,
+                "layout": "normal",
+                "setType": "expansion",
+                "promoTypes": [],
+                "faces": [
+                  {
+                    "name": "Brainstorm",
+                    "artist": "Test Artist",
+                    "imageUris": {
+                      "small": "https://cards.scryfall.io/small/front/brainstorm-c21.jpg",
+                      "normal": "https://cards.scryfall.io/normal/front/brainstorm-c21.jpg",
+                      "large": "https://cards.scryfall.io/large/front/brainstorm-c21.jpg",
+                      "png": "https://cards.scryfall.io/png/front/brainstorm-c21.png"
+                    }
+                  }
+                ]
+              },
+              "quantity": 1
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  "sheetOptions": {
+    "pageFormat": "Letter",
+    "imageQuality": "png",
+    "marginMm": 8,
+    "spacingMm": 2,
+    "cropMarks": false
+  }
+}
