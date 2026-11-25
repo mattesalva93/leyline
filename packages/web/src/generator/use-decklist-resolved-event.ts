@@ -23,6 +23,8 @@ export function useDecklistResolvedEvent({
   useEffect(() => {
     if (!isAwaitingResolution || !isEveryLineResolved) return;
     setIsAwaitingResolution(false);
+    // A paste of blank lines brought no decklist.
+    if (cardLines.length === 0) return;
     recordProductEvent({
       name: 'decklist_resolved',
       lineCount: cardLines.length,

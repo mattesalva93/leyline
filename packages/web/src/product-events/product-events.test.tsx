@@ -133,6 +133,18 @@ describe('product events (ADR 0027)', () => {
     expect(sentEvents()).toEqual([]);
   });
 
+  it('sends no decklist_resolved for a paste that writes no line naming a card', async () => {
+    const user = userEvent.setup();
+    mountApp('/proxy');
+    await user.click(screen.getByLabelText('Decklist'));
+
+    await user.paste('\n\n');
+    await user.type(screen.getByLabelText('Decklist'), '1 Lightning Bolt{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Lightning Bolt' });
+
+    expect(sentEvents()).toEqual([]);
+  });
+
   it('sends decklist_resolved for the example decklist, once it is resolved', async () => {
     const user = userEvent.setup();
     mountApp('/proxy');
