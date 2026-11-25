@@ -340,7 +340,9 @@ describe('the app shell', () => {
         const section = (heading: string) =>
           within(notice).getByRole('heading', { name: heading }).parentElement?.textContent;
         expect(section('Dati trattati')).toContain('Errori dell’app');
-        expect(section('Dati trattati')).toContain('senza i parametri di ricerca');
+        expect(section('Dati trattati')).toContain(
+          'non contiene il testo della decklist, le ricerche',
+        );
         expect(section('Dati trattati')).toContain('i più vecchi vengono cancellati');
         expect(section('Destinatari')).toContain('Bugsink B.V.');
         expect(section('Finalità e base giuridica')).toContain('correggere gli errori dell’app');
