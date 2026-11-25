@@ -1,4 +1,3 @@
-// The only module of `web` that imports `@sentry/*` (eslint.config.js).
 import {
   browserApiErrorsIntegration,
   dedupeIntegration,

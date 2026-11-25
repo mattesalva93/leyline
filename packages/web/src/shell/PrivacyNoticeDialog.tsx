@@ -30,15 +30,16 @@ const LINKS: Readonly<Record<string, ReactElement>> = {
 };
 
 /** What the notice tells apart, because it describes only what this build has on (ADR 0027). */
-interface SwitchedTools {
+interface ToolsSwitchedOn {
   readonly errorReports: boolean;
 }
 
 /** A paragraph by its key, shown always, or only while `shown` holds for the tools on. */
-type Paragraph = string | { readonly key: string; readonly shown: (on: SwitchedTools) => boolean };
+type Paragraph =
+  string | { readonly key: string; readonly shown: (toolsOn: ToolsSwitchedOn) => boolean };
 
-const WITH_ERROR_REPORTS = ({ errorReports }: SwitchedTools) => errorReports;
-const WITHOUT_ERROR_REPORTS = ({ errorReports }: SwitchedTools) => !errorReports;
+const WITH_ERROR_REPORTS = ({ errorReports }: ToolsSwitchedOn) => errorReports;
+const WITHOUT_ERROR_REPORTS = ({ errorReports }: ToolsSwitchedOn) => !errorReports;
 
 /** The notice's sections, in the order art. 13 GDPR lists what it owes, by their key in `privacyNotice`. */
 const SECTIONS: readonly { readonly key: string; readonly paragraphs: readonly Paragraph[] }[] = [
@@ -72,10 +73,10 @@ const SECTIONS: readonly { readonly key: string; readonly paragraphs: readonly P
 ];
 
 /** The keys of the section's paragraphs shown with the tools on. */
-function shownParagraphs(paragraphs: readonly Paragraph[], on: SwitchedTools): string[] {
+function shownParagraphs(paragraphs: readonly Paragraph[], toolsOn: ToolsSwitchedOn): string[] {
   return paragraphs.flatMap((paragraph) => {
     if (typeof paragraph === 'string') return [paragraph];
-    return paragraph.shown(on) ? [paragraph.key] : [];
+    return paragraph.shown(toolsOn) ? [paragraph.key] : [];
   });
 }
 
@@ -85,7 +86,7 @@ function shownParagraphs(paragraphs: readonly Paragraph[], on: SwitchedTools): s
  */
 export function PrivacyNoticeDialog({ triggerClassName }: { readonly triggerClassName: string }) {
   const { t } = useTranslation();
-  const on: SwitchedTools = { errorReports: errorReportingIsOn() };
+  const toolsOn: ToolsSwitchedOn = { errorReports: errorReportingIsOn() };
   return (
     <Dialog>
       <DialogTrigger className={triggerClassName}>{t('privacyNotice.title')}</DialogTrigger>
@@ -95,7 +96,7 @@ export function PrivacyNoticeDialog({ triggerClassName }: { readonly triggerClas
         {SECTIONS.map(({ key, paragraphs }) => (
           <section key={key} className="mt-4">
             <h3 className="font-bold">{t(`privacyNotice.${key}.heading`)}</h3>
-            {shownParagraphs(paragraphs, on).map((paragraph) => (
+            {shownParagraphs(paragraphs, toolsOn).map((paragraph) => (
               <p key={paragraph} className="mt-1">
                 <Trans
                   i18nKey={`privacyNotice.${key}.${paragraph}`}

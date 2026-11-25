@@ -11,6 +11,9 @@ function throwUncaught(error: Error) {
   window.onerror?.(error.message, 'https://leyline.website/assets/index.js', 1, 1, error);
 }
 
+/** An envelope's lines: its header, then each item's header and payload. */
+const EVENT_PAYLOAD_LINE = 2;
+
 /** The envelopes the SDK sent, each as its address and its lines of JSON. */
 function sentEnvelopes(fetchMock: { mock: { calls: unknown[][] } }) {
   return (fetchMock.mock.calls as [string, RequestInit][]).map(([url, init]) => ({
@@ -59,7 +62,7 @@ describe('reporting the browser’s errors', () => {
 
     it('sends an uncaught error to the site’s own path, with the bundle’s release', () => {
       expect(envelopes.map(({ url }) => url)).toEqual([ERROR_REPORTS_PATH]);
-      expect(envelopes[0]?.items[2]).toMatchObject({
+      expect(envelopes[0]?.items[EVENT_PAYLOAD_LINE]).toMatchObject({
         release: import.meta.env.APP_VERSION,
         exception: { values: [{ value: 'boom' }] },
       });
@@ -69,8 +72,8 @@ describe('reporting the browser’s errors', () => {
       const items = envelopes.flatMap((envelope) => envelope.items);
 
       expect(items.map((item) => item.type).filter(Boolean)).toEqual(['event']);
-      expect(items[2]).not.toHaveProperty('user');
-      expect(items[2]).not.toHaveProperty('breadcrumbs');
+      expect(items[EVENT_PAYLOAD_LINE]).not.toHaveProperty('user');
+      expect(items[EVENT_PAYLOAD_LINE]).not.toHaveProperty('breadcrumbs');
       expect(JSON.stringify(items)).not.toContain('Lightning Bolt');
     });
   });
