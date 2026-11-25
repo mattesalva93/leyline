@@ -1,11 +1,6 @@
 # Vulnerabilities in the images that no update on our side fixes yet. Each one expires, so CI
 # fails again once the base image has had time to ship the fix: then update it, or renew the entry.
 vulnerabilities:
-  - id: CVE-2026-85091
-    statement: >-
-      zlib1g of the api's node base image, fixed in Debian but not yet in the image.
-      Node links its own copy of zlib, not the system library (ldd /usr/local/bin/node).
-    expired_at: 2027-01-18
   - id: CVE-2026-124851
     statement: >-
       libzstd1 of the api's node base image, fixed in Debian but not yet in the image. Node
