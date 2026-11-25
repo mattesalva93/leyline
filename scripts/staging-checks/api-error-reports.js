@@ -4,8 +4,14 @@
 // that Caddy strips what names the sender against the stub of Bugsink (docs/staging.md), and
 // otherwise only that the listener forwards, or that it is off.
 import { connect } from 'node:net';
-import { execInService, inspectContainers, inspectNetworks, serviceOf } from './compose-stack.js';
-import { CLIENT_HEADERS, ENVELOPE, forwardingFailures, serviceVariables } from './error-reports.js';
+import {
+  execInService,
+  inspectContainers,
+  inspectNetworks,
+  serviceOf,
+  serviceVariables,
+} from './compose-stack.js';
+import { CLIENT_HEADERS, ENVELOPE, forwardingFailures } from './error-reports.js';
 
 /** The networks the api may be on: Caddy's requests in, the database out. */
 const API_NETWORKS = ['proxy', 'database'];

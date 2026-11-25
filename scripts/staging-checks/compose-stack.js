@@ -31,3 +31,28 @@ export async function inspectContainers() {
 export async function inspectNetworks(names) {
   return JSON.parse(await docker('network', 'inspect', ...names));
 }
+
+/** The service's environment variables, as its container sees them. */
+export async function serviceVariables(service) {
+  const container = (await inspectContainers()).find((each) => serviceOf(each) === service);
+  if (!container) throw new Error(`the stack has no ${service} container`);
+  return Object.fromEntries(
+    container.Config.Env.map((entry) => {
+      const separator = entry.indexOf('=');
+      return [entry.slice(0, separator), entry.slice(separator + 1)];
+    }),
+  );
+}
+
+/**
+ * Runs `statements` in one `psql` session as Umami's role, in its retention job's container,
+ * which holds `psql` and signs in through libpq's PG* variables. `-tA` prints bare values;
+ * ON_ERROR_STOP makes psql exit with an error at the first failing statement.
+ */
+export function psqlAsUmami(...statements) {
+  return execInService(
+    'umami-retention',
+    ...['psql', '-tA', '-v', 'ON_ERROR_STOP=1'],
+    ...statements.flatMap((statement) => ['-c', statement]),
+  );
+}

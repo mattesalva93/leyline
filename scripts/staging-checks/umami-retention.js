@@ -4,7 +4,7 @@
 // as it found it. It also fails on a table of visitors' data the job does not cover, such as one a
 // new Umami adds.
 import { randomUUID } from 'node:crypto';
-import { execInService } from './compose-stack.js';
+import { execInService, psqlAsUmami } from './compose-stack.js';
 
 const RETENTION_SQL = '/etc/umami-retention/retention.sql';
 
@@ -13,15 +13,6 @@ const CONFIGURATION_TABLES = ['website', 'report', 'segment', 'annotation'];
 
 /** Ages on either side of the retention, as PostgreSQL intervals. */
 const AGES = { expired: '26 months', kept: '24 months' };
-
-/** Runs `statements` in one `psql` session as Umami's role, in its retention job's container. */
-function psqlAsUmami(...statements) {
-  return execInService(
-    'umami-retention',
-    ...['psql', '-tA', '-v', 'ON_ERROR_STOP=1'],
-    ...statements.flatMap((statement) => ['-c', statement]),
-  );
-}
 
 /** An event, its data, its session and the session's data, all as old as `age`. */
 function sampleVisit(age) {

@@ -9,7 +9,7 @@ import { promisify } from 'node:util';
 import { ERROR_REPORTS_PATH } from '../../packages/web/src/error-reporting/error-reports-path.ts';
 import { stackBaseImages } from '../docker/base-images.js';
 import { composeModel } from '../docker/compose-model.js';
-import { inspectContainers, serviceOf } from './compose-stack.js';
+import { inspectContainers, serviceOf, serviceVariables } from './compose-stack.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -56,18 +56,6 @@ export const ENVELOPE = [
   JSON.stringify({ type: 'event' }),
   JSON.stringify({ message: 'pnpm check:staging' }),
 ].join('\n');
-
-/** The service's environment variables, as its container sees them. */
-export async function serviceVariables(service) {
-  const container = (await inspectContainers()).find((each) => serviceOf(each) === service);
-  if (!container) throw new Error(`the stack has no ${service} container`);
-  return Object.fromEntries(
-    container.Config.Env.map((entry) => {
-      const separator = entry.indexOf('=');
-      return [entry.slice(0, separator), entry.slice(separator + 1)];
-    }),
-  );
-}
 
 /** The stack's `internet` network, by which Caddy reaches Bugsink. */
 async function caddyInternetNetwork() {

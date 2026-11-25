@@ -6,7 +6,7 @@
 // sends straight, naming no address.
 import { randomUUID } from 'node:crypto';
 import { PRODUCT_EVENTS_PATH } from '../../packages/web/src/product-events/product-events-path.ts';
-import { execInService } from './compose-stack.js';
+import { execInService, psqlAsUmami } from './compose-stack.js';
 import { securityHeaderFailuresOf } from './security-headers.js';
 
 /** A browser's, since Umami drops what a bot sends. */
@@ -102,18 +102,6 @@ async function umamiOnlyFailures({ visitorRequest, appAddress }) {
       failures.push(`${method} ${path} reaches Umami`);
   }
   return failures;
-}
-
-/** Runs SQL as Umami's role, through its retention job's `psql`. */
-function psqlAsUmami(...statements) {
-  return execInService(
-    'umami-retention',
-    'psql',
-    '-tA',
-    '-v',
-    'ON_ERROR_STOP=1',
-    ...statements.flatMap((statement) => ['-c', statement]),
-  );
 }
 
 /** A website that lives only while `use` runs, with whatever Umami recorded for it. */

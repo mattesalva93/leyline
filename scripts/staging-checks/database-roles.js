@@ -2,8 +2,7 @@
 // create anything, and has a statement timeout; the importer signs in as `leyline_owner` (ADR 0016).
 // Umami and its retention job sign in as `umami`, to a database of its own that the catalog's roles
 // cannot open, as `umami` cannot open the catalog's (ADR 0027).
-import { execInService } from './compose-stack.js';
-import { serviceVariables } from './error-reports.js';
+import { execInService, serviceVariables } from './compose-stack.js';
 
 /** The role each service's database URL connects as. */
 const SERVICE_ROLES = {
