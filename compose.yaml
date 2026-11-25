@@ -110,7 +110,9 @@ services:
     # It migrates the database before importing: the api only reads it (ADR 0016).
     environment:
       OWNER_DATABASE_URL: postgres://leyline_owner:${LEYLINE_OWNER_PASSWORD:?set LEYLINE_OWNER_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-leyline}
-    # Scryfall's bulk files in, the database out.
+      # Its check-ins to Healthchecks.io (ADR 0027), off while empty.
+      HEALTHCHECKS_PING_URL: ${HEALTHCHECKS_PING_URL:-}
+    # Scryfall's bulk files in and the check-ins out, the database out.
     networks: [internet, database]
     restart: unless-stopped
     depends_on:

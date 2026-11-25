@@ -98,6 +98,22 @@ To test the api's, send it an error from inside its container through the same r
 docker compose exec api node -e "import('./dist/error-reporting/error-reporter-from-env.js').then(async ({ errorReporterFromEnv }) => { (await errorReporterFromEnv()).report(new Error('api test')); setTimeout(() => {}, 2000); })"
 ```
 
+## Import monitoring
+
+The importer checks in to Healthchecks.io after every import: a ping to the check's URL once it succeeds, to the same URL with `/fail` once it fails (ADR 0027). The ping carries nothing but the outcome. Healthchecks.io emails an alert when a failure checks in, or when no success arrives in time. It is off while the host's `.env` leaves `HEALTHCHECKS_PING_URL` empty.
+
+To turn it on, create a check on Healthchecks.io with the project's mailbox, the address `SECURITY.md` gives, as its email integration, and a **simple** schedule:
+
+- **Period**: 1 day, as often as the importer imports;
+- **Grace time**: 3 hours. A failed import alerts at once through its `/fail` ping, and the retries after it check in on their own, so the grace only covers how late a success arrives after the day: the next import starts a day after the last one began (`packages/api/src/catalog-import/daily-imports.ts`), and its success comes once it has run.
+
+Put the check's ping URL, `https://hc-ping.com/<uuid>`, in `HEALTHCHECKS_PING_URL` and deploy. The importer already reaches the internet for Scryfall, so its networks stay as they are. To test it, check in a failure from inside its container through the same check-in the importer uses, and check that the project's mailbox receives the alert; then check in a success, which brings the check back up:
+
+```sh
+docker compose exec importer node -e "import('./dist/catalog-import/import-check-in-from-env.js').then(({ importCheckInFromEnv }) => importCheckInFromEnv()('failed'))"
+docker compose exec importer node -e "import('./dist/catalog-import/import-check-in-from-env.js').then(({ importCheckInFromEnv }) => importCheckInFromEnv()('succeeded'))"
+```
+
 ## GitHub security settings once the repository is public
 
 A public repository gets GitHub's secret scanning and push protection for free. They run beside CI's `gitleaks`: push protection rejects a push carrying a known secret before it reaches GitHub, where `gitleaks` can only fail the run afterwards.
