@@ -28,8 +28,11 @@ FROM node:26.13.1-slim@sha256:abe7e5a82b61a8ef67b315b85497c9e65173387ccf2f4a0292
 # vulnerabilities, for nothing.
 RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 ENV NODE_ENV=production
-WORKDIR /app
+# The repository's layout around the api: the release it reports errors with is the root
+# package.json's version (ADR 0025), read from there.
+WORKDIR /app/packages/api
 COPY --from=build --chown=node:node /deploy/api ./
+COPY --from=build /app/package.json /app/
 USER node
 EXPOSE 3000
 CMD ["node", "dist/server.js"]
