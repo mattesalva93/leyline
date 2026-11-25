@@ -1,9 +1,8 @@
 -- Umami keeps what visitors did for at most 25 months (ADR 0027): every row older is deleted, in
--- each table that records an event, a session or what came with them. The tables Umami's own
--- configuration lives in (users, websites, reports, segments, annotations) are kept.
--- `pnpm check:staging` runs this on sample rows, and fails on a table of visitors' data this
--- list misses. Umami keeps no foreign keys in the database (its Prisma schema's
--- `relationMode = "prisma"`), so the order does not matter.
+-- each table that records an event, a session or what came with them; Umami's own configuration
+-- is kept. `scripts/staging-checks/umami-retention.js` pins which tables are which. Umami keeps
+-- no foreign keys in the database (its Prisma schema's `relationMode = "prisma"`), so the order
+-- does not matter.
 \set cutoff 'now() - interval ''25 months'''
 delete from website_event where created_at < :cutoff;
 delete from event_data where created_at < :cutoff;

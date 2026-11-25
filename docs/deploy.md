@@ -126,7 +126,7 @@ ssh -N -L 3001:"$umami":3000 <user>@<host>   # -N: no remote command, only the t
 
 While the tunnel is open, `http://localhost:3001` on this machine is Umami's dashboard. The address changes when the container is created again, so look it up each time. On the first sign-in, as `admin` with the password `umami` that Umami starts with, change that password at once, under _Settings → Security_: the site never exposes the login, but anyone on the host does reach it.
 
-`umami-retention` deletes once a day what Umami keeps past 25 months, as Umami's own role, with `docker/umami-retention/retention.sql`. `pnpm check:staging` runs that SQL on sample rows, and checks that the site reaches Umami at the events path only, and that Umami hashes no address of the client.
+`umami-retention` deletes, once a day and as Umami's own role, what Umami keeps past its retention (`docker/umami-retention/retention.sql`).
 
 ## GitHub security settings once the repository is public
 
