@@ -1,6 +1,7 @@
 // Lists every dependency with a newer release: npm packages, mise tools, the workflows' actions
-// and the Dockerfile's base images. Run on a work item's branch before its PR, which takes the
-// updates in (docs/agents/dependency-updates.md).
+// and the Dockerfile's base images, whose tags are also checked for a rebuild under a new digest.
+// Run on a work item's branch before its PR, which takes the updates in
+// (docs/agents/dependency-updates.md).
 //   pnpm deps:outdated
 // Needs `gh` logged in, to read the actions' and Caddy's latest releases, and Docker Hub's
 // registry, to read the base images' current digests.
@@ -90,17 +91,17 @@ const outdated = [
   ...outdatedActions(),
   ...outdatedBaseImages(),
 ];
-let digestsUnchecked;
+let digestCheckError;
 try {
   outdated.push(
     ...(await outdatedImageDigests(readFileSync(`${ROOT}Dockerfile`, 'utf8'), dockerHubDigest)),
   );
 } catch (error) {
-  digestsUnchecked = error;
+  digestCheckError = error;
 }
 if (outdated.length > 0) console.log(outdated.join('\n'));
-if (digestsUnchecked) {
-  console.error(`Base image digests not checked, ${digestsUnchecked.message}.`);
+if (digestCheckError) {
+  console.error(`Base image digests not checked, ${digestCheckError.message}.`);
   process.exitCode = 1;
 } else if (outdated.length === 0) {
   console.log('Every dependency is up to date.');

@@ -27,5 +27,7 @@ export async function dockerHubDigest(image, tag) {
     method: 'HEAD',
     headers: { Authorization: `Bearer ${token}`, Accept: INDEX_TYPES },
   });
-  return manifest.headers.get('docker-content-digest');
+  const digest = manifest.headers.get('docker-content-digest');
+  if (!digest) throw new Error(`Docker Hub sent no digest for ${image}:${tag}`);
+  return digest;
 }
