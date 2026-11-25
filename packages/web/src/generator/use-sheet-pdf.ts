@@ -9,6 +9,7 @@ import {
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchImages } from '../api.ts';
+import { recordProductEvent } from '../product-events/record-product-event.ts';
 import { canShareFile, deviceSharesPdf, downloadPdf, sharePdf, toPdfFile } from './pdf-delivery.ts';
 
 /** How far the PDF has got: images arrive one by one, then the pages are put together. */
@@ -32,6 +33,18 @@ export interface SheetPdf {
   readonly isAvailable: boolean;
   /** Shares the waiting PDF, or makes a new one: downloaded, or kept waiting for a tap to share it. */
   readonly makeOrShare: () => void;
+}
+
+/** Records `pdf_generated` for the PDF of `sheet`, laid out as `sheetLayout`, now ready. */
+function recordPdfGenerated(sheet: Sheet, sheetLayout: SheetLayout | null) {
+  const pages = sheetLayout?.pages ?? [];
+  recordProductEvent({
+    name: 'pdf_generated',
+    pageFormat: sheet.options.pageFormat,
+    pageCount: pages.length,
+    // A card's face on paper: a double-faced card puts two.
+    cardCount: pages.reduce((count, slots) => count + slots.length, 0),
+  });
 }
 
 /**
@@ -82,6 +95,7 @@ export function useSheetPdf(
       }
       setStatus({ step: 'composingPages' });
       const file = toPdfFile(await generateSheetPdf(sheet, images), t('pdf.fileName'));
+      recordPdfGenerated(sheet, sheetLayout);
       // The browser opens the share menu only within a few seconds of a tap, and fetching the
       // images outlasts that: sharing waits for a tap of its own. The real file is checked again:
       // the browser may refuse one that the stand-in passed, such as a too large one.

@@ -61,9 +61,9 @@ export function useGeneratorWatchedByGuide(
     },
     generator: {
       ...generator,
-      writeDecklistText: (nextText, caretAfterChange) => {
+      writeDecklistText: (nextText, caretAfterChange, change) => {
         see('hasWrittenDecklist');
-        generator.writeDecklistText(nextText, caretAfterChange);
+        generator.writeDecklistText(nextText, caretAfterChange, change);
       },
       loadDecklistText: (text, split) => {
         see('hasWrittenDecklist');

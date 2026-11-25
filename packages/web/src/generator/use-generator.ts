@@ -36,6 +36,7 @@ import { loadDefaultLang, saveDefaultLang } from '../language/default-lang.ts';
 import { choicesKeysOf, type LineChoices } from './line-choices.ts';
 import { allocationsSplitOverPrints, type LineSplitOverPrints } from './line-split.ts';
 import { loadSavedDecklist } from './saved-decklist/saved-decklist.ts';
+import { useDecklistResolvedEvent } from './use-decklist-resolved-event.ts';
 import { useDecklistUnderWay } from './use-decklist-under-way.ts';
 import { useSheetPdf, type SheetPdf } from './use-sheet-pdf.ts';
 import { useSuggestedTokens } from './use-suggested-tokens.ts';
@@ -79,6 +80,9 @@ export interface WrittenCardLine {
   readonly line: DecklistLine | undefined;
 }
 
+/** How a change of the decklist text came: typed (or deleted) by hand, or pasted. */
+type DecklistTextChange = 'typed' | 'pasted';
+
 /**
  * The state of the generator and what the user can do to it, whatever the page that shows it
  * looks like. Lines are named by their `writtenIndex`.
@@ -89,9 +93,14 @@ export interface Generator {
   readonly writtenLineCount: number;
   /**
    * Takes the text as the user left it, the caret at `caretAfterChange`; a line break the change
-   * wrote, typed or pasted, resolves every line before the last.
+   * wrote, typed or pasted, resolves every line before the last. A pasted decklist is recorded
+   * as a product event once resolved.
    */
-  readonly writeDecklistText: (nextText: string, caretAfterChange: number) => void;
+  readonly writeDecklistText: (
+    nextText: string,
+    caretAfterChange: number,
+    change?: DecklistTextChange,
+  ) => void;
   /** Resolves every written line not resolved yet, the last one included. */
   readonly resolveEveryLine: () => void;
   /**
@@ -219,7 +228,12 @@ export function useGenerator(): Generator {
     }
   }
 
-  function writeDecklistText(nextText: string, caretAfterChange: number) {
+  function writeDecklistText(
+    nextText: string,
+    caretAfterChange: number,
+    change: DecklistTextChange = 'typed',
+  ) {
+    if (change === 'pasted') decklistResolvedEvent.awaitResolution();
     if (changeWritesALineBreak(decklistText, nextText, caretAfterChange)) {
       void resolveInLanguage(writtenLinesOf(nextText).slice(0, -1), defaultLang);
     }
@@ -231,6 +245,7 @@ export function useGenerator(): Generator {
     const choicesKey = split && choicesKeysOf(loadedLines)[split.writtenIndex];
     setPendingSplit(choicesKey ? { choicesKey, printCount: split.printCount } : null);
     setDecklistText(text);
+    decklistResolvedEvent.awaitResolution();
     void resolveInLanguage(loadedLines, defaultLang);
   }
 
@@ -491,6 +506,7 @@ export function useGenerator(): Generator {
     setSheetOptions(defaultSheetOptions);
     setDecklistText('');
     decklistUnderWay.startOver();
+    decklistResolvedEvent.forget();
   }
 
   useEffect(() => {
@@ -533,6 +549,11 @@ export function useGenerator(): Generator {
     wasKeptOnEntering: savedDecklist !== null,
     hasRecognisedLine: recognisedLines.length > 0,
     decklist: { decklistText, choicesByLine, sheetOptions },
+  });
+  const decklistResolvedEvent = useDecklistResolvedEvent({
+    cardLines,
+    isResolving: requestsInFlight > 0,
+    lang: defaultLang,
   });
   const unresolvedCount = cardLines.length - recognisedLines.length;
   // A line written but not resolved yet waits too, unless its request failed: the user is
