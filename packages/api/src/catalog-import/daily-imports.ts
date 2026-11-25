@@ -41,6 +41,8 @@ export async function runDailyImports(host: DailyImportsHost): Promise<void> {
     try {
       await host.importCatalog();
     } catch (error) {
+      // A shutdown cuts the import short: that is no failure worth an alert.
+      if (stop.aborted) return;
       log.error('Catalog import failed; the previous catalog keeps serving', error);
       await checkIn('failed');
       await host.wait(RETRY_AFTER);

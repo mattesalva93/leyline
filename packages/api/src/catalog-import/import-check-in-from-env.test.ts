@@ -14,6 +14,13 @@ function stubFetch(
   return fetchMock;
 }
 
+/** Healthchecks.io out of reach: the request hangs until it is abandoned. */
+function neverAnswering(init: RequestInit): Promise<Response> {
+  return new Promise((_, reject) => {
+    init.signal?.addEventListener('abort', () => reject(init.signal?.reason));
+  });
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -60,12 +67,7 @@ describe('the import’s check-in to Healthchecks.io', () => {
   it('gives up on a ping that has no answer within ten seconds', async () => {
     vi.useFakeTimers();
     try {
-      stubFetch(
-        (init) =>
-          new Promise((_, reject) => {
-            init.signal?.addEventListener('abort', () => reject(init.signal?.reason));
-          }),
-      );
+      stubFetch(neverAnswering);
 
       const checkIn = importCheckInFromEnv({ HEALTHCHECKS_PING_URL: PING_URL })('succeeded');
       const settled = expect(checkIn).rejects.toThrow();
@@ -75,5 +77,18 @@ describe('the import’s check-in to Healthchecks.io', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('abandons a ping under way once the importer stops', async () => {
+    stubFetch(neverAnswering);
+    const stop = new AbortController();
+
+    const checkIn = importCheckInFromEnv(
+      { HEALTHCHECKS_PING_URL: PING_URL },
+      stop.signal,
+    )('succeeded');
+    stop.abort();
+
+    await expect(checkIn).rejects.toThrow();
   });
 });

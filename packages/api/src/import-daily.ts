@@ -25,7 +25,7 @@ try {
       const { prints } = await importBulk(sql, await downloadBulk(url));
       console.log(`Imported ${prints} prints`);
     },
-    checkIn: importCheckInFromEnv(),
+    checkIn: importCheckInFromEnv(process.env, stop.signal),
     wait: (milliseconds) => sleep(milliseconds, undefined, { signal: stop.signal }),
     log: console,
   });

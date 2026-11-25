@@ -9,6 +9,8 @@ interface FakeHost {
   healthchecksDown?: boolean;
   /** Stops the loop once this many imports have been tried. */
   stopAfterImports?: number;
+  /** Shuts the importer down while an import runs, which cuts it short. */
+  shutdownDuringImport?: boolean;
 }
 
 /**
@@ -19,6 +21,7 @@ function fakeHost({
   scryfallDown = false,
   healthchecksDown = false,
   stopAfterImports = 1,
+  shutdownDuringImport = false,
 }: FakeHost) {
   let now = new Date('2026-11-25T03:00:00Z').getTime();
   let lastImportStartedAt: Date | null = null;
@@ -40,6 +43,10 @@ function fakeHost({
         lastImportStartedAt: async () => lastImportStartedAt,
         async importCatalog() {
           importsTried.push(new Date(now));
+          if (shutdownDuringImport) {
+            stop.abort();
+            throw new Error('Connection terminated');
+          }
           if (scryfallDown) throw new Error('Scryfall answered 503');
           lastImportStartedAt = new Date(now);
         },
@@ -71,6 +78,14 @@ describe('the daily catalog import', () => {
     await host.run();
 
     expect(host.checkIns).toEqual(['failed']);
+  });
+
+  it('checks in nothing for an import that a shutdown cuts short', async () => {
+    const host = fakeHost({ shutdownDuringImport: true });
+
+    await host.run();
+
+    expect(host.checkIns).toEqual([]);
   });
 
   it.each([

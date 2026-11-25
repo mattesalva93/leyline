@@ -10,7 +10,10 @@ const silentImportCheckIn: ImportCheckIn = async () => {};
  * The importer's check-in (ADR 0027): a ping to the Healthchecks.io check that
  * `HEALTHCHECKS_PING_URL` names, else one that sends nothing.
  */
-export function importCheckInFromEnv(env: NodeJS.ProcessEnv = process.env): ImportCheckIn {
+export function importCheckInFromEnv(
+  env: NodeJS.ProcessEnv = process.env,
+  stop?: AbortSignal,
+): ImportCheckIn {
   const pingUrl = env.HEALTHCHECKS_PING_URL;
   if (!pingUrl) return silentImportCheckIn;
   return async (outcome) => {
@@ -22,7 +25,10 @@ export function importCheckInFromEnv(env: NodeJS.ProcessEnv = process.env): Impo
       PING_TIMEOUT,
     );
     try {
-      const response = await fetch(url, { method: 'GET', signal: gaveUp.signal });
+      const response = await fetch(url, {
+        method: 'GET',
+        signal: stop ? AbortSignal.any([stop, gaveUp.signal]) : gaveUp.signal,
+      });
       if (!response.ok)
         throw new Error(`Healthchecks.io answered the check-in with ${response.status}`);
     } finally {
