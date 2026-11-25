@@ -96,3 +96,40 @@ jobs:
           # shellcheck disable=SC2029
           ssh deploy "cd '$DEPLOY_PATH' && docker compose up -d --wait --remove-orphans &&
             docker compose exec -T web caddy reload --config /etc/caddy/Caddyfile"
+
+  # A release that went online gets its fixed name (ADR 0025): the tag `vX.Y.Z` of package.json's
+  # version on the deployed commit, and its GitHub Release. A job of its own, after a deploy that
+  # succeeded, so that only it holds `contents: write`; a failed deploy tags nothing.
+  release:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          # The whole history and its tags: the notes list the commits since the previous tag.
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: jdx/mise-action@v5.3.0
+        with:
+          install_args: node
+      # A deploy run again by hand finds its release already there and leaves it as it is. The
+      # token reaches only gh, through the environment; the checkout keeps no credential.
+      - name: Tag the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          DEPLOYED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          tag="v$(jq -r .version package.json)"
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "$tag is already released: nothing to do."
+            exit 0
+          fi
+          node scripts/release-notes.js "$tag" > "$RUNNER_TEMP/notes.md"
+          # --target names the commit the tag is created on, when the tag does not exist yet.
+          gh release create "$tag" --target "$DEPLOYED_SHA" --title "$tag" --notes-file "$RUNNER_TEMP/notes.md"
+          echo "Released $tag on $DEPLOYED_SHA."

@@ -46,6 +46,8 @@ The VPS builds the images itself on every deploy (ADR 0012). Measured on staging
 
 From then on, every push to `main` that passes CI is deployed. `gh variable set DEPLOY_ENABLED --body false` turns it off again.
 
+A deploy that succeeds then tags the deployed commit `vX.Y.Z`, from the version in its `package.json`, and publishes the GitHub Release of that tag, its notes made by `scripts/release-notes.js` from the commits since the previous tag (ADR 0025). A deploy run again by hand on a version already released leaves the tag and the release as they are; a failed deploy creates neither. `gh release list` shows the releases.
+
 ## The testers' guard
 
 The alpha is open to anyone (ADR 0023). Caddy's `basic_auth` stays ready as an emergency switch, for when the site is abused: every deploy reads the `TESTER_CREDENTIALS` secret, and
