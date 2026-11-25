@@ -31,8 +31,3 @@ export async function inspectContainers() {
 export async function inspectNetworks(names) {
   return JSON.parse(await docker('network', 'inspect', ...names));
 }
-
-/** The stack's configuration as Compose resolves it from compose.yaml and `.env`. */
-export async function composeModel() {
-  return JSON.parse(await docker('compose', 'config', '--format', 'json'));
-}
