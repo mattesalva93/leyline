@@ -85,10 +85,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    # compose.yaml requires the database roles' passwords; no container starts here, so any value does.
+    # compose.yaml requires the database roles' passwords and Umami's secret; no container starts
+    # here, so any value does.
     env:
       LEYLINE_OWNER_PASSWORD: unused-by-the-build
       LEYLINE_READER_PASSWORD: unused-by-the-build
+      UMAMI_DATABASE_PASSWORD: unused-by-the-build
+      UMAMI_APP_SECRET: unused-by-the-build
     steps:
       - uses: actions/checkout@v7.0.1
         with:

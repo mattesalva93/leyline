@@ -28,6 +28,7 @@ import { databaseNetworkFailures } from './staging-checks/database-network.js';
 import { databaseRoleFailures } from './staging-checks/database-roles.js';
 import { errorReportFailures } from './staging-checks/error-reports.js';
 import { hostMaintenanceFailures } from './staging-checks/host-maintenance.js';
+import { productEventFailures } from './staging-checks/product-events.js';
 import { publicReachFailures } from './staging-checks/public-reach.js';
 import { searchIndexingFailures } from './staging-checks/search-indexing.js';
 import { securityHeaderFailures } from './staging-checks/security-headers.js';
@@ -46,6 +47,7 @@ const CHECKS = {
   'CSP in the browser': cspInBrowserFailures,
   'error reports': errorReportFailures,
   'api error reports': apiErrorReportFailures,
+  'product events': productEventFailures,
   'access log': accessLogFailures,
   'access log rotation': accessLogRotationFailures,
   'container log rotation': containerLogRotationFailures,

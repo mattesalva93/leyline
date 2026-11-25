@@ -37,7 +37,7 @@ services:
       # Where Caddy forwards the browser's error reports (ADR 0027): empty, it forwards none.
       BUGSINK_ORIGIN: ${BUGSINK_ORIGIN:-}
       BUGSINK_PROJECT_ID: ${BUGSINK_PROJECT_ID:-}
-    networks: [internet, proxy]
+    networks: [internet, proxy, analytics]
     volumes:
       # Certificates and the local CA: losing them means new certificates on every start.
       - caddy-data:/data
@@ -119,6 +119,37 @@ services:
       postgres:
         condition: service_healthy
 
+  # Product analytics (ADR 0027): Caddy forwards it only the path that receives events, and the
+  # owner opens its dashboard through an SSH tunnel (docs/deploy.md). No route out of Docker.
+  umami:
+    <<: [*rotated-logs, *least-privilege]
+    # Pinned by digest, like the Dockerfile's base images; `pnpm deps:outdated` checks both.
+    image: umamisoftware/umami:3.5.0@sha256:0e7895d368e94b1b1dbd45eae4e2fb093ffbabfe498473579da4d7c7f3fe6c6c
+    # Its peak on staging, 234 MiB, came from starting and taking 500 events at once.
+    deploy: { resources: { limits: { memory: 384m, cpus: '1' } } }
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DATABASE_PASSWORD:?set UMAMI_DATABASE_PASSWORD in .env}@postgres:5432/umami
+      # Signs its login sessions and enters every session's hash.
+      APP_SECRET: ${UMAMI_APP_SECRET:?set UMAMI_APP_SECRET in .env}
+      # A visitor's session hash changes every day (ADR 0027); Caddy passes it no address to hash.
+      SALT_ROTATION: daily
+      # No telemetry and no update check, from the server or from the dashboard's page.
+      DISABLE_TELEMETRY: '1'
+      DISABLE_UPDATES: '1'
+    networks: [analytics, database]
+    restart: unless-stopped
+    # Next.js caches what it serves there, and an unhandled error ends any request it cannot.
+    tmpfs: [/app/.next/cache]
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', '-o', '/dev/null', 'http://127.0.0.1:3000/api/heartbeat']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     <<: [*rotated-logs, *least-privilege]
     # Pinned by digest, like the Dockerfile's base images.
@@ -136,6 +167,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-leyline}
       LEYLINE_OWNER_PASSWORD: ${LEYLINE_OWNER_PASSWORD:?set LEYLINE_OWNER_PASSWORD in .env}
       LEYLINE_READER_PASSWORD: ${LEYLINE_READER_PASSWORD:?set LEYLINE_READER_PASSWORD in .env}
+      UMAMI_DATABASE_PASSWORD: ${UMAMI_DATABASE_PASSWORD:?set UMAMI_DATABASE_PASSWORD in .env}
     # No port, not even on loopback: `pnpm db:up` runs a database of its own for `pnpm dev` and
     # the tests (compose.dev.yaml).
     networks: [database]
@@ -159,7 +191,10 @@ networks:
   # Caddy forwarding /api to the api, and the api's error reports to Caddy.
   proxy:
     internal: true
-  # PostgreSQL and its two clients, the api and the importer.
+  # Caddy forwarding the product events to Umami.
+  analytics:
+    internal: true
+  # PostgreSQL and its clients: the api, the importer and Umami.
   database:
     internal: true
 

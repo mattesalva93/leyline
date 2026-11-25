@@ -75,6 +75,46 @@
 		import forward-error-reports
 	}
 
+	# The browser's product events (ADR 0027), at the path `web`'s product events module sends them
+	# to, and the one path of Umami the site reaches: its dashboard and other APIs stay behind the
+	# SSH tunnel (docs/deploy.md). Umami gets no address of the client, so it hashes none into a
+	# session and locates nobody, nor its cookies or credential; the browser keeps the site's own
+	# headers, not Umami's. Under the testers' guard, like the rest of the site. `pnpm
+	# check:staging` pins all of it.
+	handle /product-events {
+		@notAnEvent not method POST
+		respond @notAnEvent 405
+		request_body {
+			max_size 64KB
+		}
+		rewrite * /api/send
+		reverse_proxy umami:3000 {
+			header_up -Cookie
+			header_up -Authorization
+			# Every header Umami reads an address from (`scripts/staging-checks/product-events.js`).
+			header_up -X-Forwarded-For
+			header_up -X-Forwarded-Host
+			header_up -X-Forwarded-Proto
+			header_up -X-Forwarded
+			header_up -Forwarded
+			header_up -X-Real-IP
+			header_up -True-Client-IP
+			header_up -CF-Connecting-IP
+			header_up -Fastly-Client-IP
+			header_up -X-NF-Client-Connection-IP
+			header_up -DO-Connecting-IP
+			header_up -X-AppEngine-User-IP
+			header_up -X-Client-IP
+			header_up -X-Cluster-Client-IP
+			header_up -Via
+			header_down -Set-Cookie
+			header_down -Content-Security-Policy
+			header_down -Access-Control-*
+			header_down -X-Powered-By
+			header_down -X-DNS-Prefetch-Control
+		}
+	}
+
 	# Cache (ADR 0025): a page left open must learn of a new release, and reloading must bring
 	# it, while assets named after their content's hash never change. `pnpm check:staging` pins
 	# the three. A missing asset answers 404, uncached, rather than the page under its name.
