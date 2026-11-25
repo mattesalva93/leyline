@@ -6,7 +6,13 @@
 // sends straight, naming no address.
 import { randomUUID } from 'node:crypto';
 import { PRODUCT_EVENTS_PATH } from '../../packages/web/src/product-events/product-events-path.ts';
-import { execInService, psqlAsUmami } from './compose-stack.js';
+import {
+  execInService,
+  inspectContainers,
+  inspectNetworks,
+  psqlAsUmami,
+  serviceOf,
+} from './compose-stack.js';
 import { securityHeaderFailuresOf } from './security-headers.js';
 
 /** A browser's, since Umami drops what a bot sends. */
@@ -56,9 +62,35 @@ const UMAMI_ONLY_REQUESTS = [
   ['POST', `${PRODUCT_EVENTS_PATH}/api/auth/login`],
 ];
 
-/** Umami's Next.js server names itself, and its pages name Umami. */
+/**
+ * Umami's Next.js server names itself, its pages name Umami, and its APIs answer errors as
+ * `{ error: { message, code, status } }`, a shape neither Caddy nor the api uses.
+ */
 function answeredByUmami(headers, body) {
-  return headers['x-powered-by'] === 'Next.js' || /umami/i.test(body);
+  if (headers['x-powered-by'] === 'Next.js' || /umami/i.test(body)) return true;
+  try {
+    const { error } = JSON.parse(body);
+    return typeof error?.code === 'string' && typeof error?.status === 'number';
+  } catch {
+    return false;
+  }
+}
+
+/** Umami's networks: Caddy's requests in, the database out, and no route out of Docker. */
+const UMAMI_NETWORKS = ['analytics', 'database'];
+
+async function umamiNetworkFailures() {
+  const umami = (await inspectContainers()).find((container) => serviceOf(container) === 'umami');
+  if (!umami) return ['the stack has no umami container'];
+  const failures = [];
+  for (const { Name: name, Internal: internal } of await inspectNetworks(
+    Object.keys(umami.NetworkSettings.Networks),
+  )) {
+    if (!UMAMI_NETWORKS.some((network) => name.endsWith(`_${network}`)))
+      failures.push(`umami is on ${name}`);
+    else if (!internal) failures.push(`umami is on ${name}, which is not internal`);
+  }
+  return failures;
 }
 
 function event(website) {
@@ -167,6 +199,7 @@ async function addressFailures(staging) {
  */
 export async function productEventFailures(staging) {
   return [
+    ...(await umamiNetworkFailures()),
     ...(await eventsPathFailures(staging)),
     ...(await umamiOnlyFailures(staging)),
     ...(await addressFailures(staging)),
