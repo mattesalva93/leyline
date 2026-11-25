@@ -99,7 +99,8 @@ jobs:
 
   # A release that went online gets its fixed name (ADR 0025): the tag `vX.Y.Z` of package.json's
   # version on the deployed commit, and its GitHub Release. A job of its own, after a deploy that
-  # succeeded, so that only it holds `contents: write`; a failed deploy tags nothing.
+  # succeeded, so that only it holds `contents: write`; a failed deploy tags nothing. It has no
+  # `if` of its own: `needs` skips it whenever the deploy job is skipped or fails.
   release:
     needs: deploy
     runs-on: ubuntu-latest
@@ -113,11 +114,9 @@ jobs:
           # The whole history and its tags: the notes list the commits since the previous tag.
           fetch-depth: 0
           fetch-tags: true
-      - uses: jdx/mise-action@v5.3.0
-        with:
-          install_args: node
-      # A deploy run again by hand finds its release already there and leaves it as it is. The
-      # token reaches only gh, through the environment; the checkout keeps no credential.
+      # No setup action: the runner's own node runs the notes script, and an action here would be
+      # handed this job's write token. The token reaches only gh, through the environment; the
+      # checkout keeps no credential. A deploy run again by hand finds its tag already there.
       - name: Tag the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -125,11 +124,12 @@ jobs:
           DEPLOYED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           tag="v$(jq -r .version package.json)"
-          if gh release view "$tag" > /dev/null 2>&1; then
-            echo "$tag is already released: nothing to do."
+          # rev-parse --verify --quiet: succeeds, silently, only when the tag exists.
+          if git rev-parse --verify --quiet "refs/tags/$tag" > /dev/null; then
+            echo "$tag already exists: nothing to do."
             exit 0
           fi
           node scripts/release-notes.js "$tag" > "$RUNNER_TEMP/notes.md"
-          # --target names the commit the tag is created on, when the tag does not exist yet.
+          # gh creates the tag too, on the commit --target names.
           gh release create "$tag" --target "$DEPLOYED_SHA" --title "$tag" --notes-file "$RUNNER_TEMP/notes.md"
           echo "Released $tag on $DEPLOYED_SHA."
