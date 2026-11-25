@@ -136,19 +136,23 @@
     "purpose": {
       "heading": "Finalità e base giuridica",
       "why": "I dati servono solo alla sicurezza del servizio: difenderlo da abusi e attacchi, restringerne l’accesso ai tester quando serve a fermare un abuso e capire cosa è successo quando qualcosa non va.",
-      "legalBasis": "La base giuridica è il legittimo interesse del titolare alla sicurezza del servizio (art. 6, par. 1, lett. f del GDPR)."
+      "whyWithErrorReports": "I dati servono alla sicurezza del servizio (difenderlo da abusi e attacchi, restringerne l’accesso ai tester quando serve a fermare un abuso e capire cosa è successo quando qualcosa non va) e a scoprire e correggere gli errori dell’app.",
+      "legalBasis": "La base giuridica è il legittimo interesse del titolare alla sicurezza del servizio (art. 6, par. 1, lett. f del GDPR).",
+      "legalBasisWithErrorReports": "La base giuridica è il legittimo interesse del titolare alla sicurezza del servizio e al suo corretto funzionamento (art. 6, par. 1, lett. f del GDPR). Per questo gli errori dell’app vengono raccolti con il minimo dei dati, come descritto sotto."
     },
     "data": {
       "heading": "Dati trattati",
       "credentials": "Accesso: il sito non chiede credenziali. Solo se un abuso costringe il titolare a restringere l’accesso, e finché dura la restrizione, il sito si apre con il nome utente e la password che il titolare assegna a ogni tester. Sul server resta solo un’impronta cifrata (hash) della password.",
       "accessLog": "Registro degli accessi: per ogni richiesta al sito, la data e l’ora, la rete da cui arriva (l’indirizzo IP mascherato, senza la sua ultima parte), il nome utente del tester quando l’accesso è ristretto, l’indirizzo richiesto e l’esito. Il registro non contiene le intestazioni della richiesta ed è conservato per 14 giorni.",
       "rateLimit": "Limite di richieste: per contare le richieste che arrivano da ogni indirizzo IP, il server tiene l’indirizzo completo solo in memoria, per un minuto al massimo, e non lo scrive mai.",
-      "securityEvents": "Eventi di sicurezza: quando una richiesta viene rifiutata (troppe richieste, server al completo, troppo grande o troppo lenta) o fallisce, il server annota la data e l’ora, il tipo di richiesta e l’indirizzo richiesto, la rete da cui arriva (mai l’indirizzo IP completo) e, per un errore, la sua descrizione tecnica. Le annotazioni più vecchie vengono cancellate a rotazione quando il registro raggiunge la sua dimensione massima."
+      "securityEvents": "Eventi di sicurezza: quando una richiesta viene rifiutata (troppe richieste, server al completo, troppo grande o troppo lenta) o fallisce, il server annota la data e l’ora, il tipo di richiesta e l’indirizzo richiesto, la rete da cui arriva (mai l’indirizzo IP completo) e, per un errore, la sua descrizione tecnica. Le annotazioni più vecchie vengono cancellate a rotazione quando il registro raggiunge la sua dimensione massima.",
+      "errorReports": "Errori dell’app: quando nel tuo browser l’app incontra un errore che non sa gestire, ne invia al sito la descrizione tecnica (il messaggio e i punti del codice coinvolti), la versione dell’app e l’indirizzo della pagina senza i parametri di ricerca. Il sito toglie il tuo indirizzo IP e i cookie e inoltra l’errore a Bugsink. L’errore non contiene il testo della decklist, le ricerche, i tuoi click né i messaggi della console. Bugsink conserva al massimo gli ultimi 5.000 errori: i più vecchi vengono cancellati man mano che ne arrivano di nuovi."
     },
     "recipients": {
       "heading": "Destinatari",
       "hosting": "OVHcloud, che ospita il servizio per conto del titolare su un server in un data center dell’Unione europea.",
       "scryfall": "Scryfall: le immagini delle carte arrivano al tuo browser direttamente da Scryfall, che riceve così il tuo indirizzo IP e lo tratta secondo la propria <scryfallPrivacy>informativa</scryfallPrivacy>.",
+      "bugsink": "Bugsink B.V., società olandese, che riceve e conserva per conto del titolare gli errori dell’app su server nell’Unione europea.",
       "github": "GitHub, solo se segui il link «Segnala un problema»: la segnalazione si scrive su GitHub, secondo le sue condizioni."
     },
     "device": {
