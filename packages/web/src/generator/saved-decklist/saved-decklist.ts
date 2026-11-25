@@ -10,7 +10,7 @@ import {
   type PrintFace,
   type SheetOptions,
 } from '@leyline/core';
-import type { LineChoices } from './line-choices.ts';
+import type { LineChoices } from '../line-choices.ts';
 
 const STORAGE_KEY = 'leyline.decklist';
 /** Raised whenever the saved shape changes: data of any other version is left unread. */

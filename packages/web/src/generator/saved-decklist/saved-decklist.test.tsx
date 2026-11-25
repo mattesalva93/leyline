@@ -1,8 +1,8 @@
 import { defaultSheetOptions } from '@leyline/core';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import * as api from '../api.ts';
-import { mountApp } from '../test-support/mount-app.tsx';
+import * as api from '../../api.ts';
+import { mountApp } from '../../test-support/mount-app.tsx';
 import { loadSavedDecklist } from './saved-decklist.ts';
 import {
   reload,
@@ -11,10 +11,10 @@ import {
   moveOneCopy,
   decklistValue,
   answerApiCallsFromCatalog,
-} from '../test-support/workspace-page.ts';
-import { centreTab, cardGrid, gridTiles, tileSummary } from '../test-support/grid-queries.ts';
+} from '../../test-support/workspace-page.ts';
+import { centreTab, cardGrid, gridTiles, tileSummary } from '../../test-support/grid-queries.ts';
 
-vi.mock('../api.ts');
+vi.mock('../../api.ts');
 
 beforeEach(answerApiCallsFromCatalog);
 

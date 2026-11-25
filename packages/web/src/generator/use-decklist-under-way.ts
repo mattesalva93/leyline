@@ -1,7 +1,7 @@
 import type { SheetOptions } from '@leyline/core';
 import { useEffect, useState } from 'react';
 import type { LineChoices } from './line-choices.ts';
-import { forgetSavedDecklist, saveDecklist } from './saved-decklist.ts';
+import { forgetSavedDecklist, saveDecklist } from './saved-decklist/saved-decklist.ts';
 
 /** The work on the decklist as the generator holds it. */
 interface DecklistInGenerator {
