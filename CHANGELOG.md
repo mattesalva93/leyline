@@ -2,6 +2,12 @@
 
 Cosa cambia in Leyline a ogni rilascio. La voce più recente sta in cima.
 
+## 0.2.1 — 2026-11-25
+
+### Correzioni
+
+- Nessun cambiamento visibile: il codice di Leyline ora arriva online solo dopo che tutti i controlli automatici sono passati.
+
 ## 0.2.0 — 2026-11-25
 
 ### Novità
