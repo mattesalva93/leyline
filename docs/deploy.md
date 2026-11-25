@@ -82,6 +82,16 @@ DOCKER_HOST=ssh://<user>@<host> COMPOSE_PROJECT_NAME=<last folder of DEPLOY_PATH
 
 `DOCKER_HOST=ssh://...` makes the local `docker` CLI drive the host's Docker over SSH. `COMPOSE_PROJECT_NAME` names the stack as the host knows it: Compose names a project after the folder it runs in. With an `ssh://` address the checks also cover the host itself, its SSH logins, what it lets in from outside, its updates and its swap, all through one SSH connection: the host rate-limits new ones (ADR 0019).
 
+## Error reporting
+
+The browser reports its uncaught errors to Bugsink's managed service through the site's own `/error-reports` path, which Caddy forwards without the client's address, cookies or credential (ADR 0027). It is off while the host's `.env` leaves its three lines empty. To turn it on, fill them in from the Bugsink project's DSN, `https://<key>@<host>/<project>`:
+
+- `VITE_BUGSINK_DSN`: the DSN whole, built into the web bundle;
+- `BUGSINK_ORIGIN`: `https://<host>`, where Caddy forwards the reports;
+- `BUGSINK_PROJECT_ID`: `<project>`, the number at the end of the DSN.
+
+Then deploy: the DSN reaches the browser only through a new build of the `web` image, and the privacy notice describes Bugsink from that build on. Emptying the three lines and deploying turns it off again. `pnpm check:staging` checks that the path forwards to Bugsink, or that it answers 404 while off. After turning it on, throw an error in the browser's console (`setTimeout(() => { throw new Error('test') })`) and check that Bugsink shows it under the release the site serves, with no IP address.
+
 ## GitHub security settings once the repository is public
 
 A public repository gets GitHub's secret scanning and push protection for free. They run beside CI's `gitleaks`: push protection rejects a push carrying a known secret before it reaches GitHub, where `gitleaks` can only fail the run afterwards.

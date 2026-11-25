@@ -44,6 +44,32 @@
 		reverse_proxy api:3000
 	}
 
+	# The browser's error reports (ADR 0027), at the path `web`'s error reporting module sends
+	# them to, forwarded to the Bugsink project's envelope endpoint without anything that names
+	# the client: its address, its cookies, its credential, its browser. Off while the host's
+	# `.env` names no Bugsink, or no project of it. `pnpm check:staging` pins all of it.
+	handle /error-reports {
+		@errorReportingOff expression `"{$BUGSINK_ORIGIN}" == "" || "{$BUGSINK_PROJECT_ID}" == ""`
+		respond @errorReportingOff 404
+		request_body {
+			max_size 1MB
+		}
+		rewrite * /api/{$BUGSINK_PROJECT_ID}/envelope/
+		reverse_proxy {$BUGSINK_ORIGIN} {
+			header_up Host {upstream_hostport}
+			header_up -Cookie
+			header_up -Authorization
+			header_up -User-Agent
+			header_up -X-Forwarded-For
+			header_up -X-Forwarded-Host
+			header_up -X-Forwarded-Proto
+			header_up -X-Real-IP
+			header_up -Forwarded
+			header_up -Via
+			header_down -Set-Cookie
+		}
+	}
+
 	# Cache (ADR 0025): a page left open must learn of a new release, and reloading must bring
 	# it, while assets named after their content's hash never change. `pnpm check:staging` pins
 	# the three. A missing asset answers 404, uncached, rather than the page under its name.

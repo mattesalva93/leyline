@@ -49,21 +49,37 @@ const coreNoIo = {
 };
 
 /** `web` and `api` share only `core`'s types; they never import each other. */
-const webNoApi = {
+const webNoApiPattern = {
+  regex: '^@leyline/api(/|$)|^(\\.\\./)+(packages/)?api(/|$)',
+  message: '`web` must not import from `api`: share types through `core`.',
+};
+
+/**
+ * The Sentry SDK enters `web` through its error reporting module alone (ADR 0027), so that what
+ * the SDK may send is set in one place.
+ */
+const WEB_ERROR_REPORTING = 'packages/web/src/error-reporting/**';
+const sentryOutsideErrorReporting = {
+  regex: '^@sentry/',
+  message: 'Import `@sentry/*` only in `web`’s error reporting module (ADR 0027).',
+};
+
+// ESLint replaces a rule's options with the last config's, rather than merging them: each config
+// below lists every pattern its files keep.
+const webImports = {
   files: ['packages/web/**/*.{ts,tsx}'],
+  ignores: [WEB_ERROR_REPORTING],
   rules: {
     'no-restricted-imports': [
       'error',
-      {
-        patterns: [
-          {
-            regex: '^@leyline/api(/|$)|^(\\.\\./)+(packages/)?api(/|$)',
-            message: '`web` must not import from `api`: share types through `core`.',
-          },
-        ],
-      },
+      { patterns: [webNoApiPattern, sentryOutsideErrorReporting] },
     ],
   },
+};
+
+const webErrorReportingImports = {
+  files: [WEB_ERROR_REPORTING],
+  rules: { 'no-restricted-imports': ['error', { patterns: [webNoApiPattern] }] },
 };
 
 const apiNoWeb = {
@@ -129,7 +145,8 @@ export default tseslint.config(
     languageOptions: { globals: globals.node },
   },
   coreNoIo,
-  webNoApi,
+  webImports,
+  webErrorReportingImports,
   apiNoWeb,
   webNoJsxLiterals,
   noInvisibleWhitespace,

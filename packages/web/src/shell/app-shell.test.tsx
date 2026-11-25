@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
 import { inMemoryServer } from '../test-support/in-memory-server.ts';
 import { mountApp } from '../test-support/mount-app.tsx';
@@ -328,6 +328,34 @@ describe('the app shell', () => {
       expect(deviceSection?.textContent).toContain(
         'la guida, se è accesa e quali passi sono già svolti o saltati',
       );
+    });
+
+    describe('error reporting (ADR 0027)', () => {
+      afterEach(() => vi.unstubAllEnvs());
+
+      it('names Bugsink, what it receives and for how long, once the build has its DSN', async () => {
+        vi.stubEnv('VITE_BUGSINK_DSN', 'https://0123456789abcdef@bugsink.example/42');
+        const { notice } = await openThePrivacyNotice();
+
+        const section = (heading: string) =>
+          within(notice).getByRole('heading', { name: heading }).parentElement?.textContent;
+        expect(section('Dati trattati')).toContain('Errori dell’app');
+        expect(section('Dati trattati')).toContain(
+          'non contiene il testo della decklist, le ricerche',
+        );
+        expect(section('Dati trattati')).toContain('i più vecchi vengono cancellati');
+        expect(section('Destinatari')).toContain('Bugsink B.V.');
+        expect(section('Finalità e base giuridica')).toContain('correggere gli errori dell’app');
+        expect(section('Finalità e base giuridica')).not.toContain('servono solo alla sicurezza');
+      });
+
+      it('leaves Bugsink out while the build has no DSN: the notice says only what is on', async () => {
+        vi.stubEnv('VITE_BUGSINK_DSN', '');
+        const { notice } = await openThePrivacyNotice();
+
+        expect(notice.textContent).not.toMatch(/Bugsink|Errori dell’app/);
+        expect(notice.textContent).toContain('I dati servono solo alla sicurezza del servizio');
+      });
     });
 
     it('styles its close button as the primary action', async () => {

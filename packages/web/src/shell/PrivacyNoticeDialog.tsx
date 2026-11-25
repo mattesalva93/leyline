@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
+import { errorReportingIsOn } from '../error-reporting/error-reporting-is-on.ts';
 import {
   CenteredDialogContent,
   Dialog,
@@ -28,16 +29,56 @@ const LINKS: Readonly<Record<string, ReactElement>> = {
   ),
 };
 
+/** What the notice tells apart, because it describes only what this build has on (ADR 0027). */
+interface ToolsSwitchedOn {
+  readonly errorReports: boolean;
+}
+
+/** A paragraph by its key, shown always, or only while `shown` holds for the tools on. */
+type Paragraph =
+  string | { readonly key: string; readonly shown: (toolsOn: ToolsSwitchedOn) => boolean };
+
+const WITH_ERROR_REPORTS = ({ errorReports }: ToolsSwitchedOn) => errorReports;
+const WITHOUT_ERROR_REPORTS = ({ errorReports }: ToolsSwitchedOn) => !errorReports;
+
 /** The notice's sections, in the order art. 13 GDPR lists what it owes, by their key in `privacyNotice`. */
-const SECTIONS: readonly { readonly key: string; readonly paragraphs: readonly string[] }[] = [
+const SECTIONS: readonly { readonly key: string; readonly paragraphs: readonly Paragraph[] }[] = [
   { key: 'controller', paragraphs: ['who'] },
-  { key: 'purpose', paragraphs: ['why', 'legalBasis'] },
-  { key: 'data', paragraphs: ['credentials', 'accessLog', 'rateLimit', 'securityEvents'] },
-  { key: 'recipients', paragraphs: ['hosting', 'scryfall', 'github'] },
+  {
+    key: 'purpose',
+    paragraphs: [
+      { key: 'why', shown: WITHOUT_ERROR_REPORTS },
+      { key: 'whyWithErrorReports', shown: WITH_ERROR_REPORTS },
+      { key: 'legalBasis', shown: WITHOUT_ERROR_REPORTS },
+      { key: 'legalBasisWithErrorReports', shown: WITH_ERROR_REPORTS },
+    ],
+  },
+  {
+    key: 'data',
+    paragraphs: [
+      'credentials',
+      'accessLog',
+      'rateLimit',
+      'securityEvents',
+      { key: 'errorReports', shown: WITH_ERROR_REPORTS },
+    ],
+  },
+  {
+    key: 'recipients',
+    paragraphs: ['hosting', 'scryfall', { key: 'bugsink', shown: WITH_ERROR_REPORTS }, 'github'],
+  },
   { key: 'device', paragraphs: ['localStorage'] },
   { key: 'absent', paragraphs: ['nothingElse'] },
   { key: 'rights', paragraphs: ['ask', 'complain'] },
 ];
+
+/** The keys of the section's paragraphs shown with the tools on. */
+function shownParagraphs(paragraphs: readonly Paragraph[], toolsOn: ToolsSwitchedOn): string[] {
+  return paragraphs.flatMap((paragraph) => {
+    if (typeof paragraph === 'string') return [paragraph];
+    return paragraph.shown(toolsOn) ? [paragraph.key] : [];
+  });
+}
 
 /**
  * "Informativa privacy": what personal data the alpha handles, and why, as art. 13 GDPR asks. It
@@ -45,6 +86,7 @@ const SECTIONS: readonly { readonly key: string; readonly paragraphs: readonly s
  */
 export function PrivacyNoticeDialog({ triggerClassName }: { readonly triggerClassName: string }) {
   const { t } = useTranslation();
+  const toolsOn: ToolsSwitchedOn = { errorReports: errorReportingIsOn() };
   return (
     <Dialog>
       <DialogTrigger className={triggerClassName}>{t('privacyNotice.title')}</DialogTrigger>
@@ -54,7 +96,7 @@ export function PrivacyNoticeDialog({ triggerClassName }: { readonly triggerClas
         {SECTIONS.map(({ key, paragraphs }) => (
           <section key={key} className="mt-4">
             <h3 className="font-bold">{t(`privacyNotice.${key}.heading`)}</h3>
-            {paragraphs.map((paragraph) => (
+            {shownParagraphs(paragraphs, toolsOn).map((paragraph) => (
               <p key={paragraph} className="mt-1">
                 <Trans
                   i18nKey={`privacyNotice.${key}.${paragraph}`}
