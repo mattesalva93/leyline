@@ -39,16 +39,25 @@ function errorEventAt(url: string): ErrorEvent {
 }
 
 describe('the error event sent to Bugsink', () => {
-  it('keeps the page address without its query string, where a search writes card names', () => {
-    const event = minimizedErrorEvent(errorEventAt('https://leyline.website/proxy?q=Bolt#grid'));
-
-    expect(event.request).toEqual({ url: 'https://leyline.website/proxy' });
+  it('sends nothing of the request: address, headers, cookies, body or environment', () => {
+    expect(
+      minimizedErrorEvent(errorEventAt('https://leyline.website/proxy?q=Bolt')),
+    ).not.toHaveProperty('request');
   });
 
-  it('sends none of the request’s headers, cookies, body or environment', () => {
-    const { request } = minimizedErrorEvent(errorEventAt('https://leyline.website/proxy'));
+  it('drops the query string of every address an error’s text quotes', () => {
+    const event = errorEventAt('https://leyline.website/');
+    event.message = 'GET https://leyline.website/api/cards?q=Lightning+Bolt failed';
+    event.exception?.values?.forEach((value) => {
+      value.value = 'Failed to load https://leyline.website/proxy?q=Bolt#grid, then retried';
+    });
 
-    expect(Object.keys(request ?? {})).toEqual(['url']);
+    const minimized = minimizedErrorEvent(event);
+
+    expect(minimized.message).toBe('GET https://leyline.website/api/cards failed');
+    expect(minimized.exception?.values?.[0]?.value).toBe(
+      'Failed to load https://leyline.website/proxy, then retried',
+    );
   });
 
   it('sends no user, so no IP address', () => {

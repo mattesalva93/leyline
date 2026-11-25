@@ -1,24 +1,28 @@
 import type { ErrorEvent, Exception, StackFrame } from '@sentry/browser';
 
-/** The address without its query string and fragment, where a search writes card names. */
-function withoutQuery(url: string): string {
-  return url.split(/[?#]/, 1)[0] ?? '';
+/** An address, then its query string or fragment, up to the space or punctuation ending it. */
+const ADDRESS_WITH_QUERY = /([a-z][a-z\d+.-]*:\/\/[^\s?#]*)[?#][^\s,;)"'<>]*/gi;
+
+/** The text with every address it holds cut before its query string, where a search writes card names. */
+function withoutQueries(text: string): string {
+  return text.replace(ADDRESS_WITH_QUERY, '$1');
 }
 
 function minimizedFrame(frame: StackFrame): StackFrame {
   const minimized = { ...frame };
-  if (frame.filename !== undefined) minimized.filename = withoutQuery(frame.filename);
-  if (frame.abs_path !== undefined) minimized.abs_path = withoutQuery(frame.abs_path);
+  if (frame.filename !== undefined) minimized.filename = withoutQueries(frame.filename);
+  if (frame.abs_path !== undefined) minimized.abs_path = withoutQueries(frame.abs_path);
   return minimized;
 }
 
 function minimizedException(exception: Exception): Exception {
+  const minimized = { ...exception };
+  if (exception.value !== undefined) minimized.value = withoutQueries(exception.value);
   const frames = exception.stacktrace?.frames;
-  if (!exception.stacktrace || !frames) return exception;
-  return {
-    ...exception,
-    stacktrace: { ...exception.stacktrace, frames: frames.map(minimizedFrame) },
-  };
+  if (exception.stacktrace && frames) {
+    minimized.stacktrace = { ...exception.stacktrace, frames: frames.map(minimizedFrame) };
+  }
+  return minimized;
 }
 
 /**
@@ -31,9 +35,7 @@ export function minimizedErrorEvent(event: ErrorEvent): ErrorEvent {
   delete minimized.user;
   delete minimized.breadcrumbs;
   delete minimized.request;
-  if (event.request?.url !== undefined) {
-    minimized.request = { url: withoutQuery(event.request.url) };
-  }
+  if (event.message !== undefined) minimized.message = withoutQueries(event.message);
   const exceptions = event.exception?.values;
   if (event.exception && exceptions) {
     minimized.exception = { ...event.exception, values: exceptions.map(minimizedException) };
