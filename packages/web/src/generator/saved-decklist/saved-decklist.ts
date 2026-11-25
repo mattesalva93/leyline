@@ -7,6 +7,8 @@ import {
 import { migratedToCurrentVersion } from './migrations.ts';
 
 const STORAGE_KEY = 'leyline.decklist';
+/** Holds the last saved decklist nothing could read, as it was stored, so it is never lost. */
+const SET_ASIDE_KEY = 'leyline.decklist.setAside';
 
 /**
  * `stored` as a saved decklist, migrated from the version it was saved by, or `null` when not
@@ -24,7 +26,18 @@ function savedDecklistOf(stored: string): SavedDecklist | null {
   return migrated && currentShapeOf(migrated);
 }
 
-/** The decklist the user left on this device, or `null` when there is none to read. */
+function setAside(stored: string) {
+  try {
+    localStorage.setItem(SET_ASIDE_KEY, stored);
+  } catch {
+    // Full storage keeps no copy; the generator still starts empty.
+  }
+}
+
+/**
+ * The decklist the user left on this device, or `null` when there is none to read. One that is
+ * there but unreadable is set aside first.
+ */
 export function loadSavedDecklist(): SavedDecklist | null {
   let stored: string | null;
   try {
@@ -34,7 +47,9 @@ export function loadSavedDecklist(): SavedDecklist | null {
     return null;
   }
   if (stored === null) return null;
-  return savedDecklistOf(stored);
+  const saved = savedDecklistOf(stored);
+  if (!saved) setAside(stored);
+  return saved;
 }
 
 export function saveDecklist(saved: SavedDecklist): void {

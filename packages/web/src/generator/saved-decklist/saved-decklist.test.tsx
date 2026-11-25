@@ -1,5 +1,5 @@
 import { defaultSheetOptions } from '@leyline/core';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../../api.ts';
@@ -22,6 +22,7 @@ vi.mock('../../api.ts');
 beforeEach(answerApiCallsFromCatalog);
 
 const SAVED_KEY = 'leyline.decklist';
+const SET_ASIDE_KEY = 'leyline.decklist.setAside';
 
 const aVersion2Decklist = {
   version: 2,
@@ -199,13 +200,35 @@ describe('the decklist saved on the device', () => {
       'of version 2 missing what version 1 could leave out',
       savedByVersion1BeforeSetNames.replace('"version": 1', '"version": 2'),
     ],
-  ])('starts empty, with no error, from saved data %s', (_kind, stored) => {
+  ])('starts empty, with no error, setting aside saved data %s', (_kind, stored) => {
     localStorage.setItem(SAVED_KEY, stored);
 
     mountApp('/proxy');
 
     expect(decklistValue()).toBe('');
     expect(screen.getByRole('button', { name: 'Prova con un esempio' })).toBeTruthy();
+    expect(localStorage.getItem(SET_ASIDE_KEY)).toBe(stored);
+  });
+
+  it('keeps the data set aside while a new decklist is saved', async () => {
+    localStorage.setItem(SAVED_KEY, 'not a decklist');
+
+    await mountPageAndWrite('4 Sol Ring{Enter}');
+    await screen.findByRole('button', { name: 'Modifica Sol Ring' });
+
+    expect(localStorage.getItem(SET_ASIDE_KEY)).toBe('not a decklist');
+    expect(localStorage.getItem(SAVED_KEY)).toContain('4 Sol Ring');
+  });
+
+  it('keeps only the last data set aside', () => {
+    localStorage.setItem(SAVED_KEY, 'the first unreadable decklist');
+    mountApp('/proxy');
+    cleanup();
+    localStorage.setItem(SAVED_KEY, 'the second unreadable decklist');
+
+    mountApp('/proxy');
+
+    expect(localStorage.getItem(SET_ASIDE_KEY)).toBe('the second unreadable decklist');
   });
 
   it('works for the visit, keeping nothing, when the device keeps nothing', async () => {
