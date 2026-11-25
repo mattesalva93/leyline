@@ -105,11 +105,12 @@ The importer checks in to Healthchecks.io after every import: a ping to the chec
 To turn it on, create a check on Healthchecks.io with the project's mailbox, the address `SECURITY.md` gives, as its email integration, and a **simple** schedule:
 
 - **Period**: 1 day, as often as the importer imports;
-- **Grace time**: 3 hours. The next import starts a day after the last one began, so each success arrives the import's own length later, and after a failure the importer tries again every hour (`RETRY_AFTER` in `packages/api/src/catalog-import/daily-imports.ts`): the grace leaves room for both before a missing success counts as an alert.
+- **Grace time**: 3 hours. A failed import alerts at once through its `/fail` ping, and the retries after it check in on their own, so the grace only covers how late a success arrives after the day: the next import starts a day after the last one began (`packages/api/src/catalog-import/daily-imports.ts`), and its success comes once it has run.
 
-Put the check's ping URL, `https://hc-ping.com/<uuid>`, in `HEALTHCHECKS_PING_URL` and deploy. The importer already reaches the internet for Scryfall, so its networks stay as they are. To test it, ping from inside its container through the same check-in the importer uses, and check that Healthchecks.io shows the ping:
+Put the check's ping URL, `https://hc-ping.com/<uuid>`, in `HEALTHCHECKS_PING_URL` and deploy. The importer already reaches the internet for Scryfall, so its networks stay as they are. To test it, check in a failure from inside its container through the same check-in the importer uses, and check that the project's mailbox receives the alert; then check in a success, which brings the check back up:
 
 ```sh
+docker compose exec importer node -e "import('./dist/catalog-import/import-check-in-from-env.js').then(({ importCheckInFromEnv }) => importCheckInFromEnv()('failed'))"
 docker compose exec importer node -e "import('./dist/catalog-import/import-check-in-from-env.js').then(({ importCheckInFromEnv }) => importCheckInFromEnv()('succeeded'))"
 ```
 
