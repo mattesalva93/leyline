@@ -29,6 +29,7 @@
     "sheet:preview": "pnpm --filter @leyline/api run sheet:preview",
     "check:phone-width": "node scripts/check-phone-width.js",
     "web:preview": "node scripts/web-preview.js",
+    "web:demo": "node scripts/web-demo.js",
     "check:unused": "knip --no-progress",
     "check:staging": "node --env-file-if-exists=.env scripts/check-staging.js",
     "deps:outdated": "node scripts/deps-outdated.js"

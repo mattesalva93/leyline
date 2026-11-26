@@ -3,6 +3,7 @@
   "workspaces": {
     ".": {
       "entry": ["scripts/*.js"],
+      "ignoreBinaries": ["ffmpeg"],
       "ignoreUnresolved": ["src/test-support/test-setup.ts"]
     },
     "packages/api": {
