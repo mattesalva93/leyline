@@ -215,6 +215,8 @@ CHECKED=()      # the checks the owner saw pass, for the comment on #214
 MAILBOX=""      # the project's mailbox, read from SECURITY.md
 UMAMI_TUNNEL="" # pid of the open SSH tunnel to Umami's dashboard
 RELEASE=""      # the release the site serves once deployed
+# Umami's website ids and Healthchecks.io's checks are UUIDs.
+UUID_PATTERN='[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 
 # on_host runs the script on its stdin on the host, in DEPLOY_PATH, as the deploy user.
 on_host() {
@@ -226,7 +228,9 @@ on_host() {
 # host_env KEY prints KEY's value in the host's .env, empty when it has none.
 host_env() {
   # `cut -d= -f2-`: everything after the first `=`.
-  on_host <<<"grep -E '^$1=' .env | tail -n 1 | cut -d= -f2-"
+  # Its callers run it inside `if` or `$(...)`, where `set -e` does not stop the wizard.
+  on_host <<<"grep -E '^$1=' .env | tail -n 1 | cut -d= -f2-" ||
+    { warn "Could not read the host's .env."; exit 1; }
 }
 
 # write_host_env KEY VALUE upserts KEY=VALUE in the host's .env and sets $KEY. The value travels
@@ -234,7 +238,8 @@ host_env() {
 # pattern first, so it needs no quoting. `cat >` keeps the file's mode.
 write_host_env() {
   local key="$1" value="$2"
-  # Its callers run it inside `if`, where `set -e` does not stop the wizard: hence the `||`.
+  # Not through on_host, whose stdin carries the script: here stdin carries the value. Its callers
+  # run it inside `if`, where `set -e` does not stop the wizard: hence the `||`.
   # shellcheck disable=SC2029 # DEPLOY_PATH and KEY expand here on purpose.
   printf '%s\n' "$value" | ssh -o BatchMode=yes "$DEPLOYER" "cd $(printf %q "$DEPLOY_PATH") &&
     IFS= read -r value && umask 077 &&
@@ -258,10 +263,10 @@ ask_host_env() {
   while :; do
     if [[ -n "$hidden" ]]; then
       printf '  %s%s%s ' "$BOLD" "$prompt" "$RESET"
-      read -rs input
+      read -rs input || { printf '\n'; warn "No answer: stopping."; exit 1; }
       printf '\n'
     else
-      read -e -r -p "  $prompt " input
+      read -e -r -p "  $prompt " input || { printf '\n'; warn "No answer: stopping."; exit 1; }
     fi
     [[ "$input" =~ $pattern ]] && break
     warn "That does not look like $key: copy it again."
@@ -269,14 +274,19 @@ ask_host_env() {
   write_host_env "$key" "$input"
 }
 
-# free_alerts_or_stop TOOL PRICING_URL asks the owner to check, at sign-up, that TOOL's free plan
-# emails alerts: the pages read on 2026-11-25 did not confirm it (research/monitoraggio-analytics.md).
-# Fails when it does not, and the tool stays off: the owner decides what to do before turning it on.
+# free_alerts_or_stop TOOL PRICING_URL KEY... asks the owner to check, at sign-up, that TOOL's free
+# plan emails alerts: the pages read on 2026-11-25 did not confirm it (research/monitoraggio-analytics.md).
+# Fails when it does not, and turns the tool off by emptying its KEYs in the host's .env, which an
+# earlier run may have set: the owner decides what to do before turning it on.
 free_alerts_or_stop() {
-  local tool="$1" url="$2"
+  local tool="$1" url="$2" key
+  shift 2
   open_url "$url"
   step "Check that $tool's free plan includes email alerts."
   if confirm "Does it?"; then return 0; fi
+  for key in "$@"; do
+    if [[ -n "$(host_env "$key")" ]]; then write_host_env "$key" ""; fi
+  done
   warn "$tool stays off: choose another plan or another tool before turning it on."
   TURNED_OFF+=("$tool")
   SKIPPED+=("$tool: its free plan has no email alerts, so it stays off")
@@ -299,7 +309,7 @@ open_umami_tunnel() {
   umami=$(on_host <<<"docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' \$(docker compose ps -q umami)" | cut -d' ' -f1)
   [[ -n "$umami" ]] || { warn "Umami is not running on the host: deploy main first."; exit 1; }
   # -N: no remote command, only the tunnel; ExitOnForwardFailure: fail if the port is taken.
-  ssh -N -o ExitOnForwardFailure=yes -L "3001:$umami:3000" "$DEPLOYER" &
+  ssh -N -o BatchMode=yes -o ExitOnForwardFailure=yes -L "3001:$umami:3000" "$DEPLOYER" &
   UMAMI_TUNNEL=$!
   sleep 2
   # kill -0 sends no signal: it only tests that the process still runs.
@@ -312,10 +322,10 @@ close_umami_tunnel() {
   UMAMI_TUNNEL=""
 }
 
-# check_in OUTCOME checks the import in from the importer's container, through the check-in the
+# check_import_in OUTCOME checks the import in from the importer's container, through the check-in the
 # importer uses: `failed` pings the check's /fail, `succeeded` brings it back up. node reads its
 # ES module from stdin, which `-T` hands it; the import resolves against the container's folder.
-check_in() {
+check_import_in() {
   on_host <<SH
 docker compose exec -T -e OUTCOME=$1 importer node --input-type=module <<'JS'
 const { importCheckInFromEnv } = await import('./dist/catalog-import/import-check-in-from-env.js');
@@ -325,7 +335,7 @@ SH
 }
 
 # report_api_error sends an error from the api's container, through the reporter its server uses,
-# read from stdin as in check_in.
+# read from stdin as in check_import_in.
 report_api_error() {
   on_host <<'SH'
 docker compose exec -T api node --input-type=module <<'JS'
@@ -366,12 +376,17 @@ DEPLOYER="$DEPLOY_USER@$VPS_ADDRESS"
 on_host <<<'test -f .env' ||
   { warn "$DEPLOYER cannot log in, or $DEPLOY_PATH has no .env: run scripts/vps/setup-vps.sh first."; exit 1; }
 say "✓ $DEPLOY_USER logs in, and $DEPLOY_PATH/.env is there."
+# Without them Compose refuses to start the stack, Umami included (compose.yaml).
+on_host <<<'grep -q "^UMAMI_DATABASE_PASSWORD=" .env && grep -q "^UMAMI_APP_SECRET=" .env' ||
+  { warn "The host's .env lacks Umami's password or secret: run scripts/vps/setup-vps.sh again,"
+    warn "whose '.env' stage adds them."; exit 1; }
 say "Every tool alerts $MAILBOX, the project's mailbox that SECURITY.md gives:"
 say "sign up to each with it, so the alerts reach it."
 pause
 
 stage "Bugsink: errors of the browser and the api"
-if free_alerts_or_stop Bugsink "https://www.bugsink.com/#pricing"; then
+if free_alerts_or_stop Bugsink "https://www.bugsink.com/#pricing" \
+  VITE_BUGSINK_DSN BUGSINK_ORIGIN BUGSINK_PROJECT_ID; then
   open_url "https://www.bugsink.com/register/15K/"
   step "Sign up for the free managed plan with $MAILBOX."
   step "Create a team if Bugsink asks for one, then 'New Project', named leyline → 'Save'."
@@ -379,12 +394,12 @@ if free_alerts_or_stop Bugsink "https://www.bugsink.com/#pricing"; then
   note "  user, which a team or the project can override (Bugsink's alerts docs, opening now)."
   open_url "https://www.bugsink.com/docs/alerts/"
   step "Copy the project's DSN, https://<key>@<host>/<project>, from its setup page."
-  if ask_host_env VITE_BUGSINK_DSN "Paste the DSN:" '^https://[[:alnum:]]+@[[:alnum:].-]+/[0-9]+$'; then
-    # The DSN's scheme and host, and its project number, where Caddy forwards (docs/deploy.md).
-    host_and_project=${VITE_BUGSINK_DSN#*@}
-    write_host_env BUGSINK_ORIGIN "https://${host_and_project%%/*}"
-    write_host_env BUGSINK_PROJECT_ID "${VITE_BUGSINK_DSN##*/}"
-  fi
+  ask_host_env VITE_BUGSINK_DSN "Paste the DSN:" '^https://[[:alnum:]]+@[[:alnum:].-]+/[0-9]+$' || true
+  # The DSN's scheme and host, and its project number, where Caddy forwards (docs/deploy.md):
+  # written from a kept DSN too, in case an earlier run stopped before them.
+  host_and_project=${VITE_BUGSINK_DSN#*@}
+  write_host_env BUGSINK_ORIGIN "https://${host_and_project%%/*}"
+  write_host_env BUGSINK_PROJECT_ID "${VITE_BUGSINK_DSN##*/}"
   pause
 fi
 
@@ -395,22 +410,22 @@ if free_alerts_or_stop UptimeRobot "https://uptimerobot.com/pricing/"; then
   step "'+ Add New Monitor' → HTTP(s) → URL https://$APP_DOMAIN/ → check $MAILBOX is"
   note "  among its alert contacts → 'Create monitor'."
   step "The same for https://$APP_DOMAIN/api/health, which checks the database too."
-  note "  With the testers' guard on, both see the site down: that is expected (spec #214)."
   pause "Press Enter once both monitors are up."
 fi
 
 stage "Healthchecks.io: the daily import"
-if free_alerts_or_stop Healthchecks.io "https://healthchecks.io/pricing/"; then
+if free_alerts_or_stop Healthchecks.io "https://healthchecks.io/pricing/" HEALTHCHECKS_PING_URL; then
   open_url "https://healthchecks.io/"
   step "Sign up with $MAILBOX: the project's email integration then goes to it."
   step "Integrations: check there is an email integration to $MAILBOX, and confirm"
   note "  the address if Healthchecks.io sends it a link."
   step "Add a check named daily-import, with a Simple schedule as docs/deploy.md sets it:"
-  sed -n '/^## Import monitoring/,/^## /p' docs/deploy.md | grep -E '^- \*\*(Period|Grace time)\*\*' |
-    while IFS= read -r line; do note "  $line"; done
+  schedule=$(sed -n '/^## Import monitoring/,/^## /p' docs/deploy.md | grep -E '^- \*\*(Period|Grace time)\*\*') ||
+    { warn "docs/deploy.md's Import monitoring no longer lists the Period and Grace time."; exit 1; }
+  while IFS= read -r line; do note "  $line"; done <<<"$schedule"
   step "Turn the email integration on for the check, then copy its ping URL."
   ask_host_env HEALTHCHECKS_PING_URL "Paste the ping URL (hidden):" \
-    '^https://hc-ping\.com/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' hidden || true
+    "^https://hc-ping\.com/$UUID_PATTERN\$" hidden || true
   pause
 fi
 
@@ -424,7 +439,7 @@ pause "Press Enter once the admin password is your own."
 step "Settings → Websites → 'Add website': name leyline, domain $APP_DOMAIN → 'Save'."
 step "Edit the website and copy its Website ID."
 ask_host_env VITE_UMAMI_WEBSITE_ID "Paste the Website ID:" \
-  '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' || true
+  "^$UUID_PATTERN\$" || true
 close_umami_tunnel
 
 stage "Deploy"
@@ -448,9 +463,15 @@ say "is not on the site, and that nothing of the client's reaches the tools."
 pnpm exec playwright install chromium
 # The site is open, so the check needs no credential. ${DEPLOY_PATH##*/} is its last folder,
 # which Compose names the stack after (docs/deploy.md).
-DOCKER_HOST="ssh://$DEPLOYER" COMPOSE_PROJECT_NAME="${DEPLOY_PATH##*/}" \
-  pnpm check:staging --access open --app "https://$APP_DOMAIN"
-CHECKED+=("\`pnpm check:staging --access open\` passa su https://$APP_DOMAIN")
+# A failure is reported, not fatal, so the checks after it still run.
+if DOCKER_HOST="ssh://$DEPLOYER" COMPOSE_PROJECT_NAME="${DEPLOY_PATH##*/}" \
+  pnpm check:staging --access open --app "https://$APP_DOMAIN"; then
+  CHECKED+=("\`pnpm check:staging --access open\` passa su https://$APP_DOMAIN")
+else
+  warn "pnpm check:staging failed: see above. With the testers' guard on, run it with"
+  warn "--access closed instead, as docs/deploy.md shows."
+  SKIPPED+=("pnpm check:staging did not pass")
+fi
 pause
 
 stage "Check: errors reach Bugsink"
@@ -482,13 +503,13 @@ if ! is_off UptimeRobot; then
 fi
 if ! is_off Healthchecks.io; then
   say "Checking a failure in from the importer, through the check-in it uses:"
-  check_in failed
+  check_import_in failed
   if confirm "Did $MAILBOX receive Healthchecks.io's alert?"; then
     CHECKED+=("l'avviso di prova di Healthchecks.io arriva alla casella di \`SECURITY.md\`")
   else
     SKIPPED+=("Healthchecks.io: no alert reached the mailbox")
   fi
-  check_in succeeded
+  check_import_in succeeded
   say "✓ checked a success in: the check is up again."
 fi
 pause
@@ -498,9 +519,14 @@ open_umami_tunnel
 open_url "https://$APP_DOMAIN/"
 step "Paste a decklist on the site and make its PDF."
 open_url "http://localhost:3001"
+if confirm "Did Umami's dashboard open through the tunnel?"; then
+  CHECKED+=("la dashboard di Umami si apre dal tunnel SSH")
+else
+  SKIPPED+=("Umami: the dashboard did not open through the tunnel")
+fi
 step "In Umami's dashboard, open the website's events."
 if confirm "Does it show a decklist_resolved and a pdf_generated, with counts and no card names?"; then
-  CHECKED+=("la dashboard di Umami si apre dal tunnel SSH e mostra \`decklist_resolved\` e \`pdf_generated\`, senza nomi di carte")
+  CHECKED+=("Umami mostra \`decklist_resolved\` e \`pdf_generated\`, senza nomi di carte")
 else
   SKIPPED+=("Umami: the events did not show as expected")
 fi
