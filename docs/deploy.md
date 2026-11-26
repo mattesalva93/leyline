@@ -82,6 +82,12 @@ DOCKER_HOST=ssh://<user>@<host> COMPOSE_PROJECT_NAME=<last folder of DEPLOY_PATH
 
 `DOCKER_HOST=ssh://...` makes the local `docker` CLI drive the host's Docker over SSH. `COMPOSE_PROJECT_NAME` names the stack as the host knows it: Compose names a project after the folder it runs in. With an `ssh://` address the checks also cover the host itself, its SSH logins, what it lets in from outside, its updates and its swap, all through one SSH connection: the host rate-limits new ones (ADR 0019).
 
+## Monitoring
+
+`scripts/vps/setup-monitoring.sh` turns monitoring on, or redoes a part of it (ADR 0027). It walks the owner through signing up to Bugsink, UptimeRobot and Healthchecks.io and setting up Umami, writes each value to the host's `.env` over SSH, deploys, and runs the checks that show every tool reporting. Every tool alerts the project's mailbox, the address `SECURITY.md` gives, and stays off when its free plan sends no email alerts. UptimeRobot checks the site's page and `/api/health` from outside the VPS: with [the testers' guard](#the-testers-guard) on, both see the site down, as expected.
+
+The sections below say what each tool receives, and which lines of the host's `.env` turn it on.
+
 ## Error reporting
 
 The browser reports its uncaught errors to Bugsink's managed service through the site's own `/error-reports` path, which Caddy forwards without the client's address, cookies or credential (ADR 0027). The api reports every error that becomes a 500 the same way, through an internal listener of Caddy on the `proxy` network that is never published: the api keeps no route out (ADR 0016). It is off while the host's `.env` leaves its three lines empty. To turn it on, fill them in from the Bugsink project's DSN, `https://<key>@<host>/<project>`:
@@ -90,13 +96,7 @@ The browser reports its uncaught errors to Bugsink's managed service through the
 - `BUGSINK_ORIGIN`: `https://<host>`, where Caddy forwards the reports;
 - `BUGSINK_PROJECT_ID`: `<project>`, the number at the end of the DSN.
 
-Then deploy: the DSN reaches the browser only through a new build of the `web` image, and the privacy notice describes Bugsink from that build on. Emptying the three lines and deploying turns it off again. `pnpm check:staging` checks that the path and the internal listener forward to Bugsink, or that they answer 404 while off, and that the listener does not answer from outside. After turning it on, throw an error in the browser's console (`setTimeout(() => { throw new Error('test') })`) and check that Bugsink shows it under the release the site serves, with no IP address.
-
-To test the api's, send it an error from inside its container through the same reporter the server uses, and check that Bugsink shows it under the same release:
-
-```sh
-docker compose exec api node -e "import('./dist/error-reporting/error-reporter-from-env.js').then(async ({ errorReporterFromEnv }) => { (await errorReporterFromEnv()).report(new Error('api test')); setTimeout(() => {}, 2000); })"
-```
+Then deploy: the DSN reaches the browser only through a new build of the `web` image, and the privacy notice describes Bugsink from that build on. Emptying the three lines and deploying turns it off again. `pnpm check:staging` checks that the path and the internal listener forward to Bugsink, or that they answer 404 while off, and that the listener does not answer from outside. The wizard's checks then send an error from the browser and one from the api, through the reporter its server uses, and ask the owner to find both in Bugsink under the release the site serves, with no IP address.
 
 ## Import monitoring
 
@@ -107,12 +107,7 @@ To turn it on, create a check on Healthchecks.io with the project's mailbox, the
 - **Period**: 1 day, as often as the importer imports;
 - **Grace time**: 3 hours. A failed import alerts at once through its `/fail` ping, and the retries after it check in on their own, so the grace only covers how late a success arrives after the day: the next import starts a day after the last one began (`packages/api/src/catalog-import/daily-imports.ts`), and its success comes once it has run.
 
-Put the check's ping URL, `https://hc-ping.com/<uuid>`, in `HEALTHCHECKS_PING_URL` and deploy. The importer already reaches the internet for Scryfall, so its networks stay as they are. To test it, check in a failure from inside its container through the same check-in the importer uses, and check that the project's mailbox receives the alert; then check in a success, which brings the check back up:
-
-```sh
-docker compose exec importer node -e "import('./dist/catalog-import/import-check-in-from-env.js').then(({ importCheckInFromEnv }) => importCheckInFromEnv()('failed'))"
-docker compose exec importer node -e "import('./dist/catalog-import/import-check-in-from-env.js').then(({ importCheckInFromEnv }) => importCheckInFromEnv()('succeeded'))"
-```
+Put the check's ping URL, `https://hc-ping.com/<uuid>`, in `HEALTHCHECKS_PING_URL` and deploy. The importer already reaches the internet for Scryfall, so its networks stay as they are. The wizard's checks then check a failure in from the importer's container, through the check-in the importer uses, for the project's mailbox to receive the alert, and then a success, which brings the check back up.
 
 ## Product analytics
 
@@ -126,7 +121,7 @@ ssh -N -L 3001:"$umami":3000 <user>@<host>   # -N: no remote command, only the t
 
 While the tunnel is open, `http://localhost:3001` on this machine is Umami's dashboard. The address changes when the container is created again, so look it up each time. On the first sign-in, as `admin` with the password `umami` that Umami starts with, change that password at once, under _Settings → Security_: the site never exposes the login, but anyone on the host does reach it.
 
-The browser records product events only once the host's `.env` sets `VITE_UMAMI_WEBSITE_ID`, the id of the site that Umami's dashboard gives under _Settings → Websites_ once the site is added there with the public domain. The id reaches the browser only through a new build of the `web` image, and the privacy notice describes Umami from that build on; emptying the line and deploying turns it off again. After turning it on, paste a decklist and make its PDF, then check that the dashboard shows a `decklist_resolved` and a `pdf_generated` event, with their counts and nothing the decklist says.
+The browser records product events only once the host's `.env` sets `VITE_UMAMI_WEBSITE_ID`, the id of the site that Umami's dashboard gives under _Settings → Websites_ once the site is added there with the public domain. The id reaches the browser only through a new build of the `web` image, and the privacy notice describes Umami from that build on; emptying the line and deploying turns it off again. The wizard's checks then ask the owner to paste a decklist and make its PDF, and to find a `decklist_resolved` and a `pdf_generated` event in the dashboard, with their counts and nothing the decklist says.
 
 `umami-retention` deletes, once a day and as Umami's own role, what Umami keeps past its retention (`docker/umami-retention/retention.sql`).
 
