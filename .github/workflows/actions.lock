@@ -11,6 +11,9 @@ workflows:
         - 'jdx/mise-action@v5.3.0'
     '.github/workflows/deploy.yml':
         - 'actions/checkout@v7.0.1'
+    '.github/workflows/host-env-lines.yml':
+        - 'actions/checkout@v7.0.1'
+        - 'jdx/mise-action@v5.3.0'
     '.github/workflows/release-entry.yml':
         - 'actions/checkout@v7.0.1'
         - 'jdx/mise-action@v5.3.0'

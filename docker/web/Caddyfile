@@ -4,6 +4,19 @@
 	skip_install_trust
 }
 
+# The site's security headers are its own: an upstream's under the same names, as Bugsink sends,
+# would reach the browser beside them. Imported in every `reverse_proxy`, with the names of the
+# site's `header` block below. That block stays applied before the proxy rather than deferred,
+# so that an upstream's failure answers with the site's headers too.
+(site-security-headers-only) {
+	header_down -Strict-Transport-Security
+	header_down -X-Content-Type-Options
+	header_down -Referrer-Policy
+	header_down -Permissions-Policy
+	header_down -Cross-Origin-Opener-Policy
+	header_down -Content-Security-Policy
+}
+
 # Forwards an error report to the Bugsink project's envelope endpoint without anything that
 # names its sender: its address, its cookies, its credential, its browser (ADR 0027). Off while
 # the host's `.env` names no Bugsink, or no project of it. `pnpm check:staging` pins all of it.
@@ -26,6 +39,7 @@
 		header_up -Forwarded
 		header_up -Via
 		header_down -Set-Cookie
+		import site-security-headers-only
 	}
 }
 
@@ -66,7 +80,9 @@
 	import /etc/caddy/tester-guard/*.caddy
 
 	handle /api/* {
-		reverse_proxy api:3000
+		reverse_proxy api:3000 {
+			import site-security-headers-only
+		}
 	}
 
 	# The browser's error reports (ADR 0027), at the path `web`'s error reporting module sends
@@ -108,7 +124,7 @@
 			header_up -X-Cluster-Client-IP
 			header_up -Via
 			header_down -Set-Cookie
-			header_down -Content-Security-Policy
+			import site-security-headers-only
 			header_down -Access-Control-*
 			header_down -X-Powered-By
 			header_down -X-DNS-Prefetch-Control

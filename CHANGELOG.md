@@ -2,6 +2,12 @@
 
 Cosa cambia in Leyline a ogni rilascio. La voce più recente sta in cima.
 
+## 0.3.1 — 2026-11-26
+
+### Correzioni
+
+- Nessun cambiamento visibile: le risposte che il sito inoltra agli strumenti di monitoraggio hanno di nuovo solo le protezioni del sito, senza quelle degli strumenti accanto.
+
 ## 0.3.0 — 2026-11-26
 
 ### Novità

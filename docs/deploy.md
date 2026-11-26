@@ -48,6 +48,17 @@ From then on, every push to `main` that passes CI is deployed. `gh variable set 
 
 A deploy that succeeds then tags the deployed commit `vX.Y.Z`, from the version in its `package.json`, and publishes the GitHub Release of that tag, its notes made by `scripts/release-notes.js` from the commits since the previous tag (ADR 0025). A deploy run again by hand on a version already released leaves the tag and the release as they are; a failed deploy creates neither. `gh release list` shows the releases.
 
+## A release that needs a new line in the host's .env
+
+The deploy never writes the host's `.env` (ADR 0012). When a pull request to `main` makes `compose.yaml` require a variable that `main`'s does not, as `${NAME:?...}`, its `host-env-lines` check fails until the description says, with a line `Host .env: NAME` of its own for each, that the host has it (ADR 0030). Add the line to the host's `.env` first, then to the description. A secret is best made on the host itself, so it never crosses the network:
+
+```sh
+# grep -q tests without printing: the line is added only when missing, so a value already there stays.
+ssh <user>@<host> 'cd <DEPLOY_PATH> && grep -q "^NAME=" .env || echo "NAME=$(openssl rand -hex 32)" >> .env'
+```
+
+A value that comes from elsewhere, such as a service's URL, goes in with an editor on the host. Every deploy also checks the host's `.env` against the `compose.yaml` it copies, before any container changes, and stops naming the line that is missing: add it, then run the deploy again (`gh run rerun <run-id> --failed`).
+
 ## The testers' guard
 
 The alpha is open to anyone (ADR 0023). Caddy's `basic_auth` stays ready as an emergency switch, for when the site is abused: every deploy reads the `TESTER_CREDENTIALS` secret, and

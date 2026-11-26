@@ -33,7 +33,8 @@
           { "context": "dependencies", "integration_id": 15368 },
           { "context": "images", "integration_id": 15368 },
           { "context": "release-entry", "integration_id": 15368 },
-          { "context": "spec-release-readme", "integration_id": 15368 }
+          { "context": "spec-release-readme", "integration_id": 15368 },
+          { "context": "host-env-lines", "integration_id": 15368 }
         ]
       }
     },

@@ -10,6 +10,7 @@ import { ERROR_REPORTS_PATH } from '../../packages/web/src/error-reporting/error
 import { stackBaseImages } from '../docker/base-images.js';
 import { composeModel } from '../docker/compose-model.js';
 import { inspectContainers, serviceOf, serviceVariables } from './compose-stack.js';
+import { securityHeaderFailuresOf } from './security-headers.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -44,8 +45,22 @@ const NAMING_HEADERS = [
   'via',
 ];
 
-// It answers every request with its method, path and headers, as JSON.
+/**
+ * Security headers of its own that Bugsink answers with, seen on 2026-11-26: the site's must
+ * replace them, not reach the browser beside them.
+ */
+const BUGSINK_SECURITY_HEADERS = {
+  'Strict-Transport-Security': 'max-age=31536000; preload',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'same-origin',
+  'Cross-Origin-Opener-Policy': 'same-origin',
+};
+
+// It answers every request with its method, path and headers, as JSON, under Bugsink's own
+// security headers.
 const STUB_SERVER = `require('node:http').createServer((request, response) => {
+  for (const [name, value] of Object.entries(${JSON.stringify(BUGSINK_SECURITY_HEADERS)}))
+    response.setHeader(name, value);
   response.setHeader('Content-Type', 'application/json');
   response.end(JSON.stringify({ path: request.url, headers: request.headers }));
 }).listen(${STUB_PORT});`;
@@ -111,11 +126,12 @@ function strippingFailures(received, projectId) {
 /**
  * What fails at `where`, the error reports path that `post` sends the envelope to: it must answer
  * 404 while off, leave the answer to Bugsink while on, and, against the stub, forward nothing that
- * names the sender. `post` resolves to the answer's status, and `received()` reads the stub's
- * account of what reached it.
+ * names the sender. `post` resolves to the answer's status, its `headers` when the browser reads
+ * them, which then carry only the site's security headers, and `received()`, which reads the
+ * stub's account of what reached it.
  *
  * @param {string} where
- * @param {() => Promise<{ status: number, received: () => Promise<any> }>} post
+ * @param {() => Promise<{ status: number, headers?: Record<string, string>, received: () => Promise<any> }>} post
  */
 export async function forwardingFailures(where, post) {
   const web = await serviceVariables('web');
@@ -134,7 +150,10 @@ export async function forwardingFailures(where, post) {
   return withStub(await caddyInternetNetwork(), async () => {
     const response = await postToStub(post);
     if (response.status !== 200) return [`${where} answers ${response.status}`];
-    return strippingFailures(await response.received(), web.BUGSINK_PROJECT_ID);
+    return [
+      ...strippingFailures(await response.received(), web.BUGSINK_PROJECT_ID),
+      ...(response.headers ? securityHeaderFailuresOf(where, response.headers) : []),
+    ];
   });
 }
 
@@ -157,6 +176,6 @@ export function errorReportFailures({ visitorRequest, appAddress, testerCredenti
       data: ENVELOPE,
       maxRedirects: 0,
     });
-    return { status: answer.status(), received: () => answer.json() };
+    return { status: answer.status(), headers: answer.headers(), received: () => answer.json() };
   });
 }

@@ -67,6 +67,17 @@ jobs:
           # shellcheck disable=SC2029
           git archive --format=tar HEAD | ssh deploy "mkdir -p '$DEPLOY_PATH' && tar -x -C '$DEPLOY_PATH'"
 
+      # The host's .env against the compose.yaml just copied, before any container changes: the
+      # deploy never writes it, so a line a release needs is added by hand first (ADR 0030).
+      # `config --quiet` resolves every variable and prints only what it cannot.
+      - name: Check the host's .env
+        run: |
+          # shellcheck disable=SC2029
+          if ! ssh deploy "cd '$DEPLOY_PATH' && docker compose config --quiet"; then
+            echo "::error::The host's .env lacks a line compose.yaml requires. Add it as docs/deploy.md says under \"A release that needs a new line in the host's .env\", then run the deploy again."
+            exit 1
+          fi
+
       # The emergency switch (ADR 0023): a secret holding credential lines turns the testers'
       # guard on, an empty or missing one turns it off and the site is open. The secret reaches
       # the host through stdin only, never on a command line or in the log. Readable by anyone
