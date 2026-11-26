@@ -1,0 +1,39 @@
+name: Close spec issues
+
+# A pull request merged into a spec branch closes the issues its body names with `Closes #N`,
+# as GitHub does by itself only for main (ADR 0024). It runs from the base branch once merged.
+#
+# It closes them as the owner, with the `ISSUE_CLOSING_TOKEN` secret: GitHub emails an issue's
+# author when someone else closes it, so closing as `github-actions[bot]` emailed the owner on
+# every merge. The secret is a fine-grained personal access token of the owner, for this
+# repository only, with no permission but Issues (read and write); once it expires or goes
+# missing, the run fails, and a new token goes in with `gh secret set ISSUE_CLOSING_TOKEN`.
+on:
+  pull_request:
+    types: [closed]
+    branches: ['spec/**']
+
+# No token permission by default: each job asks for what it needs.
+permissions: {}
+
+jobs:
+  close-issues:
+    if: github.event.pull_request.merged
+    runs-on: ubuntu-latest
+    # The issues are closed with the owner's token: the workflow's own needs nothing more.
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      # Only node: the script needs none of the other tools pinned in mise.toml.
+      - uses: jdx/mise-action@v5.3.0
+        with:
+          install_args: node
+      # The body reaches the script through the environment, never the shell's text.
+      - run: node scripts/close-spec-issues.js
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          GH_TOKEN: ${{ secrets.ISSUE_CLOSING_TOKEN }}
+          GH_REPO: ${{ github.repository }}

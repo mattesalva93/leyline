@@ -1,5 +1,7 @@
 import type { ReactElement } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
+import { errorReportingIsOn } from '../error-reporting/error-reporting-is-on.ts';
+import { productEventsAreOn } from '../product-events/product-events-are-on.ts';
 import {
   CenteredDialogContent,
   Dialog,
@@ -28,16 +30,77 @@ const LINKS: Readonly<Record<string, ReactElement>> = {
   ),
 };
 
+/** What the notice tells apart, because it describes only what this build has on (ADR 0027). */
+interface ToolsSwitchedOn {
+  readonly errorReports: boolean;
+  readonly productEvents: boolean;
+}
+
+/** A paragraph by its key, shown always, or only while `shown` holds for the tools on. */
+type Paragraph =
+  string | { readonly key: string; readonly shown: (toolsOn: ToolsSwitchedOn) => boolean };
+
+const WITH_ERROR_REPORTS = ({ errorReports }: ToolsSwitchedOn) => errorReports;
+const WITH_PRODUCT_EVENTS = ({ productEvents }: ToolsSwitchedOn) => productEvents;
+const WITHOUT_PRODUCT_EVENTS = ({ productEvents }: ToolsSwitchedOn) => !productEvents;
+const WITH_NO_TOOL = ({ errorReports, productEvents }: ToolsSwitchedOn) =>
+  !errorReports && !productEvents;
+const WITH_A_TOOL = (toolsOn: ToolsSwitchedOn) => !WITH_NO_TOOL(toolsOn);
+const WITH_ERROR_REPORTS_ALONE = ({ errorReports, productEvents }: ToolsSwitchedOn) =>
+  errorReports && !productEvents;
+const WITH_PRODUCT_EVENTS_ALONE = ({ errorReports, productEvents }: ToolsSwitchedOn) =>
+  productEvents && !errorReports;
+const WITH_BOTH_TOOLS = ({ errorReports, productEvents }: ToolsSwitchedOn) =>
+  errorReports && productEvents;
+
 /** The notice's sections, in the order art. 13 GDPR lists what it owes, by their key in `privacyNotice`. */
-const SECTIONS: readonly { readonly key: string; readonly paragraphs: readonly string[] }[] = [
+const SECTIONS: readonly { readonly key: string; readonly paragraphs: readonly Paragraph[] }[] = [
   { key: 'controller', paragraphs: ['who'] },
-  { key: 'purpose', paragraphs: ['why', 'legalBasis'] },
-  { key: 'data', paragraphs: ['credentials', 'accessLog', 'rateLimit', 'securityEvents'] },
-  { key: 'recipients', paragraphs: ['hosting', 'scryfall', 'github'] },
+  {
+    key: 'purpose',
+    paragraphs: [
+      // One purpose paragraph names every tool on, so that the purposes read as one sentence.
+      { key: 'why', shown: WITH_NO_TOOL },
+      { key: 'whyWithErrorReports', shown: WITH_ERROR_REPORTS_ALONE },
+      { key: 'whyWithProductEvents', shown: WITH_PRODUCT_EVENTS_ALONE },
+      { key: 'whyWithErrorReportsAndProductEvents', shown: WITH_BOTH_TOOLS },
+      { key: 'legalBasis', shown: WITH_NO_TOOL },
+      { key: 'legalBasisWithTools', shown: WITH_A_TOOL },
+    ],
+  },
+  {
+    key: 'data',
+    paragraphs: [
+      'credentials',
+      'accessLog',
+      'rateLimit',
+      'securityEvents',
+      { key: 'errorReports', shown: WITH_ERROR_REPORTS },
+      { key: 'productEvents', shown: WITH_PRODUCT_EVENTS },
+    ],
+  },
+  {
+    key: 'recipients',
+    paragraphs: ['hosting', 'scryfall', { key: 'bugsink', shown: WITH_ERROR_REPORTS }, 'github'],
+  },
   { key: 'device', paragraphs: ['localStorage'] },
-  { key: 'absent', paragraphs: ['nothingElse'] },
+  {
+    key: 'absent',
+    paragraphs: [
+      { key: 'nothingElse', shown: WITHOUT_PRODUCT_EVENTS },
+      { key: 'nothingElseWithProductEvents', shown: WITH_PRODUCT_EVENTS },
+    ],
+  },
   { key: 'rights', paragraphs: ['ask', 'complain'] },
 ];
+
+/** The keys of the section's paragraphs shown with the tools on. */
+function shownParagraphs(paragraphs: readonly Paragraph[], toolsOn: ToolsSwitchedOn): string[] {
+  return paragraphs.flatMap((paragraph) => {
+    if (typeof paragraph === 'string') return [paragraph];
+    return paragraph.shown(toolsOn) ? [paragraph.key] : [];
+  });
+}
 
 /**
  * "Informativa privacy": what personal data the alpha handles, and why, as art. 13 GDPR asks. It
@@ -45,6 +108,10 @@ const SECTIONS: readonly { readonly key: string; readonly paragraphs: readonly s
  */
 export function PrivacyNoticeDialog({ triggerClassName }: { readonly triggerClassName: string }) {
   const { t } = useTranslation();
+  const toolsOn: ToolsSwitchedOn = {
+    errorReports: errorReportingIsOn(),
+    productEvents: productEventsAreOn(),
+  };
   return (
     <Dialog>
       <DialogTrigger className={triggerClassName}>{t('privacyNotice.title')}</DialogTrigger>
@@ -54,7 +121,7 @@ export function PrivacyNoticeDialog({ triggerClassName }: { readonly triggerClas
         {SECTIONS.map(({ key, paragraphs }) => (
           <section key={key} className="mt-4">
             <h3 className="font-bold">{t(`privacyNotice.${key}.heading`)}</h3>
-            {paragraphs.map((paragraph) => (
+            {shownParagraphs(paragraphs, toolsOn).map((paragraph) => (
               <p key={paragraph} className="mt-1">
                 <Trans
                   i18nKey={`privacyNotice.${key}.${paragraph}`}

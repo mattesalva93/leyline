@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api.ts';
 import { inMemoryServer } from '../test-support/in-memory-server.ts';
 import { mountApp } from '../test-support/mount-app.tsx';
@@ -328,6 +328,86 @@ describe('the app shell', () => {
       expect(deviceSection?.textContent).toContain(
         'la guida, se è accesa e quali passi sono già svolti o saltati',
       );
+    });
+
+    describe('error reporting (ADR 0027)', () => {
+      afterEach(() => vi.unstubAllEnvs());
+
+      it('names Bugsink, what it receives and for how long, once the build has its DSN', async () => {
+        vi.stubEnv('VITE_BUGSINK_DSN', 'https://0123456789abcdef@bugsink.example/42');
+        const { notice } = await openThePrivacyNotice();
+
+        const section = (heading: string) =>
+          within(notice).getByRole('heading', { name: heading }).parentElement?.textContent;
+        expect(section('Dati trattati')).toContain('Errori dell’app');
+        expect(section('Dati trattati')).toContain(
+          'non contiene il testo della decklist, le ricerche',
+        );
+        expect(section('Dati trattati')).toContain('i più vecchi vengono cancellati');
+        expect(section('Dati trattati')).toContain(
+          'Allo stesso modo il server, quando una richiesta fallisce per un suo errore',
+        );
+        expect(section('Destinatari')).toContain('Bugsink B.V.');
+        expect(section('Finalità e base giuridica')).toContain('correggere gli errori dell’app');
+        expect(section('Finalità e base giuridica')).not.toContain('servono solo alla sicurezza');
+      });
+
+      it('leaves Bugsink out while the build has no DSN: the notice says only what is on', async () => {
+        vi.stubEnv('VITE_BUGSINK_DSN', '');
+        const { notice } = await openThePrivacyNotice();
+
+        expect(notice.textContent).not.toMatch(/Bugsink|Errori dell’app/);
+        expect(notice.textContent).toContain('I dati servono solo alla sicurezza del servizio');
+      });
+    });
+
+    describe('product analytics (ADR 0027)', () => {
+      afterEach(() => vi.unstubAllEnvs());
+
+      it('names Umami, the two events and their fields, where they stay and for how long, once the build has its website id', async () => {
+        vi.stubEnv('VITE_UMAMI_WEBSITE_ID', '5f0d1c2e-7a3b-4c4d-9e8f-0a1b2c3d4e5f');
+        const { notice } = await openThePrivacyNotice();
+
+        const section = (heading: string) =>
+          within(notice).getByRole('heading', { name: heading }).parentElement?.textContent;
+        expect(section('Dati trattati')).toContain('Statistiche d’uso');
+        expect(section('Dati trattati')).toContain(
+          'quante righe ha, quante non sono state riconosciute e la lingua delle carte',
+        );
+        expect(section('Dati trattati')).toContain(
+          'il formato della pagina, il numero di pagine e il numero di carte',
+        );
+        expect(section('Dati trattati')).toContain(
+          'non contengono il testo della decklist né i nomi delle carte',
+        );
+        expect(section('Dati trattati')).toContain('sullo stesso server del sito, senza terzi');
+        expect(section('Dati trattati')).toContain('un salt che cambia ogni giorno');
+        expect(section('Dati trattati')).toContain('al massimo 25 mesi');
+        expect(section('Finalità e base giuridica')).toContain('capire se l’app funziona');
+        expect(section('Finalità e base giuridica')).not.toContain('servono solo alla sicurezza');
+        expect(section('Cosa non c’è')).not.toContain('statistiche');
+      });
+
+      it('names Umami beside Bugsink when both are on, each purpose once', async () => {
+        vi.stubEnv('VITE_UMAMI_WEBSITE_ID', '5f0d1c2e-7a3b-4c4d-9e8f-0a1b2c3d4e5f');
+        vi.stubEnv('VITE_BUGSINK_DSN', 'https://0123456789abcdef@bugsink.example/42');
+        const { notice } = await openThePrivacyNotice();
+
+        const purpose = within(notice).getByRole('heading', { name: 'Finalità e base giuridica' })
+          .parentElement?.textContent;
+        expect(purpose).toContain('correggere gli errori dell’app');
+        expect(purpose).toContain('capire se l’app funziona');
+        expect(purpose?.match(/I dati servono/g)).toHaveLength(1);
+        expect(purpose?.match(/La base giuridica/g)).toHaveLength(1);
+      });
+
+      it('leaves Umami out while the build has no website id: the notice says only what is on', async () => {
+        vi.stubEnv('VITE_UMAMI_WEBSITE_ID', '');
+        const { notice } = await openThePrivacyNotice();
+
+        expect(notice.textContent).not.toMatch(/Umami|Statistiche d’uso/);
+        expect(notice.textContent).toContain('Nessuno strumento di statistiche (analytics)');
+      });
     });
 
     it('styles its close button as the primary action', async () => {

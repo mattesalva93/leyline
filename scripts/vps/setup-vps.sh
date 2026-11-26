@@ -385,6 +385,17 @@ ENV
 EOF
   say "✓ wrote $DEPLOY_PATH/.env on the VPS."
 fi
+# Umami's password and secret (ADR 0027), added to an older `.env` too: each line only when
+# missing, so a password PostgreSQL already holds never changes. `grep -q`: tests, prints nothing.
+# shellcheck disable=SC2087 # $DEPLOY_PATH expands here on purpose.
+ssh "$DEPLOYER" bash -s <<EOF
+set -e
+cd '$DEPLOY_PATH'
+for name in UMAMI_DATABASE_PASSWORD UMAMI_APP_SECRET; do
+  grep -q "^\$name=" .env || echo "\$name=\$(openssl rand -hex 32)" >> .env
+done
+EOF
+say "✓ $DEPLOY_PATH/.env holds Umami's password and secret."
 
 stage "The testers' credentials"
 say "The alpha is open (ADR 0023). The testers' guard is its emergency switch: its credentials"
@@ -430,13 +441,7 @@ say "DEPLOY_ENABLED=true turns the workflow on: from then on every push to main 
 say "CI is deployed (ADR 0012)."
 confirm "Turn it on and deploy main now?" || exit 1
 set_var DEPLOY_ENABLED true
-latest_deploy() { gh run list --workflow deploy.yml --limit 1 --json databaseId --jq '.[0].databaseId // ""'; }
-previous_run=$(latest_deploy)
-gh workflow run deploy.yml --ref main
-note "  waiting for GitHub to start the run..."
-until run=$(latest_deploy) && [[ -n "$run" && "$run" != "$previous_run" ]]; do sleep 2; done
-# --exit-status: fail the wizard if the run fails.
-gh run watch --exit-status "$run"
+scripts/vps/deploy-main.sh
 say "✓ deployed. The importer now fills the catalog, a few minutes on the first start:"
 note "  DOCKER_HOST=ssh://$DEPLOYER docker compose -p ${DEPLOY_PATH##*/} logs -f importer"
 pause "Press Enter once it has finished, to check the VPS."

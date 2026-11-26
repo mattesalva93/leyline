@@ -1,8 +1,8 @@
-// PostgreSQL sits on an internal network, never published, that only the api and the importer
-// share with it (ADR 0016).
+// PostgreSQL sits on an internal network, never published, that only its clients share with it
+// (ADR 0016): the api, the importer, Umami and its retention job (ADR 0027).
 import { execInService, inspectContainers, inspectNetworks, serviceOf } from './compose-stack.js';
 
-const DATABASE_CLIENTS = ['api', 'importer'];
+const DATABASE_CLIENTS = ['api', 'importer', 'umami', 'umami-retention'];
 
 const SERVICE_OFF_THE_DATABASE_NETWORK = 'web';
 

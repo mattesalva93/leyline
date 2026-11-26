@@ -1,16 +1,11 @@
-// Keeps the catalog fresh: imports Scryfall's `all_cards` bulk once a day (ADR 0002).
-// Runs as the `importer` service in compose.yaml. The first import starts right away on an
-// empty catalog; after a restart it waits for the rest of the day since the last one.
+// Runs the daily catalog import as the `importer` service in compose.yaml.
 import { setTimeout as sleep } from 'node:timers/promises';
 import { connect, migrate } from './catalog/db.ts';
 import { ownerDatabaseUrl } from './env.ts';
 import { importBulk, lastImportStartedAt } from './catalog-import/import-bulk.ts';
 import { allCardsBulkUrl, downloadBulk } from './catalog-import/scryfall.ts';
-
-const HOUR = 60 * 60 * 1000;
-const DAY = 24 * HOUR;
-/** A failed import is retried sooner than a day, while yesterday's catalog keeps serving. */
-const RETRY_AFTER = HOUR;
+import { runDailyImports } from './catalog-import/daily-imports.ts';
+import { importCheckInFromEnv } from './catalog-import/import-check-in-from-env.ts';
 
 const stop = new AbortController();
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
@@ -20,24 +15,20 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
 const sql = connect(ownerDatabaseUrl());
 try {
   await migrate(sql);
-  while (!stop.signal.aborted) {
-    const last = await lastImportStartedAt(sql);
-    const wait = last ? last.getTime() + DAY - Date.now() : 0;
-    if (wait > 0) {
-      console.log(`Next catalog import at ${new Date(Date.now() + wait).toISOString()}`);
-      await sleep(wait, undefined, { signal: stop.signal });
-      continue;
-    }
-    try {
+  await runDailyImports({
+    stop: stop.signal,
+    now: () => new Date(),
+    lastImportStartedAt: () => lastImportStartedAt(sql),
+    async importCatalog() {
       const url = await allCardsBulkUrl();
       console.log(`Downloading and importing ${url}`);
       const { prints } = await importBulk(sql, await downloadBulk(url));
       console.log(`Imported ${prints} prints`);
-    } catch (error) {
-      console.error('Catalog import failed; the previous catalog keeps serving', error);
-      await sleep(RETRY_AFTER, undefined, { signal: stop.signal });
-    }
-  }
+    },
+    checkIn: importCheckInFromEnv(process.env, stop.signal),
+    wait: (milliseconds) => sleep(milliseconds, undefined, { signal: stop.signal }),
+    log: console,
+  });
 } catch (error) {
   // `sleep` rejects with an AbortError on shutdown; anything else is a real failure.
   if (!stop.signal.aborted) throw error;

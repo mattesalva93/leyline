@@ -49,38 +49,59 @@ const coreNoIo = {
 };
 
 /** `web` and `api` share only `core`'s types; they never import each other. */
-const webNoApi = {
+const webNoApiPattern = {
+  regex: '^@leyline/api(/|$)|^(\\.\\./)+(packages/)?api(/|$)',
+  message: '`web` must not import from `api`: share types through `core`.',
+};
+
+/**
+ * The Sentry SDK enters each package through its error reporting module alone (ADR 0027), so that
+ * what the SDK may send is set in one place.
+ */
+const WEB_ERROR_REPORTING = 'packages/web/src/error-reporting/**';
+const API_ERROR_REPORTING = 'packages/api/src/error-reporting/**';
+const sentryOutsideErrorReporting = {
+  regex: '^@sentry/',
+  message: 'Import `@sentry/*` only in the package’s error reporting module (ADR 0027).',
+};
+
+// ESLint replaces a rule's options with the last config's, rather than merging them: each config
+// below lists every pattern its files keep.
+const webImports = {
   files: ['packages/web/**/*.{ts,tsx}'],
+  ignores: [WEB_ERROR_REPORTING],
   rules: {
     'no-restricted-imports': [
       'error',
-      {
-        patterns: [
-          {
-            regex: '^@leyline/api(/|$)|^(\\.\\./)+(packages/)?api(/|$)',
-            message: '`web` must not import from `api`: share types through `core`.',
-          },
-        ],
-      },
+      { patterns: [webNoApiPattern, sentryOutsideErrorReporting] },
     ],
   },
 };
 
-const apiNoWeb = {
+const webErrorReportingImports = {
+  files: [WEB_ERROR_REPORTING],
+  rules: { 'no-restricted-imports': ['error', { patterns: [webNoApiPattern] }] },
+};
+
+const apiNoWebPattern = {
+  regex: '^@leyline/web(/|$)|^(\\.\\./)+(packages/)?web(/|$)',
+  message: '`api` must not import from `web`: share types through `core`.',
+};
+
+const apiImports = {
   files: ['packages/api/**/*.{ts,tsx}'],
+  ignores: [API_ERROR_REPORTING],
   rules: {
     'no-restricted-imports': [
       'error',
-      {
-        patterns: [
-          {
-            regex: '^@leyline/web(/|$)|^(\\.\\./)+(packages/)?web(/|$)',
-            message: '`api` must not import from `web`: share types through `core`.',
-          },
-        ],
-      },
+      { patterns: [apiNoWebPattern, sentryOutsideErrorReporting] },
     ],
   },
+};
+
+const apiErrorReportingImports = {
+  files: [API_ERROR_REPORTING],
+  rules: { 'no-restricted-imports': ['error', { patterns: [apiNoWebPattern] }] },
 };
 
 /**
@@ -129,8 +150,10 @@ export default tseslint.config(
     languageOptions: { globals: globals.node },
   },
   coreNoIo,
-  webNoApi,
-  apiNoWeb,
+  webImports,
+  webErrorReportingImports,
+  apiImports,
+  apiErrorReportingImports,
   webNoJsxLiterals,
   noInvisibleWhitespace,
   prettier,

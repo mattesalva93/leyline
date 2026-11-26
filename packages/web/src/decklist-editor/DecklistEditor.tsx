@@ -9,6 +9,11 @@ import { NewDecklistButton } from './NewDecklistButton.tsx';
 import { textAfterPasteAtEnd } from './paste-at-end.ts';
 import { useFocusKeptAcrossLayouts } from './use-focus-kept-across-layouts.ts';
 
+/** Whether the browser's input event put pasted text in, as `inputType` names it. */
+function isPaste(event: Event): boolean {
+  return event instanceof InputEvent && event.inputType === 'insertFromPaste';
+}
+
 /**
  * The decklist text, always the source of what the grid shows, with how its recognition went
  * and, once there is something to empty, the way to a new decklist. The guided step that starts
@@ -37,7 +42,11 @@ export function DecklistEditor({
           value={generator.decklistText}
           placeholder={t('decklist.placeholder')}
           onChange={(event) =>
-            generator.writeDecklistText(event.target.value, event.target.selectionEnd)
+            generator.writeDecklistText(
+              event.target.value,
+              event.target.selectionEnd,
+              isPaste(event.nativeEvent) ? 'pasted' : 'typed',
+            )
           }
           onPaste={(event) => {
             const decklistTextarea = event.currentTarget;
@@ -52,7 +61,7 @@ export function DecklistEditor({
             if (nextText === null) return;
             event.preventDefault();
             // Setting a textarea's value puts the caret at its end: on the new empty line.
-            generator.writeDecklistText(nextText, nextText.length);
+            generator.writeDecklistText(nextText, nextText.length, 'pasted');
           }}
           onBlur={generator.resolveEveryLine}
         />

@@ -6,6 +6,9 @@ workflows:
     '.github/workflows/ci.yml':
         - 'actions/checkout@v7.0.1'
         - 'jdx/mise-action@v5.3.0'
+    '.github/workflows/close-spec-issues.yml':
+        - 'actions/checkout@v7.0.1'
+        - 'jdx/mise-action@v5.3.0'
     '.github/workflows/deploy.yml':
         - 'actions/checkout@v7.0.1'
     '.github/workflows/release-entry.yml':

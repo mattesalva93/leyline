@@ -53,6 +53,12 @@ The `api` reports itself healthy only once the `importer` has created the databa
 
 Caddy's access log is a file of its own, apart from `docker compose logs`: `docker compose exec web tail -f /var/log/caddy/access.log` follows it.
 
+## Error reports
+
+`pnpm check:staging` proves that Caddy strips the client's address, cookies and credential from an error report on its way to Bugsink (ADR 0027), from the browser's path and from the api's internal listener alike, against a stub of Bugsink that answers with what it received. Point local staging at the stub in `.env`, and rebuild with `docker compose up -d --wait`: `BUGSINK_ORIGIN` set to `STUB_ORIGIN` in `scripts/staging-checks/error-reports.js`, any number in `BUGSINK_PROJECT_ID`, and in `VITE_BUGSINK_DSN` any DSN with a hexadecimal key, as Bugsink's are (the SDK ignores any other), so that the page runs the SDK too.
+
+The check starts the stub on the stack's `internet` network for the length of its own run, and stops it after. Left empty, the three lines turn error reporting off, and the check only sees that `/error-reports` and the internal listener answer 404.
+
 ## Caddy's volumes from before its own user
 
 Caddy runs as the `caddy` user of the `web` image (ADR 0016). Volumes it created earlier, as root, hold files that user cannot read, so Caddy fails to start on them. Hand them over once:
@@ -67,11 +73,12 @@ docker compose up -d --wait
 
 ## Database roles
 
-PostgreSQL has three roles (ADR 0016):
+PostgreSQL has four roles (ADR 0016, ADR 0027):
 
 - the superuser, `POSTGRES_USER`, only initialises the database;
 - `leyline_owner` owns the schema and is the `importer`'s: it migrates the database before each import;
-- `leyline_reader` is the `api`'s: it can only read, and its queries stop after a statement timeout.
+- `leyline_reader` is the `api`'s: it can only read, and its queries stop after a statement timeout;
+- `umami` owns Umami's own database, `umami`, which the catalog's roles cannot open, and cannot open the catalog's.
 
 `docker/postgres/init/02-database-roles.sh` creates the two roles, with the passwords in `LEYLINE_OWNER_PASSWORD` and `LEYLINE_READER_PASSWORD`, when PostgreSQL creates its volume. A volume created before the roles existed gets them, and hands its tables to `leyline_owner`, by running the same script once:
 
@@ -82,6 +89,8 @@ docker compose up -d --wait
 ```
 
 `exec -T` runs the script inside the running container with no terminal; it reads the passwords from the container's environment. The script is safe to run again, and running it is also how a changed password reaches an existing volume.
+
+`docker/postgres/init/03-umami-database.sh` creates Umami's role and database the same way, with the password in `UMAMI_DATABASE_PASSWORD`. On a volume created before them, run it like the roles script, before `umami` starts; the deploy runs it on every deploy, and it creates nothing once they exist.
 
 `pnpm test` creates its throwaway schemas as the superuser, or as the role in `TEST_DATABASE_URL`.
 

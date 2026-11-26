@@ -2,6 +2,14 @@
 
 Cosa cambia in Leyline a ogni rilascio. La voce più recente sta in cima.
 
+## 0.3.0 — 2026-11-26
+
+### Novità
+
+- Quando qualcosa va storto nel browser o sul server, l'errore arriva a chi sviluppa Leyline, che può correggerlo prima che qualcuno lo segnali. Non porta con sé il testo della decklist, le carte che cerchi né il tuo indirizzo IP.
+- Leyline conta quante decklist vengono riconosciute e quanti PDF vengono creati, solo con numeri e opzioni, senza registrare la tua sessione né i nomi delle carte.
+- L'informativa sulla privacy dice cosa viene raccolto, chi lo riceve e per quanto tempo.
+
 ## 0.2.2 — 2026-11-25
 
 ### Correzioni
