@@ -2,6 +2,12 @@
 
 Cosa cambia in Leyline a ogni rilascio. La voce più recente sta in cima.
 
+## 0.3.2 — 2026-11-26
+
+### Correzioni
+
+- Nessun cambiamento visibile: la pagina del progetto su GitHub mostra l'app in movimento, come è costruita e cosa verrà.
+
 ## 0.3.1 — 2026-11-26
 
 ### Correzioni
