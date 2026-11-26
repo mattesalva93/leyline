@@ -1,0 +1,4 @@
+# The wizards share the /wizard skill's library, kept identical in each and never hand-edited:
+# SC1087 reads its Readline markers (`$e[...`) as array indexing, and SC2329 flags the helpers
+# a wizard leaves unused.
+disable=SC1087,SC2329

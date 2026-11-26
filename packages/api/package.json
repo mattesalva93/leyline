@@ -4,13 +4,13 @@
   "type": "module",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^26.6.6"
+    "@types/node": "^26.6.10"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.11",
     "@leyline/core": "workspace:*",
     "@sentry/core": "^11.17.0",
-    "hono": "^4.13.21",
+    "hono": "^4.13.22",
     "postgres": "^4.1.1"
   },
   "scripts": {
