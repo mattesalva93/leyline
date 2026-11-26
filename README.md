@@ -13,17 +13,17 @@ Unofficial, not affiliated with Wizards of the Coast. Card data and images come 
 </p>
 
 <p align="center">
-  <img src="docs/media/phone.png" height="420" alt="On a phone: the card tiles of the example decklist, with the bar of steps at the foot of the screen.">
+  <img src="docs/media/phone.png" height="420" alt="On a phone: the card tiles of the example decklist, with the step bar at the foot of the screen.">
   <img src="docs/media/desktop.png" height="420" alt="On a wide screen: the decklist text on the left, the card tiles in the centre, the decklist summary on the right.">
 </p>
 
 ## Status
 
-Open alpha: the first module, the proxy sheet generator, is online for anyone, with no account. What each release changes is in the [changelog](CHANGELOG.md), in Italian. To report a vulnerability, see [`SECURITY.md`](SECURITY.md).
+Open alpha: the first module, the proxy sheet generator, is online for anyone, with no account. The version online is the [latest release](https://github.com/mattesalva93/leyline/releases/latest); what each release changes is in the [changelog](CHANGELOG.md), in Italian. To report a vulnerability, see [`SECURITY.md`](SECURITY.md).
 
 ## What it does
 
-A proxy is a printed stand-in for a card: players slip it into a sleeve in front of a real card to try a deck before they own every card of it. A proxy sheet is a page of them at real card size, ready to cut.
+A [proxy](GLOSSARY.md) is a printed stand-in for a card, slipped into a sleeve to play or test a deck. Leyline prints them at real card size, a sheet at a time, ready to cut.
 
 - Recognises card names written in English or Italian, even misspelled, line by line, and flags the lines to fix.
 - Lets you pick the print and the language of every line, and split its copies across several prints.
@@ -38,10 +38,10 @@ React and Vite in the browser, Hono on Node for the API, PostgreSQL for the cata
 
 - **The PDF is built in the browser.** The sheet layout and the PDF are a pure function in `core`; the browser fetches the images from Scryfall and the server never touches them ([ADR 0001](docs/adr/0001-pdf-generated-in-core-run-in-browser.md)).
 - **Names are recognised by trigram search.** PostgreSQL's `pg_trgm` matches English and Italian names, misspellings included ([ADR 0003](docs/adr/0003-postgresql-with-pg-trgm.md)).
-- **A security baseline from day one.** OWASP ASVS level 2 on the chapters that apply, hardened containers, a strict CSP and an API that defends itself ([ADR 0016](docs/adr/0016-security-baseline-for-the-alpha.md)); the alpha is open, with the testers' guard kept as an emergency switch ([ADR 0023](docs/adr/0023-the-alpha-is-open-with-the-testers-guard-kept-as-an-emergency-switch.md)).
-- **CI checks the supply chain.** Locked actions, secret and image scanners, and a failing build on a fixable vulnerability ([ADR 0017](docs/adr/0017-ci-checks-the-supply-chain.md)).
-- **`main` is protected, and every merge is a release.** Changes reach `main` only through a pull request that passes CI ([ADR 0006](docs/adr/0006-main-protected-by-local-git-hooks.md)); a feature of several tickets gathers on a spec branch first ([ADR 0024](docs/adr/0024-a-multi-ticket-spec-lands-on-main-through-a-spec-branch.md)).
-- **One version, written with its changelog entry.** CI fails a pull request to `main` without both, and the app invites an open page to reload when a newer release is online ([ADR 0025](docs/adr/0025-one-app-version-written-with-its-changelog-entry.md)).
+- **A security baseline from day one.** A recognised verification standard, hardened containers and an API that defends itself ([ADR 0016](docs/adr/0016-security-baseline-for-the-alpha.md)).
+- **CI checks the supply chain**: the actions it runs, the dependencies and the images ([ADR 0017](docs/adr/0017-ci-checks-the-supply-chain.md)).
+- **`main` is protected, and every merge is a release.** Nobody pushes to `main` ([ADR 0006](docs/adr/0006-main-protected-by-local-git-hooks.md)); GitHub lets in only pull requests that pass CI, and a feature of several tickets gathers on a spec branch first ([ADR 0024](docs/adr/0024-a-multi-ticket-spec-lands-on-main-through-a-spec-branch.md)).
+- **One version, written with its changelog entry** in the pull request that releases it, and an invitation to reload for a page left open on an older release ([ADR 0025](docs/adr/0025-one-app-version-written-with-its-changelog-entry.md)).
 - **Monitoring stays self-hosted or in the EU.** Errors go to Bugsink and product events to a self-hosted Umami, both through the site's own origin and without the user's text or address ([ADR 0027](docs/adr/0027-self-hosted-analytics-and-eu-error-monitoring-behind-the-sites-own-origin.md)).
 
 ## Architecture
@@ -122,4 +122,4 @@ Inside each package, code is grouped in folders by feature: see "Folders by feat
 
 ## License
 
-[MIT](LICENSE). Leyline is unofficial and not affiliated with Wizards of the Coast.
+[MIT](LICENSE)
