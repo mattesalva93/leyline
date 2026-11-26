@@ -23,6 +23,7 @@ The words this README uses for the app's parts (line, print, tile, sheet) are de
 - **API:** Hono on Node.
 - **Data:** PostgreSQL with `pg_trgm`, filled from Scryfall's bulk data.
 - **Serving:** Caddy over HTTPS, in Docker Compose.
+- **Monitoring:** Sentry's SDKs reporting to Bugsink, Umami for product events, UptimeRobot and Healthchecks.io for availability (ADR 0027).
 - **Tooling:** pnpm workspaces, TypeScript, Vitest, ESLint, Prettier, knip, Playwright for the preview scripts.
 
 ## Getting started
