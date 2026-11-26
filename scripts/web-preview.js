@@ -51,7 +51,9 @@ async function turnGuideOff(page) {
     // Pressing it closes the phone menu.
     await page.getByRole('checkbox', { name: italian.shell.showGuidedSteps }).click();
   } else {
-    await page.getByRole('button', { name: new RegExp(`^${italian.shell.guide}`) }).click();
+    await page
+      .getByRole('button', { name: new RegExp(`^${RegExp.escape(italian.shell.guide)}`) })
+      .click();
     await page.getByRole('menuitemcheckbox', { name: italian.shell.showGuidedSteps }).click();
     await page.keyboard.press('Escape');
   }

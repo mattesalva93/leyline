@@ -31,14 +31,17 @@ const { values: flags } = parseArgs({
     fps: { type: 'string', default: '6' },
   },
 });
+for (const flag of ['gif-width', 'fps']) {
+  if (!/^[1-9]\d*$/.test(flags[flag])) throw new Error(`--${flag} is a whole number above 0`);
+}
 
 /** Matches an accessible name made from `template`, whatever its `{{name}}` is filled with. */
-function startsWith(template) {
+function nameMadeFrom(template) {
   return new RegExp(`^${RegExp.escape(template.split('{{')[0])}`);
 }
 
 /** Clicks what the flow goes through next, then rests once its images are on screen. */
-async function step(page, locator) {
+async function clickThenRest(page, locator) {
   await locator.click();
   await waitUntilImagesOnScreenArrived(page);
   await page.waitForTimeout(PAUSE_MS);
@@ -48,12 +51,15 @@ async function step(page, locator) {
 async function playFlow(page) {
   await page.goto(`${flags.app}/proxy`);
   await page.waitForTimeout(PAUSE_MS);
-  await step(page, page.getByRole('button', { name: italian.emptyWorkspace.tryExample }));
+  await clickThenRest(page, page.getByRole('button', { name: italian.emptyWorkspace.tryExample }));
   // The guide dims all but the tile it asks to open: the flow opens that one.
-  await step(page, page.locator(GUIDE_SPOTLIT).locator('[data-tile-image-button]').first());
-  const picker = page.getByRole('region', { name: startsWith(italian.printPicker.title) });
-  await step(page, picker.locator('button[aria-pressed="false"]').first());
-  await step(page, page.getByRole('button', { name: italian.workspace.goToSheet }));
+  await clickThenRest(
+    page,
+    page.locator(GUIDE_SPOTLIT).locator('[data-tile-image-button]').first(),
+  );
+  const picker = page.getByRole('region', { name: nameMadeFrom(italian.printPicker.title) });
+  await clickThenRest(page, picker.locator('button[aria-pressed="false"]').first());
+  await clickThenRest(page, page.getByRole('button', { name: italian.workspace.goToSheet }));
   // A wide screen downloads the PDF once it is made; a phone would offer to share it instead.
   const pdfDownloaded = page.waitForEvent('download', { timeout: 60_000 });
   await page.getByRole('button', { name: italian.pdf.download }).click();
