@@ -4,6 +4,7 @@
 //   pnpm web:preview --line "4 Lightning Bolt" --line "1 Sol Ring" --step cards
 //   pnpm web:preview --example --zoom 110 --width 1280     the example decklist at the least zoom
 //   pnpm web:preview --app https://localhost                from an app running elsewhere
+//   pnpm web:preview --example --guide-off --width 390      with no guided step dimming the screen
 // Writes .preview/web-<width>.png. Needs the app running (pnpm dev; the staging stack on
 // https://localhost serves its last image, not the working tree), with the catalog in PostgreSQL
 // for decklist lines, and Playwright's browser (pnpm exec playwright install chromium).
@@ -32,6 +33,7 @@ const { values: flags } = parseArgs({
     zoom: { type: 'string' },
     step: { type: 'string' },
     path: { type: 'string', default: '/proxy' },
+    'guide-off': { type: 'boolean', default: false },
   },
 });
 if (flags.example && flags.line.length > 0) {
@@ -39,6 +41,20 @@ if (flags.example && flags.line.length > 0) {
 }
 if (flags.step && !(flags.step in WORKSPACE_STEP_LABELS)) {
   throw new Error(`--step is one of: ${Object.keys(WORKSPACE_STEP_LABELS).join(', ')}`);
+}
+
+/** Switches the guide off as a user does: from the top bar's "Guida" menu, or the phone's menu. */
+async function turnGuideOff(page) {
+  const phoneMenu = page.getByRole('button', { name: italian.shell.menu });
+  if (await phoneMenu.isVisible()) {
+    await phoneMenu.click();
+    // Pressing it closes the phone menu.
+    await page.getByRole('checkbox', { name: italian.shell.showGuidedSteps }).click();
+  } else {
+    await page.getByRole('button', { name: new RegExp(`^${italian.shell.guide}`) }).click();
+    await page.getByRole('menuitemcheckbox', { name: italian.shell.showGuidedSteps }).click();
+    await page.keyboard.press('Escape');
+  }
 }
 
 /**
@@ -76,6 +92,7 @@ try {
     });
     const page = await context.newPage();
     await page.goto(`${flags.app}${flags.path}`);
+    if (flags['guide-off']) await turnGuideOff(page);
     if (flags.line.length > 0 || flags.example) await setUpWorkspace(page);
     await waitUntilImagesOnScreenArrived(page);
     const path = `${PREVIEW_DIR}web-${width}.png`;
